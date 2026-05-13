@@ -997,6 +997,12 @@ const handleResetPaddingBottom = () => {
     resizeObserverForEditor.unobserve(container.firstElementChild) // unobserve #ag-editor-id since we have removed the padding
   }
 }
+
+const handleLanguageChanged = () => {
+  if (editor.value) {
+    editor.value.setOptions({ t })
+  }
+}
 const resizeObserverForEditor = new ResizeObserver(handleResetPaddingBottom)
 
 onMounted(() => {
@@ -1072,11 +1078,7 @@ onMounted(() => {
   const { container } = editor.value
 
   // Listen for language changes and update Muya's translation function
-  bus.on('language-changed', () => {
-    if (editor.value) {
-      editor.value.setOptions({ t })
-    }
-  })
+  bus.on('language-changed', handleLanguageChanged)
 
   // Create spell check wrapper and enable spell checking if preferred.
   spellchecker = new SpellChecker(spellcheckerEnabled.value, spellcheckerLanguage.value)
@@ -1235,10 +1237,15 @@ onBeforeUnmount(() => {
   bus.off('switch-spellchecker-language', switchSpellcheckLanguage)
   bus.off('open-command-spellchecker-switch-language', openSpellcheckerLanguageCommand)
   bus.off('replace-misspelling', replaceMisspelling)
+  bus.off('language-changed', handleLanguageChanged)
 
   document.removeEventListener('keyup', keyup)
   editor.value.off('change')
   editor.value.off('scroll')
+  editor.value.off('heading-copy-link')
+  editor.value.off('format-click')
+  editor.value.off('selectionChange')
+  editor.value.off('selectionFormats')
 
   resizeObserverForEditor.disconnect()
 

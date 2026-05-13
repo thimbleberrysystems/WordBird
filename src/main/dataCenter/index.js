@@ -186,8 +186,7 @@ class DataCenter extends EventEmitter {
       this.setItems(userData)
     })
 
-    // TODO: Replace sync. call.
-    ipcMain.on('mt::ask-for-image-path', async(e) => {
+    ipcMain.handle('mt::ask-for-image-path', async(e) => {
       const win = BrowserWindow.fromWebContents(e.sender)
       const { filePaths } = await dialog.showOpenDialog(win, {
         properties: ['openFile'],
@@ -200,9 +199,9 @@ class DataCenter extends EventEmitter {
       })
 
       if (filePaths && filePaths[0]) {
-        e.returnValue = filePaths[0]
+        return filePaths[0]
       } else {
-        e.returnValue = ''
+        return ''
       }
     })
   }

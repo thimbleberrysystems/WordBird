@@ -88,6 +88,7 @@ class ContentState {
     this.dropAnchor = null
     this.prevCursor = null
     this.historyTimer = null
+    this.renderCodeBlockTimer = null
     this.history = new History(this)
     this.turndownConfig = Object.assign({}, DEFAULT_TURNDOWN_CONFIG, { bulletListMarker })
     // table drag bar
@@ -829,6 +830,10 @@ class ContentState {
   }
 
   clear() {
+    if (this.historyTimer) {
+      clearTimeout(this.historyTimer)
+      this.historyTimer = null
+    }
     this.history.clearHistory()
   }
 }

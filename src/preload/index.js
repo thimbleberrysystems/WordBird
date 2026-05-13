@@ -12,7 +12,7 @@ import {
 import { rgPath } from '@vscode/ripgrep'
 import path from 'path'
 import commandExists from 'command-exists'
-import { loadTranslations } from '../common/i18n'
+import { loadTranslations } from 'common/i18n'
 
 const i18nUtils = {
   loadTranslations

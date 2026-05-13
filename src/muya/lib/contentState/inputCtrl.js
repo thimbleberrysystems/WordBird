@@ -28,9 +28,6 @@ const BACK_HASH = {
   '~': '~'
 }
 
-// TODO: refactor later.
-let renderCodeBlockTimer = null
-
 const inputCtrl = (ContentState) => {
   // Input @ to quick insert paragraph
   ContentState.prototype.checkQuickInsert = function(block) {
@@ -339,13 +336,13 @@ const inputCtrl = (ContentState) => {
 
     // Throttle render if edit in code block.
     if (block && block.type === 'span' && block.functionType === 'codeContent') {
-      if (renderCodeBlockTimer) {
-        clearTimeout(renderCodeBlockTimer)
+      if (this.renderCodeBlockTimer) {
+        clearTimeout(this.renderCodeBlockTimer)
       }
       if (needRender) {
         this.partialRender()
       } else {
-        renderCodeBlockTimer = setTimeout(() => {
+        this.renderCodeBlockTimer = setTimeout(() => {
           this.partialRender()
         }, 300)
       }

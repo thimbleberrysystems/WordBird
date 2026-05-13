@@ -1428,7 +1428,7 @@ export const useEditorStore = defineStore('editor', {
     },
 
     ASK_FOR_IMAGE_PATH() {
-      return window.electron.ipcRenderer.sendSync('mt::ask-for-image-path')
+      return window.electron.ipcRenderer.invoke('mt::ask-for-image-path')
     },
 
     EDIT_ZOOM(zoomFactor) {

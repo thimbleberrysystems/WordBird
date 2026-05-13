@@ -131,7 +131,7 @@ export const getFirstSelectableLeafNode = (element) => {
     return emptyElementNames.indexOf(el.nodeName.toLowerCase()) === -1
   })
   // Selecting at the beginning of a table doesn't work in PhantomJS.
-  if (element.nodeName.toLowerCase() === LOWERCASE_TAGS.table) {
+  if (element && element.nodeName.toLowerCase() === LOWERCASE_TAGS.table) {
     const firstCell = element.querySelector('th, td')
     if (firstCell) {
       element = firstCell

@@ -1,4 +1,4 @@
-import { getTranslation } from '../common/i18n'
+import { getTranslation } from 'common/i18n'
 import { BrowserWindow } from 'electron'
 
 // Current language setting (can be obtained from config file or user settings)

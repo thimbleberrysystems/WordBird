@@ -6,7 +6,7 @@ import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron'
 import log from 'electron-log'
 import { isWindows } from '../config'
 import { hasSameKeys } from '../utils'
-import { getSupportedLanguages, isLanguageSupported } from '../../common/i18n'
+import { getSupportedLanguages, isLanguageSupported } from 'common/i18n'
 import schema from './schema'
 
 const PREFERENCES_FILE_NAME = 'preferences'
@@ -168,7 +168,7 @@ class Preference extends EventEmitter {
       this.setItems(settings)
     })
     ipcMain.on('mt::cmd-toggle-autosave', (e) => {
-      this.setItem('autoSave', !!this.getItem('autoSave'))
+      this.setItem('autoSave', !this.getItem('autoSave'))
     })
 
     ipcMain.on('set-user-preference', (settings) => {

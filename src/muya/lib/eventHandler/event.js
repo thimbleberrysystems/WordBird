@@ -89,12 +89,14 @@ class EventCenter {
   dispatch(event, ...data) {
     const eventListener = this.listeners[event]
     if (eventListener && Array.isArray(eventListener)) {
+      const toRemove = []
       eventListener.forEach(({ listener, once }) => {
         listener(...data)
         if (once) {
-          this.unsubscribe(event, listener)
+          toRemove.push(listener)
         }
       })
+      toRemove.forEach(listener => this.unsubscribe(event, listener))
     }
   }
 
