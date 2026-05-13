@@ -6,32 +6,33 @@ MarkText key bindings for Linux. Please see [general key bindings](KEYBINDINGS.m
 
 #### File menu
 
-| Id                  | Default                                       | Description                           |
-|:------------------- | --------------------------------------------- | ------------------------------------- |
-| `file.new-window`   | <kbd>Ctrl</kbd>+<kbd>N</kbd>                  | New window                            |
-| `file.new-tab`      | <kbd>Ctrl</kbd>+<kbd>T</kbd>                  | New tab                               |
-| `file.open-file`    | <kbd>Ctrl</kbd>+<kbd>O</kbd>                  | Open markdown file                    |
-| `file.open-folder`  | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd> | Open folder                           |
-| `file.save`         | <kbd>Ctrl</kbd>+<kbd>S</kbd>                  | Save                                  |
-| `file.save-as`      | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> | Save as...                            |
-| `file.move-file`    | -                                             | Move current file to another location |
-| `file.rename-file`  | -                                             | Rename current file                   |
-| `file.print`        | -                                             | Print current tab                     |
-| `file.preferences`  | <kbd>Ctrl</kbd>+<kbd>,</kbd>                  | Open settings window                  |
-| `file.close-tab`    | <kbd>Ctrl</kbd>+<kbd>W</kbd>                  | Close tab                             |
-| `file.close-window` | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd> | Close window                          |
-| `file.quit`         | <kbd>Ctrl</kbd>+<kbd>Q</kbd>                  | Quit MarkText                         |
+| Id                     | Default                                       | Description                           |
+| :--------------------- | --------------------------------------------- | ------------------------------------- |
+| `file.new-window`      | <kbd>Ctrl</kbd>+<kbd>N</kbd>                  | New window                            |
+| `file.new-tab`         | <kbd>Ctrl</kbd>+<kbd>T</kbd>                  | New tab                               |
+| `file.open-file`       | <kbd>Ctrl</kbd>+<kbd>O</kbd>                  | Open markdown file                    |
+| `file.open-folder`     | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd> | Open folder                           |
+| `file.save`            | <kbd>Ctrl</kbd>+<kbd>S</kbd>                  | Save                                  |
+| `file.save-as`         | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> | Save as...                            |
+| `file.export-file.pdf` | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>E</kbd>   | Export file as PDF                    |
+| `file.move-file`       | -                                             | Move current file to another location |
+| `file.rename-file`     | -                                             | Rename current file                   |
+| `file.print`           | -                                             | Print current tab                     |
+| `file.preferences`     | <kbd>Ctrl</kbd>+<kbd>,</kbd>                  | Open settings window                  |
+| `file.close-tab`       | <kbd>Ctrl</kbd>+<kbd>W</kbd>                  | Close tab                             |
+| `file.close-window`    | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd> | Close window                          |
+| `file.quit`            | <kbd>Ctrl</kbd>+<kbd>Q</kbd>                  | Quit MarkText                         |
 
 #### Edit menu
 
 | Id                        | Default                                       | Description                                     |
-|:------------------------- | --------------------------------------------- | ----------------------------------------------- |
+| :------------------------ | --------------------------------------------- | ----------------------------------------------- |
 | `edit.undo`               | <kbd>Ctrl</kbd>+<kbd>Z</kbd>                  | Undo last operation                             |
 | `edit.redo`               | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> | Redo last operation                             |
 | `edit.cut`                | <kbd>Ctrl</kbd>+<kbd>X</kbd>                  | Cut selected text                               |
 | `edit.copy`               | <kbd>Ctrl</kbd>+<kbd>C</kbd>                  | Copy selected text                              |
 | `edit.paste`              | <kbd>Ctrl</kbd>+<kbd>V</kbd>                  | Paste text                                      |
-| `edit.copy-as-markdown`   | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> | Copy selected text as markdown                  |
+| `edit.copy-as-rich`       | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> | Copy selected text as markdown                  |
 | `edit.copy-as-html`       | -                                             | Copy selected text as html                      |
 | `edit.paste-as-plaintext` | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd> | Copy selected text as plaintext                 |
 | `edit.select-all`         | <kbd>Ctrl</kbd>+<kbd>A</kbd>                  | Select all text of the document                 |
@@ -92,8 +93,8 @@ MarkText key bindings for Linux. Please see [general key bindings](KEYBINDINGS.m
 | ----------------------------- | ---------------------------- | ------------------------- |
 | `window.minimize`             | <kbd>Ctrl</kbd>+<kbd>M</kbd> | Minimize the window       |
 | `window.toggle-always-on-top` | -                            | Toogle always on top mode |
-| `window.zoom-in`              | -                            | Zoom in                   |
-| `window.zoom-out`             | -                            | Zoom out                  |
+| `window.zoomIn`               | -                            | Zoom in                   |
+| `window.zoomOut`              | -                            | Zoom out                  |
 | `window.toggle-full-screen`   | <kbd>F11</kbd>               | Toggle fullscreen mode    |
 
 #### View menu
@@ -115,22 +116,22 @@ MarkText key bindings for Linux. Please see [general key bindings](KEYBINDINGS.m
 
 #### Tabs
 
-| Id                       | Default                                         | Description                  |
-| ------------------------ | ----------------------------------------------- | ---------------------------- |
-| `tabs.cycle-forward`     | <kbd>Ctrl</kbd>+<kbd>Tab</kbd>                  | Cycle through tabs           |
-| `tabs.cycle-backward`    | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Tab</kbd> | Cycle backwards through tabs |
-| `tabs.switch-to-left`    | <kbd>Ctrl</kbd>+<kbd>PageUp</kbd>               | Switch tab to the left       |
-| `tabs.switch-to-right`   | <kbd>Ctrl</kbd>+<kbd>PageDown</kbd>             | Switch tab to the right      |
-| `tabs.switch-to-first`   | <kbd>Ctrl</kbd>+<kbd>1</kbd>                    | Switch tab to the 1st        |
-| `tabs.switch-to-second`  | <kbd>Ctrl</kbd>+<kbd>2</kbd>                    | Switch tab to the 2nd        |
-| `tabs.switch-to-third`   | <kbd>Ctrl</kbd>+<kbd>3</kbd>                    | Switch tab to the 3rd        |
-| `tabs.switch-to-fourth`  | <kbd>Ctrl</kbd>+<kbd>4</kbd>                    | Switch tab to the 4th        |
-| `tabs.switch-to-fifth`   | <kbd>Ctrl</kbd>+<kbd>5</kbd>                    | Switch tab to the 5th        |
-| `tabs.switch-to-sixth`   | <kbd>Ctrl</kbd>+<kbd>6</kbd>                    | Switch tab to the 6th        |
-| `tabs.switch-to-seventh` | <kbd>Ctrl</kbd>+<kbd>7</kbd>                    | Switch tab to the 7th        |
-| `tabs.switch-to-eighth`  | <kbd>Ctrl</kbd>+<kbd>8</kbd>                    | Switch tab to the 8th        |
-| `tabs.switch-to-ninth`   | <kbd>Ctrl</kbd>+<kbd>9</kbd>                    | Switch tab to the 9th        |
-| `tabs.switch-to-tenth`   | <kbd>Ctrl</kbd>+<kbd>0</kbd>                    | Switch tab to the 10th       |
+| Id                     | Default                                         | Description                  |
+| ---------------------- | ----------------------------------------------- | ---------------------------- |
+| `tabs.cycle-forward`   | <kbd>Ctrl</kbd>+<kbd>Tab</kbd>                  | Cycle through tabs           |
+| `tabs.cycle-backward`  | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Tab</kbd> | Cycle backwards through tabs |
+| `tabs.switchToleft`    | <kbd>Ctrl</kbd>+<kbd>PageUp</kbd>               | Switch tab to the left       |
+| `tabs.switchToright`   | <kbd>Ctrl</kbd>+<kbd>PageDown</kbd>             | Switch tab to the right      |
+| `tabs.switchTofirst`   | <kbd>Ctrl</kbd>+<kbd>1</kbd>                    | Switch tab to the 1st        |
+| `tabs.switchTosecond`  | <kbd>Ctrl</kbd>+<kbd>2</kbd>                    | Switch tab to the 2nd        |
+| `tabs.switchTothird`   | <kbd>Ctrl</kbd>+<kbd>3</kbd>                    | Switch tab to the 3rd        |
+| `tabs.switchTofourth`  | <kbd>Ctrl</kbd>+<kbd>4</kbd>                    | Switch tab to the 4th        |
+| `tabs.switchTofifth`   | <kbd>Ctrl</kbd>+<kbd>5</kbd>                    | Switch tab to the 5th        |
+| `tabs.switchTosixth`   | <kbd>Ctrl</kbd>+<kbd>6</kbd>                    | Switch tab to the 6th        |
+| `tabs.switchToseventh` | <kbd>Ctrl</kbd>+<kbd>7</kbd>                    | Switch tab to the 7th        |
+| `tabs.switchToeighth`  | <kbd>Ctrl</kbd>+<kbd>8</kbd>                    | Switch tab to the 8th        |
+| `tabs.switchToninth`   | <kbd>Ctrl</kbd>+<kbd>9</kbd>                    | Switch tab to the 9th        |
+| `tabs.switchTotenth`   | <kbd>Ctrl</kbd>+<kbd>0</kbd>                    | Switch tab to the 10th       |
 
 #### Misc
 

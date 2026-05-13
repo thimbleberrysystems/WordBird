@@ -1,6 +1,6 @@
 import BaseFloat from '../baseFloat'
 import { patch, h } from '../../parser/render/snabbdom'
-import icons from './config'
+import getIcons from './config'
 import { URL_REG } from '../../config'
 
 import './index.css'
@@ -18,22 +18,22 @@ const defaultOptions = {
 class ImageToolbar extends BaseFloat {
   static pluginName = 'imageToolbar'
 
-  constructor (muya, options = {}) {
+  constructor(muya, options = {}) {
     const name = 'ag-image-toolbar'
     const opts = Object.assign({}, defaultOptions, options)
     super(muya, name, opts)
     this.oldVnode = null
     this.imageInfo = null
     this.options = opts
-    this.icons = icons
+    this.icons = getIcons(muya?.options?.t)
     this.reference = null
-    const toolbarContainer = this.toolbarContainer = document.createElement('div')
+    const toolbarContainer = (this.toolbarContainer = document.createElement('div'))
     this.container.appendChild(toolbarContainer)
     this.floatBox.classList.add('ag-image-toolbar-container')
     this.listen()
   }
 
-  listen () {
+  listen() {
     const { eventCenter } = this.muya
     super.listen()
     eventCenter.subscribe('muya-image-toolbar', ({ reference, imageInfo }) => {
@@ -50,26 +50,34 @@ class ImageToolbar extends BaseFloat {
     })
   }
 
-  render () {
-    const { icons, oldVnode, toolbarContainer, imageInfo } = this
+  render() {
+    const { muya, oldVnode, toolbarContainer, imageInfo } = this
+    const icons = getIcons(muya?.options?.t)
     const { attrs } = imageInfo.token
     const dataAlign = attrs['data-align']
     let isLocalImage = false
     if (this.isLocalFile(imageInfo)) {
       isLocalImage = true
     }
-    const children = icons.map(i => {
+    const children = icons.map((i) => {
       let icon
       let iconWrapperSelector
       if (i.icon) {
         // SVG icon Asset
         iconWrapperSelector = 'div.icon-wrapper'
-        icon = h('i.icon', h('i.icon-inner', {
-          style: {
-            background: `url(${i.icon}) no-repeat`,
-            'background-size': '100%'
-          }
-        }, ''))
+        icon = h(
+          'i.icon',
+          h(
+            'i.icon-inner',
+            {
+              style: {
+                background: `url(${i.icon}) no-repeat`,
+                'background-size': '100%'
+              }
+            },
+            ''
+          )
+        )
       }
       const iconWrapper = h(iconWrapperSelector, icon)
       let itemSelector = `li.item.${i.type}`
@@ -81,19 +89,23 @@ class ImageToolbar extends BaseFloat {
           itemSelector += '.disable'
         }
       }
-      if (i.type === dataAlign || !dataAlign && i.type === 'inline') {
+      if (i.type === dataAlign || (!dataAlign && i.type === 'inline')) {
         itemSelector += '.active'
       }
-      return h(itemSelector, {
-        dataset: {
-          tip: i.tooltip
-        },
-        on: {
-          click: event => {
-            this.selectItem(event, i)
+      return h(
+        itemSelector,
+        {
+          dataset: {
+            tip: i.tooltip
+          },
+          on: {
+            click: (event) => {
+              this.selectItem(event, i)
+            }
           }
-        }
-      }, [h('div.tooltip', i.tooltip), iconWrapper])
+        },
+        [h('div.tooltip', i.tooltip), iconWrapper]
+      )
     })
 
     const vnode = h('ul', children)
@@ -106,7 +118,7 @@ class ImageToolbar extends BaseFloat {
     this.oldVnode = vnode
   }
 
-  selectItem (event, item) {
+  selectItem(event, item) {
     event.preventDefault()
     event.stopPropagation()
 
@@ -128,7 +140,7 @@ class ImageToolbar extends BaseFloat {
       case 'edit': {
         const rect = this.reference.getBoundingClientRect()
         const reference = {
-          getBoundingClientRect () {
+          getBoundingClientRect() {
             rect.height = 0
             return rect
           }
@@ -161,7 +173,7 @@ class ImageToolbar extends BaseFloat {
     }
   }
 
-  isLocalFile (imageInfo) {
+  isLocalFile(imageInfo) {
     const { attrs } = imageInfo.token
     if (URL_REG.test(imageInfo.token.src) || URL_REG.test(attrs.src)) {
       return false

@@ -1,27 +1,47 @@
 import { Menu, MenuItem } from 'electron'
 import {
-  CUT,
-  COPY,
-  PASTE,
-  COPY_AS_MARKDOWN,
-  COPY_AS_HTML,
-  PASTE_AS_PLAIN_TEXT,
+  getCUT,
+  getCOPY,
+  getPASTE,
+  getCOPY_AS_RICH,
+  getCOPY_AS_HTML,
+  getPASTE_AS_PLAIN_TEXT,
   SEPARATOR,
-  INSERT_BEFORE,
-  INSERT_AFTER
+  getINSERT_BEFORE,
+  getINSERT_AFTER
 } from './menuItems'
 import spellcheckMenuBuilder from './spellcheck'
+import { t } from '../../i18n'
 
-const CONTEXT_ITEMS = [INSERT_BEFORE, INSERT_AFTER, SEPARATOR, CUT, COPY, PASTE, SEPARATOR, COPY_AS_MARKDOWN, COPY_AS_HTML, PASTE_AS_PLAIN_TEXT]
+// 动态获取菜单项以确保翻译正确
+const getContextItems = () => [
+  getINSERT_BEFORE(),
+  getINSERT_AFTER(),
+  SEPARATOR,
+  getCUT(),
+  getCOPY(),
+  getPASTE(),
+  SEPARATOR,
+  getCOPY_AS_RICH(),
+  getCOPY_AS_HTML(),
+  getPASTE_AS_PLAIN_TEXT()
+]
 
-const isInsideEditor = params => {
+const isInsideEditor = (params) => {
   const { isEditable, editFlags, inputFieldType } = params
   // WORKAROUND for Electron#32102: `params.spellcheckEnabled` is always false. Try to detect the editor container via other information.
-  return isEditable && inputFieldType === 'none' && !!editFlags.canEditRichly
+  return isEditable && !inputFieldType && !!editFlags.canEditRichly
 }
 
 export const showEditorContextMenu = (win, event, params, isSpellcheckerEnabled) => {
-  const { isEditable, hasImageContents, selectionText, editFlags, misspelledWord, dictionarySuggestions } = params
+  const {
+    isEditable,
+    hasImageContents,
+    selectionText,
+    editFlags,
+    misspelledWord,
+    dictionarySuggestions
+  } = params
 
   // NOTE: We have to get the word suggestions from this event because `webFrame.getWordSuggestions` and
   //       `webFrame.isWordMisspelled` doesn't work on Windows (Electron#28684).
@@ -35,18 +55,26 @@ export const showEditorContextMenu = (win, event, params, isSpellcheckerEnabled)
 
     const menu = new Menu()
     if (isSpellcheckerEnabled) {
-      const spellingSubmenu = spellcheckMenuBuilder(isMisspelled, misspelledWord, dictionarySuggestions)
-      menu.append(new MenuItem({
-        label: 'Spelling...',
-        submenu: spellingSubmenu
-      }))
+      const spellingSubmenu = spellcheckMenuBuilder(
+        isMisspelled,
+        misspelledWord,
+        dictionarySuggestions
+      )
+      menu.append(
+        new MenuItem({
+          label: t('contextMenu.spelling'),
+          submenu: spellingSubmenu
+        })
+      )
       menu.append(new MenuItem(SEPARATOR))
     }
 
-    [CUT, COPY, COPY_AS_HTML, COPY_AS_MARKDOWN].forEach(item => {
+    const contextItems = getContextItems()
+    const copyItems = [contextItems[3], contextItems[4], contextItems[8], contextItems[7]] // CUT, COPY, COPY_AS_HTML, COPY_AS_RICH
+    copyItems.forEach((item) => {
       item.enabled = canCopy
     })
-    CONTEXT_ITEMS.forEach(item => {
+    contextItems.forEach((item) => {
       menu.append(new MenuItem(item))
     })
     menu.popup([{ window: win, x: event.clientX, y: event.clientY }])

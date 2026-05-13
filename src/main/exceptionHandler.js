@@ -10,13 +10,14 @@ import { app, clipboard, crashReporter, dialog, ipcMain } from 'electron'
 import os from 'os'
 import log from 'electron-log'
 import { createAndOpenGitHubIssueUrl } from './utils/createGitHubIssue'
+import { t } from './i18n'
 
 const EXIT_ON_ERROR = !!process.env.MARKTEXT_EXIT_ON_ERROR
 const SHOW_ERROR_DIALOG = !process.env.MARKTEXT_ERROR_INTERACTION
-const ERROR_MSG_MAIN = 'An unexpected error occurred in the main process'
-const ERROR_MSG_RENDERER = 'An unexpected error occurred in the renderer process'
+const ERROR_MSG_MAIN = () => t('error.unexpectedMainProcess')
+const ERROR_MSG_RENDERER = () => t('error.unexpectedRendererProcess')
 
-let logger = s => console.error(s)
+let logger = (s) => console.error(s)
 
 const getOSInformation = () => {
   return `${os.type()} ${os.arch()} ${os.release()} (${os.platform()})`
@@ -24,12 +25,14 @@ const getOSInformation = () => {
 
 const exceptionToString = (error, type) => {
   const { message, stack } = error
-  return `Version: ${global.MARKTEXT_VERSION_STRING || app.getVersion()}\n` +
+  return (
+    `Version: ${MARKTEXT_VERSION_STRING || app.getVersion()}\n` +
     `OS: ${getOSInformation()}\n` +
     `Type: ${type}\n` +
     `Date: ${new Date().toUTCString()}\n` +
     `Message: ${message}\n` +
     `Stack: ${stack}\n`
+  )
 }
 
 const handleError = async (title, error, type) => {
@@ -41,10 +44,10 @@ const handleError = async (title, error, type) => {
   }
 
   if (EXIT_ON_ERROR) {
-    console.log('MarkText was terminated due to an unexpected error (MARKTEXT_EXIT_ON_ERROR variable was set)!')
+    console.log(t('error.terminatedDueToError'))
     process.exit(1)
     // eslint, don't lie to me, the return statement is important!
-    return // eslint-disable-line no-unreachable
+    return
   } else if (!SHOW_ERROR_DIALOG || (global.MARKTEXT_IS_STABLE && type === 'renderer')) {
     return
   }
@@ -54,11 +57,7 @@ const handleError = async (title, error, type) => {
     // Blocking message box
     const { response } = await dialog.showMessageBox({
       type: 'error',
-      buttons: [
-        'OK',
-        'Copy Error',
-        'Report...'
-      ],
+      buttons: [t('common.ok'), t('error.copyError'), t('error.report')],
       defaultId: 0,
       noLink: true,
       message: title,
@@ -71,14 +70,16 @@ const handleError = async (title, error, type) => {
         break
       }
       case 2: {
-        const issueTitle = message ? `Unexpected error: ${message}` : title
+        const issueTitle = message ? t('error.unexpectedErrorWithMessage', { message }) : title
         createAndOpenGitHubIssueUrl(
           issueTitle,
           `### Description
 
 ${title}.
 
-<!-- Please describe, how the bug occurred -->
+### Minimal Reprouducible Markdown Example (or Steps)
+
+<Add steps or a markdown example to reproduce the problem.>
 
 ### Stack Trace
 
@@ -86,8 +87,9 @@ ${title}.
 
 ### Version
 
-MarkText: ${global.MARKTEXT_VERSION_STRING}
-Operating system: ${getOSInformation()}`)
+MarkText: ${MARKTEXT_VERSION_STRING}
+Operating system: ${getOSInformation()}`
+        )
         break
       }
     }
@@ -105,13 +107,13 @@ const setupExceptionHandler = () => {
   process.stderr.on('error', ignoreEpipe)
 
   // main process error handler
-  process.on('uncaughtException', error => {
-    handleError(ERROR_MSG_MAIN, error, 'main')
+  process.on('uncaughtException', (error) => {
+    handleError(ERROR_MSG_MAIN(), error, 'main')
   })
 
   // renderer process error handler
   ipcMain.on('mt::handle-renderer-error', (e, error) => {
-    handleError(ERROR_MSG_RENDERER, error, 'renderer')
+    handleError(ERROR_MSG_RENDERER(), error, 'renderer')
   })
 
   // start crashReporter to save core dumps to temporary folder

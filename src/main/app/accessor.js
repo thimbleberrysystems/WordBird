@@ -1,5 +1,6 @@
 import WindowManager from '../app/windowManager'
 import Preference from '../preferences'
+import EditorBufferStore from '../editorBufferStore'
 import DataCenter from '../dataCenter'
 import Keybindings from '../keyboard/shortcutHandler'
 import AppMenu from '../menu'
@@ -10,7 +11,7 @@ class Accessor {
   /**
    * @param {AppEnvironment} appEnvironment The application environment instance.
    */
-  constructor (appEnvironment) {
+  constructor(appEnvironment) {
     const userDataPath = appEnvironment.paths.userDataPath
 
     this.env = appEnvironment
@@ -18,16 +19,17 @@ class Accessor {
 
     this.preferences = new Preference(this.paths)
     this.dataCenter = new DataCenter(this.paths)
+    this.editorBufferStore = new EditorBufferStore(this.paths)
 
     this.commandManager = CommandManager
     this._loadCommands()
 
     this.keybindings = new Keybindings(this.commandManager, appEnvironment)
     this.menu = new AppMenu(this.preferences, this.keybindings, userDataPath)
-    this.windowManager = new WindowManager(this.menu, this.preferences)
+    this.windowManager = new WindowManager(this.menu, this.preferences, this.editorBufferStore)
   }
 
-  _loadCommands () {
+  _loadCommands() {
     const { commandManager } = this
     loadDefaultCommands(commandManager)
     loadMenuCommands(commandManager)

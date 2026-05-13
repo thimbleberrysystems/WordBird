@@ -23,13 +23,16 @@ export default new Map([
   ['file.close-window', 'Command+Shift+W'],
   ['file.quit', 'Command+Q'],
 
+  // File > Export submenu
+  ['file.export-file.pdf', 'Ctrl+Alt+E'],
+
   // Edit menu
   ['edit.undo', 'Command+Z'],
   ['edit.redo', 'Command+Shift+Z'],
   ['edit.cut', 'Command+X'],
   ['edit.copy', 'Command+C'],
   ['edit.paste', 'Command+V'],
-  ['edit.copy-as-markdown', 'Command+Shift+C'],
+  ['edit.copy-as-rich', 'Command+Shift+C'],
   ['edit.copy-as-html', ''],
   ['edit.paste-as-plaintext', 'Command+Shift+V'],
   ['edit.select-all', 'Command+A'],
@@ -82,8 +85,8 @@ export default new Map([
   // Window menu
   ['window.minimize', 'Command+M'],
   ['window.toggle-always-on-top', ''],
-  ['window.zoom-in', ''],
-  ['window.zoom-out', ''],
+  ['window.zoomIn', ''],
+  ['window.zoomOut', ''],
   ['window.toggle-full-screen', 'Ctrl+Command+F'],
 
   // View menu
@@ -99,19 +102,19 @@ export default new Map([
   ['view.reload-images', 'Command+R'],
 
   // ======== Not included in application menu ========================
-  ['tabs.cycle-forward', 'Ctrl+Tab'],
-  ['tabs.cycle-backward', 'Ctrl+Shift+Tab'],
-  ['tabs.switch-to-left', 'Command+PageUp'],
-  ['tabs.switch-to-right', 'Command+PageDown'],
-  ['tabs.switch-to-first', 'Ctrl+1'],
-  ['tabs.switch-to-second', 'Ctrl+2'],
-  ['tabs.switch-to-third', 'Ctrl+3'],
-  ['tabs.switch-to-fourth', 'Ctrl+4'],
-  ['tabs.switch-to-fifth', 'Ctrl+5'],
-  ['tabs.switch-to-sixth', 'Ctrl+6'],
-  ['tabs.switch-to-seventh', 'Ctrl+7'],
-  ['tabs.switch-to-eighth', 'Ctrl+8'],
-  ['tabs.switch-to-ninth', 'Ctrl+9'],
-  ['tabs.switch-to-tenth', 'Ctrl+0'],
+  ['tabs.cycleForward', 'Ctrl+Tab'],
+  ['tabs.cycleBackward', 'Ctrl+Shift+Tab'],
+  ['tabs.switchToLeft', 'Command+PageUp'],
+  ['tabs.switchToRight', 'Command+PageDown'],
+  ['tabs.switchToFirst', 'Ctrl+1'],
+  ['tabs.switchToSecond', 'Ctrl+2'],
+  ['tabs.switchToThird', 'Ctrl+3'],
+  ['tabs.switchToFourth', 'Ctrl+4'],
+  ['tabs.switchToFifth', 'Ctrl+5'],
+  ['tabs.switchToSixth', 'Ctrl+6'],
+  ['tabs.switchToSeventh', 'Ctrl+7'],
+  ['tabs.switchToEighth', 'Ctrl+8'],
+  ['tabs.switchToNinth', 'Ctrl+9'],
+  ['tabs.switchToTenth', 'Ctrl+0'],
   ['file.quick-open', 'Command+P']
 ])

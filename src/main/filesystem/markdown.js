@@ -8,7 +8,7 @@ import { isMarkdownFile } from 'common/filesystem/paths'
 import { normalizeAndResolvePath, writeFile } from '../filesystem'
 import { guessEncoding } from './encoding'
 
-const getLineEnding = lineEnding => {
+const getLineEnding = (lineEnding) => {
   if (lineEnding === 'lf') {
     return '\n'
   } else if (lineEnding === 'crlf') {
@@ -31,7 +31,7 @@ const convertLineEndings = (text, lineEnding) => {
  * @returns {{isDir: boolean, path: string}?} Returns the normalize path and a
  * directory hint or null if it's not a directory or markdown file.
  */
-export const normalizeMarkdownPath = pathname => {
+export const normalizeMarkdownPath = (pathname) => {
   const isDir = isDirectory2(pathname)
   if (isDir || isMarkdownFile(pathname)) {
     // Normalize and resolve the path or link target.
@@ -74,9 +74,16 @@ export const writeMarkdownFile = (pathname, content, options) => {
  * @param {string} preferredEol The preferred EOL.
  * @param {boolean} autoGuessEncoding Whether we should try to auto guess encoding.
  * @param {*} trimTrailingNewline The trim trailing newline option.
+ * @param {boolean} autoNormalizeLineEndings Whether to automatically normalize line endings
  * @returns {IMarkdownDocumentRaw} Returns a raw markdown document.
  */
-export const loadMarkdownFile = async (pathname, preferredEol, autoGuessEncoding = true, trimTrailingNewline = 2) => {
+export const loadMarkdownFile = async (
+  pathname,
+  preferredEol,
+  autoGuessEncoding = true,
+  trimTrailingNewline = 2,
+  autoNormalizeLineEndings = false
+) => {
   // TODO: Use streams to not buffer the file multiple times and only guess
   //       encoding on the first 256/512 bytes.
 
@@ -103,10 +110,12 @@ export const loadMarkdownFile = async (pathname, preferredEol, autoGuessEncoding
   }
 
   let adjustLineEndingOnSave = false
+
   if (isMixedLineEndings || isUnknownEnding || lineEnding !== 'lf') {
-    adjustLineEndingOnSave = lineEnding !== 'lf'
-    // Convert to LF for internal use.
     markdown = convertLineEndings(markdown, 'lf')
+    // Marktext always uses LF internally.
+    // If the user did not request LF line endings, we need to adjust on save.
+    adjustLineEndingOnSave = !autoNormalizeLineEndings && lineEnding !== 'lf'
   }
 
   // Detect final newline
@@ -130,6 +139,7 @@ export const loadMarkdownFile = async (pathname, preferredEol, autoGuessEncoding
   }
 
   const filename = path.basename(pathname)
+
   return {
     // document information
     markdown,

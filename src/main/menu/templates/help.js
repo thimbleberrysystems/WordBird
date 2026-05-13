@@ -3,6 +3,7 @@ import { shell } from 'electron'
 import { isFile } from 'common/filesystem'
 import * as actions from '../actions/help'
 import { checkUpdates } from '../actions/marktext'
+import { t } from '../../i18n'
 
 /// Check whether the package is updatable at runtime.
 const isUpdatable = () => {
@@ -29,92 +30,82 @@ const isUpdatable = () => {
 
 export default function () {
   const helpMenu = {
-    label: '&Help',
+    label: t('menu.help.help'),
     role: 'help',
-    submenu: [{
-      label: 'Quick Start...',
-      click () {
-        shell.openExternal('https://github.com/marktext/marktext/blob/master/docs/README.md')
+    submenu: [
+      {
+        label: t('menu.help.markdownReference'),
+        click() {
+          shell.openExternal(
+            'https://github.com/marktext/marktext/blob/trunk/docs/MARKDOWN_SYNTAX.md'
+          )
+        }
+      },
+      {
+        label: t('menu.help.changelog'),
+        click() {
+          shell.openExternal('https://github.com/marktext/marktext/releases')
+        }
+      },
+      {
+        type: 'separator'
+      },
+      {
+        label: t('menu.help.askQuestion'),
+        click() {
+          shell.openExternal('https://github.com/marktext/marktext/discussions')
+        }
+      },
+      {
+        label: t('menu.help.reportBug'),
+        click() {
+          shell.openExternal('https://github.com/marktext/marktext/issues')
+        }
+      },
+      {
+        label: t('menu.help.viewSource'),
+        click() {
+          shell.openExternal('https://github.com/marktext/marktext')
+        }
+      },
+      {
+        type: 'separator'
+      },
+      {
+        label: t('menu.help.license'),
+        click() {
+          shell.openExternal('https://github.com/marktext/marktext/blob/trunk/LICENSE')
+        }
       }
-    }, {
-      label: 'Markdown Reference...',
-      click () {
-        shell.openExternal('https://github.com/marktext/marktext/blob/master/docs/MARKDOWN_SYNTAX.md')
-      }
-    }, {
-      label: 'Changelog...',
-      click () {
-        shell.openExternal('https://github.com/marktext/marktext/blob/master/.github/CHANGELOG.md')
-      }
-    }, {
-      type: 'separator'
-    }, {
-      label: 'Donate via Open Collective...',
-      click (item, win) {
-        shell.openExternal('https://opencollective.com/marktext')
-      }
-    }, {
-      label: 'Feedback via Twitter...',
-      click (item, win) {
-        actions.showTweetDialog(win, 'twitter')
-      }
-    }, {
-      label: 'Report Issue or Request Feature...',
-      click () {
-        shell.openExternal('https://github.com/marktext/marktext/issues')
-      }
-    }, {
-      type: 'separator'
-    }, {
-      label: 'Website...',
-      click () {
-        shell.openExternal('https://github.com/marktext/marktext')
-      }
-    }, {
-      label: 'Watch on GitHub...',
-      click () {
-        shell.openExternal('https://github.com/marktext/marktext')
-      }
-    }, {
-      label: 'Follow us on Github...',
-      click () {
-        shell.openExternal('https://github.com/Jocs')
-      }
-    }, {
-      label: 'Follow us on Twitter...',
-      click () {
-        shell.openExternal('https://twitter.com/marktextapp')
-      }
-    }, {
-      type: 'separator'
-    }, {
-      label: 'License...',
-      click () {
-        shell.openExternal('https://github.com/marktext/marktext/blob/master/LICENSE')
-      }
-    }]
+    ]
   }
 
   if (isUpdatable()) {
-    helpMenu.submenu.push({
-      type: 'separator'
-    }, {
-      label: 'Check for updates...',
-      click (menuItem, browserWindow) {
-        checkUpdates(browserWindow)
+    helpMenu.submenu.push(
+      {
+        type: 'separator'
+      },
+      {
+        label: t('menu.help.checkUpdates'),
+        click(menuItem, browserWindow) {
+          checkUpdates(browserWindow)
+        }
       }
-    })
+    )
   }
 
   if (process.platform !== 'darwin') {
-    helpMenu.submenu.push({
-      type: 'separator'
-    }, {
-      label: 'About MarkText...',
-      click (menuItem, browserWindow) {
-        actions.showAboutDialog(browserWindow)
+    helpMenu.submenu.push(
+      {
+        type: 'separator'
+      },
+      {
+        label: t('menu.help.about'),
+        click(menuItem, browserWindow) {
+          actions.showAboutDialog(browserWindow)
+        }
       }
-    })
+    )
   }
   return helpMenu
 }

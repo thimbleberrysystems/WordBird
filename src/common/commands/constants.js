@@ -1,7 +1,7 @@
 const COMMANDS = Object.freeze({
   EDIT_COPY: 'edit.copy',
   EDIT_COPY_AS_HTML: 'edit.copy-as-html',
-  EDIT_COPY_AS_MARKDOWN: 'edit.copy-as-markdown',
+  EDIT_COPY_AS_RICH: 'edit.copy-as-rich',
   EDIT_CREATE_PARAGRAPH: 'edit.create-paragraph',
   EDIT_CUT: 'edit.cut',
   EDIT_DELETE_PARAGRAPH: 'edit.delete-paragraph',
@@ -35,6 +35,7 @@ const COMMANDS = Object.freeze({
   FILE_RENAME_FILE: 'file.rename-file',
   FILE_SAVE: 'file.save',
   FILE_SAVE_AS: 'file.save-as',
+  FILE_EXPORT_FILE_PDF: 'file.export-file.pdf',
   // FILE_TOGGLE_AUTO_SAVE: 'file.toggle-auto-save',
 
   FORMAT_CLEAR_FORMAT: 'format.clear-format',
@@ -74,20 +75,20 @@ const COMMANDS = Object.freeze({
   PARAGRAPH_TASK_LIST: 'paragraph.task-list',
   PARAGRAPH_INCREASE_HEADING: 'paragraph.upgrade-heading',
 
-  TABS_CYCLE_BACKWARD: 'tabs.cycle-backward',
-  TABS_CYCLE_FORWARD: 'tabs.cycle-forward',
-  TABS_SWITCH_TO_EIGHTH: 'tabs.switch-to-eighth',
-  TABS_SWITCH_TO_FIFTH: 'tabs.switch-to-fifth',
-  TABS_SWITCH_TO_FIRST: 'tabs.switch-to-first',
-  TABS_SWITCH_TO_FOURTH: 'tabs.switch-to-fourth',
-  TABS_SWITCH_TO_LEFT: 'tabs.switch-to-left',
-  TABS_SWITCH_TO_NINTH: 'tabs.switch-to-ninth',
-  TABS_SWITCH_TO_RIGHT: 'tabs.switch-to-right',
-  TABS_SWITCH_TO_SECOND: 'tabs.switch-to-second',
-  TABS_SWITCH_TO_SEVENTH: 'tabs.switch-to-seventh',
-  TABS_SWITCH_TO_SIXTH: 'tabs.switch-to-sixth',
-  TABS_SWITCH_TO_TENTH: 'tabs.switch-to-tenth',
-  TABS_SWITCH_TO_THIRD: 'tabs.switch-to-third',
+  TABS_CYCLE_BACKWARD: 'tabs.cycleBackward',
+  TABS_CYCLE_FORWARD: 'tabs.cycleForward',
+  TABS_SWITCH_TO_EIGHTH: 'tabs.switchToEighth',
+  TABS_SWITCH_TO_FIFTH: 'tabs.switchToFifth',
+  TABS_SWITCH_TO_FIRST: 'tabs.switchToFirst',
+  TABS_SWITCH_TO_FOURTH: 'tabs.switchToFourth',
+  TABS_SWITCH_TO_LEFT: 'tabs.switchToLeft',
+  TABS_SWITCH_TO_NINTH: 'tabs.switchToNinth',
+  TABS_SWITCH_TO_RIGHT: 'tabs.switchToRight',
+  TABS_SWITCH_TO_SECOND: 'tabs.switchToSecond',
+  TABS_SWITCH_TO_SEVENTH: 'tabs.switchToSeventh',
+  TABS_SWITCH_TO_SIXTH: 'tabs.switchToSixth',
+  TABS_SWITCH_TO_TENTH: 'tabs.switchToTenth',
+  TABS_SWITCH_TO_THIRD: 'tabs.switchToThird',
 
   VIEW_COMMAND_PALETTE: 'view.command-palette',
   VIEW_DEV_RELOAD: 'view.dev-reload',
@@ -103,8 +104,8 @@ const COMMANDS = Object.freeze({
   WINDOW_MINIMIZE: 'window.minimize',
   WINDOW_TOGGLE_ALWAYS_ON_TOP: 'window.toggle-always-on-top',
   WINDOW_TOGGLE_FULL_SCREEN: 'window.toggle-full-screen',
-  WINDOW_ZOOM_IN: 'window.zoom-in',
-  WINDOW_ZOOM_OUT: 'window.zoom-out'
+  WINDOW_ZOOM_IN: 'window.zoomIn',
+  WINDOW_ZOOM_OUT: 'window.zoomOut'
 })
 
 export default COMMANDS
