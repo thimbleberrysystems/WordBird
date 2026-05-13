@@ -507,6 +507,7 @@ class Muya {
     this._mutationObserver?.disconnect()
     this._mutationObserver = null
     this.eventCenter.detachAllDomEvents()
+    this.eventCenter.unsubscribeAll()
   }
 }
 

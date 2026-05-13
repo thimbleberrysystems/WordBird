@@ -81,6 +81,7 @@ export const findOutMostParagraph = (node) => {
     if (isMuyaEditorElement(parentNode) && isAganippeParagraph(node)) return node
     node = parentNode
   } while (node)
+  return null
 }
 
 export const isAganippeParagraph = (element) => {

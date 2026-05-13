@@ -77,6 +77,13 @@ class EventCenter {
   }
 
   /**
+   * [unsubscribeAll] unsubscribe all custom events
+   */
+  unsubscribeAll() {
+    this.listeners = {}
+  }
+
+  /**
    * [subscribeOnce] usbscribe event and listen once
    */
   subscribeOnce(event, listener) {

@@ -4,8 +4,9 @@
 
 - `.`: Configuration files
 - `package.json`: Project settings
-- `build/`: Contains generated binaries
-- `dist/`: Build files for deployment
+- `out/`: Compiled source code (main, preload, renderer bundles)
+- `dist/`: Packaged binaries and installers for distribution
+- `resources/`: Application assets (themes, icons, etc) included in builds
 - `docs/`: Documentation and assets
 - `resources/`: Application assets using at build time
 - `node_modules/`: Dependencies

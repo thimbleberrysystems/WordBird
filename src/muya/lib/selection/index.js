@@ -342,7 +342,7 @@ class Selection {
     let postCaretRange
 
     if (!range) {
-      range = window.getSelection().getRangeAt(0)
+      range = this.doc.getSelection().getRangeAt(0)
     }
 
     preCaretRange = range.cloneRange()
@@ -437,8 +437,8 @@ class Selection {
   setCursorRange(cursorRange) {
     const { anchor, focus } = cursorRange
 
-    const anchorParagraph = document.querySelector(`#${anchor.key}`)
-    const focusParagraph = document.querySelector(`#${focus.key}`)
+    const anchorParagraph = this.doc.querySelector(`#${anchor.key}`)
+    const focusParagraph = this.doc.querySelector(`#${focus.key}`)
 
     if (!anchorParagraph || !focusParagraph) {
       return // Additional guards
@@ -558,7 +558,7 @@ class Selection {
       focusNode = anchorNode
       focusOffset = anchorOffset
     } else if (!isAnchorValid && !isFocusValid) {
-      const editorElement = document.querySelector('#ag-editor-id')
+      const editorElement = this.doc.querySelector('#ag-editor-id')
       if (editorElement && editorElement.parentNode) {
         const editor = editorElement.parentNode
         editor.blur()
