@@ -1,4 +1,4 @@
-<p align="center"><img src="static/logo-small.png" alt="MarkText" width="100" height="100"></p>
+<p align="center"><img src="../../static/logo-small.png" alt="MarkText" width="100" height="100"></p>
 
 <h1 align="center">MarkText</h1>
 
@@ -8,16 +8,16 @@
   </a>
 </div>
 <div align="center">
-  <strong>:high_brightness: Next generation markdown editor :crescent_moon:</strong><br>
-  A simple and elegant open-source markdown editor that focused on speed and usability.<br>
-  <sub>Available for Linux, macOS and Windows.</sub>
+  <strong>:high_brightness: Yeni nesil markdown editörü :crescent_moon:</strong><br>
+  Sade ve zarif, açık kaynaklı, hız ve kullanılabilirliğe odaklı markdown editörü.<br>
+  <sub>Linux, macOS ve Windows için kullanılabilir.</sub>
 </div>
 
 <br>
 
 <div align="center">
   <!-- License -->
-  <a href="LICENSE">
+  <a href="../../LICENSE">
     <img src="https://img.shields.io/github/license/marktext/marktext.svg" alt="LICENSE">
   </a>
   <!-- Downloads total -->
@@ -41,134 +41,139 @@
     </a>
     <span> | </span>
     <a href="https://github.com/marktext/marktext#features">
-      Features
+      Özellikler
     </a>
     <span> | </span>
     <a href="https://github.com/marktext/marktext#download-and-installation">
-      Downloads
+      İndirme ve Kurulum
     </a>
     <span> | </span>
     <a href="https://github.com/marktext/marktext#development">
-      Development
+      Geliştirme
     </a>
     <span> | </span>
     <a href="https://github.com/marktext/marktext#contribution">
-      Contribution
+      Katkı
     </a>
   </h3>
 </div>
 
 <div align="center">
-  <sub>Translations:</sub>
-  <a href="docs/i18n/README-zh_cn.md#readme">
+  <sub>Çeviriler:</sub>
+  <a href="../../README.md">
+    <span>:uk:</span>
+  </a>
+  <a href="README-zh_cn.md#readme">
     <span>:cn:</span>
   </a>
-  <a href="docs/i18n/README-zh_tw.md#readme">
+  <a href="README-zh_tw.md#readme">
     <span>:taiwan:</span>
   </a>
-  <a href="docs/i18n/README-jp.md#readme">
+  <a href="README-de.md#readme">
+    <span>:de:</span>
+  </a>
+  <a href="README-jp.md#readme">
     <span>:jp:</span>
   </a>
-  <a href="docs/i18n/README-fr.md#readme">
+  <a href="README-fr.md#readme">
     <span>:fr:</span>
   </a>
-  <a href="docs/i18n/README-tr.md#readme">
-    <span>:tr:</span>
-  </a>
-  <a href="docs/i18n/README-es.md#readme">
+  <a href="README-es.md#readme">
     <span>:es:</span>
   </a>
-  <a href="docs/i18n/README-pt.md#readme">
+  <a href="README-pt.md#readme">
     <span>:portugal:</span>
   </a>
-  <a href="docs/i18n/README-kr.md#readme">
+  <a href="README-kr.md#readme">
     <span>:kr:</span>
+  </a>
+  <a href="README-ar.md#readme">
+    <span>:saudi_arabia:</span>
   </a>
 </div>
 
 <div align="center">
-  <sub>This Markdown editor that could. Built with ❤︎ by
-    <a href="https://github.com/Jocs">Jocs</a> and
+  <sub>Bu Markdown editörü
+    <a href="https://github.com/Jocs">Jocs</a> ve
     <a href="https://github.com/marktext/marktext/graphs/contributors">
-      contributors
+      katkıda bulunanlar
     </a>
-    .
-  </sub>
+    tarafından ❤︎ ile yapıldı.</sub>
 </div>
 
 <br />
 
-<h2 align="center">Supporting MarkText</h2>
+<h2 align="center">MarkText'e Destek Olun</h2>
 
-MarkText is an MIT licensed open source project, and the latest version will always be downloadable for free from the GitHub release page. MarkText is still in development, and its development is inseparable from all sponsors. I hope you join them:
+MarkText, MIT lisanslı açık kaynaklı bir projedir ve en yeni sürüm her zaman GitHub sürüm sayfasından ücretsiz olarak indirilebilir. MarkText hâlâ geliştirme aşamasındadır ve gelişimi tüm sponsorlardan ayrı düşünülemez. Umarım onlara katılırsınız:
 
 - [Become a backer or sponsor on Patreon](https://www.patreon.com/ranluo) or [One time donation](https://github.com/Jocs/sponsor.me)
 - [Become a backer or sponsor on Open Collective](https://opencollective.com/marktext)
 
-##### What's the difference between Patreon and Open Collective?
+##### Patreon ve Open Collective arasındaki fark nedir?
 
-Patreon: Funds will be directly sponsored to Luo Ran (@jocs) who created MarkText and continues to maintain it.
-Open Collective: All expenses are transparent. The funds will be used for the development and maintenance of MarkText, funding online and offline activities, and acquiring other necessary resources.
-Names and company logos of all sponsors (from both Patreon and Open Collective) will appear on the official website for MarkText and in its README.md file.
+Patreon: Fonlar doğrudan MarkText'i yaratan ve geliştirmeye devam eden Luo Ran'a (@jocs) aktarılacaktır.
+Open Collective: Tüm harcamalar şeffaftır. Fonlar MarkText'in geliştirilmesi ve bakımı, çevrimiçi ve çevrimdışı etkinliklerin finansmanı ve diğer gerekli kaynakların edinilmesi için kullanılacaktır.
+Tüm sponsorların (hem Patreon hem de Open Collective'den) isimleri ve şirket logoları MarkText'in resmi web sitesinde ve README.md dosyasında yer alacaktır.
 
-**Platinum Sponsors**
+**Platin Sponsorlar**
 
 <a href="https://opencollective.com/marktext#platinum-sponsors">
  <img src="https://opencollective.com/marktext/tiers/platinum-sponsors.svg?avatarHeight=36&width=600">
 </a>
 
-**Gold Sponsors**
+**Altın Sponsorlar**
 
 <a href="https://opencollective.com/marktext#platinum-sponsors">
   <img src="https://opencollective.com/marktext/tiers/gold-sponsors.svg?avatarHeight=36&width=600">
 </a>
 
-**Silver Sponsors**
+**Gümüş Sponsorlar**
 
 <a href="https://opencollective.com/marktext#platinum-sponsors">
   <img src="https://opencollective.com/marktext/tiers/silver-sponsors.svg?avatarHeight=36&width=600">
 </a>
 
-**Bronze Sponsors**
+**Bronz Sponsorlar**
 
 <a href="https://opencollective.com/marktext#platinum-sponsors">
   <img src="https://opencollective.com/marktext/tiers/bronze-sponsors.svg?avatarHeight=36&width=600">
 </a>
 
-**Backers**
+**Destekçiler**
 
 <a href="https://opencollective.com/marktext#backers">
   <img src="https://opencollective.com/marktext/tiers/backer.svg?avatarHeight=36&width=600">
 </a>
 
-## Screenshot
+## Ekran Görüntüsü
 
-![](docs/assets/marktext.png?raw=true)
+![](../assets/marktext.png?raw=true)
 
-## Features
+## Özellikler
 
-- Realtime preview (WYSIWYG) and a clean and simple interface to get a distraction-free writing experience.
-- Support [CommonMark Spec](https://spec.commonmark.org/0.29/), [GitHub Flavored Markdown Spec](https://github.github.com/gfm/) and selective support [Pandoc markdown](https://pandoc.org/MANUAL.html#pandocs-markdown).
-- Markdown extensions such as math expressions (KaTeX), front matter and emojis.
-- Support paragraphs and inline style shortcuts to improve your writing efficiency.
-- Output **HTML** and **PDF** files.
-- Various [themes](docs/end-user/THEMES.md): **Cadmium Light**, **Material Dark** etc.
-- Various editing modes: **Source Code mode**, **Typewriter mode**, **Focus mode**.
-- Paste images directly from clipboard.
+- Gerçek zamanlı önizleme (WYSIWYG) ve temiz, basit arayüz ile odaklanmış yazma deneyimi.
+- [CommonMark Spec](https://spec.commonmark.org/0.29/), [GitHub Flavored Markdown Spec](https://github.github.com/gfm/) desteği ve seçici [Pandoc markdown](https://pandoc.org/MANUAL.html#pandocs-markdown) desteği.
+- Matematiksel ifadeler (KaTeX), front matter ve emoji gibi Markdown uzantıları.
+- Yazma verimliliğinizi artırmak için paragraf ve satır içi stil kısayolları.
+- **HTML** ve **PDF** dosyası çıktısı.
+- Çeşitli [temalar](../end-user/THEMES.md): **Cadmium Light**, **Material Dark** vb.
+- Çeşitli düzenleme modları: **Kaynak Kodu modu**, **Daktilo modu**, **Odak modu**.
+- Görüntüleri doğrudan panodan yapıştırın.
 
-## Download and Installation
+## İndirme ve Kurulum
 
-![platform](https://img.shields.io/static/v1.svg?label=Platform&message=Linux-64%20|%20macOS-64%20|%20Win-32%20|%20Win-64&style=for-the-badge)
+![Platform](https://img.shields.io/static/v1.svg?label=Platform&message=Linux-64%20|%20macOS-64%20|%20Win-32%20|%20Win-64&style=for-the-badge)
 
 | ![](https://raw.githubusercontent.com/wiki/ryanoasis/nerd-fonts/screenshots/v1.0.x/mac-pass-sm.png)                                                                                                  | ![](https://raw.githubusercontent.com/wiki/ryanoasis/nerd-fonts/screenshots/v1.0.x/windows-pass-sm.png)                                                                                                          | ![](https://raw.githubusercontent.com/wiki/ryanoasis/nerd-fonts/screenshots/v1.0.x/linux-pass-sm.png)                                                                                                                        |
 |:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
 | [![latest version](https://img.shields.io/github/downloads/marktext/marktext/latest/marktext-x64.dmg.svg)](https://github.com/marktext/marktext/releases/download/v0.17.1/marktext-x64.dmg) | [![latest version](https://img.shields.io/github/downloads/marktext/marktext/latest/marktext-setup.exe.svg)](https://github.com/marktext/marktext/releases/download/v0.17.1/marktext-setup.exe) | [![latest version](https://img.shields.io/github/downloads/marktext/marktext/latest/marktext-x86_64.AppImage.svg)](https://github.com/marktext/marktext/releases/download/v0.17.1/marktext-x86_64.AppImage) |
 
-Want to see new features of the latest version? Please refer to [CHANGELOG](docs/CHANGELOG.md).
+En son sürümün yeni özelliklerini görmek ister misiniz? Lütfen [CHANGELOG](../CHANGELOG.md)'a bakın.
 
 #### macOS
 
-You can either download the latest `marktext-%version%.dmg` from the [release page](https://github.com/marktext/marktext/releases/latest) or install MarkText using [**homebrew cask**](https://github.com/caskroom/homebrew-cask). To use Homebrew-Cask you just need to have [Homebrew](https://brew.sh/) installed.
+[Sürümler sayfasından](https://github.com/marktext/marktext/releases/latest) en son `marktext-%version%.dmg`'yi indirebilir veya [**homebrew cask**](https://github.com/caskroom/homebrew-cask) kullanarak MarkText'i kurabilirsiniz. Homebrew-Cask kullanmak için [Homebrew](https://brew.sh/)'ün yüklü olması gerekir.
 
 ```bash
 brew install --cask mark-text
@@ -176,15 +181,15 @@ brew install --cask mark-text
 
 #### Windows
 
-Simply download and install MarkText via setup wizard (`marktext-setup-%version%.exe`) and choose whether to install per-user or machine wide. Alternatively, install MarkText using a package manager such as [Chocolatey](https://chocolatey.org/) or [Winget](https://docs.microsoft.com/en-us/windows/package-manager/winget/).
+MarkText'i kurulum sihirbazı (`marktext-setup-%version%.exe`) aracılığıyla indirip kurun ve kullanıcı başına mı yoksa sistem genelinde mi kurulacağını seçin. Alternatif olarak [Chocolatey](https://chocolatey.org/) veya [Winget](https://docs.microsoft.com/en-us/windows/package-manager/winget/) gibi bir paket yöneticisi kullanabilirsiniz.
 
-To use Chocolatey, you need to have [Chocolatey](https://chocolatey.org/install) installed:
+Chocolatey kullanmak için [Chocolatey](https://chocolatey.org/install)'nin yüklü olması gerekir:
 
 ```bash
 choco install marktext
 ```
 
-To use Winget, you need to have [Winget](https://docs.microsoft.com/en-us/windows/package-manager/winget/#install-winget) installed:
+Winget kullanmak için [Winget](https://docs.microsoft.com/en-us/windows/package-manager/winget/#install-winget)'in yüklü olması gerekir:
 
 ```bash
 winget install marktext
@@ -192,32 +197,32 @@ winget install marktext
 
 #### Linux
 
-Please follow the [Linux installation instructions](docs/end-user/LINUX.md).
+Lütfen [Linux kurulum talimatlarını](../end-user/LINUX.md) takip edin.
 
-#### Other
+#### Diğer
 
-All binaries for Linux, macOS and Windows can be downloaded from the [release page](https://github.com/marktext/marktext/releases/latest). If a version is unavailable for your system, then please open an [issue](https://github.com/marktext/marktext/issues).
+Linux, macOS ve Windows için tüm ikili dosyalar [sürümler sayfasından](https://github.com/marktext/marktext/releases/latest) indirilebilir. Sisteminiz için bir sürüm mevcut değilse lütfen bir [issue](https://github.com/marktext/marktext/issues) açın.
 
-## Development
+## Geliştirme
 
-If you wish to build MarkText yourself, please check out our [build instructions](docs/dev/BUILD.md).
+MarkText'i kendiniz derlemek istiyorsanız lütfen [derleme talimatlarımıza](../dev/BUILD.md) bakın.
 
-- [User documentation](docs/README.md)
-- [Developer documentation](docs/dev/README.md)
+- [Kullanıcı belgeleri](../README.md)
+- [Geliştirici belgeleri](../dev/README.md)
 
-If you have any questions regarding MarkText, you are welcome to write an issue. When doing so please use the default format found when opening an issue. Of course, if you submit a PR directly, it will be greatly appreciated.
+MarkText hakkında sorularınız varsa bir issue yazabilirsiniz. Bunu yaparken issue açarken görünen varsayılan formatı kullanın. Elbette doğrudan bir PR gönderirseniz çok memnun oluruz.
 
-## Contribution
+## Katkı
 
-MarkText is in development, please make sure to read the [Contributing Guide](.github/CONTRIBUTING.md) before making a pull request. Want to add some features to MarkText? Refer to our [roadmap](https://github.com/marktext/marktext/projects) and open issues.
+MarkText geliştirme aşamasındadır. Bir pull request oluşturmadan önce [Katkı Kılavuzunu](../../.github/CONTRIBUTING.md) okuduğunuzdan emin olun. MarkText'e özellik eklemek ister misiniz? [Yol haritamıza](https://github.com/marktext/marktext/projects) ve açık issue'lara bakın.
 
 
-## Contributors
+## Katkıda Bulunanlar
 
-Thank you to all the people who have already contributed to MarkText[[contributors](https://github.com/marktext/marktext/graphs/contributors)].
+MarkText'e zaten katkıda bulunan herkese teşekkür ederiz[[katkıda bulunanlar](https://github.com/marktext/marktext/graphs/contributors)].
 
 <a href="https://github.com/marktext/marktext/graphs/contributors"><img src="https://opencollective.com/marktext/contributors.svg?width=890" /></a>
 
-## License
+## Lisans
 
-[**MIT**](LICENSE).
+[**MIT**](../../LICENSE).
