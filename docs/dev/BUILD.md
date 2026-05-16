@@ -16,12 +16,14 @@ Here are the steps for doing so:
 # cd to marktext repository
 
 # run container (you can use docker instead of podman if you like)
-podman run -it -v ./:/mnt:Z node:20-bookworm /bin/bash
+podman run -it -v ./:/mnt:Z node:22-bookworm /bin/bash
 # you should now be interacting with the container
 
-# install dependency xkbfile
+# add bookworm-backports for Python 3.12 and install build dependencies
+echo "deb http://deb.debian.org/debian bookworm-backports main" >> /etc/apt/sources.list
 apt update
-apt-get install libx11-dev libxkbfile-dev libsecret-1-dev libfontconfig-dev rpm
+apt-get install -y -t bookworm-backports python3.12
+apt-get install -y libx11-dev libxkbfile-dev libsecret-1-dev libfontconfig-dev rpm
 
 cd /mnt
 corepack enable
@@ -41,7 +43,7 @@ Below are the complete build instructions, which may help you troubleshoot the a
 Before you can get started developing, you need set up your build environment:
 
 - Node.js `>=20.19.0` and pnpm `>=10`
-- Python `>=v3.6` for node-gyp
+- Python `>=3.12` for node-gyp
 - C++ compiler and development tools
 - Build is supported on Linux, macOS and Windows
 
@@ -62,7 +64,7 @@ On Arch Linux: `sudo pacman -S libx11 libxkbfile libsecret fontconfig`
 **Additional development dependencies on Windows:**
 
 - Windows 10 SDK (only needed before Windows 10)
-- Visual Studio 2019 (preferred)
+- Visual Studio 2022 (Build Tools for Visual Studio 2022 — see developer README §1.3)
 
 ### Let's build
 
