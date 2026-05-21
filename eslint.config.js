@@ -16,6 +16,9 @@ export default [
       'src/muya/lib/assets/libs/**',
       'src/muya/lib/parser/marked/urlify.js',
       'src/renderer/src/assets/symbolIcon/index.js',
+      '**/*.min.json',
+      'test-results/**',
+      'playwright-report/**',
     ]
   },
 
