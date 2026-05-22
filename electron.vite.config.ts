@@ -36,7 +36,7 @@ export default defineConfig({
         common: resolve(__dirname, 'src/common'),
         muya: resolve(__dirname, 'src/muya')
       },
-      extensions: ['.mjs', '.js', '.json']
+      extensions: ['.mjs', '.ts', '.js', '.json']
     }
   },
   preload: {
@@ -55,7 +55,7 @@ export default defineConfig({
         common: resolve(__dirname, 'src/common'),
         muya: resolve(__dirname, 'src/muya')
       },
-      extensions: ['.mjs', '.js', '.json']
+      extensions: ['.mjs', '.ts', '.js', '.json']
     }
   },
   renderer: {
@@ -80,7 +80,7 @@ export default defineConfig({
         muya: resolve(__dirname, 'src/muya'),
         path: 'path-browserify'
       },
-      extensions: ['.mjs', '.js', '.json', '.vue']
+      extensions: ['.mjs', '.ts', '.js', '.json', '.vue']
     },
     optimizeDeps: {
       include: ['pako', 'path-browserify'],
