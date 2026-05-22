@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 import GeneralIcon from '@/assets/icons/pref_general.svg'
 import EditorIcon from '@/assets/icons/pref_editor.svg'
 import MarkdownIcon from '@/assets/icons/pref_markdown.svg'

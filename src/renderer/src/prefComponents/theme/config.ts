@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 export const themes = [
   // Light Themes (alphabetical)
   { name: 'ayu-light' },

@@ -102,9 +102,19 @@ export default [
     }
   },
 
-  // 6. JS/MJS/CJS files: keep Babel parser (legacy code + src/muya + scripts)
+  // 6. JS/MJS/CJS files: keep Babel parser. After Commit 11 (allowJs:false),
+  // the only remaining JS in the source tree is src/muya/ (kept JS pending
+  // upstream TS muya replacement) + a couple of assets/symbolIcon files.
+  // Narrow the JS-file scope to prevent stray .js files in the migrated
+  // directories from slipping past the TS lint rules.
   {
-    files: ['**/*.js', '**/*.mjs', '**/*.cjs'],
+    files: [
+      'src/muya/**/*.js',
+      'src/muya/**/*.mjs',
+      'src/muya/**/*.cjs',
+      'src/renderer/src/assets/symbolIcon/**/*.js',
+      'eslint.config.js'
+    ],
     plugins: {
       html: pluginHtml
     },

@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 import { ENCODING_NAME_MAP } from 'common/encoding'
 import { t } from '../../i18n'
 

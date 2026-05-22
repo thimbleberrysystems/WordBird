@@ -19,7 +19,7 @@
     "forceConsistentCasingInFileNames": true,
     "verbatimModuleSyntax": false,
 
-    "allowJs": true,
+    "allowJs": false,
     "checkJs": false,
     "noEmit": true,
 

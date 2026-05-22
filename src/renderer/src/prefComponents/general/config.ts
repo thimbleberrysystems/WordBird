@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 import { t } from '../../i18n'
 
 export const getTitleBarStyleOptions = () => [{

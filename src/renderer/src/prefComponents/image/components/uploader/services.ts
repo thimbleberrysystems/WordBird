@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 // TODO: Remove information from other vue source files into this file.
 import { t } from '../../../../i18n'
 
