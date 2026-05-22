@@ -1,6 +1,6 @@
 import { t } from '../i18n'
 
-const COMMAND_KEY_MAP = {
+const COMMAND_KEY_MAP: Record<string, string> = {
   // ============================================
   // # Application Level Commands
   // ============================================
@@ -220,10 +220,10 @@ const COMMAND_KEY_MAP = {
 
 /**
  * Gets the internationalized description text for the given command ID
- * @param {string} id - Command ID, in formats such as 'file.save', 'edit.copy', etc.
- * @returns {string} Returns the internationalized command description, or the original ID if no description is found
+ * @param id - Command ID, in formats such as 'file.save', 'edit.copy', etc.
+ * @returns Returns the internationalized command description, or the original ID if no description is found
  */
-export default (id) => {
+export default (id: string): string => {
   // Re-fetch the command description on each call to support dynamic language switching
   return id in COMMAND_KEY_MAP ? t(COMMAND_KEY_MAP[id]) : id
 }

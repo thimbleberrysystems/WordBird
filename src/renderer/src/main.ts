@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+import { createApp, type App } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import bootstrapRenderer from './bootstrap'
 import axios from './axios'
@@ -23,25 +23,29 @@ import './assets/styles/printService.css'
 
 // -----------------------------------------------
 
-window.marktext = {}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+;(window as any).marktext = {}
 bootstrapRenderer()
 
 // -----------------------------------------------
 // Be careful when changing code before this line!
 
 // Create Vue app
-const app = createApp(Main)
+const app: App<Element> = createApp(Main)
 
 // Configure Element Plus with locale
 app.use(ElementPlus, {
   locale: en
 })
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const envType = (window as any).marktext?.env?.type as string | undefined
+
 const router = createRouter({
   history: createWebHashHistory(),
   // it seems like something might have changed in vue-router? it uses the full "file path" instead of
   // links like /editor if we use the old createWebHistory()
-  routes: routes(window.marktext.env.type)
+  routes: routes(envType)
 })
 
 app.use(router)
@@ -52,7 +56,8 @@ app.use(i18nPlugin)
 app.config.globalProperties.$http = axios
 
 // Register services globally
-services.forEach((s) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+;(services as Array<Record<string, any>>).forEach((s) => {
   app.config.globalProperties['$' + s.name] = s[s.name]
 })
 

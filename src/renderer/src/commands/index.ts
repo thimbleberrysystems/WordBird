@@ -11,29 +11,58 @@ export { default as QuickOpenCommand } from './quickOpen'
 export { default as SpellcheckerLanguageCommand } from './spellcheckerLanguage'
 export { default as TrailingNewlineCommand } from './trailingNewline'
 
+// Command shapes here are heterogeneous (some have `execute`, some have
+// `subcommands` + `executeSubcommand`, some have `shortcut`, etc.). Mirrors
+// the broad `CommandCallback = (...args: any[]) => any` style used in
+// src/main/commands/index.ts.
+export interface CommandSubcommand {
+  id: string
+  description?: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value?: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  execute?: (...args: any[]) => any
+}
+
+export interface CommandDescriptor {
+  id: string
+  description?: string
+  shortcut?: string[]
+  subcommands?: CommandSubcommand[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  execute?: (...args: any[]) => any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  executeSubcommand?: (...args: any[]) => any
+}
+
 export class RootCommand {
-  constructor(subcommands = []) {
+  id: string
+  description: string
+  subcommands: CommandSubcommand[]
+  subcommandSelectedIndex: number
+
+  constructor(subcommands: CommandSubcommand[] = []) {
     this.id = '#'
     this.description = '#'
     this.subcommands = subcommands
     this.subcommandSelectedIndex = -1
   }
 
-  async run() {}
-  async unload() {}
+  async run(): Promise<void> {}
+  async unload(): Promise<void> {}
 
   // Execute the command.
-  async execute() {
+  async execute(): Promise<void> {
     throw new Error('Root command.')
   }
 }
 
-const focusEditorAndExecute = (fn) => {
+const focusEditorAndExecute = (fn: () => void): void => {
   setTimeout(() => bus.emit('editor-focus'), 10)
   setTimeout(() => fn(), 150)
 }
 
-const commands = [
+const commands: CommandDescriptor[] = [
   // --------------------------------------------------------------------------
   // File
 
@@ -678,11 +707,14 @@ if (isOsx) {
 }
 
 // Function to get commands with updated descriptions
-export const getCommandsWithDescriptions = async() => {
+export const getCommandsWithDescriptions = async(): Promise<CommandDescriptor[]> => {
   // Update descriptions for all commands
-  const updateDescriptions = (commandList) => {
+  const updateDescriptions = (
+    commandList: Array<CommandDescriptor | CommandSubcommand>
+  ): void => {
     for (const item of commandList) {
-      const { id, subcommands } = item
+      const { id } = item
+      const subcommands = (item as CommandDescriptor).subcommands
       // Always update description for commands with ID, regardless of existing description
       if (id) {
         item.description = getCommandDescriptionById(id)

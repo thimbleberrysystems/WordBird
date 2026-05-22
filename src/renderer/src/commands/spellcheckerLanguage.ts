@@ -6,9 +6,27 @@ import { getLanguageName } from '@/spellchecker/languageMap'
 import getCommandDescriptionById from './descriptions'
 import { t } from '../i18n'
 
+interface SpellcheckerSubcommand {
+  id: string
+  description: string
+  value: string
+}
+
+// SpellChecker is still JS; treat the instance loosely until it migrates.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SpellCheckerInstance = any
+
 // Command to switch the spellchecker language
 class SpellcheckerLanguageCommand {
-  constructor(spellchecker) {
+  id: string
+  description: string
+  placeholder: string
+  shortcut: string | null
+  spellchecker: SpellCheckerInstance
+  subcommands: SpellcheckerSubcommand[]
+  subcommandSelectedIndex: number
+
+  constructor(spellchecker: SpellCheckerInstance) {
     this.id = 'spellchecker.switch-language'
     this.description = getCommandDescriptionById('spellchecker.switch-language')
     this.placeholder = t('commandPalette.placeholders.selectLanguage')
@@ -20,10 +38,10 @@ class SpellcheckerLanguageCommand {
     this.subcommandSelectedIndex = -1
   }
 
-  run = async() => {
+  run = async(): Promise<void> => {
     const langs = await SpellChecker.getAvailableDictionaries()
 
-    const finalLangs = langs.length > 0 ? langs : ['en-US']
+    const finalLangs: string[] = langs.length > 0 ? langs : ['en-US']
 
     this.subcommands = finalLangs.map((lang) => {
       return {
@@ -38,16 +56,16 @@ class SpellcheckerLanguageCommand {
     )
   }
 
-  execute = async() => {
+  execute = async(): Promise<void> => {
     // Timeout to hide the command palette and then show again to prevent issues.
     await delay(100)
     bus.emit('show-command-palette', this)
   }
 
-  executeSubcommand = async(id) => {
+  executeSubcommand = async(id: string): Promise<void> => {
     const command = this.subcommands.find((cmd) => cmd.id === id)
     if (this.spellchecker.isEnabled) {
-      bus.emit('switch-spellchecker-language', command.value)
+      bus.emit('switch-spellchecker-language', command?.value)
     } else {
       notice.notify({
         title: 'Spelling',
@@ -57,7 +75,7 @@ class SpellcheckerLanguageCommand {
     }
   }
 
-  unload = () => {
+  unload = (): void => {
     this.subcommands = []
   }
 }

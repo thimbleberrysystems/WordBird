@@ -1,11 +1,27 @@
-import { ENCODING_NAME_MAP, getEncodingName } from 'common/encoding'
+import { ENCODING_NAME_MAP, getEncodingName, type Encoding } from 'common/encoding'
 import { delay } from '@/util'
 import bus from '../bus'
 import getCommandDescriptionById from './descriptions'
 import { t } from '../i18n'
 
+interface EncodingSubcommand {
+  id: string
+  description: string
+}
+
+// Loose editor-state shape; the actual store is still JS and migrates later.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type EditorState = any
+
 class FileEncodingCommand {
-  constructor(editorState) {
+  id: string
+  description: string
+  placeholder: string
+  subcommands: EncodingSubcommand[]
+  subcommandSelectedIndex: number
+  private _editorState: EditorState
+
+  constructor(editorState: EditorState) {
     this.id = 'file.change-encoding'
     this.description = getCommandDescriptionById('file.change-encoding')
     this.placeholder = t('commandPalette.placeholders.selectOption')
@@ -17,7 +33,7 @@ class FileEncodingCommand {
     this._editorState = editorState
   }
 
-  run = async() => {
+  run = async(): Promise<void> => {
     this.subcommands = []
     this.subcommandSelectedIndex = -1
 
@@ -37,7 +53,7 @@ class FileEncodingCommand {
     let i = 0
     for (const [key, value] of Object.entries(ENCODING_NAME_MAP)) {
       const isTabEncoding = !isBom && key === encoding
-      const item = {
+      const item: EncodingSubcommand = {
         id: key,
         description: isTabEncoding ? `${value} - current` : value
       }
@@ -52,30 +68,30 @@ class FileEncodingCommand {
     }
   }
 
-  execute = async() => {
+  execute = async(): Promise<void> => {
     // Timeout to hide the command palette and then show again to prevent issues.
     await delay(100)
     bus.emit('show-command-palette', this)
   }
 
-  executeSubcommand = async(id) => {
+  executeSubcommand = async(id: string): Promise<void> => {
     // NOTE: We support UTF-BOM encodings but don't allow to set them.
     if (!id.endsWith('-bom')) {
       bus.emit('mt::set-file-encoding', id)
     }
   }
 
-  unload = () => {
+  unload = (): void => {
     this.subcommands = []
   }
 
-  _getCurrentEncoding = () => {
+  _getCurrentEncoding = (): Encoding => {
     const { _editorState } = this
     const { currentFile } = _editorState
     if (currentFile) {
-      return currentFile.encoding
+      return currentFile.encoding as Encoding
     }
-    return {}
+    return { encoding: '' }
   }
 }
 

@@ -1,4 +1,4 @@
-export const PATH_SEPARATOR = window.path.sep
+export const PATH_SEPARATOR: string = window.path.sep
 
 export const THEME_STYLE_ID = 'ag-theme'
 export const COMMON_STYLE_ID = 'ag-common-style'

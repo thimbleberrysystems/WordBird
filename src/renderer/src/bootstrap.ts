@@ -1,15 +1,29 @@
 import log from 'electron-log/renderer'
 import RendererPaths from './node/paths'
 
-let exceptionLogger = (s) => console.error(s)
+let exceptionLogger: (s: unknown) => void = (s) => console.error(s)
 
-const configureLogger = () => {
+const configureLogger = (): void => {
   const isDev = window.electron?.process?.env?.NODE_ENV === 'development'
   log.transports.console.level = isDev ? 'info' : false // mirror to window console
   exceptionLogger = log.error
 }
 
-const parseUrlArgs = () => {
+interface UrlArgs {
+  type: string | null
+  debug: boolean
+  userDataPath: string | null
+  windowId: number
+  initialState: {
+    codeFontFamily: string | null
+    codeFontSize: string | null
+    hideScrollbar: boolean
+    theme: string | null
+    titleBarStyle: string | null
+  }
+}
+
+const parseUrlArgs = (): UrlArgs => {
   const params = new URLSearchParams(window.location.search)
   const codeFontFamily = params.get('cff')
   const codeFontSize = params.get('cfs')
@@ -45,10 +59,10 @@ const parseUrlArgs = () => {
  * These errors occur when clicking in the editor during rapid state changes
  * and don't affect functionality - the user can simply click again.
  *
- * @param {Error} error - The error to check
- * @returns {boolean} True if this is a suppressible CodeMirror error
+ * @param error - The error to check
+ * @returns True if this is a suppressible CodeMirror error
  */
-const isCodeMirrorRaceCondition = (error) => {
+const isCodeMirrorRaceCondition = (error: Error | null | undefined): boolean => {
   if (!error || !error.stack) return false
 
   // CodeMirror internal error when line measurement data is unavailable during mouse click
@@ -62,23 +76,24 @@ const isCodeMirrorRaceCondition = (error) => {
   return isMapOnUndefined && isInPrepareMeasure && isInCoordsChar
 }
 
-const handleRendererError = (event) => {
-  if (event.error) {
+const handleRendererError = (event: ErrorEvent | PromiseRejectionEvent | Event): void => {
+  const errorEvent = event as ErrorEvent
+  if (errorEvent.error) {
     // Suppress known non-fatal CodeMirror race conditions
     // These occur during rapid clicking/editing and don't affect functionality
-    if (isCodeMirrorRaceCondition(event.error)) {
-      console.warn('Suppressed non-fatal CodeMirror race condition:', event.error.message)
+    if (isCodeMirrorRaceCondition(errorEvent.error)) {
+      console.warn('Suppressed non-fatal CodeMirror race condition:', errorEvent.error.message)
       return
     }
 
-    const { message, name, stack } = event.error
+    const { message, name, stack } = errorEvent.error
     const copy = {
       message,
       name,
       stack
     }
 
-    exceptionLogger(event.error)
+    exceptionLogger(errorEvent.error)
 
     // Pass exception to main process exception handler to show a error dialog.
     window.electron.ipcRenderer.send('mt::handle-renderer-error', copy)
@@ -87,13 +102,14 @@ const handleRendererError = (event) => {
   }
 }
 
-const bootstrapRenderer = () => {
+const bootstrapRenderer = (): void => {
   // Register renderer exception handler
   window.addEventListener('error', handleRendererError)
   window.addEventListener('unhandledrejection', handleRendererError)
 
   const { debug, initialState, userDataPath, windowId, type } = parseUrlArgs()
-  const paths = new RendererPaths(userDataPath)
+  // RendererPaths throws when userDataPath is missing; preserve that runtime check.
+  const paths = new RendererPaths(userDataPath as string)
   const marktext = {
     initialState,
     env: {
@@ -105,7 +121,8 @@ const bootstrapRenderer = () => {
     paths
   }
   // `global` is not available in a sandboxed renderer — attach to window.
-  window.marktext = marktext
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ;(window as any).marktext = marktext
 
   configureLogger()
 }

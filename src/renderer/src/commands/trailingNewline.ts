@@ -5,8 +5,25 @@ import { t } from '../i18n'
 
 const descriptions = ['Trim all trailing newlines', 'Ensure single newline', 'Disabled']
 
+interface TrailingNewlineSubcommand {
+  id: string
+  description: string
+  value: number
+}
+
+// Loose editor-state shape; the actual store is still JS and migrates later.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type EditorState = any
+
 class TrailingNewlineCommand {
-  constructor(editorState) {
+  id: string
+  description: string
+  placeholder: string
+  subcommands: TrailingNewlineSubcommand[]
+  subcommandSelectedIndex: number
+  private _editorState: EditorState
+
+  constructor(editorState: EditorState) {
     this.id = 'file.trailing-newline'
     this.description = getCommandDescriptionById('file.trailing-newline')
     this.placeholder = t('commandPalette.placeholders.selectOption')
@@ -17,9 +34,9 @@ class TrailingNewlineCommand {
     this._editorState = editorState
   }
 
-  run = async() => {
+  run = async(): Promise<void> => {
     const { trimTrailingNewline } = this._editorState.currentFile
-    let index = trimTrailingNewline
+    let index: number = trimTrailingNewline
     if (index !== 0 && index !== 1) {
       index = 2
     }
@@ -45,17 +62,17 @@ class TrailingNewlineCommand {
     this.subcommandSelectedIndex = index
   }
 
-  execute = async() => {
+  execute = async(): Promise<void> => {
     // Timeout to hide the command palette and then show again to prevent issues.
     await delay(100)
     bus.emit('show-command-palette', this)
   }
 
-  executeSubcommand = async(_, value) => {
+  executeSubcommand = async(_: string, value: number): Promise<void> => {
     bus.emit('mt::set-final-newline', value)
   }
 
-  unload = () => {}
+  unload = (): void => {}
 }
 
 export default TrailingNewlineCommand
