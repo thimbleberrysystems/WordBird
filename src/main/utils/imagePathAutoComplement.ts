@@ -8,14 +8,19 @@ import { BLACK_LIST } from '../config'
 
 // TODO(need::refactor): Refactor this file. Just return an array of directories and files without caching and watching?
 
-// TODO: rebuild cache @jocs
-const IMAGE_PATH = new Map()
-export const watchers = new Map()
+interface DirOrImageEntry {
+  file: string
+  type: string
+}
 
-const filesHandler = (files, directory, key) => {
+// TODO: rebuild cache @jocs
+const IMAGE_PATH: Map<string, DirOrImageEntry[]> = new Map()
+export const watchers: Map<string, fs.FSWatcher> = new Map()
+
+const filesHandler = (files: string[], directory: string, key?: string): DirOrImageEntry[] | undefined => {
   const IMAGE_REG = new RegExp('(' + IMAGE_EXTENSIONS.join('|') + ')$', 'i')
-  const onlyDirAndImage = files
-    .map(file => {
+  const onlyDirAndImage: DirOrImageEntry[] = files
+    .map((file): DirOrImageEntry => {
       const fullPath = path.join(directory, file)
       let type = ''
       if (isDirectory(fullPath)) {
@@ -32,7 +37,7 @@ const filesHandler = (files, directory, key) => {
       file,
       type
     }) => {
-      if (BLACK_LIST.includes(file)) return false
+      if ((BLACK_LIST as readonly string[]).includes(file)) return false
       return type === 'directory' || type === 'image'
     })
 
@@ -42,9 +47,10 @@ const filesHandler = (files, directory, key) => {
       key: 'file'
     })
   }
+  return undefined
 }
 
-const rebuild = (directory) => {
+const rebuild = (directory: string): void => {
   fs.readdir(directory, (err, files) => {
     if (err) {
       log.error('imagePathAutoComplement::rebuild:', err)
@@ -54,9 +60,9 @@ const rebuild = (directory) => {
   })
 }
 
-const watchDirectory = directory => {
+const watchDirectory = (directory: string): void => {
   if (watchers.has(directory)) return // Do not duplicate watch the same directory
-  const watcher = fs.watch(directory, (eventType, filename) => {
+  const watcher = fs.watch(directory, (eventType, _filename) => {
     if (eventType === 'rename') {
       rebuild(directory)
     }
@@ -64,8 +70,8 @@ const watchDirectory = directory => {
   watchers.set(directory, watcher)
 }
 
-export const searchFilesAndDir = (directory, key) => {
-  let result = []
+export const searchFilesAndDir = (directory: string, key: string): Promise<DirOrImageEntry[]> => {
+  let result: DirOrImageEntry[] = []
   if (IMAGE_PATH.has(directory)) {
     result = filter(IMAGE_PATH.get(directory), key, { key: 'file' })
     return Promise.resolve(result)
@@ -75,7 +81,7 @@ export const searchFilesAndDir = (directory, key) => {
         if (err) {
           reject(err)
         } else {
-          result = filesHandler(files, directory, key)
+          result = filesHandler(files, directory, key) ?? []
           watchDirectory(directory)
           resolve(result)
         }

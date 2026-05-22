@@ -3,11 +3,11 @@ import arg from 'arg'
 /**
  * Parse the given arguments or the default program arguments.
  *
- * @param {string[]} argv Arguments if null the default program arguments are used.
- * @param {boolean} permissive If set to false an exception is throw about unknown flags.
- * @returns {arg.Result} Parsed arguments
+ * @param argv Arguments if null the default program arguments are used.
+ * @param permissive If set to false an exception is throw about unknown flags.
+ * @returns Parsed arguments
  */
-const parseArgs = (argv = null, permissive = true) => {
+const parseArgs = (argv: string[] | null = null, permissive: boolean = true) => {
   if (argv === null) {
     argv = process.argv.slice(1)
   }
@@ -28,8 +28,10 @@ const parseArgs = (argv = null, permissive = true) => {
     '--verbose': arg.COUNT,
     '-v': '--verbose',
     '--version': Boolean
-  }
+  } satisfies arg.Spec
   return arg(spec, { argv, permissive })
 }
+
+export type ParsedArgs = ReturnType<typeof parseArgs>
 
 export default parseArgs

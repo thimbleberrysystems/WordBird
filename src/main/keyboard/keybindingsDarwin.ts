@@ -3,7 +3,7 @@
 // NOTE: Avoid pure `Option` aka `Alt` shortcuts on macOS because these are used to produce alternative characters on all letters and digits.
 //       Our current key manager will forbid the usage of these key combinations too.
 
-export default new Map([
+const keybindings: Map<string, string> = new Map([
   // MarkText menu
   ['mt.hide', 'Command+H'],
   ['mt.hide-others', 'Command+Option+H'],
@@ -118,3 +118,5 @@ export default new Map([
   ['tabs.switchToTenth', 'Ctrl+0'],
   ['file.quick-open', 'Command+P']
 ])
+
+export default keybindings

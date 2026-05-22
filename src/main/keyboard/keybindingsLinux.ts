@@ -7,7 +7,7 @@
 //       none nodeadkeys german keyboard cannot be interpreted. In general don't bind default shortcuts to characters that
 //       can be produced with ^ or ` on any keyboard. --> ^, `, ", ~, ...
 
-export default new Map([
+const keybindings: Map<string, string> = new Map([
   // MarkText menu on macOS only
   ['mt.hide', ''],
   ['mt.hide-others', ''],
@@ -122,3 +122,5 @@ export default new Map([
   ['tabs.switchToTenth', 'Ctrl+0'],
   ['file.quick-open', 'Ctrl+P']
 ])
+
+export default keybindings

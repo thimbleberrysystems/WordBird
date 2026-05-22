@@ -4,7 +4,7 @@
 //       Unlike Linux, `Ctrl+Alt` is an alias to `AltGr` on Windows and will produce alternative characters too.
 //       We'll should try bind no keys to `Alt` "modifiers" because there are only a few key bindings available.
 
-export default new Map([
+const keybindings: Map<string, string> = new Map([
   // MarkText menu on macOS only
   ['mt.hide', ''],
   ['mt.hide-others', ''],
@@ -121,3 +121,5 @@ export default new Map([
   ['tabs.switchToTenth', 'Ctrl+0'],
   ['file.quick-open', 'Ctrl+P']
 ])
+
+export default keybindings

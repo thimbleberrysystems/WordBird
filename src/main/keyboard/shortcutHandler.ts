@@ -1,4 +1,4 @@
-import { shell } from 'electron'
+import { shell, type BrowserWindow } from 'electron'
 import fs from 'fs'
 import fsPromises from 'fs/promises'
 import path from 'path'
@@ -7,17 +7,29 @@ import { electronLocalshortcut, isValidElectronAccelerator } from '@hfelix/elect
 import { isFile2 } from 'common/filesystem'
 import { isEqualAccelerator } from 'common/keybinding'
 import { isLinux, isOsx } from '../config'
-import { getKeyboardInfo, keyboardLayoutMonitor } from '../keyboard'
+import { getKeyboardInfo, keyboardLayoutMonitor, type KeyboardInfo } from '../keyboard'
 import keybindingsDarwin from './keybindingsDarwin'
 import keybindingsLinux from './keybindingsLinux'
 import keybindingsWindows from './keybindingsWindows'
+import type { CommandManager } from '../commands'
+
+// AppEnvironment is defined elsewhere (cross-batch) — keep loose for now.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AppEnvironment = any
+
+type ShortcutCallback = (win: BrowserWindow) => void
 
 class Keybindings {
+  configPath: string
+  commandManager: CommandManager
+  userKeybindings: Map<string, string>
+  keys: Map<string, string>
+
   /**
-   * @param {CommandManager} commandManager The command manager instance.
-   * @param {AppEnvironment} appEnvironment The application environment instance.
+   * @param commandManager The command manager instance.
+   * @param appEnvironment The application environment instance.
    */
-  constructor(commandManager, appEnvironment) {
+  constructor(commandManager: CommandManager, appEnvironment: AppEnvironment) {
     const { userDataPath } = appEnvironment.paths
     this.configPath = path.join(userDataPath, 'keybindings.json')
     this.commandManager = commandManager
@@ -38,7 +50,7 @@ class Keybindings {
     this._loadLocalKeybindings()
   }
 
-  getAccelerator(id) {
+  getAccelerator(id: string): string | null {
     const name = this.keys.get(id)
     if (!name) {
       return null
@@ -46,7 +58,7 @@ class Keybindings {
     return name
   }
 
-  registerAccelerator(win, accelerator, callback) {
+  registerAccelerator(win: BrowserWindow, accelerator: string, callback: ShortcutCallback): void {
     if (!win || !accelerator || !callback) {
       throw new Error(`addKeyHandler: invalid arguments (accelerator="${accelerator}").`)
     }
@@ -61,11 +73,11 @@ class Keybindings {
     })
   }
 
-  unregisterAccelerator(win, accelerator) {
+  unregisterAccelerator(win: BrowserWindow, accelerator: string): void {
     electronLocalshortcut.unregister(win, accelerator)
   }
 
-  registerEditorKeyHandlers(win) {
+  registerEditorKeyHandlers(win: BrowserWindow): void {
     for (const [id, accelerator] of this.keys) {
       if (accelerator && accelerator.length > 1) {
         this.registerAccelerator(win, accelerator, () => {
@@ -75,16 +87,16 @@ class Keybindings {
     }
   }
 
-  openConfigInFileManager() {
+  openConfigInFileManager(): void {
     const { configPath } = this
     if (!isFile2(configPath)) {
       fs.writeFileSync(configPath, '{\n\n\n}\n', 'utf-8')
     }
     shell.openPath(configPath)
-      .catch(err => console.error(err))
+      .catch((err: unknown) => console.error(err))
   }
 
-  getDefaultKeybindings() {
+  getDefaultKeybindings(): Map<string, string> {
     if (isOsx) {
       return keybindingsDarwin
     } else if (isLinux) {
@@ -96,52 +108,53 @@ class Keybindings {
   /**
    * Returns all user key bindings.
    *
-   * @returns {Map<String, String>} User key bindings.
+   * @returns User key bindings.
    */
-  getUserKeybindings() {
+  getUserKeybindings(): Map<string, string> {
     return this.userKeybindings
   }
 
   /**
    * Sets and saves the given user key bindings on disk.
    *
-   * @param {Map<String, String>} userKeybindings New user key bindings.
-   * @returns {Promise<Boolean>}
+   * @param userKeybindings New user key bindings.
    */
-  async setUserKeybindings(userKeybindings) {
+  async setUserKeybindings(userKeybindings: Map<string, string> | Iterable<readonly [string, string]>): Promise<boolean> {
     this.userKeybindings = new Map(userKeybindings)
     return this._saveUserKeybindings()
   }
 
   // --- private --------------------------------
 
-  _prepareKeyMapper() {
+  _prepareKeyMapper(): void {
     // Update the key mapper to prevent problems on non-US keyboards.
     const { layout, keymap } = getKeyboardInfo()
     electronLocalshortcut.setKeyboardLayout(layout, keymap)
 
     // Notify key mapper when the keyboard layout was changed.
-    keyboardLayoutMonitor.addListener(({ layout, keymap }) => {
-      if (global.MARKTEXT_DEBUG && process.env.MARKTEXT_DEBUG_KEYBOARD) {
+    keyboardLayoutMonitor.addListener(({ layout, keymap }: KeyboardInfo) => {
+      const globalDebug = (globalThis as typeof globalThis & { MARKTEXT_DEBUG?: boolean }).MARKTEXT_DEBUG
+      if (globalDebug && process.env.MARKTEXT_DEBUG_KEYBOARD) {
         console.log('[DEBUG] Keyboard layout changed:\n', layout)
       }
       electronLocalshortcut.setKeyboardLayout(layout, keymap)
     })
   }
 
-  async _saveUserKeybindings() {
+  async _saveUserKeybindings(): Promise<boolean> {
     const { configPath, userKeybindings } = this
     try {
       const userKeybindingJson = JSON.stringify(Object.fromEntries(userKeybindings), null, 2)
       await fsPromises.writeFile(configPath, userKeybindingJson, 'utf8')
       return true
-    } catch (_) {
+    } catch {
       return false
     }
   }
 
-  _loadLocalKeybindings() {
-    if (global.MARKTEXT_SAFE_MODE || !isFile2(this.configPath)) {
+  _loadLocalKeybindings(): void {
+    const safeMode = (globalThis as typeof globalThis & { MARKTEXT_SAFE_MODE?: boolean }).MARKTEXT_SAFE_MODE
+    if (safeMode || !isFile2(this.configPath)) {
       return
     }
 
@@ -157,7 +170,7 @@ class Keybindings {
     //   "file.save-as": "CmdOrCtrl+Shift+S"
     // }
 
-    const userAccelerators = new Map()
+    const userAccelerators: Map<string, string> = new Map()
     for (const key in rawUserKeybindings) {
       if (this.keys.has(key)) {
         const value = rawUserKeybindings[key]
@@ -226,14 +239,14 @@ class Keybindings {
     this.userKeybindings = userAccelerators
   }
 
-  _loadUserKeybindingsFromDisk() {
+  _loadUserKeybindingsFromDisk(): Record<string, unknown> | null {
     try {
       const obj = JSON.parse(fs.readFileSync(this.configPath, 'utf8'))
       if (typeof obj !== 'object') {
         return null
       }
       return obj
-    } catch (_) {
+    } catch {
       return null
     }
   }
