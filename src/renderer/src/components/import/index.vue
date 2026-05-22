@@ -37,7 +37,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import bus from '@/bus'
 import importIconUrl from '@/assets/icons/import_file.svg?url'

@@ -99,7 +99,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import log from 'electron-log'
 import { setKeyboardLayout } from '@hfelix/electron-localshortcut'
 import { ref, onMounted, onUnmounted, watch } from 'vue'

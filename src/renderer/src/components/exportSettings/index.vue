@@ -287,7 +287,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import bus from '../../bus'
 import Bool from '@/prefComponents/common/bool'

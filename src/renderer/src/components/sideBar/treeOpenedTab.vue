@@ -16,7 +16,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { storeToRefs } from 'pinia'
 import { useEditorStore } from '@/store/editor'
 

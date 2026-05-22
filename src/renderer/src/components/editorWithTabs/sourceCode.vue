@@ -5,7 +5,8 @@
   />
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useEditorStore } from '@/store/editor'
 import { usePreferencesStore } from '@/store/preferences'

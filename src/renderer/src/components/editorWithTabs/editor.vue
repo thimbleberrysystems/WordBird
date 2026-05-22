@@ -85,7 +85,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { ref, reactive, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import log from 'electron-log'
 import Muya from 'muya/lib'

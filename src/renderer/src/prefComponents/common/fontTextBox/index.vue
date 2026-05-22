@@ -37,7 +37,8 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { ref, watch, onMounted } from 'vue'
 import { InfoFilled, ArrowDown } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'

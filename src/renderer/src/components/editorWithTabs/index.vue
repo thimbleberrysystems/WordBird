@@ -22,7 +22,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { useLayoutStore } from '@/store/layout'
 import { storeToRefs } from 'pinia'
 import Tabs from './tabs.vue'

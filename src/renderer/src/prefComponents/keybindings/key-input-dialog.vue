@@ -44,7 +44,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import {
   isCompositionEvent,
   isValidElectronAccelerator,

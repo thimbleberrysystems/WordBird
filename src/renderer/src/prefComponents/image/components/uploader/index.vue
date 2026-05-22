@@ -301,7 +301,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { ref, reactive, computed, watch, onMounted, nextTick, onUnmounted, onActivated, onDeactivated } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePreferencesStore } from '@/store/preferences'

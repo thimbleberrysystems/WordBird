@@ -37,7 +37,8 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { ref, watch } from 'vue'
 import { InfoFilled } from '@element-plus/icons-vue'
 

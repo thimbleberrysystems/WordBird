@@ -88,7 +88,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { ref, onMounted } from 'vue'
 import { usePreferencesStore } from '@/store/preferences'
 import { storeToRefs } from 'pinia'

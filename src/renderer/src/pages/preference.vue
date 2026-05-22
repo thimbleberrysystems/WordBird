@@ -15,7 +15,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { computed, watch, onMounted, nextTick } from 'vue'
 import { usePreferencesStore } from '@/store/preferences'
 import { storeToRefs } from 'pinia'

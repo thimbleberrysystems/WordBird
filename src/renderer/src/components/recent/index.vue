@@ -12,7 +12,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { useEditorStore } from '@/store/editor'
 import { t } from '../../i18n'
 
