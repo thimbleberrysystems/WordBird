@@ -53,7 +53,8 @@ const handleError = async(title: string, error: Error, type: ErrorType): Promise
     return
   } else if (
     !SHOW_ERROR_DIALOG ||
-    ((global as unknown as { MARKTEXT_IS_STABLE?: boolean }).MARKTEXT_IS_STABLE && type === 'renderer')
+    ((global as unknown as { MARKTEXT_IS_STABLE?: boolean }).MARKTEXT_IS_STABLE &&
+      type === 'renderer')
   ) {
     return
   }

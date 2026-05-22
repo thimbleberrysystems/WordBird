@@ -709,9 +709,7 @@ if (isOsx) {
 // Function to get commands with updated descriptions
 export const getCommandsWithDescriptions = async(): Promise<CommandDescriptor[]> => {
   // Update descriptions for all commands
-  const updateDescriptions = (
-    commandList: Array<CommandDescriptor | CommandSubcommand>
-  ): void => {
+  const updateDescriptions = (commandList: Array<CommandDescriptor | CommandSubcommand>): void => {
     for (const item of commandList) {
       const { id } = item
       const subcommands = (item as CommandDescriptor).subcommands

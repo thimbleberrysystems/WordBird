@@ -110,14 +110,10 @@
             class="startup-action-ctrl"
           >
             <el-radio :label="true">
-              {{
-                t('preferences.general.startup.restorePreviousState')
-              }}
+              {{ t('preferences.general.startup.restorePreviousState') }}
             </el-radio>
             <el-radio :label="false">
-              {{
-                t('preferences.general.startup.openBlankState')
-              }}
+              {{ t('preferences.general.startup.openBlankState') }}
             </el-radio>
           </el-radio-group>
         </section>
@@ -132,14 +128,10 @@
             <el-radio class="ag-underdevelop" label="lastState">Restore last editor session</el-radio>
             -->
             <el-radio label="restoreAll">
-              {{
-                t('preferences.general.startup.restoreAll')
-              }}
+              {{ t('preferences.general.startup.restoreAll') }}
             </el-radio>
             <el-radio label="openLastFolder">
-              {{
-                t('preferences.general.startup.openLastFolder')
-              }}
+              {{ t('preferences.general.startup.openLastFolder') }}
             </el-radio>
             <div>
               <el-radio label="folder">
@@ -150,16 +142,12 @@
                 size="small"
                 @click="selectDefaultDirectoryToOpen"
               >
-                {{
-                  t('preferences.general.startup.selectFolder')
-                }}
+                {{ t('preferences.general.startup.selectFolder') }}
               </el-button>
             </div>
             <div>
               <el-radio label="blank">
-                {{
-                  t('preferences.general.startup.openBlankPage')
-                }}
+                {{ t('preferences.general.startup.openBlankPage') }}
               </el-radio>
             </div>
           </el-radio-group>

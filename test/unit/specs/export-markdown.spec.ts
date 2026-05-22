@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import ExportMarkdown from '../../../src/muya/lib/utils/exportMarkdown'
 
@@ -7,7 +7,7 @@ const makeTableBlock = (headerCells, bodyRows) => {
   const makeCell = (text, type = 'td', align = '') => ({
     type,
     align,
-    children: [{ text }],
+    children: [{ text }]
   })
 
   return {
@@ -18,18 +18,18 @@ const makeTableBlock = (headerCells, bodyRows) => {
         children: [
           {
             type: 'tr',
-            children: headerCells.map((text) => makeCell(text, 'th')),
-          },
-        ],
+            children: headerCells.map((text) => makeCell(text, 'th'))
+          }
+        ]
       },
       {
         type: 'tbody',
         children: bodyRows.map((cells) => ({
           type: 'tr',
-          children: cells.map((text) => makeCell(text, 'td')),
-        })),
-      },
-    ],
+          children: cells.map((text) => makeCell(text, 'td'))
+        }))
+      }
+    ]
   }
 }
 
@@ -41,7 +41,13 @@ describe('ExportMarkdown.normalizeTable', () => {
   })
 
   it('exports a well-formed table without error', () => {
-    const table = makeTableBlock(['col1', 'col2'], [['a', 'b'], ['c', 'd']])
+    const table = makeTableBlock(
+      ['col1', 'col2'],
+      [
+        ['a', 'b'],
+        ['c', 'd']
+      ]
+    )
     expect(() => exporter.normalizeTable(table, '')).not.to.throw()
     const output = exporter.normalizeTable(table, '')
     expect(output).to.include('col1')

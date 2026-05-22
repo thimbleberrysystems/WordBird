@@ -34,7 +34,11 @@ test.describe('Ripgrep IPC streaming', () => {
 
   test.afterAll(async() => {
     if (app) await app.close().catch(() => {})
-    if (fixtureDir) try { fs.rmSync(fixtureDir, { recursive: true, force: true }) } catch {}
+    if (fixtureDir) {
+      try {
+        fs.rmSync(fixtureDir, { recursive: true, force: true })
+      } catch {}
+    }
   })
 
   test('text search streams matches and resolves', async() => {
@@ -48,21 +52,27 @@ test.describe('Ripgrep IPC streaming', () => {
         const cleanup = () => offMatch()
         const offDone = window.ripgrep.onDone((p) => {
           if (p?.searchId !== searchId) return
-          cleanup(); offDone(); offError()
+          cleanup()
+          offDone()
+          offError()
           resolve(captured)
         })
         const offError = window.ripgrep.onError((p) => {
           if (p?.searchId !== searchId) return
-          cleanup(); offDone(); offError()
+          cleanup()
+          offDone()
+          offError()
           reject(new Error(p.error))
         })
-        window.ripgrep.start({
-          searchId,
-          mode: 'text',
-          directories: [directory],
-          pattern: 'magic-needle-XYZ',
-          options: { isCaseSensitive: true, inclusions: ['*.md'], exclusions: [] }
-        }).catch(reject)
+        window.ripgrep
+          .start({
+            searchId,
+            mode: 'text',
+            directories: [directory],
+            pattern: 'magic-needle-XYZ',
+            options: { isCaseSensitive: true, inclusions: ['*.md'], exclusions: [] }
+          })
+          .catch(reject)
       })
     }, fixtureDir)
 
@@ -82,21 +92,27 @@ test.describe('Ripgrep IPC streaming', () => {
         })
         const offDone = window.ripgrep.onDone((p) => {
           if (p?.searchId !== searchId) return
-          offMatch(); offDone(); offError()
+          offMatch()
+          offDone()
+          offError()
           resolve(seen)
         })
         const offError = window.ripgrep.onError((p) => {
           if (p?.searchId !== searchId) return
-          offMatch(); offDone(); offError()
+          offMatch()
+          offDone()
+          offError()
           reject(new Error(p.error))
         })
-        window.ripgrep.start({
-          searchId,
-          mode: 'files',
-          directories: [directory],
-          pattern: '',
-          options: { inclusions: ['*.md'], exclusions: [] }
-        }).catch(reject)
+        window.ripgrep
+          .start({
+            searchId,
+            mode: 'files',
+            directories: [directory],
+            pattern: '',
+            options: { inclusions: ['*.md'], exclusions: [] }
+          })
+          .catch(reject)
       })
     }, fixtureDir)
 

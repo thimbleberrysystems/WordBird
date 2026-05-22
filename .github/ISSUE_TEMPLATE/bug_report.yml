@@ -1,7 +1,7 @@
 name: Bug Report
 description: Create a bug report to help us improve MarkText
-title: "[Bug] "
-labels: ["bug", "triage"]
+title: '[Bug] '
+labels: ['bug', 'triage']
 body:
   - type: markdown
     attributes:
@@ -68,7 +68,7 @@ body:
     id: marktext-version
     attributes:
       label: MarkText Version
-      placeholder: "e.g. 0.17.1"
+      placeholder: 'e.g. 0.17.1'
     validations:
       required: true
 
@@ -76,7 +76,7 @@ body:
     id: os-version
     attributes:
       label: OS Version
-      placeholder: "e.g. macOS 14.4, Windows 11, Ubuntu 22.04"
+      placeholder: 'e.g. macOS 14.4, Windows 11, Ubuntu 22.04'
     validations:
       required: true
 

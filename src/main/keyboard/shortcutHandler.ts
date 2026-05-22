@@ -41,7 +41,9 @@ class Keybindings {
     if (appEnvironment.isDevMode) {
       for (const [id, accelerator] of this.keys) {
         if (!commandManager.has(id)) {
-          console.error(`[DEBUG] Command with id="${id}" isn't available for accelerator="${accelerator}".`)
+          console.error(
+            `[DEBUG] Command with id="${id}" isn't available for accelerator="${accelerator}".`
+          )
         }
       }
     }
@@ -92,8 +94,7 @@ class Keybindings {
     if (!isFile2(configPath)) {
       fs.writeFileSync(configPath, '{\n\n\n}\n', 'utf-8')
     }
-    shell.openPath(configPath)
-      .catch((err: unknown) => console.error(err))
+    shell.openPath(configPath).catch((err: unknown) => console.error(err))
   }
 
   getDefaultKeybindings(): Map<string, string> {
@@ -119,7 +120,9 @@ class Keybindings {
    *
    * @param userKeybindings New user key bindings.
    */
-  async setUserKeybindings(userKeybindings: Map<string, string> | Iterable<readonly [string, string]>): Promise<boolean> {
+  async setUserKeybindings(
+    userKeybindings: Map<string, string> | Iterable<readonly [string, string]>
+  ): Promise<boolean> {
     this.userKeybindings = new Map(userKeybindings)
     return this._saveUserKeybindings()
   }
@@ -133,7 +136,8 @@ class Keybindings {
 
     // Notify key mapper when the keyboard layout was changed.
     keyboardLayoutMonitor.addListener(({ layout, keymap }: KeyboardInfo) => {
-      const globalDebug = (globalThis as typeof globalThis & { MARKTEXT_DEBUG?: boolean }).MARKTEXT_DEBUG
+      const globalDebug = (globalThis as typeof globalThis & { MARKTEXT_DEBUG?: boolean })
+        .MARKTEXT_DEBUG
       if (globalDebug && process.env.MARKTEXT_DEBUG_KEYBOARD) {
         console.log('[DEBUG] Keyboard layout changed:\n', layout)
       }
@@ -153,7 +157,8 @@ class Keybindings {
   }
 
   _loadLocalKeybindings(): void {
-    const safeMode = (globalThis as typeof globalThis & { MARKTEXT_SAFE_MODE?: boolean }).MARKTEXT_SAFE_MODE
+    const safeMode = (globalThis as typeof globalThis & { MARKTEXT_SAFE_MODE?: boolean })
+      .MARKTEXT_SAFE_MODE
     if (safeMode || !isFile2(this.configPath)) {
       return
     }

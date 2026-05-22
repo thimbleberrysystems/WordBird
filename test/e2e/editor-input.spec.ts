@@ -31,7 +31,9 @@ test.describe('Editor input and source-mode roundtrip', () => {
 
   test('Toggling source mode preserves content', async() => {
     await enterSourceMode(page, app)
-    const md = await page.evaluate(() => document.querySelector('.source-code .CodeMirror').CodeMirror.getValue())
+    const md = await page.evaluate(() =>
+      document.querySelector('.source-code .CodeMirror').CodeMirror.getValue()
+    )
     expect(md).toContain('# Hello')
     await exitSourceMode(page, app)
     const stillThere = await page.locator('.editor-component').isVisible()

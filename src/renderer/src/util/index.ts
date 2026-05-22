@@ -32,7 +32,7 @@ export const serialize = function(params: Record<string, string | number | boole
     .join('&')
 }
 
-export const merge = function<T extends object>(...args: Array<Partial<T>>): T {
+export const merge = function <T extends object>(...args: Array<Partial<T>>): T {
   return Object.assign({}, ...args) as T
 }
 

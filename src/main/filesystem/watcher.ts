@@ -229,8 +229,13 @@ class Watcher {
           const { autoGuessEncoding, trimTrailingNewline, autoNormalizeLineEndings } =
             _preferences.getAll()
           add(
-            win, pathname, type, eol,
-            autoGuessEncoding, trimTrailingNewline, autoNormalizeLineEndings
+            win,
+            pathname,
+            type,
+            eol,
+            autoGuessEncoding,
+            trimTrailingNewline,
+            autoNormalizeLineEndings
           )
         }
       })
@@ -241,8 +246,13 @@ class Watcher {
           const { autoGuessEncoding, trimTrailingNewline, autoNormalizeLineEndings } =
             _preferences.getAll()
           change(
-            win, pathname, type, eol,
-            autoGuessEncoding, trimTrailingNewline, autoNormalizeLineEndings
+            win,
+            pathname,
+            type,
+            eol,
+            autoGuessEncoding,
+            trimTrailingNewline,
+            autoNormalizeLineEndings
           )
         }
       })
@@ -365,7 +375,12 @@ class Watcher {
    * Check whether we should ignore the current event because the file may be
    * changed from MarkText itself.
    */
-  async _shouldIgnoreEvent(winId: number, pathname: string, type: WatchType, usePolling: boolean): Promise<boolean> {
+  async _shouldIgnoreEvent(
+    winId: number,
+    pathname: string,
+    type: WatchType,
+    usePolling: boolean
+  ): Promise<boolean> {
     if (type === 'file') {
       const { _ignoreChangeEvents } = this
       const currentTime = new Date()

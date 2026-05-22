@@ -1,11 +1,11 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import ContentState from '../../../src/muya/lib/contentState'
 import EventCenter from '../../../src/muya/lib/eventHandler/event'
 import ExportMarkdown from '../../../src/muya/lib/utils/exportMarkdown'
 import { MUYA_DEFAULT_OPTION } from '../../../src/muya/lib/config'
 
-const createMuyaContext = listIndentation => {
+const createMuyaContext = (listIndentation) => {
   const ctx = {}
   ctx.options = Object.assign({}, MUYA_DEFAULT_OPTION, { listIndentation })
   ctx.eventCenter = new EventCenter()

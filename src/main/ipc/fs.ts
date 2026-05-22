@@ -1,10 +1,7 @@
 import fs from 'fs-extra'
 import { statSync, constants, type Stats } from 'fs'
 import { ipcMain } from 'electron'
-import {
-  isFile as commonIsFile,
-  isDirectory as commonIsDirectory
-} from 'common/filesystem'
+import { isFile as commonIsFile, isDirectory as commonIsDirectory } from 'common/filesystem'
 
 interface SerializedStat {
   size: number
@@ -46,12 +43,18 @@ export const registerFsHandlers = (): void => {
   ipcMain.handle('mt::fs::empty-dir', (_e, p: string) => fs.emptyDir(p))
   ipcMain.handle('mt::fs::copy', (_e, src: string, dest: string) => fs.copy(src, dest))
   ipcMain.handle('mt::fs::ensure-dir', (_e, p: string) => fs.ensureDir(p))
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ipcMain.handle('mt::fs::output-file', (_e, p: string, data: unknown) => fs.outputFile(p, toBuffer(data) as any))
-  ipcMain.handle('mt::fs::move', (_e, src: string, dest: string) => fs.move(src, dest, { overwrite: false }))
+
+  ipcMain.handle('mt::fs::output-file', (_e, p: string, data: unknown) =>
+    fs.outputFile(p, toBuffer(data) as any)
+  )
+  ipcMain.handle('mt::fs::move', (_e, src: string, dest: string) =>
+    fs.move(src, dest, { overwrite: false })
+  )
   ipcMain.handle('mt::fs::stat', async(_e, p: string) => serializeStat(await fs.stat(p)))
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ipcMain.handle('mt::fs::write-file', (_e, p: string, data: unknown) => fs.writeFile(p, toBuffer(data) as any))
+
+  ipcMain.handle('mt::fs::write-file', (_e, p: string, data: unknown) =>
+    fs.writeFile(p, toBuffer(data) as any)
+  )
   ipcMain.handle('mt::fs::read-file', async(_e, p: string, encoding?: BufferEncoding) => {
     const buf = await fs.readFile(p, encoding)
     return buf

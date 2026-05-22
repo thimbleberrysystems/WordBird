@@ -13,7 +13,7 @@ interface BufferStoreEntry {
 }
 
 interface BufferStoreContent {
-  tabs: Array<{ isSaved: boolean;[key: string]: unknown }>
+  tabs: Array<{ isSaved: boolean; [key: string]: unknown }>
   [key: string]: unknown
 }
 

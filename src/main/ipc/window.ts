@@ -1,11 +1,20 @@
-import { BrowserWindow, Menu, MenuItem, ipcMain, type IpcMainEvent, type WebContents } from 'electron'
+import {
+  BrowserWindow,
+  Menu,
+  MenuItem,
+  ipcMain,
+  type IpcMainEvent,
+  type WebContents
+} from 'electron'
 import log from 'electron-log'
 import type { MenuTemplate, MenuTemplateItem, MenuPopupPosition } from '@shared/types/menu'
 
 const windowFromEvent = (event: IpcMainEvent): BrowserWindow | null =>
   BrowserWindow.fromWebContents(event.sender)
 
-interface PopupEntry { sender: WebContents }
+interface PopupEntry {
+  sender: WebContents
+}
 const popups = new Map<number, PopupEntry>()
 
 const buildMenu = (template: MenuTemplate | undefined, windowId: number): Menu => {
@@ -27,7 +36,9 @@ const buildMenu = (template: MenuTemplate | undefined, windowId: number): Menu =
           const sender = popups.get(windowId)?.sender
           try {
             sender?.send('mt::menu::click', { windowId, id })
-          } catch { /* sender destroyed */ }
+          } catch {
+            /* sender destroyed */
+          }
         },
         submenu: item.submenu ? buildMenu(item.submenu as MenuTemplateItem[], windowId) : undefined
       })
@@ -92,7 +103,11 @@ export const registerWindowHandlers = (): void => {
         y: position?.y,
         callback: () => {
           popups.delete(win.id)
-          try { event.sender.send('mt::menu::closed', { windowId: win.id }) } catch { /* destroyed */ }
+          try {
+            event.sender.send('mt::menu::closed', { windowId: win.id })
+          } catch {
+            /* destroyed */
+          }
         }
       })
     } catch (err) {

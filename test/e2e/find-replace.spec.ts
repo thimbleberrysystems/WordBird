@@ -8,7 +8,9 @@ test.describe('Find bar', () => {
   let page = null
 
   test.beforeAll(async() => {
-    const launched = await launchWithMarkdown('# Find test\n\nThe quick brown fox jumps over the lazy dog. needleAlpha and needleBeta.\n')
+    const launched = await launchWithMarkdown(
+      '# Find test\n\nThe quick brown fox jumps over the lazy dog. needleAlpha and needleBeta.\n'
+    )
     app = launched.app
     page = launched.page
     await focusEditor(page)

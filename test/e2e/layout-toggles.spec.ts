@@ -56,10 +56,14 @@ test.describe('Layout panel toggles', () => {
     const sideBar = page.locator('.side-bar')
     if (!(await sideBar.isVisible())) {
       await clickMenuById(app, 'sideBarMenuItem')
-      await page.waitForFunction(() => {
-        const el = document.querySelector('.side-bar')
-        return el && el.offsetParent !== null
-      }, null, { timeout: 5000 })
+      await page.waitForFunction(
+        () => {
+          const el = document.querySelector('.side-bar')
+          return el && el.offsetParent !== null
+        },
+        null,
+        { timeout: 5000 }
+      )
     }
     await clickMenuById(app, 'tocMenuItem')
     // No specific selector to assert (TOC mounts inside the sidebar);

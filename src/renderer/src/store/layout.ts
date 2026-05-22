@@ -54,7 +54,11 @@ export const useLayoutStore = defineStore('layout', () => {
   ): void {
     if (layout.showSideBar !== undefined) {
       const { windowId } = window.marktext?.env ?? {}
-      window.electron.ipcRenderer.send('mt::update-sidebar-menu', Number(windowId), !!layout.showSideBar)
+      window.electron.ipcRenderer.send(
+        'mt::update-sidebar-menu',
+        Number(windowId),
+        !!layout.showSideBar
+      )
       const preferencesStore = usePreferencesStore()
       preferencesStore.SET_SINGLE_PREFERENCE({
         type: 'sideBarVisibility',
@@ -64,7 +68,7 @@ export const useLayoutStore = defineStore('layout', () => {
     if (layout.rightColumn !== undefined) rightColumn.value = layout.rightColumn
     if (layout.showSideBar !== undefined) showSideBar.value = !!layout.showSideBar
     if (layout.showTabBar !== undefined) showTabBar.value = !!layout.showTabBar
-    if (layout.sideBarWidth !== undefined) sideBarWidth.value = normalizeSideBarWidth(layout.sideBarWidth)
+    if (layout.sideBarWidth !== undefined) { sideBarWidth.value = normalizeSideBarWidth(layout.sideBarWidth) }
     if (scheduleBufferUpdate) {
       debouncedSendBufferedState()
     }

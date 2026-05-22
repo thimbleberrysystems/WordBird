@@ -57,12 +57,20 @@ const startSearch = ({ mode, directories, pattern, options }: StartArgs): Cancel
     offMatch = window.ripgrep.onMatch((payload: unknown) => {
       const env = payload as RipgrepPayloadEnvelope | null
       if (!env || env.searchId !== searchId) return
-      try { didMatch(env.payload) } catch (err) { console.error(err) }
+      try {
+        didMatch(env.payload)
+      } catch (err) {
+        console.error(err)
+      }
     })
     offProgress = window.ripgrep.onProgress((payload: unknown) => {
       const env = payload as RipgrepPayloadEnvelope | null
       if (!env || env.searchId !== searchId) return
-      try { didSearchPaths(env.num) } catch (err) { console.error(err) }
+      try {
+        didSearchPaths(env.num)
+      } catch (err) {
+        console.error(err)
+      }
     })
     offDone = window.ripgrep.onDone((payload: unknown) => {
       const env = payload as RipgrepPayloadEnvelope | null
@@ -94,9 +102,7 @@ const startSearch = ({ mode, directories, pattern, options }: StartArgs): Cancel
     } catch {
       serializable = rest
     }
-    const plainDirectories = Array.isArray(directories)
-      ? directories.map((d) => String(d))
-      : []
+    const plainDirectories = Array.isArray(directories) ? directories.map((d) => String(d)) : []
     window.ripgrep
       .start({
         searchId,
@@ -136,7 +142,11 @@ class RipgrepDirectorySearcher {
 export default RipgrepDirectorySearcher
 
 export class FileSearcher {
-  search(directories: string[], _pattern: string, options: RipgrepSearchOptions): CancellableSearch {
+  search(
+    directories: string[],
+    _pattern: string,
+    options: RipgrepSearchOptions
+  ): CancellableSearch {
     return startSearch({ mode: 'files', directories, pattern: '', options })
   }
 }

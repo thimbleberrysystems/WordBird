@@ -1,37 +1,37 @@
 :root {
   /*editor - Tokyo Night Light theme*/
   --themeColor: #34548a;
-  --themeColor90: rgba(52, 84, 138, .9);
-  --themeColor80: rgba(52, 84, 138, .8);
-  --themeColor70: rgba(52, 84, 138, .7);
-  --themeColor60: rgba(52, 84, 138, .6);
-  --themeColor50: rgba(52, 84, 138, .5);
-  --themeColor40: rgba(52, 84, 138, .4);
-  --themeColor30: rgba(52, 84, 138, .3);
-  --themeColor20: rgba(52, 84, 138, .2);
-  --themeColor10: rgba(52, 84, 138, .1);
+  --themeColor90: rgba(52, 84, 138, 0.9);
+  --themeColor80: rgba(52, 84, 138, 0.8);
+  --themeColor70: rgba(52, 84, 138, 0.7);
+  --themeColor60: rgba(52, 84, 138, 0.6);
+  --themeColor50: rgba(52, 84, 138, 0.5);
+  --themeColor40: rgba(52, 84, 138, 0.4);
+  --themeColor30: rgba(52, 84, 138, 0.3);
+  --themeColor20: rgba(52, 84, 138, 0.2);
+  --themeColor10: rgba(52, 84, 138, 0.1);
 
-  --highlightColor: rgba(52, 84, 138, .3);
-  --selectionColor: rgba(157, 170, 200, .4);
+  --highlightColor: rgba(52, 84, 138, 0.3);
+  --selectionColor: rgba(157, 170, 200, 0.4);
   --editorColor: #343b58;
-  --editorColor80: rgba(52, 59, 88, .8);
-  --editorColor60: rgba(52, 59, 88, .6);
-  --editorColor50: rgba(52, 59, 88, .5);
-  --editorColor40: rgba(52, 59, 88, .4);
-  --editorColor30: rgba(52, 59, 88, .3);
-  --editorColor10: rgba(52, 59, 88, .1);
-  --editorColor04: rgba(52, 59, 88, .04);
+  --editorColor80: rgba(52, 59, 88, 0.8);
+  --editorColor60: rgba(52, 59, 88, 0.6);
+  --editorColor50: rgba(52, 59, 88, 0.5);
+  --editorColor40: rgba(52, 59, 88, 0.4);
+  --editorColor30: rgba(52, 59, 88, 0.3);
+  --editorColor10: rgba(52, 59, 88, 0.1);
+  --editorColor04: rgba(52, 59, 88, 0.04);
   --editorBgColor: #d5d6db;
   --deleteColor: #8c4351;
-  --iconColor: rgba(52, 59, 88, .56);
+  --iconColor: rgba(52, 59, 88, 0.56);
   --codeBgColor: #c8c9ce;
   --codeBlockBgColor: #c8c9ce;
-  --footnoteBgColor: rgba(200, 201, 206, .5);
+  --footnoteBgColor: rgba(200, 201, 206, 0.5);
   --inputBgColor: #cbccd1;
 
   --focusColor: var(--themeColor);
 
-  --buttonFontColor: rgba(52, 59, 88, .7);
+  --buttonFontColor: rgba(52, 59, 88, 0.7);
   --buttonBgColor: #c8c9ce;
   --buttonBorder: 1px solid rgba(0, 0, 0, 0.08);
   --buttonShadow: none;
@@ -64,7 +64,7 @@
   --h4Color: #166775;
   --h5Color: #5a4a78;
   --h6Color: #8c4351;
-  --blockquoteTextColor: rgba(52, 59, 88, .6);
+  --blockquoteTextColor: rgba(52, 59, 88, 0.6);
   --blockquoteBorderColor: #9699a3;
   --hrColor: #b0b1b7;
   --linkColor: #34548a;
@@ -73,20 +73,20 @@
   --listMarkerColor: #965027;
 
   /*marktext*/
-  --sideBarColor: rgba(52, 59, 88, .7);
+  --sideBarColor: rgba(52, 59, 88, 0.7);
   --sideBarIconColor: var(--iconColor);
-  --sideBarTitleColor: rgba(52, 59, 88, .9);
-  --sideBarTextColor: rgba(52, 59, 88, .5);
+  --sideBarTitleColor: rgba(52, 59, 88, 0.9);
+  --sideBarTextColor: rgba(52, 59, 88, 0.5);
   --sideBarBgColor: #cbccd1;
-  --sideBarItemHoverBgColor: rgba(52, 59, 88, .05);
+  --sideBarItemHoverBgColor: rgba(52, 59, 88, 0.05);
   --itemBgColor: #c8c9ce;
 
-  --floatFontColor: rgba(52, 59, 88, .8);
+  --floatFontColor: rgba(52, 59, 88, 0.8);
   --floatBgColor: #c8c9ce;
-  --floatHoverColor: rgba(52, 59, 88, .06);
-  --floatBorderColor: rgba(0, 0, 0, .08);
+  --floatHoverColor: rgba(52, 59, 88, 0.06);
+  --floatBorderColor: rgba(0, 0, 0, 0.08);
   --floatShadow: rgba(0, 0, 0, 0.1);
-  --maskColor: rgba(0, 0, 0, .3);
+  --maskColor: rgba(0, 0, 0, 0.3);
   --editorAreaWidth: 750px;
 }
 
@@ -104,7 +104,7 @@
 }
 .title-bar .frameless-titlebar-minimize:hover,
 .title-bar .frameless-titlebar-toggle:hover {
-  background-color: rgba(52, 59, 88, .08);
+  background-color: rgba(52, 59, 88, 0.08);
 }
 
 .side-bar {
@@ -150,14 +150,14 @@
 
 /* ------------------------------------ */
 
-:not(pre) > code[class*="language-"],
+:not(pre) > code[class*='language-'],
 pre:not(.CodeMirror-line),
-pre[class*="language-"],
+pre[class*='language-'],
 pre.ag-paragraph {
   background: var(--codeBlockBgColor) !important;
   border: none !important;
 }
-p:not(.ag-active)[data-role="hr"]::before {
+p:not(.ag-active)[data-role='hr']::before {
   border-top: 2px dashed var(--editorColor10) !important;
   background: none !important;
 }

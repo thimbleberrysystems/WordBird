@@ -136,7 +136,9 @@ export const getBeginPosition = (): {
   }
 }
 
-export const getEndPosition = (cm: CodeMirrorInstance): {
+export const getEndPosition = (
+  cm: CodeMirrorInstance
+): {
   anchor: { line: number; ch: number }
   head: { line: number; ch: number }
 } => {

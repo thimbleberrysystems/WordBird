@@ -11,11 +11,13 @@ export const sideBarIcons = [
     id: 'files',
     name: () => t('sideBar.icons.files'),
     icon: FilesIcon
-  }, {
+  },
+  {
     id: 'search',
     name: () => t('sideBar.icons.search'),
     icon: SearchIcon
-  }, {
+  },
+  {
     id: 'toc',
     name: () => t('sideBar.icons.toc'),
     icon: TocIcon

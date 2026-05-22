@@ -44,6 +44,8 @@ test.describe('View modes', () => {
     await page.waitForSelector('.source-code .CodeMirror', { state: 'attached', timeout: 10000 })
     await expect(page.locator('.editor-wrapper')).toHaveClass(/(^|\s)source(\s|$)/)
     await clickMenuById(app, 'sourceCodeModeMenuItem')
-    await page.waitForFunction(() => !document.querySelector('.source-code'), null, { timeout: 10000 })
+    await page.waitForFunction(() => !document.querySelector('.source-code'), null, {
+      timeout: 10000
+    })
   })
 })

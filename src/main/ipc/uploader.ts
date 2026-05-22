@@ -38,7 +38,9 @@ const resolvePicgoBinary = (): string | null => {
     try {
       if (commandExists.sync(c)) return c
       if (c.startsWith('/') && fs.pathExistsSync(c)) return c
-    } catch { /* not found */ }
+    } catch {
+      /* not found */
+    }
   }
   return null
 }
@@ -51,9 +53,15 @@ const parsePicgoOutput = (text: unknown): string | null => {
   const raw = String(text || '')
   const cleaned = raw.replace(ANSI_SGR_RE, '')
   try {
-    const lines = cleaned.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+    const lines = cleaned
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean)
     for (const line of lines) {
-      if ((line.startsWith('{') && line.endsWith('}')) || (line.startsWith('[') && line.endsWith(']'))) {
+      if (
+        (line.startsWith('{') && line.endsWith('}')) ||
+        (line.startsWith('[') && line.endsWith(']'))
+      ) {
         try {
           const obj = JSON.parse(line)
           if (obj) {
@@ -63,12 +71,16 @@ const parsePicgoOutput = (text: unknown): string | null => {
             }
             if (obj.success === true && typeof obj.url === 'string') return obj.url
           }
-        } catch { /* not JSON */ }
+        } catch {
+          /* not JSON */
+        }
       }
       const kv = line.match(/(?:success|succeeded|uploaded)\s*:?\s*(https?:\/\/\S+)/i)
       if (kv && kv[1]) return kv[1]
     }
-  } catch { /* outer parse failed */ }
+  } catch {
+    /* outer parse failed */
+  }
   const marker = cleaned.split('[PicGo SUCCESS]:')
   if (marker.length >= 2) {
     const candidate = marker[marker.length - 1].trim()
@@ -86,13 +98,32 @@ interface GithubUploadArgs {
   filename: string
 }
 
-const uploadByGithub = ({ owner, repo, branch, auth, content, filename }: GithubUploadArgs): Promise<string> =>
+const uploadByGithub = ({
+  owner,
+  repo,
+  branch,
+  auth,
+  content,
+  filename
+}: GithubUploadArgs): Promise<string> =>
   new Promise((resolve, reject) => {
     const octokit = new Octokit({ auth })
     const filePath = `${dayjs().format('YYYY/MM')}/${dayjs().format('DD-HH-mm-ss')}-${filename}`
     const message = `Upload by MarkText at ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`
-    const payload: { owner: string; repo: string; path: string; branch?: string; message: string; content: string } = {
-      owner, repo, path: filePath, branch, message, content
+    const payload: {
+      owner: string
+      repo: string
+      path: string
+      branch?: string
+      message: string
+      content: string
+    } = {
+      owner,
+      repo,
+      path: filePath,
+      branch,
+      message,
+      content
     }
     if (!branch) delete payload.branch
     octokit.repos
@@ -132,7 +163,10 @@ const uploadByCli = (cliScript: string, localPath: string): Promise<string> =>
     )
   })
 
-const writeBinaryToTmp = async(data: Uint8Array | number[] | null | undefined, suffix: string = ''): Promise<string> => {
+const writeBinaryToTmp = async(
+  data: Uint8Array | number[] | null | undefined,
+  suffix: string = ''
+): Promise<string> => {
   const buf = data instanceof Uint8Array ? Buffer.from(data) : Buffer.from(data || [])
   const tmpPath = path.join(tmpdir(), `${Date.now()}${suffix}`)
   await fs.writeFile(tmpPath, buf)
@@ -145,7 +179,11 @@ const MAX_SIZE = 5 * 1024 * 1024
 const uploadFromPath = async(imagePath: string, options: any): Promise<string> => {
   const { currentUploader, imageBed, githubToken, cliScript } = options
   const { size } = await fs.stat(imagePath)
-  if (size > MAX_SIZE) throw new Error('Cannot upload more than 5M image, the image will be copied to the image folder')
+  if (size > MAX_SIZE) {
+    throw new Error(
+      'Cannot upload more than 5M image, the image will be copied to the image folder'
+    )
+  }
 
   if (currentUploader === 'cliScript' || currentUploader === 'picgo') {
     if (currentUploader === 'picgo') return uploadByPicgo(imagePath)
@@ -155,7 +193,14 @@ const uploadFromPath = async(imagePath: string, options: any): Promise<string> =
     const fileBuffer = await fs.readFile(imagePath)
     const base64 = Buffer.from(fileBuffer).toString('base64')
     const { owner, repo, branch } = imageBed.github
-    return uploadByGithub({ owner, repo, branch, auth: githubToken, content: base64, filename: path.basename(imagePath) })
+    return uploadByGithub({
+      owner,
+      repo,
+      branch,
+      auth: githubToken,
+      content: base64,
+      filename: path.basename(imagePath)
+    })
   }
   throw new Error(`Unsupported uploader: ${currentUploader}`)
 }
@@ -166,28 +211,45 @@ interface BufferImagePayload {
   byteLength: number
 }
 
-const uploadFromBuffer = async({ data, name, byteLength }: BufferImagePayload, options: {
-  currentUploader: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  imageBed: any
-  githubToken: string
-  cliScript: string
-}): Promise<string> => {
+const uploadFromBuffer = async(
+  { data, name, byteLength }: BufferImagePayload,
+  options: {
+    currentUploader: string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    imageBed: any
+    githubToken: string
+    cliScript: string
+  }
+): Promise<string> => {
   const { currentUploader, imageBed, githubToken, cliScript } = options
-  if (byteLength > MAX_SIZE) throw new Error('Cannot upload more than 5M image, the image will be copied to the image folder')
+  if (byteLength > MAX_SIZE) {
+    throw new Error(
+      'Cannot upload more than 5M image, the image will be copied to the image folder'
+    )
+  }
   const suffix = path.extname(name || '') || ''
   let cleanup: (() => Promise<void>) | null = null
   try {
     if (currentUploader === 'picgo' || currentUploader === 'cliScript') {
       const localPath = await writeBinaryToTmp(data, suffix)
-      cleanup = () => fs.unlink(localPath).catch(() => { /* ignore */ })
+      cleanup = () =>
+        fs.unlink(localPath).catch(() => {
+          /* ignore */
+        })
       if (currentUploader === 'picgo') return await uploadByPicgo(localPath)
       return await uploadByCli(cliScript, localPath)
     }
     const buf = data instanceof Uint8Array ? Buffer.from(data) : Buffer.from(data || [])
     const base64 = buf.toString('base64')
     const { owner, repo, branch } = imageBed.github
-    return await uploadByGithub({ owner, repo, branch, auth: githubToken, content: base64, filename: name })
+    return await uploadByGithub({
+      owner,
+      repo,
+      branch,
+      auth: githubToken,
+      content: base64,
+      filename: name
+    })
   } finally {
     if (cleanup) await cleanup()
   }

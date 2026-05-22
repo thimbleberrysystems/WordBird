@@ -82,7 +82,10 @@ export const useProjectStore = defineStore('project', () => {
   const projectTree = ref<ProjectTree | null>(null)
   const pendingTreeEvents = ref<PendingEvent[]>([])
 
-  function OPEN_PROJECT(pathname: string, { scheduleBufferUpdate = true }: OpenProjectOptions = {}): void {
+  function OPEN_PROJECT(
+    pathname: string,
+    { scheduleBufferUpdate = true }: OpenProjectOptions = {}
+  ): void {
     const layoutStore = useLayoutStore()
     const tree = createProjectRoot(pathname)
     if (!tree) return

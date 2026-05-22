@@ -67,11 +67,9 @@ const isCodeMirrorRaceCondition = (error: Error | null | undefined): boolean => 
 
   // CodeMirror internal error when line measurement data is unavailable during mouse click
   // This happens when the document state is out of sync with the display during rapid changes
-  const isMapOnUndefined =
-    error.message === "Cannot read properties of undefined (reading 'map')"
+  const isMapOnUndefined = error.message === "Cannot read properties of undefined (reading 'map')"
   const isInPrepareMeasure = error.stack.includes('prepareMeasureForLine')
-  const isInCoordsChar =
-    error.stack.includes('coordsChar') || error.stack.includes('posFromMouse')
+  const isInCoordsChar = error.stack.includes('coordsChar') || error.stack.includes('posFromMouse')
 
   return isMapOnUndefined && isInPrepareMeasure && isInCoordsChar
 }

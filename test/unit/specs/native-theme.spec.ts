@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import { getNativeThemeSource, isDarkApplicationTheme } from 'main_renderer/app/nativeTheme'
 import { oneDarkThemes, railscastsThemes } from 'common/theme'

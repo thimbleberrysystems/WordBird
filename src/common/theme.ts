@@ -28,7 +28,6 @@ export const oneDarkThemes: readonly string[] = Object.freeze(['one-dark'])
 
 export const isDarkThemeId = (theme: unknown): theme is string => {
   return (
-    typeof theme === 'string' &&
-    (railscastsThemes.includes(theme) || oneDarkThemes.includes(theme))
+    typeof theme === 'string' && (railscastsThemes.includes(theme) || oneDarkThemes.includes(theme))
   )
 }

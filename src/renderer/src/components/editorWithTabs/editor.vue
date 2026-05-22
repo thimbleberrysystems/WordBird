@@ -74,9 +74,7 @@
             type="primary"
             @click="handleDialogTableConfirm"
           >
-            {{
-              t('common.ok')
-            }}
+            {{ t('common.ok') }}
           </el-button>
         </div>
       </template>
@@ -572,10 +570,9 @@ const imageAction = async (image, id, alt = '') => {
   }
 
   const getResolvedImagePath = (imagePath) => {
-    const replacement =
-      isTabSavedOnDisk
-        ? filename.replace(/\.[^/.]+$/, '') // Filename w/o extension
-        : ''
+    const replacement = isTabSavedOnDisk
+      ? filename.replace(/\.[^/.]+$/, '') // Filename w/o extension
+      : ''
     return imagePath.replace(/\${filename}/g, replacement)
   }
 

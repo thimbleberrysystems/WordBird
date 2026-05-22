@@ -28,10 +28,8 @@ const invoke = <K extends keyof IpcInvokeChannels>(
   ...args: IpcInvokeChannels[K]['args']
 ): Promise<IpcInvokeChannels[K]['ret']> => ipcRenderer.invoke(channel, ...args)
 
-const send = <K extends keyof IpcSendChannels>(
-  channel: K,
-  ...args: IpcSendChannels[K]
-): void => ipcRenderer.send(channel, ...args)
+const send = <K extends keyof IpcSendChannels>(channel: K, ...args: IpcSendChannels[K]): void =>
+  ipcRenderer.send(channel, ...args)
 
 // One synchronous handshake at startup so the renderer can read platform/env
 // without an `await` from inside Vue computed properties etc.
@@ -115,7 +113,17 @@ const windowControlAPI = {
 // `tabs.find(t => isSamePathSync(t.pathname, ...))` keep returning the right
 // item instead of a truthy Promise.
 const MARKDOWN_EXTENSIONS = [
-  'markdown', 'mdown', 'mkdn', 'md', 'mkd', 'mdwn', 'mdtxt', 'mdtext', 'mdx', 'text', 'txt'
+  'markdown',
+  'mdown',
+  'mkdn',
+  'md',
+  'mkd',
+  'mdwn',
+  'mdtxt',
+  'mdtext',
+  'mdx',
+  'text',
+  'txt'
 ] as const
 
 const hasMarkdownExtension = (filename: string): boolean => {
@@ -129,11 +137,7 @@ const isChildOfDirectory = (dir: string, child: string): boolean => {
   return !!relative && !relative.startsWith('..') && !pathBrowserify.isAbsolute(relative)
 }
 
-const isSamePathSync = (
-  pathA: string,
-  pathB: string,
-  isNormalized: boolean = false
-): boolean => {
+const isSamePathSync = (pathA: string, pathB: string, isNormalized: boolean = false): boolean => {
   if (!pathA || !pathB) return false
   const a = isNormalized ? pathA : pathBrowserify.normalize(pathA)
   const b = isNormalized ? pathB : pathBrowserify.normalize(pathB)
@@ -246,10 +250,8 @@ const electronAPI = {
 const pathAPI = {
   basename: (...args: Parameters<typeof pathBrowserify.basename>) =>
     pathBrowserify.basename(...args),
-  dirname: (...args: Parameters<typeof pathBrowserify.dirname>) =>
-    pathBrowserify.dirname(...args),
-  extname: (...args: Parameters<typeof pathBrowserify.extname>) =>
-    pathBrowserify.extname(...args),
+  dirname: (...args: Parameters<typeof pathBrowserify.dirname>) => pathBrowserify.dirname(...args),
+  extname: (...args: Parameters<typeof pathBrowserify.extname>) => pathBrowserify.extname(...args),
   join: (...args: string[]) => pathBrowserify.join(...args),
   resolve: (...args: string[]) => pathBrowserify.resolve(...args),
   relative: (...args: Parameters<typeof pathBrowserify.relative>) =>

@@ -9,7 +9,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['test/unit/specs/**/*.spec.ts'],
-    globals: true,
+    globals: true
   },
   resolve: {
     alias: {
@@ -17,8 +17,8 @@ export default defineConfig({
       common: resolve(__dirname, 'src/common'),
       muya: resolve(__dirname, 'src/muya'),
       '@shared': resolve(__dirname, 'src/shared'),
-      main_renderer: resolve(__dirname, 'src/main'),
+      main_renderer: resolve(__dirname, 'src/main')
     },
-    extensions: ['.mjs', '.ts', '.js', '.json'],
-  },
+    extensions: ['.mjs', '.ts', '.js', '.json']
+  }
 })

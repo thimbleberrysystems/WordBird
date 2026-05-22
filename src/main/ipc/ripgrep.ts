@@ -16,10 +16,16 @@ interface ActiveSearch {
 
 const activeSearches = new Map<string, ActiveSearch>()
 
-const sendIfAlive = (sender: WebContents | null | undefined, channel: string, ...args: unknown[]): void => {
+const sendIfAlive = (
+  sender: WebContents | null | undefined,
+  channel: string,
+  ...args: unknown[]
+): void => {
   try {
     if (sender && !sender.isDestroyed()) sender.send(channel, ...args)
-  } catch { /* sender destroyed mid-send */ }
+  } catch {
+    /* sender destroyed mid-send */
+  }
 }
 
 const cleanupAtSenderDestroy = (sender: WebContents | null | undefined): void => {
@@ -112,7 +118,11 @@ const processSubmatch = (
   }
 }
 
-const prepareGlobs = (globs: string[] | undefined, projectRootPath: string, sep?: string): string[] => {
+const prepareGlobs = (
+  globs: string[] | undefined,
+  projectRootPath: string,
+  sep?: string
+): string[] => {
   const output: string[] = []
   for (let pattern of globs || []) {
     pattern = pattern.replace(new RegExp(`\\${sep || path.sep}`, 'g'), '/')
@@ -174,7 +184,10 @@ const startTextSearch = (
       finished = true
       activeSearches.delete(searchId)
       if (err) {
-        sendIfAlive(sender, 'mt::rg::error', { searchId, error: err instanceof Error ? err.message : String(err) })
+        sendIfAlive(sender, 'mt::rg::error', {
+          searchId,
+          error: err instanceof Error ? err.message : String(err)
+        })
       } else {
         sendIfAlive(sender, 'mt::rg::done', { searchId })
       }
@@ -184,7 +197,11 @@ const startTextSearch = (
   const cancel = (): void => {
     cancelled = true
     for (const child of children) {
-      try { child.kill() } catch { /* already dead */ }
+      try {
+        child.kill()
+      } catch {
+        /* already dead */
+      }
     }
     if (!finished) {
       finished = true
@@ -213,10 +230,10 @@ const startTextSearch = (
     if (options.maxFileSize) args.push('--max-filesize', options.maxFileSize + '')
     if (options.includeHidden) args.push('--hidden')
     if (options.noIgnore) args.push('--no-ignore')
-    if (options.leadingContextLineCount) args.push('--before-context', String(options.leadingContextLineCount))
-    if (options.trailingContextLineCount) args.push('--after-context', String(options.trailingContextLineCount))
-    for (const inclusion of prepareGlobs(options.inclusions, directoryPath)) args.push('--iglob', inclusion)
-    for (const exclusion of prepareGlobs(options.exclusions, directoryPath)) args.push('--iglob', '!' + exclusion)
+    if (options.leadingContextLineCount) { args.push('--before-context', String(options.leadingContextLineCount)) }
+    if (options.trailingContextLineCount) { args.push('--after-context', String(options.trailingContextLineCount)) }
+    for (const inclusion of prepareGlobs(options.inclusions, directoryPath)) { args.push('--iglob', inclusion) }
+    for (const exclusion of prepareGlobs(options.exclusions, directoryPath)) { args.push('--iglob', '!' + exclusion) }
     args.push('--')
     if (textPattern) args.push(textPattern)
     args.push(directoryPath)
@@ -250,13 +267,17 @@ const startTextSearch = (
             sendIfAlive(sender, 'mt::rg::progress', { searchId, num: pendingPaths })
             sendIfAlive(sender, 'mt::rg::match', { searchId, payload: pendingEvent })
           }
-        } catch { /* parse error */ }
+        } catch {
+          /* parse error */
+        }
       }
       pendingDirs--
       finishIfDone()
     })
     child.on('error', (err) => finishIfDone(err))
-    child.stderr?.on('data', (chunk: Buffer | string) => { bufferError += chunk })
+    child.stderr?.on('data', (chunk: Buffer | string) => {
+      bufferError += chunk
+    })
     child.stdout?.on('data', (chunk: Buffer | string) => {
       if (cancelled) return
       buffer += chunk
@@ -321,7 +342,10 @@ const startFileSearch = (
       finished = true
       activeSearches.delete(searchId)
       if (err) {
-        sendIfAlive(sender, 'mt::rg::error', { searchId, error: err instanceof Error ? err.message : String(err) })
+        sendIfAlive(sender, 'mt::rg::error', {
+          searchId,
+          error: err instanceof Error ? err.message : String(err)
+        })
       } else {
         sendIfAlive(sender, 'mt::rg::done', { searchId })
       }
@@ -331,7 +355,11 @@ const startFileSearch = (
   const cancel = (): void => {
     cancelled = true
     for (const child of children) {
-      try { child.kill() } catch { /* already dead */ }
+      try {
+        child.kill()
+      } catch {
+        /* already dead */
+      }
     }
     if (!finished) {
       finished = true
@@ -346,7 +374,7 @@ const startFileSearch = (
     if (options.followSymlinks) args.push('--follow')
     if (options.includeHidden) args.push('--hidden')
     if (options.noIgnore) args.push('--no-ignore')
-    for (const inclusion of prepareGlobs(options.inclusions, directoryPath)) args.push('--iglob', inclusion)
+    for (const inclusion of prepareGlobs(options.inclusions, directoryPath)) { args.push('--iglob', inclusion) }
     args.push('--')
     args.push(directoryPath)
 
@@ -370,7 +398,9 @@ const startFileSearch = (
       finishIfDone()
     })
     child.on('error', (err) => finishIfDone(err))
-    child.stderr?.on('data', (chunk: Buffer | string) => { bufferError += chunk })
+    child.stderr?.on('data', (chunk: Buffer | string) => {
+      bufferError += chunk
+    })
     child.stdout?.on('data', (chunk: Buffer | string) => {
       if (cancelled) return
       buffer += chunk

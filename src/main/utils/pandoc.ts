@@ -27,17 +27,18 @@ const pandoc = ((from: string, to: string, ...args: string[]): PandocConverter =
   const command = getCommand()
   const option = ['-s', from, '-t', to].concat(args)
 
-  const converter = ((): Promise<string> => new Promise((resolve, reject) => {
-    const proc = spawn(command, option)
-    proc.on('error', reject)
-    let data = ''
-    proc.stdout.on('data', (chunk: Buffer | string) => {
-      data += chunk.toString()
-    })
-    proc.stdout.on('end', () => resolve(data))
-    proc.stdout.on('error', reject)
-    proc.stdin.end()
-  })) as PandocConverter
+  const converter = ((): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const proc = spawn(command, option)
+      proc.on('error', reject)
+      let data = ''
+      proc.stdout.on('data', (chunk: Buffer | string) => {
+        data += chunk.toString()
+      })
+      proc.stdout.on('end', () => resolve(data))
+      proc.stdout.on('error', reject)
+      proc.stdin.end()
+    })) as PandocConverter
 
   converter.stream = (srcStream: NodeJS.ReadableStream): Readable | null => {
     const proc = spawn(command, option)

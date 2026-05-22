@@ -25,7 +25,12 @@ class Node<T extends ListItem> implements TreeNode<T> {
   slug: unknown
   children: Array<TreeNode<T>>
 
-  constructor(item: { parent: TreeNode<T> | null; lvl: number | null; content?: unknown; slug?: unknown }) {
+  constructor(item: {
+    parent: TreeNode<T> | null
+    lvl: number | null
+    content?: unknown
+    slug?: unknown
+  }) {
     const { parent, lvl, content, slug } = item
     this.parent = parent
     this.lvl = lvl

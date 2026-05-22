@@ -1,20 +1,8 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import { isEqualAccelerator } from 'common/keybinding'
 
-const characterKeys = [
-  '0',
-  '1',
-  '9',
-  'A',
-  'b',
-  'G',
-  'Z',
-  '~',
-  '!',
-  '@',
-  '#'
-]
+const characterKeys = ['0', '1', '9', 'A', 'b', 'G', 'Z', '~', '!', '@', '#']
 
 const nonCharacterKeys = [
   'F1',
@@ -137,8 +125,8 @@ describe('Test invalid accelerator', () => {
 })
 
 describe('Match combination for modifier and key', () => {
-  modifiers.forEach(mod =>
-    keys.forEach(key => {
+  modifiers.forEach((mod) =>
+    keys.forEach((key) => {
       it(`Should match ${mod}+${key}`, () => {
         expect(isEqualAccelerator(`${mod}+${key}`, `${key}+${mod}`)).to.equal(true)
       })
@@ -147,7 +135,7 @@ describe('Match combination for modifier and key', () => {
 })
 
 describe('Match non-character keys', () => {
-  nonCharacterKeys.forEach(nonCharacterKey =>
+  nonCharacterKeys.forEach((nonCharacterKey) =>
     it(`Should match ${nonCharacterKey}`, () => {
       expect(isEqualAccelerator(`${nonCharacterKey}`, `${nonCharacterKey}`)).to.equal(true)
     })

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import ContentState from '../../../src/muya/lib/contentState'
 import EventCenter from '../../../src/muya/lib/eventHandler/event'
@@ -9,7 +9,7 @@ import * as templates from '../markdown'
 const defaultOptions = { endOfLine: 'lf' }
 const defaultOptionsCrlf = Object.assign({}, defaultOptions, { endOfLine: 'crlf' })
 
-const createMuyaContext = options => {
+const createMuyaContext = (options) => {
   const ctx = {}
   ctx.options = Object.assign({}, MUYA_DEFAULT_OPTION, options)
   ctx.eventCenter = new EventCenter()

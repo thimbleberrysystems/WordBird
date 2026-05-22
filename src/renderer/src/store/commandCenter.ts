@@ -2,13 +2,18 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import log from 'electron-log'
 import bus from '../bus'
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 import staticCommands, { RootCommand, getCommandsWithDescriptions } from '../commands'
 
+type Command = {
+  id: string
+  description?: string
+  shortcut?: unknown
+  execute?: (...args: any[]) => void
+  [key: string]: any
+}
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Command = { id: string; description?: string; shortcut?: unknown; execute?: (...args: any[]) => void;[key: string]: any }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Root = { subcommands: Command[];[key: string]: any }
+type Root = { subcommands: Command[]; [key: string]: any }
 
 export const useCommandCenterStore = defineStore('commandCenter', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -19,7 +24,9 @@ export const useCommandCenterStore = defineStore('commandCenter', () => {
   }
 
   function SORT_COMMANDS(): void {
-    rootCommand.value.subcommands.sort((a, b) => (a.description ?? '').localeCompare(b.description ?? ''))
+    rootCommand.value.subcommands.sort((a, b) =>
+      (a.description ?? '').localeCompare(b.description ?? '')
+    )
   }
 
   async function LISTEN_COMMAND_CENTER_BUS(): Promise<void> {

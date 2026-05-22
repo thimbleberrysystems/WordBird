@@ -11,7 +11,10 @@ import {
 } from './menuItems'
 import { popupContextMenu, type ContextMenuItem } from '../popupMenu'
 
-export const showContextMenu = (event: { clientX: number; clientY: number }, hasPathCache: boolean): void => {
+export const showContextMenu = (
+  event: { clientX: number; clientY: number },
+  hasPathCache: boolean
+): void => {
   const contextItems: ContextMenuItem[] = [
     getNewFile(),
     getNewDirectory(),

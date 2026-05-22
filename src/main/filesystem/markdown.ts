@@ -48,7 +48,9 @@ const convertLineEndings = (text: string, lineEnding: LineEnding): string => {
  * Returns the normalized path and a directory hint, or null if it's not a
  * directory or markdown file.
  */
-export const normalizeMarkdownPath = (pathname: string): { isDir: boolean; path: string } | null => {
+export const normalizeMarkdownPath = (
+  pathname: string
+): { isDir: boolean; path: string } | null => {
   const isDir = isDirectory2(pathname)
   if (isDir || isMarkdownFile(pathname)) {
     const resolved = normalizeAndResolvePath(pathname)

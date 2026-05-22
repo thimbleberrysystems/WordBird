@@ -19,7 +19,12 @@ export const zoomOut = (win: BrowserWindow | null | undefined): void => {
 }
 
 export const centerWindowOptions = (
-  options: BrowserWindowConstructorOptions & { width: number; height: number; x?: number; y?: number }
+  options: BrowserWindowConstructorOptions & {
+    width: number
+    height: number
+    x?: number
+    y?: number
+  }
 ): void => {
   // "workArea" doesn't work on Linux
   const { bounds, workArea } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())

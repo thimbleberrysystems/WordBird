@@ -26,7 +26,7 @@ export default (
       visible: !isOsx,
       click(_menuItem, targetWindow) {
         if (targetWindow) {
-          (targetWindow as BrowserWindow).webContents.send('mt::spelling-show-switch-language')
+          ;(targetWindow as BrowserWindow).webContents.send('mt::spelling-show-switch-language')
         }
       }
     })
@@ -55,10 +55,13 @@ export default (
           label: word,
           click(_menuItem, targetWindow) {
             if (targetWindow) {
-              (targetWindow as BrowserWindow).webContents.send('mt::spelling-replace-misspelling', {
-                word: misspelledWord,
-                replacement: word
-              })
+              ;(targetWindow as BrowserWindow).webContents.send(
+                'mt::spelling-replace-misspelling',
+                {
+                  word: misspelledWord,
+                  replacement: word
+                }
+              )
             }
           }
         })

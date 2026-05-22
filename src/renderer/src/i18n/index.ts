@@ -71,8 +71,9 @@ export const setLanguage = async(locale: string): Promise<void> => {
   if (!globalI18n.availableLocales.includes(locale)) {
     let pending = inflightLoads.get(locale)
     if (!pending) {
-      pending = Promise.resolve(window.i18nUtils.loadTranslations(locale))
-        .finally(() => inflightLoads.delete(locale))
+      pending = Promise.resolve(window.i18nUtils.loadTranslations(locale)).finally(() =>
+        inflightLoads.delete(locale)
+      )
       inflightLoads.set(locale, pending)
     }
     const translation = await pending

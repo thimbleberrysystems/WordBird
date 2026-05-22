@@ -3,7 +3,11 @@
     <h5>{{ t('preferences.image.uploader.title') }}</h5>
     <section class="current-uploader">
       <div v-if="isValidUploaderService(currentUploader)">
-        {{ t('preferences.image.uploader.currentUploader', { name: getServiceNameById(currentUploader) }) }}
+        {{
+          t('preferences.image.uploader.currentUploader', {
+            name: getServiceNameById(currentUploader)
+          })
+        }}
       </div>
       <span v-else>{{ t('preferences.image.uploader.noUploaderSelected') }}</span>
     </section>
@@ -70,7 +74,7 @@
                   <div
                     v-if="showLoadingAnimation"
                     class="loading-dot"
-                    :class="{ 'animate': animationActive }"
+                    :class="{ animate: animationActive }"
                   />
                   <!-- Status indicator button (icon removed) -->
                   <button
@@ -98,7 +102,9 @@
                     >
                       <polyline points="23 4 23 10 17 10" />
                       <polyline points="1 20 1 14 7 14" />
-                      <path d="m3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                      <path
+                        d="m3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
+                      />
                     </svg>
                   </button>
                 </div>
@@ -113,7 +119,8 @@
               v-if="lastDetectionTime"
               class="detection-time"
             >
-              {{ t('preferences.image.uploader.lastDetectionTime') }}: {{ formatDetectionTime(lastDetectionTime) }}
+              {{ t('preferences.image.uploader.lastDetectionTime') }}:
+              {{ formatDetectionTime(lastDetectionTime) }}
             </div>
             <div
               v-if="lastSuccessTime"
@@ -132,15 +139,21 @@
             <div class="install-options">
               <div class="install-option">
                 <strong>npm:</strong>
-                <code class="install-command">{{ t('preferences.image.uploader.npmInstallCommand') }}</code>
+                <code class="install-command">{{
+                  t('preferences.image.uploader.npmInstallCommand')
+                }}</code>
               </div>
               <div class="install-option">
                 <strong>yarn:</strong>
-                <code class="install-command">{{ t('preferences.image.uploader.yarnInstallCommand') }}</code>
+                <code class="install-command">{{
+                  t('preferences.image.uploader.yarnInstallCommand')
+                }}</code>
               </div>
               <div class="install-option">
                 <strong>pnpm:</strong>
-                <code class="install-command">{{ t('preferences.image.uploader.pnpmInstallCommand') }}</code>
+                <code class="install-command">{{
+                  t('preferences.image.uploader.pnpmInstallCommand')
+                }}</code>
               </div>
             </div>
             <div class="install-link">
@@ -184,7 +197,9 @@
               <span
                 class="link"
                 @click="open('https://picgo.github.io/PicGo-Core-Doc/')"
-              >{{ t('preferences.image.uploader.usageGuide.documentation') }}</span>
+              >{{
+                t('preferences.image.uploader.usageGuide.documentation')
+              }}</span>
             </div>
           </div>
 
@@ -303,7 +318,17 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import { ref, reactive, computed, watch, onMounted, nextTick, onUnmounted, onActivated, onDeactivated } from 'vue'
+import {
+  ref,
+  reactive,
+  computed,
+  watch,
+  onMounted,
+  nextTick,
+  onUnmounted,
+  onActivated,
+  onDeactivated
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePreferencesStore } from '@/store/preferences'
 import getServices, { isValidService } from './services.js'
@@ -360,7 +385,12 @@ const legalNoticesErrorStates = reactive({
 })
 
 // computed
-const { currentUploader, imageBed, githubToken: prefGithubToken, cliScript: prefCliScript } = storeToRefs(preferenceStore)
+const {
+  currentUploader,
+  imageBed,
+  githubToken: prefGithubToken,
+  cliScript: prefCliScript
+} = storeToRefs(preferenceStore)
 
 const githubDisable = computed(() => !githubToken.value || !github.owner || !github.repo)
 // `isFileExecutable` is async via IPC; track the result in a ref so the
@@ -449,12 +479,14 @@ const startRealtimeDetection = () => {
       // Execute detection after 3 seconds
       detectionTimer.value = setTimeout(() => {
         console.log('执行PicGo检测...')
-        testPicgo().then(() => {
-          scheduleNextDetection() // Begin normal scheduling after the first detection completes
-        }).catch((error) => {
-          console.error('初始PicGo检测失败:', error)
-          scheduleNextDetection()
-        })
+        testPicgo()
+          .then(() => {
+            scheduleNextDetection() // Begin normal scheduling after the first detection completes
+          })
+          .catch((error) => {
+            console.error('初始PicGo检测失败:', error)
+            scheduleNextDetection()
+          })
       }, 3000)
     }, 1000)
   } else {
@@ -464,12 +496,14 @@ const startRealtimeDetection = () => {
     // Execute the first detection after 3 seconds
     detectionTimer.value = setTimeout(() => {
       console.log('执行PicGo检测...')
-      testPicgo().then(() => {
-        scheduleNextDetection() // Begin normal scheduling after the first detection completes
-      }).catch((error) => {
-        console.error('初始PicGo检测失败:', error)
-        scheduleNextDetection()
-      })
+      testPicgo()
+        .then(() => {
+          scheduleNextDetection() // Begin normal scheduling after the first detection completes
+        })
+        .catch((error) => {
+          console.error('初始PicGo检测失败:', error)
+          scheduleNextDetection()
+        })
     }, 3000)
   }
 
@@ -489,16 +523,20 @@ const startRealtimeDetection = () => {
       interval = Math.max(interval * 2, 60000) // Check at least once per minute when page is hidden
     }
 
-    console.log(`下次检测将在 ${interval / 1000} 秒后进行，连续失败次数: ${consecutiveFailures.value}`)
+    console.log(
+      `下次检测将在 ${interval / 1000} 秒后进行，连续失败次数: ${consecutiveFailures.value}`
+    )
 
     detectionTimer.value = setTimeout(() => {
       if (!isDetecting.value && isPageVisible.value) {
-        testPicgo().then(() => {
-          scheduleNextDetection() // Recursively schedule the next detection
-        }).catch((error) => {
-          console.error('PicGo检测异常:', error)
-          scheduleNextDetection()
-        })
+        testPicgo()
+          .then(() => {
+            scheduleNextDetection() // Recursively schedule the next detection
+          })
+          .catch((error) => {
+            console.error('PicGo检测异常:', error)
+            scheduleNextDetection()
+          })
       } else {
         scheduleNextDetection() // If detecting or page not visible, schedule directly
       }
@@ -591,7 +629,12 @@ onMounted(() => {
     // Extra safety mechanism: check again whether detection needs to start
     nextTick(() => {
       setTimeout(() => {
-        if (currentUploader.value === 'picgo' && !showLoadingAnimation.value && !showStatusIndicator.value && !showRefreshButton.value) {
+        if (
+          currentUploader.value === 'picgo' &&
+          !showLoadingAnimation.value &&
+          !showStatusIndicator.value &&
+          !showRefreshButton.value
+        ) {
           console.log('onMounted: 保障机制 - 检测到picgo但没有显示任何状态，强制启动')
           startRealtimeDetection()
         }
@@ -610,7 +653,13 @@ onActivated(() => {
 
   // Extra safety mechanism: ensure the detection state is displayed correctly
   setTimeout(() => {
-    if (currentUploader.value === 'picgo' && !showLoadingAnimation.value && !showStatusIndicator.value && !showRefreshButton.value && !showInitialButton.value) {
+    if (
+      currentUploader.value === 'picgo' &&
+      !showLoadingAnimation.value &&
+      !showStatusIndicator.value &&
+      !showRefreshButton.value &&
+      !showInitialButton.value
+    ) {
       console.log('onActivated: 保障机制 - 检测到picgo但没有显示任何状态，强制启动')
       startRealtimeDetection()
     }
@@ -725,7 +774,9 @@ const formatDetectionTime = (time) => {
 }
 
 const getLastSuccessTime = () => {
-  return lastSuccessTime.value ? formatDetectionTime(lastSuccessTime.value) : t('preferences.image.uploader.neverSuccessful')
+  return lastSuccessTime.value
+    ? formatDetectionTime(lastSuccessTime.value)
+    : t('preferences.image.uploader.neverSuccessful')
 }
 
 // Get status indicator CSS class
@@ -896,7 +947,7 @@ const testPicgo = () => {
         debugMessages.push('1. PicGo 未安装')
         debugMessages.push('2. PATH 环境变量问题')
         debugMessages.push('3. Electron 环境限制')
-        picgoDetectionFailed.value = false  // Detection succeeded; PicGo is simply not installed
+        picgoDetectionFailed.value = false // Detection succeeded; PicGo is simply not installed
         picgoDetectionStatus.value = t('preferences.image.uploader.picgoNotInstalled')
       }
     } catch (error) {
@@ -1173,7 +1224,8 @@ const validate = (value) => {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

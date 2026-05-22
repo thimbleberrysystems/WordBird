@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import { Lexer } from '../../../src/muya/lib/parser/marked'
 
-const parseMarkdown = markdown => {
+const parseMarkdown = (markdown) => {
   const lexer = new Lexer({
     disableInline: true,
     footnote: true
@@ -10,7 +10,7 @@ const parseMarkdown = markdown => {
   return lexer.lex(markdown)
 }
 
-const convertToken = token => {
+const convertToken = (token) => {
   const obj = {}
   for (const key of Object.keys(token)) {
     obj[key] = token[key]
@@ -18,7 +18,7 @@ const convertToken = token => {
   return obj
 }
 
-const convertTokens = tokenList => {
+const convertTokens = (tokenList) => {
   const tokens = []
   for (const token of tokenList) {
     tokens.push(convertToken(token))
@@ -37,8 +37,7 @@ describe('Markdown Footnotes', () => {
       { type: 'paragraph', text: 'foo' },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`foo[^1]
+    const markdown = `foo[^1]
 
 [^1]: foo`
 
@@ -48,14 +47,16 @@ describe('Markdown Footnotes', () => {
 
   it('Footnote according pandoc specification with more text', () => {
     const expected = [
-      { type: 'paragraph', text: 'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy[^1] eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.' },
+      {
+        type: 'paragraph',
+        text: 'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy[^1] eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.'
+      },
       { type: 'space' },
       { type: 'footnote_start', identifier: '1' },
       { type: 'paragraph', text: 'At vero eos et accusam et justo duo dolores et ea rebum!' },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy[^1] eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
+    const markdown = `Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy[^1] eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
 
 [^1]: At vero eos et accusam et justo duo dolores et ea rebum!`
 
@@ -65,14 +66,16 @@ describe('Markdown Footnotes', () => {
 
   it('Footnote with text as tag', () => {
     const expected = [
-      { type: 'paragraph', text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.' },
+      {
+        type: 'paragraph',
+        text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.'
+      },
       { type: 'space' },
       { type: 'footnote_start', identifier: 'foo1' },
       { type: 'paragraph', text: 'At vero eos et accusam et justo duo dolores et ea rebum!' },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
+    const markdown = `Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
 
 [^foo1]: At vero eos et accusam et justo duo dolores et ea rebum!`
 
@@ -82,14 +85,16 @@ describe('Markdown Footnotes', () => {
 
   it('Footnote without space between footnote tag and text', () => {
     const expected = [
-      { type: 'paragraph', text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.' },
+      {
+        type: 'paragraph',
+        text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.'
+      },
       { type: 'space' },
       { type: 'footnote_start', identifier: 'foo1' },
       { type: 'paragraph', text: 'At vero eos et accusam et justo duo dolores et ea rebum!' },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
+    const markdown = `Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
 
 [^foo1]:At vero eos et accusam et justo duo dolores et ea rebum!`
 
@@ -105,8 +110,7 @@ describe('Markdown Footnotes', () => {
       { type: 'paragraph', text: '別率重帰更科申会前後度計' },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`掲応自情表使[^掲応自情表]供業辞金打論将
+    const markdown = `掲応自情表使[^掲応自情表]供業辞金打論将
 
 [^掲応自情表]: 別率重帰更科申会前後度計`
 
@@ -116,14 +120,16 @@ describe('Markdown Footnotes', () => {
 
   it('Footnote with non-ASCII text as tag', () => {
     const expected = [
-      { type: 'paragraph', text: 'Lorem ipsum dolor sit amet, consetetur[^掲応自情表] sadipscing elitr.' },
+      {
+        type: 'paragraph',
+        text: 'Lorem ipsum dolor sit amet, consetetur[^掲応自情表] sadipscing elitr.'
+      },
       { type: 'space' },
       { type: 'footnote_start', identifier: '掲応自情表' },
       { type: 'paragraph', text: 'At vero eos et accusam et justo duo dolores et ea rebum!' },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`Lorem ipsum dolor sit amet, consetetur[^掲応自情表] sadipscing elitr.
+    const markdown = `Lorem ipsum dolor sit amet, consetetur[^掲応自情表] sadipscing elitr.
 
 [^掲応自情表]: At vero eos et accusam et justo duo dolores et ea rebum!`
 
@@ -133,14 +139,16 @@ describe('Markdown Footnotes', () => {
 
   it('Footnote with text in next paragraph', () => {
     const expected = [
-      { type: 'paragraph', text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.' },
+      {
+        type: 'paragraph',
+        text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.'
+      },
       { type: 'space' },
       { type: 'footnote_start', identifier: 'foo1' },
       { type: 'paragraph', text: 'At vero eos et accusam et justo duo dolores et ea rebum!' },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
+    const markdown = `Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
 
 [^foo1]:
 
@@ -152,14 +160,16 @@ describe('Markdown Footnotes', () => {
 
   it('Footnote with text in next line', () => {
     const expected = [
-      { type: 'paragraph', text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.' },
+      {
+        type: 'paragraph',
+        text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.'
+      },
       { type: 'space' },
       { type: 'footnote_start', identifier: 'foo1' },
       { type: 'paragraph', text: 'At vero eos et accusam et justo duo dolores et ea rebum!' },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
+    const markdown = `Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
 
 [^foo1]:
     At vero eos et accusam et justo duo dolores et ea rebum!`
@@ -170,7 +180,10 @@ describe('Markdown Footnotes', () => {
 
   it('Footnote with inline text and text in next paragraph', () => {
     const expected = [
-      { type: 'paragraph', text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.' },
+      {
+        type: 'paragraph',
+        text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.'
+      },
       { type: 'space' },
       { type: 'footnote_start', identifier: 'foo1' },
       { type: 'paragraph', text: 'Lorem ipsum dolor sit amet, consetetur sadipscing elitr.' },
@@ -178,8 +191,7 @@ describe('Markdown Footnotes', () => {
       { type: 'paragraph', text: 'At vero eos et accusam et justo duo dolores et ea rebum!' },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
+    const markdown = `Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
 
 [^foo1]: Lorem ipsum dolor sit amet, consetetur sadipscing elitr.
 
@@ -191,16 +203,21 @@ describe('Markdown Footnotes', () => {
 
   it('Footnote with multiline text in next paragraphs', () => {
     const expected = [
-      { type: 'paragraph', text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.' },
+      {
+        type: 'paragraph',
+        text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.'
+      },
       { type: 'space' },
       { type: 'footnote_start', identifier: 'foo1' },
       { type: 'paragraph', text: 'At vero eos et accusam et justo duo dolores et ea rebum!' },
       { type: 'space' },
-      { type: 'paragraph', text: 'Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.' },
+      {
+        type: 'paragraph',
+        text: 'Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'
+      },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
+    const markdown = `Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
 
 [^foo1]:
 
@@ -214,16 +231,21 @@ describe('Markdown Footnotes', () => {
 
   it('Footnote with multiline text in next line and paragraph', () => {
     const expected = [
-      { type: 'paragraph', text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.' },
+      {
+        type: 'paragraph',
+        text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.'
+      },
       { type: 'space' },
       { type: 'footnote_start', identifier: 'foo1' },
       { type: 'paragraph', text: 'At vero eos et accusam et justo duo dolores et ea rebum!' },
       { type: 'space' },
-      { type: 'paragraph', text: 'Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.' },
+      {
+        type: 'paragraph',
+        text: 'Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'
+      },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
+    const markdown = `Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
 
 [^foo1]:
     At vero eos et accusam et justo duo dolores et ea rebum!
@@ -236,28 +258,48 @@ describe('Markdown Footnotes', () => {
 
   it('Footnote with multiline text and list elements', () => {
     const expected = [
-      { type: 'paragraph', text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.' },
+      {
+        type: 'paragraph',
+        text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.'
+      },
       { type: 'space' },
       { type: 'footnote_start', identifier: 'foo1' },
       { type: 'paragraph', text: 'At vero eos et accusam et justo duo dolores et ea rebum!' },
       { type: 'space' },
       { type: 'list_start', ordered: false, listType: 'bullet', start: '' },
-      { checked: undefined, listItemType: 'bullet', bulletMarkerOrDelimiter: '-', type: 'list_item_start' },
+      {
+        checked: undefined,
+        listItemType: 'bullet',
+        bulletMarkerOrDelimiter: '-',
+        type: 'list_item_start'
+      },
       { type: 'text', text: 'list element 1' },
       { type: 'list_item_end' },
-      { checked: undefined, listItemType: 'bullet', bulletMarkerOrDelimiter: '-', type: 'list_item_start' },
+      {
+        checked: undefined,
+        listItemType: 'bullet',
+        bulletMarkerOrDelimiter: '-',
+        type: 'list_item_start'
+      },
       { type: 'text', text: 'list element 2' },
       { type: 'list_item_end' },
-      { checked: undefined, listItemType: 'bullet', bulletMarkerOrDelimiter: '-', type: 'list_item_start' },
+      {
+        checked: undefined,
+        listItemType: 'bullet',
+        bulletMarkerOrDelimiter: '-',
+        type: 'list_item_start'
+      },
       { type: 'text', text: 'list element 2' },
       { type: 'space' },
       { type: 'list_item_end' },
       { type: 'list_end' },
-      { type: 'paragraph', text: 'Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.' },
+      {
+        type: 'paragraph',
+        text: 'Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'
+      },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
+    const markdown = `Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
 
 [^foo1]:
 
@@ -275,17 +317,22 @@ describe('Markdown Footnotes', () => {
 
   it('Footnote with multiline text and code block', () => {
     const expected = [
-      { type: 'paragraph', text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.' },
+      {
+        type: 'paragraph',
+        text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.'
+      },
       { type: 'space' },
       { type: 'footnote_start', identifier: 'foo1' },
       { type: 'paragraph', text: 'At vero eos et accusam et justo duo dolores et ea rebum!' },
       { type: 'space' },
       { type: 'code', codeBlockStyle: 'fenced', lang: '', text: 'code block text' },
-      { type: 'paragraph', text: 'Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.' },
+      {
+        type: 'paragraph',
+        text: 'Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'
+      },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
+    const markdown = `Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
 
 [^foo1]:
 
@@ -303,12 +350,17 @@ describe('Markdown Footnotes', () => {
 
   it('Footnote with prefix is not a footnote', () => {
     const expected = [
-      { type: 'paragraph', text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.' },
+      {
+        type: 'paragraph',
+        text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.'
+      },
       { type: 'space' },
-      { type: 'paragraph', text: 'a[^foo1]: At vero eos et accusam et justo duo dolores et ea rebum!' }
+      {
+        type: 'paragraph',
+        text: 'a[^foo1]: At vero eos et accusam et justo duo dolores et ea rebum!'
+      }
     ]
-    const markdown =
-`Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
+    const markdown = `Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
 
 a[^foo1]: At vero eos et accusam et justo duo dolores et ea rebum!`
 
@@ -318,12 +370,17 @@ a[^foo1]: At vero eos et accusam et justo duo dolores et ea rebum!`
 
   it('Footnote inside paragraph is not a footnote', () => {
     const expected = [
-      { type: 'paragraph', text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.' },
+      {
+        type: 'paragraph',
+        text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.'
+      },
       { type: 'space' },
-      { type: 'paragraph', text: 'At vero eos et accusam [^foo1]: et justo duo dolores et ea rebum!' }
+      {
+        type: 'paragraph',
+        text: 'At vero eos et accusam [^foo1]: et justo duo dolores et ea rebum!'
+      }
     ]
-    const markdown =
-`Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
+    const markdown = `Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
 
 At vero eos et accusam [^foo1]: et justo duo dolores et ea rebum!`
 
@@ -337,8 +394,7 @@ At vero eos et accusam [^foo1]: et justo duo dolores et ea rebum!`
       { type: 'space' },
       { type: 'paragraph', text: '\\[^1]: foo' }
     ]
-    const markdown =
-`foo[^1]
+    const markdown = `foo[^1]
 
 \\[^1]: foo`
 
@@ -352,8 +408,7 @@ At vero eos et accusam [^foo1]: et justo duo dolores et ea rebum!`
       { type: 'space' },
       { type: 'paragraph', text: '[^1\\]: foo' }
     ]
-    const markdown =
-`foo[^1]
+    const markdown = `foo[^1]
 
 [^1\\]: foo`
 
@@ -367,8 +422,7 @@ At vero eos et accusam [^foo1]: et justo duo dolores et ea rebum!`
       { type: 'space' },
       { type: 'paragraph', text: '[ ^1]: foo' }
     ]
-    const markdown =
-`foo[^1]
+    const markdown = `foo[^1]
 
 [ ^1]: foo`
 
@@ -379,22 +433,22 @@ At vero eos et accusam [^foo1]: et justo duo dolores et ea rebum!`
 
 // These tests depend on the parsing style.
 describe('Markdown Footnotes (*)', () => {
-//   // TODO: This should be a footnote according pandoc but no specification details available.
-//   it('Empty footnotes should be a footnote without content', () => {
-//     const expected = [
-//       { type: 'paragraph', text: 'foo[^foo1]' },
-//       { type: 'space' },
-//       { type: 'footnote_start', identifier: 'foo1' },
-//       { type: 'footnote_end' }
-//     ]
-//     const markdown =
-// `foo[^foo1]
-//
-// [^foo1]:`
-//
-//     const tokens = parseTokens(markdown)
-//     expect(convertTokens(tokens)).to.deep.equal(expected)
-//   })
+  //   // TODO: This should be a footnote according pandoc but no specification details available.
+  //   it('Empty footnotes should be a footnote without content', () => {
+  //     const expected = [
+  //       { type: 'paragraph', text: 'foo[^foo1]' },
+  //       { type: 'space' },
+  //       { type: 'footnote_start', identifier: 'foo1' },
+  //       { type: 'footnote_end' }
+  //     ]
+  //     const markdown =
+  // `foo[^foo1]
+  //
+  // [^foo1]:`
+  //
+  //     const tokens = parseTokens(markdown)
+  //     expect(convertTokens(tokens)).to.deep.equal(expected)
+  //   })
 
   it('Empty footnotes with newline should be a footnote without content', () => {
     const expected = [
@@ -403,8 +457,7 @@ describe('Markdown Footnotes (*)', () => {
       { type: 'footnote_start', identifier: 'foo1' },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`foo[^foo1]
+    const markdown = `foo[^foo1]
 
 [^foo1]:
 `
@@ -425,8 +478,7 @@ describe('Markdown Footnotes (*)', () => {
       { type: 'paragraph', text: 'aaaaaa' },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`foo[^foo1]
+    const markdown = `foo[^foo1]
 
 [^foo1]:
 
@@ -442,7 +494,10 @@ bbbbbb
   // NOTE: Currently all footnotes are moved to the bottom of the document.
   it('Footnote should end on normal paragraph', () => {
     const expected = [
-      { type: 'paragraph', text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.' },
+      {
+        type: 'paragraph',
+        text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.'
+      },
       { type: 'space' },
       { type: 'space' }, // TODO: Double space seems to be wrong due to reordering?
       { type: 'paragraph', text: 'Sed diam nonumy eirmod tempor.' },
@@ -452,8 +507,7 @@ bbbbbb
       { type: 'paragraph', text: 'At vero eos et accusam et justo duo dolores et ea rebum!' },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
+    const markdown = `Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
 
 [^foo1]: Lorem ipsum dolor sit amet, consetetur sadipscing elitr.
 
@@ -468,7 +522,10 @@ Sed diam nonumy eirmod tempor.`
   // NOTE: Currently all footnotes are moved to the bottom of the document.
   it('Footnote should end on wrong indentation', () => {
     const expected = [
-      { type: 'paragraph', text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.' },
+      {
+        type: 'paragraph',
+        text: 'Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.'
+      },
       { type: 'space' },
       { type: 'space' },
       { type: 'paragraph', text: '  Sed diam nonumy eirmod tempor.' },
@@ -478,8 +535,7 @@ Sed diam nonumy eirmod tempor.`
       { type: 'paragraph', text: 'At vero eos et accusam et justo duo dolores et ea rebum!' },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
+    const markdown = `Lorem ipsum dolor sit amet, consetetur[^foo1] sadipscing elitr.
 
 [^foo1]: Lorem ipsum dolor sit amet, consetetur sadipscing elitr.
 
@@ -501,8 +557,7 @@ Sed diam nonumy eirmod tempor.`
       { type: 'paragraph', text: 'Lorem ipsum dolor sit amet, consetetur sadipscing elitr.' },
       { type: 'footnote_end' }
     ]
-    const markdown =
-`Lorem ipsum dolor sit amet, consetetur[^1] sadipscing elitr.
+    const markdown = `Lorem ipsum dolor sit amet, consetetur[^1] sadipscing elitr.
 
 [^2]: Lorem ipsum dolor sit amet, consetetur sadipscing elitr.`
 

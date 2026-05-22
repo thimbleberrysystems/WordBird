@@ -1,37 +1,37 @@
 :root {
   /*editor - Solarized Dark theme*/
   --themeColor: #268bd2;
-  --themeColor90: rgba(38, 139, 210, .9);
-  --themeColor80: rgba(38, 139, 210, .8);
-  --themeColor70: rgba(38, 139, 210, .7);
-  --themeColor60: rgba(38, 139, 210, .6);
-  --themeColor50: rgba(38, 139, 210, .5);
-  --themeColor40: rgba(38, 139, 210, .4);
-  --themeColor30: rgba(38, 139, 210, .3);
-  --themeColor20: rgba(38, 139, 210, .2);
-  --themeColor10: rgba(38, 139, 210, .1);
+  --themeColor90: rgba(38, 139, 210, 0.9);
+  --themeColor80: rgba(38, 139, 210, 0.8);
+  --themeColor70: rgba(38, 139, 210, 0.7);
+  --themeColor60: rgba(38, 139, 210, 0.6);
+  --themeColor50: rgba(38, 139, 210, 0.5);
+  --themeColor40: rgba(38, 139, 210, 0.4);
+  --themeColor30: rgba(38, 139, 210, 0.3);
+  --themeColor20: rgba(38, 139, 210, 0.2);
+  --themeColor10: rgba(38, 139, 210, 0.1);
 
-  --highlightColor: rgba(38, 139, 210, .6);
-  --selectionColor: rgba(7, 54, 66, .8);
+  --highlightColor: rgba(38, 139, 210, 0.6);
+  --selectionColor: rgba(7, 54, 66, 0.8);
   --editorColor: #839496;
-  --editorColor80: rgba(131, 148, 150, .8);
-  --editorColor60: rgba(131, 148, 150, .6);
-  --editorColor50: rgba(131, 148, 150, .5);
-  --editorColor40: rgba(131, 148, 150, .4);
-  --editorColor30: rgba(131, 148, 150, .3);
-  --editorColor10: rgba(131, 148, 150, .1);
-  --editorColor04: rgba(131, 148, 150, .04);
+  --editorColor80: rgba(131, 148, 150, 0.8);
+  --editorColor60: rgba(131, 148, 150, 0.6);
+  --editorColor50: rgba(131, 148, 150, 0.5);
+  --editorColor40: rgba(131, 148, 150, 0.4);
+  --editorColor30: rgba(131, 148, 150, 0.3);
+  --editorColor10: rgba(131, 148, 150, 0.1);
+  --editorColor04: rgba(131, 148, 150, 0.04);
   --editorBgColor: #002b36;
   --deleteColor: #dc322f;
-  --iconColor: rgba(131, 148, 150, .56);
+  --iconColor: rgba(131, 148, 150, 0.56);
   --codeBgColor: #073642;
   --codeBlockBgColor: #073642;
-  --footnoteBgColor: rgba(7, 54, 66, .3);
+  --footnoteBgColor: rgba(7, 54, 66, 0.3);
   --inputBgColor: #001e26;
 
   --focusColor: var(--themeColor);
 
-  --buttonFontColor: rgba(131, 148, 150, .6);
+  --buttonFontColor: rgba(131, 148, 150, 0.6);
   --buttonBgColor: #073642;
   --buttonBorder: 1px solid rgba(0, 0, 0, 0.2);
   --buttonShadow: none;
@@ -64,7 +64,7 @@
   --h4Color: #859900;
   --h5Color: #2aa198;
   --h6Color: #268bd2;
-  --blockquoteTextColor: rgba(131, 148, 150, .6);
+  --blockquoteTextColor: rgba(131, 148, 150, 0.6);
   --blockquoteBorderColor: #586e75;
   --hrColor: #073642;
   --linkColor: #268bd2;
@@ -73,20 +73,20 @@
   --listMarkerColor: #cb4b16;
 
   /*marktext*/
-  --sideBarColor: rgba(131, 148, 150, .6);
+  --sideBarColor: rgba(131, 148, 150, 0.6);
   --sideBarIconColor: var(--iconColor);
-  --sideBarTitleColor: rgba(131, 148, 150, .8);
-  --sideBarTextColor: rgba(131, 148, 150, .4);
+  --sideBarTitleColor: rgba(131, 148, 150, 0.8);
+  --sideBarTextColor: rgba(131, 148, 150, 0.4);
   --sideBarBgColor: #001e26;
-  --sideBarItemHoverBgColor: rgba(131, 148, 150, .03);
+  --sideBarItemHoverBgColor: rgba(131, 148, 150, 0.03);
   --itemBgColor: #073642;
 
-  --floatFontColor: rgba(131, 148, 150, .7);
+  --floatFontColor: rgba(131, 148, 150, 0.7);
   --floatBgColor: #073642;
-  --floatHoverColor: rgba(131, 148, 150, .04);
-  --floatBorderColor: rgba(0, 0, 0, .05);
+  --floatHoverColor: rgba(131, 148, 150, 0.04);
+  --floatBorderColor: rgba(0, 0, 0, 0.05);
   --floatShadow: rgba(0, 0, 0, 0.2);
-  --maskColor: rgba(0, 0, 0, .7);
+  --maskColor: rgba(0, 0, 0, 0.7);
   --editorAreaWidth: 750px;
 }
 
@@ -104,7 +104,7 @@
 }
 .title-bar .frameless-titlebar-minimize:hover,
 .title-bar .frameless-titlebar-toggle:hover {
-  background-color: rgba(131, 148, 150, .05);
+  background-color: rgba(131, 148, 150, 0.05);
 }
 
 .side-bar {
@@ -150,14 +150,14 @@
 
 /* ------------------------------------ */
 
-:not(pre) > code[class*="language-"],
+:not(pre) > code[class*='language-'],
 pre:not(.CodeMirror-line),
-pre[class*="language-"],
+pre[class*='language-'],
 pre.ag-paragraph {
   background: var(--codeBlockBgColor) !important;
   border: none !important;
 }
-p:not(.ag-active)[data-role="hr"]::before {
+p:not(.ag-active)[data-role='hr']::before {
   border-top: 2px dashed var(--editorColor10) !important;
   background: none !important;
 }

@@ -24,7 +24,9 @@ test.describe('Theme switching', () => {
 
   test('Switch to a light theme removes body.dark', async() => {
     await clickMenuById(app, 'light')
-    await page.waitForFunction(() => !document.body.classList.contains('dark'), null, { timeout: 5000 })
+    await page.waitForFunction(() => !document.body.classList.contains('dark'), null, {
+      timeout: 5000
+    })
     expect(await page.evaluate(() => document.body.classList.contains('dark'))).toBe(false)
   })
 

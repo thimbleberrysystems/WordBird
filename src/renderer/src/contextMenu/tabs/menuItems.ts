@@ -9,7 +9,7 @@ export const SEPARATOR = {
 
 // Use function form to avoid calling the translation function during module load
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TabMenuItem = { _tabId: string;[key: string]: any }
+type TabMenuItem = { _tabId: string; [key: string]: any }
 
 export const getCloseThis = () => ({
   label: t('contextMenu.tabs.close'),

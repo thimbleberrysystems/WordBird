@@ -12,7 +12,12 @@ const multiplexMode = (CodeMirror: CodeMirrorLike): void => {
     // eslint-disable-next-line prefer-rest-params
     const others = Array.prototype.slice.call(arguments, 1)
 
-    function indexOf(string: string, pattern: string | RegExp, from: number, returnEnd?: boolean): number {
+    function indexOf(
+      string: string,
+      pattern: string | RegExp,
+      from: number,
+      returnEnd?: boolean
+    ): number {
       if (typeof pattern === 'string') {
         const found = string.indexOf(pattern, from)
         return returnEnd && found > -1 ? found + pattern.length : found
@@ -57,7 +62,7 @@ const multiplexMode = (CodeMirror: CodeMirrorLike): void => {
               }
 
               state.inner = CodeMirror.startState(other.mode, outerIndent)
-              return other.delimStyle && (other.delimStyle + ' ' + other.delimStyle + '-open')
+              return other.delimStyle && other.delimStyle + ' ' + other.delimStyle + '-open'
             } else if (found !== -1 && found < cutOff) {
               cutOff = found
             }
@@ -73,11 +78,13 @@ const multiplexMode = (CodeMirror: CodeMirrorLike): void => {
             state.innerActive = state.inner = null
             return this.token(stream, state)
           }
-          const found = curInner.close ? indexOf(oldContent, curInner.close, stream.pos, curInner.parseDelimiters) : -1
+          const found = curInner.close
+            ? indexOf(oldContent, curInner.close, stream.pos, curInner.parseDelimiters)
+            : -1
           if (found === stream.pos && !curInner.parseDelimiters) {
             stream.match(curInner.close)
             state.innerActive = state.inner = null
-            return curInner.delimStyle && (curInner.delimStyle + ' ' + curInner.delimStyle + '-close')
+            return curInner.delimStyle && curInner.delimStyle + ' ' + curInner.delimStyle + '-close'
           }
           if (found > -1) stream.string = oldContent.slice(0, found)
           let innerToken = curInner.mode.token(stream, state.inner)
@@ -112,7 +119,10 @@ const multiplexMode = (CodeMirror: CodeMirrorLike): void => {
             const other = others[i]
             if (other.open === '\n') {
               state.innerActive = other
-              state.inner = CodeMirror.startState(other.mode, mode.indent ? mode.indent(state.outer, '') : 0)
+              state.inner = CodeMirror.startState(
+                other.mode,
+                mode.indent ? mode.indent(state.outer, '') : 0
+              )
             }
           }
         } else if (state.innerActive.close === '\n') {
@@ -123,7 +133,9 @@ const multiplexMode = (CodeMirror: CodeMirrorLike): void => {
       electricChars: outer.electricChars,
 
       innerMode(state: AnyObj) {
-        return state.inner ? { state: state.inner, mode: state.innerActive.mode } : { state: state.outer, mode: outer }
+        return state.inner
+          ? { state: state.inner, mode: state.innerActive.mode }
+          : { state: state.outer, mode: outer }
       }
     }
   }

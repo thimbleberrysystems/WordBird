@@ -5,7 +5,7 @@ const { launchElectron } = require('./helpers')
 
 test.describe('Test XSS Vulnerabilities', () => {
   let app = null
-  // eslint-disable-next-line no-unused-vars
+
   let page = null
 
   test.beforeAll(async() => {
@@ -22,7 +22,7 @@ test.describe('Test XSS Vulnerabilities', () => {
   })
 
   test('Load malicious document', async() => {
-    const { isVisible, isCrashed } = await app.evaluate(async process => {
+    const { isVisible, isCrashed } = await app.evaluate(async(process) => {
       const mainWindow = process.BrowserWindow.getAllWindows()[0]
       return {
         isVisible: mainWindow.isVisible(),

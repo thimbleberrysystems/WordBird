@@ -66,7 +66,9 @@ runFixture('gfm', 'test/e2e/data/gfm.md', async({ page }) => {
 
 runFixture('frontmatter', 'test/e2e/data/frontmatter.md', async({ page }) => {
   const hasFront = await page
-    .locator('.editor-component .ag-front-matter, .editor-component pre[data-role="FRONT_MATTER"], .editor-component pre.ag-front-matter')
+    .locator(
+      '.editor-component .ag-front-matter, .editor-component pre[data-role="FRONT_MATTER"], .editor-component pre.ag-front-matter'
+    )
     .first()
     .waitFor({ state: 'attached', timeout: 10000 })
     .then(() => true)
@@ -78,7 +80,9 @@ runFixture('frontmatter', 'test/e2e/data/frontmatter.md', async({ page }) => {
 runFixture('math', 'test/e2e/data/math.md', async({ page }) => {
   // KaTeX renders to .katex; fall back to muya math container if KaTeX has not run yet.
   const ok = await page
-    .locator('.editor-component .katex, .editor-component .ag-multiple-math, .editor-component figure[data-role="MATH"]')
+    .locator(
+      '.editor-component .katex, .editor-component .ag-multiple-math, .editor-component figure[data-role="MATH"]'
+    )
     .first()
     .waitFor({ state: 'attached', timeout: 15000 })
     .then(() => true)

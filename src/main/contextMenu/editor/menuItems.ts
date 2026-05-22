@@ -27,7 +27,7 @@ export const getCopyAsRich = (): MenuItemConstructorOptions => ({
   id: 'copyAsRichMenuItem',
   click(_menuItem, targetWindow) {
     if (targetWindow) {
-      (targetWindow as BrowserWindow).webContents.send('mt::cm-copy-as-rich')
+      ;(targetWindow as BrowserWindow).webContents.send('mt::cm-copy-as-rich')
     }
   }
 })
@@ -37,7 +37,7 @@ export const getCopyAsHtml = (): MenuItemConstructorOptions => ({
   id: 'copyAsHtmlMenuItem',
   click(_menuItem, targetWindow) {
     if (targetWindow) {
-      (targetWindow as BrowserWindow).webContents.send('mt::cm-copy-as-html')
+      ;(targetWindow as BrowserWindow).webContents.send('mt::cm-copy-as-html')
     }
   }
 })
@@ -47,7 +47,7 @@ export const getPasteAsPlainText = (): MenuItemConstructorOptions => ({
   id: 'pasteAsPlainTextMenuItem',
   click(_menuItem, targetWindow) {
     if (targetWindow) {
-      (targetWindow as BrowserWindow).webContents.send('mt::cm-paste-as-plain-text')
+      ;(targetWindow as BrowserWindow).webContents.send('mt::cm-paste-as-plain-text')
     }
   }
 })
@@ -57,7 +57,7 @@ export const getInsertBefore = (): MenuItemConstructorOptions => ({
   id: 'insertParagraphBeforeMenuItem',
   click(_menuItem, targetWindow) {
     if (targetWindow) {
-      (targetWindow as BrowserWindow).webContents.send('mt::cm-insert-paragraph', 'before')
+      ;(targetWindow as BrowserWindow).webContents.send('mt::cm-insert-paragraph', 'before')
     }
   }
 })
@@ -67,7 +67,7 @@ export const getInsertAfter = (): MenuItemConstructorOptions => ({
   id: 'insertParagraphAfterMenuItem',
   click(_menuItem, targetWindow) {
     if (targetWindow) {
-      (targetWindow as BrowserWindow).webContents.send('mt::cm-insert-paragraph', 'after')
+      ;(targetWindow as BrowserWindow).webContents.send('mt::cm-insert-paragraph', 'after')
     }
   }
 })

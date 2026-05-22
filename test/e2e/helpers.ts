@@ -13,7 +13,12 @@ const getDateAsFilename = () => {
 }
 
 const getTempPath = (suffix = '') => {
-  const name = 'marktext-e2etest-' + getDateAsFilename() + '-' + Math.random().toString(36).slice(2, 8) + suffix
+  const name =
+    'marktext-e2etest-' +
+    getDateAsFilename() +
+    '-' +
+    Math.random().toString(36).slice(2, 8) +
+    suffix
   return path.join(os.tmpdir(), name)
 }
 
@@ -35,11 +40,15 @@ const trackTempDir = (dir) => {
 }
 process.on('exit', () => {
   for (const dir of createdTempDirs) {
-    try { fs.rmSync(dir, { recursive: true, force: true }) } catch { /* ignore */ }
+    try {
+      fs.rmSync(dir, { recursive: true, force: true })
+    } catch {
+      /* ignore */
+    }
   }
 })
 
-const launchElectron = async userArgs => {
+const launchElectron = async(userArgs) => {
   userArgs = userArgs || []
   const executablePath = getElectronPath()
   // Pass project root as entry so Electron reads package.json and getAppPath() returns project root.
@@ -95,10 +104,14 @@ const clickMenuById = async(app, id) => {
 
 const waitForEditor = async(page, timeout = 15000) => {
   await page.waitForSelector('.editor-component', { state: 'attached', timeout })
-  await page.waitForFunction(() => {
-    const el = document.querySelector('.editor-component')
-    return el && el.children.length > 0
-  }, null, { timeout })
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('.editor-component')
+      return el && el.children.length > 0
+    },
+    null,
+    { timeout }
+  )
 }
 
 const enterSourceMode = async(page, app) => {
@@ -106,21 +119,29 @@ const enterSourceMode = async(page, app) => {
   if (already) return
   await clickMenuById(app, 'sourceCodeModeMenuItem')
   await page.waitForSelector('.source-code .CodeMirror', { state: 'attached', timeout: 10000 })
-  await page.waitForFunction(() => {
-    const cm = document.querySelector('.source-code .CodeMirror')
-    return cm && cm.CodeMirror
-  }, null, { timeout: 10000 })
+  await page.waitForFunction(
+    () => {
+      const cm = document.querySelector('.source-code .CodeMirror')
+      return cm && cm.CodeMirror
+    },
+    null,
+    { timeout: 10000 }
+  )
 }
 
 const exitSourceMode = async(page, app) => {
   const inSource = await page.evaluate(() => !!document.querySelector('.source-code .CodeMirror'))
   if (!inSource) return
   await clickMenuById(app, 'sourceCodeModeMenuItem')
-  await page.waitForFunction(() => !document.querySelector('.source-code'), null, { timeout: 10000 })
+  await page.waitForFunction(() => !document.querySelector('.source-code'), null, {
+    timeout: 10000
+  })
 }
 
 const getMarkdownContent = async(page, app) => {
-  const wasInSource = await page.evaluate(() => !!document.querySelector('.source-code .CodeMirror'))
+  const wasInSource = await page.evaluate(
+    () => !!document.querySelector('.source-code .CodeMirror')
+  )
   if (!wasInSource) await enterSourceMode(page, app)
   const value = await page.evaluate(() => {
     const cm = document.querySelector('.source-code .CodeMirror')
@@ -224,10 +245,13 @@ const launchWithMarkdown = async(markdown = '') => {
 }
 
 const sendIpcToRenderer = async(app, channel, ...args) => {
-  await app.evaluate(({ BrowserWindow }, payload) => {
-    const win = BrowserWindow.getAllWindows()[0]
-    win.webContents.send(payload.channel, ...payload.args)
-  }, { channel, args })
+  await app.evaluate(
+    ({ BrowserWindow }, payload) => {
+      const win = BrowserWindow.getAllWindows()[0]
+      win.webContents.send(payload.channel, ...payload.args)
+    },
+    { channel, args }
+  )
 }
 
 module.exports = {

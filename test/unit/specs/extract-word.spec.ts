@@ -1,11 +1,14 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import { extractWord } from '../../../src/muya/lib/marktext/spellchecker.js'
 
 const basicCheck = 'Lorem ipsum dolor'
-const basicText = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce pharetra turpis in ante viverra, sit amet euismod tortor rutrum. Sed eu libero velit. Aliquam erat volutpat. Sed ullamcorper ultricies auctor. Vestibulum vitae odio eleifend, finibus justo a, vestibulum orci.'
-const basicMdText = '**Lorem** ipsum ~~dolor~~ sit <sub>amet</sub>, ----- **** **虥諰諨** consectetur adipiscing elit.'
-const nonAscii = '虥諰 鯦鯢鯡 媓幁惁 墏, 邆錉霋 鱐鱍鱕 銪 鈌鈅, 韎餀 骱 噮噦噞 虥諰諨 樆樦潏 蝺 嬔嬚嬞 脬舑莕 騩鰒...'
+const basicText =
+  'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce pharetra turpis in ante viverra, sit amet euismod tortor rutrum. Sed eu libero velit. Aliquam erat volutpat. Sed ullamcorper ultricies auctor. Vestibulum vitae odio eleifend, finibus justo a, vestibulum orci.'
+const basicMdText =
+  '**Lorem** ipsum ~~dolor~~ sit <sub>amet</sub>, ----- **** **虥諰諨** consectetur adipiscing elit.'
+const nonAscii =
+  '虥諰 鯦鯢鯡 媓幁惁 墏, 邆錉霋 鱐鱍鱕 銪 鈌鈅, 韎餀 骱 噮噦噞 虥諰諨 樆樦潏 蝺 嬔嬚嬞 脬舑莕 騩鰒...'
 
 const buildResult = (left, right, word) => {
   return { left, right, word }

@@ -63,8 +63,14 @@ export const popupContextMenu = (
   let offClosed: (() => void) | null = null
 
   const cleanup = (): void => {
-    if (offClick) { offClick(); offClick = null }
-    if (offClosed) { offClosed(); offClosed = null }
+    if (offClick) {
+      offClick()
+      offClick = null
+    }
+    if (offClosed) {
+      offClosed()
+      offClosed = null
+    }
     handlers.clear()
   }
 
@@ -74,7 +80,11 @@ export const popupContextMenu = (
     const id = (message as unknown as { id?: string } | undefined)?.id ?? ''
     const handler = handlers.get(id)
     if (typeof handler === 'function') {
-      try { handler(payload) } catch (err) { console.error(err) }
+      try {
+        handler(payload)
+      } catch (err) {
+        console.error(err)
+      }
     }
   })
   offClosed = window.electron.ipcRenderer.on('mt::menu::closed', () => cleanup())

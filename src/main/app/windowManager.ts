@@ -253,9 +253,7 @@ class WindowManager extends TypedEmitter<WindowManagerEvents> {
   /**
    * Find the best window to open the files in.
    */
-  findBestWindowToOpenIn(
-    fileList: string[]
-  ): { windowId: number | null; fileList: string[] }[] {
+  findBestWindowToOpenIn(fileList: string[]): { windowId: number | null; fileList: string[] }[] {
     if (!fileList || !Array.isArray(fileList) || !fileList.length) return []
     const { windows } = this
     const lastActiveEditorId = this.getActiveEditorId() // editor id or null

@@ -125,8 +125,9 @@ class AppMenu {
     }
 
     try {
-      const recentDocuments: string[] = JSON.parse(fs.readFileSync(RECENTS_PATH, 'utf-8'))
-        .filter((f: string) => f && (isFile2(f) || isDirectory2(f)))
+      const recentDocuments: string[] = JSON.parse(fs.readFileSync(RECENTS_PATH, 'utf-8')).filter(
+        (f: string) => f && (isFile2(f) || isDirectory2(f))
+      )
 
       if (recentDocuments.length > MAX_RECENTLY_USED_DOCUMENTS) {
         recentDocuments.splice(
@@ -442,13 +443,16 @@ class AppMenu {
     ipcMain.on('mt::update-line-ending-menu', (_e, windowId: number, lineEnding: string) => {
       this.updateLineEndingMenu(windowId, lineEnding)
     })
-    ipcMain.on('mt::update-format-menu', (_e, windowId: number, formats: Record<string, boolean>) => {
-      if (!this.has(windowId)) {
-        log.error(`UpdateApplicationMenu: Cannot find window menu for window id ${windowId}.`)
-        return
+    ipcMain.on(
+      'mt::update-format-menu',
+      (_e, windowId: number, formats: Record<string, boolean>) => {
+        if (!this.has(windowId)) {
+          log.error(`UpdateApplicationMenu: Cannot find window menu for window id ${windowId}.`)
+          return
+        }
+        updateFormatMenu(this.getWindowMenuById(windowId), formats)
       }
-      updateFormatMenu(this.getWindowMenuById(windowId), formats)
-    })
+    )
     ipcMain.on('mt::update-sidebar-menu', (_e, windowId: number, value: unknown) => {
       if (!this.has(windowId)) {
         log.error(`UpdateApplicationMenu: Cannot find window menu for window id ${windowId}.`)
@@ -456,13 +460,16 @@ class AppMenu {
       }
       updateSidebarMenu(this.getWindowMenuById(windowId), value)
     })
-    ipcMain.on('mt::view-layout-changed', (_e, windowId: number, viewSettings: Record<string, unknown>) => {
-      if (!this.has(windowId)) {
-        log.error(`UpdateApplicationMenu: Cannot find window menu for window id ${windowId}.`)
-        return
+    ipcMain.on(
+      'mt::view-layout-changed',
+      (_e, windowId: number, viewSettings: Record<string, unknown>) => {
+        if (!this.has(windowId)) {
+          log.error(`UpdateApplicationMenu: Cannot find window menu for window id ${windowId}.`)
+          return
+        }
+        viewLayoutChanged(this.getWindowMenuById(windowId), viewSettings)
       }
-      viewLayoutChanged(this.getWindowMenuById(windowId), viewSettings)
-    })
+    )
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ipcMain.on('mt::editor-selection-changed', (_e, windowId: number, changes: any) => {
       if (!this.has(windowId)) {

@@ -32,10 +32,18 @@ export const registerShellHandlers = (): void => {
   })
 
   ipcMain.on('mt::clipboard::write-text', (_e, text: string) => {
-    try { clipboard.writeText(text) } catch (err) { log.error('clipboard.writeText failed:', err) }
+    try {
+      clipboard.writeText(text)
+    } catch (err) {
+      log.error('clipboard.writeText failed:', err)
+    }
   })
   ipcMain.handle('mt::clipboard::read-text', () => {
-    try { return clipboard.readText() } catch { return '' }
+    try {
+      return clipboard.readText()
+    } catch {
+      return ''
+    }
   })
 
   ipcMain.handle('mt::clipboard::guess-file-path', () => {

@@ -1,10 +1,10 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 describe('renderer i18n language loading', () => {
   beforeEach(() => {
     vi.resetModules()
     window.i18nUtils = {
-      loadTranslations: vi.fn(locale => ({
+      loadTranslations: vi.fn((locale) => ({
         locale,
         menu: {
           file: {

@@ -125,14 +125,16 @@ export interface IpcSendChannels {
   'mt::open-setting-window': []
   'mt::rename': [oldPath: string, newPath: string]
   'mt::request-keybindings': []
-  'mt::response-export': [payload: {
-    type: ExportType
-    title: string
-    content: string
-    filename: string
-    pathname: string
-    pageOptions: PageOptions
-  }]
+  'mt::response-export': [
+    payload: {
+      type: ExportType
+      title: string
+      content: string
+      filename: string
+      pathname: string
+      pageOptions: PageOptions
+    }
+  ]
   'mt::response-file-move-to': [tabId: string, newPath: string]
   'mt::response-file-save': [
     id: string,

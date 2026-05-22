@@ -131,7 +131,8 @@ const handleResponseForExport = async(e: IpcMainEvent, payload: ExportPayload): 
       win.webContents.send('mt::export-success', { type, filePath })
     } catch (err) {
       log.error('Error while exporting:', err)
-      const ERROR_MSG = (err instanceof Error && err.message) || `Error happened when export ${filePath}`
+      const ERROR_MSG =
+        (err instanceof Error && err.message) || `Error happened when export ${filePath}`
       win.webContents.send('mt::show-notification', {
         title: 'Export failure',
         type: 'error',
@@ -373,13 +374,21 @@ ipcMain.on(
             ipcMain.emit('menu-add-recently-used', filePath)
 
             const newFilename = path.basename(filePath!)
-            win.webContents.send('mt::set-pathname', { id, pathname: filePath, filename: newFilename })
+            win.webContents.send('mt::set-pathname', {
+              id,
+              pathname: filePath,
+              filename: newFilename
+            })
           } else if (pathname !== filePath) {
             // Update window file list and watcher.
             ipcMain.emit('window-change-file-path', win.id, filePath, pathname)
 
             const newFilename = path.basename(filePath!)
-            win.webContents.send('mt::set-pathname', { id, pathname: filePath, filename: newFilename })
+            win.webContents.send('mt::set-pathname', {
+              id,
+              pathname: filePath,
+              filename: newFilename
+            })
           } else {
             ipcMain.emit('window-file-saved', win.id, filePath)
             win.webContents.send('mt::tab-saved', id)
@@ -522,33 +531,36 @@ ipcMain.on('mt::rename', async(e, { id, pathname, newPathname }: RenamePayload) 
   }
 })
 
-ipcMain.on('mt::response-file-move-to', async(e, { id, pathname }: { id: string; pathname: string }) => {
-  const win = BrowserWindow.fromWebContents(e.sender)
-  if (!win) {
-    return
-  }
-  const { filePath, canceled } = await dialog.showSaveDialog(win, {
-    buttonLabel: 'Move to',
-    nameFieldLabel: 'Filename:',
-    defaultPath: pathname
-  })
-
-  if (filePath && !canceled) {
-    fsRename(pathname, filePath, (err: NodeJS.ErrnoException | null) => {
-      if (err) {
-        log.error(`mt::rename: Cannot rename "${pathname}" to "${filePath}".\n${err.stack}`)
-        return
-      }
-
-      ipcMain.emit('window-change-file-path', win.id, filePath, pathname)
-      e.sender.send('mt::set-pathname', {
-        id,
-        pathname: filePath,
-        filename: path.basename(filePath)
-      })
+ipcMain.on(
+  'mt::response-file-move-to',
+  async(e, { id, pathname }: { id: string; pathname: string }) => {
+    const win = BrowserWindow.fromWebContents(e.sender)
+    if (!win) {
+      return
+    }
+    const { filePath, canceled } = await dialog.showSaveDialog(win, {
+      buttonLabel: 'Move to',
+      nameFieldLabel: 'Filename:',
+      defaultPath: pathname
     })
+
+    if (filePath && !canceled) {
+      fsRename(pathname, filePath, (err: NodeJS.ErrnoException | null) => {
+        if (err) {
+          log.error(`mt::rename: Cannot rename "${pathname}" to "${filePath}".\n${err.stack}`)
+          return
+        }
+
+        ipcMain.emit('window-change-file-path', win.id, filePath, pathname)
+        e.sender.send('mt::set-pathname', {
+          id,
+          pathname: filePath,
+          filename: path.basename(filePath)
+        })
+      })
+    }
   }
-})
+)
 
 ipcMain.on('mt::ask-for-open-project-in-sidebar', async(e) => {
   const win = BrowserWindow.fromWebContents(e.sender)

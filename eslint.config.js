@@ -21,7 +21,7 @@ export default [
       'src/renderer/src/assets/symbolIcon/index.js',
       '**/*.min.json',
       'test-results/**',
-      'playwright-report/**',
+      'playwright-report/**'
     ]
   },
 
@@ -32,7 +32,7 @@ export default [
   // 2. typescript-eslint recommended — scoped to TS files only.
   // .vue files are added to this scope in Commit 8 (when they convert to
   // lang="ts"). Until then they're treated as JS by section 5.
-  ...tseslint.configs.recommended.map(config => ({
+  ...tseslint.configs.recommended.map((config) => ({
     ...config,
     files: ['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts']
   })),
@@ -44,7 +44,7 @@ export default [
       parser: tseslint.parser,
       parserOptions: {
         ecmaVersion: 'latest',
-        sourceType: 'module',
+        sourceType: 'module'
         // `project: ...` (type-aware linting) intentionally omitted — too slow
         // for ~200-file lint on every PR. Add a separate `lint:types` script
         // later if we want type-aware rules.
@@ -59,8 +59,14 @@ export default [
     },
     rules: {
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
-      '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports', fixStyle: 'inline-type-imports' }],
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }
+      ],
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports', fixStyle: 'inline-type-imports' }
+      ],
       '@typescript-eslint/no-non-null-assertion': 'warn',
       // Disable JS-only rules that double-trigger or fight TS:
       'no-unused-vars': 'off',
@@ -146,7 +152,7 @@ export default [
       'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
       'require-atomic-updates': 'off',
       'prefer-const': 'off',
-      'no-prototype-builtins': 'off',
+      'no-prototype-builtins': 'off'
     },
     ignores: ['node_modules', 'src/muya/dist/**/*', 'src/muya/webpack.config.js']
   },
@@ -167,7 +173,7 @@ export default [
       'no-unused-expressions': 'off',
       'no-return-assign': 'off',
       eqeqeq: 'warn',
-      'no-var': 'warn',
+      'no-var': 'warn'
     }
   },
 

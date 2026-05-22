@@ -128,7 +128,13 @@ declare global {
     isAbsolute(path: string): boolean
     normalize(path: string): string
     parse(path: string): { root: string; dir: string; base: string; ext: string; name: string }
-    format(pathObject: { root?: string; dir?: string; base?: string; ext?: string; name?: string }): string
+    format(pathObject: {
+      root?: string
+      dir?: string
+      base?: string
+      ext?: string
+      name?: string
+    }): string
     sep: string
     delimiter: string
     posix: PathAPI
@@ -184,7 +190,7 @@ declare global {
     rgPath: string
     // Set by the legacy editor store at runtime; consumed by muya internals.
     DIRNAME: string
-    marktext?: { env?: { windowId: number;[key: string]: unknown } }
+    marktext?: { env?: { windowId: number; [key: string]: unknown } }
   }
 }
 

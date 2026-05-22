@@ -19,18 +19,23 @@ const FIXTURE = [
 ].join('\n')
 
 const readSourceState = async(page) => {
-  await page.waitForFunction(() => {
-    const root = document.querySelector('.source-code .CodeMirror')
-    if (!root || !root.CodeMirror) return false
-    const cm = root.CodeMirror
-    const last = cm.lastLine()
-    cm.getTokenAt({ line: last, ch: cm.getLine(last).length }, true)
-    return true
-  }, null, { timeout: 5000 })
+  await page.waitForFunction(
+    () => {
+      const root = document.querySelector('.source-code .CodeMirror')
+      if (!root || !root.CodeMirror) return false
+      const cm = root.CodeMirror
+      const last = cm.lastLine()
+      cm.getTokenAt({ line: last, ch: cm.getLine(last).length }, true)
+      return true
+    },
+    null,
+    { timeout: 5000 }
+  )
 
   return page.evaluate(() => {
-    const emTexts = Array.from(document.querySelectorAll('.source-code .CodeMirror .cm-em'))
-      .map((s) => s.textContent)
+    const emTexts = Array.from(document.querySelectorAll('.source-code .CodeMirror .cm-em')).map(
+      (s) => s.textContent
+    )
     const mathInline = document.querySelectorAll('.source-code .CodeMirror .cm-math-inline').length
     const mathBlock = document.querySelectorAll('.source-code .CodeMirror .cm-math-block').length
     return { emTexts, mathInline, mathBlock }
