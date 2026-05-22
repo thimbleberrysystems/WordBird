@@ -34,7 +34,8 @@ export default defineConfig({
       alias: {
         '@': resolve(__dirname, 'src/renderer/src'),
         common: resolve(__dirname, 'src/common'),
-        muya: resolve(__dirname, 'src/muya')
+        muya: resolve(__dirname, 'src/muya'),
+        '@shared': resolve(__dirname, 'src/shared')
       },
       extensions: ['.mjs', '.ts', '.js', '.json']
     }
@@ -53,7 +54,8 @@ export default defineConfig({
       alias: {
         '@': resolve(__dirname, 'src/renderer/src'),
         common: resolve(__dirname, 'src/common'),
-        muya: resolve(__dirname, 'src/muya')
+        muya: resolve(__dirname, 'src/muya'),
+        '@shared': resolve(__dirname, 'src/shared')
       },
       extensions: ['.mjs', '.ts', '.js', '.json']
     }
@@ -78,6 +80,7 @@ export default defineConfig({
         '@': resolve(__dirname, 'src/renderer/src'),
         common: resolve(__dirname, 'src/common'),
         muya: resolve(__dirname, 'src/muya'),
+        '@shared': resolve(__dirname, 'src/shared'),
         path: 'path-browserify'
       },
       extensions: ['.mjs', '.ts', '.js', '.json', '.vue']
