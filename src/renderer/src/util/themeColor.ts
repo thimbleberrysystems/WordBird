@@ -69,132 +69,132 @@ import graphitePrismTheme from '../assets/themes/prismjs/graphite.theme.css?inli
 import ulyssesPrismTheme from '../assets/themes/prismjs/ulysses.theme.css?inline'
 
 // Original themes
-export const dark = () => {
+export const dark = (): string => {
   return darkTheme + '\n' + darkPrismTheme
 }
 
-export const graphite = () => {
+export const graphite = (): string => {
   return graphiteTheme + '\n' + graphitePrismTheme
 }
 
-export const materialDark = () => {
+export const materialDark = (): string => {
   return materialDarkTheme + '\n' + darkPrismTheme
 }
 
-export const oneDark = () => {
+export const oneDark = (): string => {
   return oneDarkTheme + '\n' + oneDarkPrismTheme
 }
 
-export const ulysses = () => {
+export const ulysses = (): string => {
   return ulyssesTheme + '\n' + ulyssesPrismTheme
 }
 
 // New gogh themes - Dark (with matching Prism themes)
-export const dracula = () => {
+export const dracula = (): string => {
   return draculaTheme + '\n' + draculaPrismTheme
 }
 
-export const nord = () => {
+export const nord = (): string => {
   return nordTheme + '\n' + nordPrismTheme
 }
 
-export const catppuccinMocha = () => {
+export const catppuccinMocha = (): string => {
   return catppuccinMochaTheme + '\n' + catppuccinMochaPrismTheme
 }
 
-export const gruvboxDark = () => {
+export const gruvboxDark = (): string => {
   return gruvboxDarkTheme + '\n' + gruvboxDarkPrismTheme
 }
 
-export const tokyoNight = () => {
+export const tokyoNight = (): string => {
   return tokyoNightTheme + '\n' + tokyoNightPrismTheme
 }
 
-export const tokyoNightStorm = () => {
+export const tokyoNightStorm = (): string => {
   return tokyoNightStormTheme + '\n' + tokyoNightStormPrismTheme
 }
 
-export const solarizedDark = () => {
+export const solarizedDark = (): string => {
   return solarizedDarkTheme + '\n' + solarizedDarkPrismTheme
 }
 
-export const ayuDark = () => {
+export const ayuDark = (): string => {
   return ayuDarkTheme + '\n' + ayuDarkPrismTheme
 }
 
-export const ayuMirage = () => {
+export const ayuMirage = (): string => {
   return ayuMirageTheme + '\n' + ayuMiragePrismTheme
 }
 
-export const everforestDark = () => {
+export const everforestDark = (): string => {
   return everforestDarkTheme + '\n' + everforestDarkPrismTheme
 }
 
-export const rosePine = () => {
+export const rosePine = (): string => {
   return rosePineTheme + '\n' + rosePinePrismTheme
 }
 
-export const rosePineMoon = () => {
+export const rosePineMoon = (): string => {
   return rosePineMoonTheme + '\n' + rosePineMoonPrismTheme
 }
 
-export const monokaiPro = () => {
+export const monokaiPro = (): string => {
   return monokaiProTheme + '\n' + monokaiProPrismTheme
 }
 
-export const synthwave84 = () => {
+export const synthwave84 = (): string => {
   return synthwave84Theme + '\n' + synthwave84PrismTheme
 }
 
-export const horizonDark = () => {
+export const horizonDark = (): string => {
   return horizonDarkTheme + '\n' + horizonDarkPrismTheme
 }
 
-export const palenight = () => {
+export const palenight = (): string => {
   return palenightTheme + '\n' + palenightPrismTheme
 }
 
-export const oxocarbonDark = () => {
+export const oxocarbonDark = (): string => {
   return oxocarbonDarkTheme + '\n' + oxocarbonDarkPrismTheme
 }
 
-export const kanagawa = () => {
+export const kanagawa = (): string => {
   return kanagawaTheme + '\n' + kanagawaPrismTheme
 }
 
-export const nightfox = () => {
+export const nightfox = (): string => {
   return nightfoxTheme + '\n' + nightfoxPrismTheme
 }
 
-export const cyberdream = () => {
+export const cyberdream = (): string => {
   return cyberdreamTheme + '\n' + cyberdreamPrismTheme
 }
 
 // New gogh themes - Light (with matching Prism themes)
-export const catppuccinLatte = () => {
+export const catppuccinLatte = (): string => {
   return catppuccinLatteTheme + '\n' + catppuccinLattePrismTheme
 }
 
-export const gruvboxLight = () => {
+export const gruvboxLight = (): string => {
   return gruvboxLightTheme + '\n' + gruvboxLightPrismTheme
 }
 
-export const tokyoNightLight = () => {
+export const tokyoNightLight = (): string => {
   return tokyoNightLightTheme + '\n' + tokyoNightLightPrismTheme
 }
 
-export const solarizedLight = () => {
+export const solarizedLight = (): string => {
   return solarizedLightTheme + '\n' + solarizedLightPrismTheme
 }
 
-export const ayuLight = () => {
+export const ayuLight = (): string => {
   return ayuLightTheme + '\n' + ayuLightPrismTheme
 }
 
-export const everforestLight = () => {
+export const everforestLight = (): string => {
   return everforestLightTheme + '\n' + everforestLightPrismTheme
 }
 
-export const rosePineDawn = () => {
+export const rosePineDawn = (): string => {
   return rosePineDawnTheme + '\n' + rosePineDawnPrismTheme
 }

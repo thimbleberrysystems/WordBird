@@ -5,7 +5,23 @@ import liberTheme from '@/assets/themes/export/liber.theme.css?inline'
 import { cloneObj } from '../util'
 import { sanitize, EXPORT_DOMPURIFY_CONFIG } from '../util/dompurify'
 
-export const getCssForOptions = async(options) => {
+export interface PdfCssOptions {
+  type?: string
+  pageMarginTop?: number
+  pageMarginRight?: number
+  pageMarginBottom?: number
+  pageMarginLeft?: number
+  fontFamily?: string
+  fontSize?: number
+  lineHeight?: number | string
+  autoNumberingHeadings?: boolean
+  showFrontMatter?: boolean
+  theme?: string
+  headerFooterFontSize?: number
+  [key: string]: unknown
+}
+
+export const getCssForOptions = async(options: PdfCssOptions): Promise<string> => {
   const {
     type,
     pageMarginTop,
@@ -59,7 +75,8 @@ export const getCssForOptions = async(options) => {
       output += liberTheme
     } else {
       // Read theme from disk
-      const { userDataPath } = window.marktext.paths
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { userDataPath } = (window as any).marktext.paths as { userDataPath: string }
       const themePath = window.path.join(userDataPath, 'themes/export', theme)
       if (await window.fileUtils.isFile(themePath)) {
         try {
@@ -90,7 +107,26 @@ export const getCssForOptions = async(options) => {
   return unescapeHTML(sanitize(escapeHTML(output), EXPORT_DOMPURIFY_CONFIG))
 }
 
-const generateHtmlToc = (tocList, slugger, currentLevel, options) => {
+export interface TocEntry {
+  lvl: number
+  content: string
+  slug?: string
+  [key: string]: unknown
+}
+
+export interface HtmlTocOptions {
+  tocIncludeTopHeading?: boolean
+  tocTitle?: string
+  [key: string]: unknown
+}
+
+const generateHtmlToc = (
+  tocList: TocEntry[],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  slugger: any,
+  currentLevel: number,
+  options: HtmlTocOptions
+): string => {
   if (!tocList || tocList.length === 0) {
     return ''
   }
@@ -103,7 +139,8 @@ const generateHtmlToc = (tocList, slugger, currentLevel, options) => {
     return ''
   }
 
-  const { content, lvl } = tocList.shift()
+  const shifted = tocList.shift() as TocEntry
+  const { content, lvl } = shifted
   const slug = slugger.slug(content)
 
   let html = `<li><span><a class="toc-h${lvl}" href="#${slug}">${content}</a><span class="dots"></span></span>`
@@ -117,7 +154,7 @@ const generateHtmlToc = (tocList, slugger, currentLevel, options) => {
   return html
 }
 
-export const getHtmlToc = (toc, options = {}) => {
+export const getHtmlToc = (toc: TocEntry[], options: HtmlTocOptions = {}): string => {
   const list = cloneObj(toc)
   const slugger = new Slugger()
   const tocList = generateHtmlToc(list, slugger, 0, options)

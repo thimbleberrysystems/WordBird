@@ -1,19 +1,23 @@
-export const delay = (time) => {
-  let timerId
-  let rejectFn
-  const p = new Promise((resolve, reject) => {
+export interface CancellablePromise<T> extends Promise<T> {
+  cancel: () => void
+}
+
+export const delay = (time: number): CancellablePromise<void> => {
+  let timerId: ReturnType<typeof setTimeout> | null
+  let rejectFn: ((reason?: unknown) => void) | null
+  const p = new Promise<void>((resolve, reject) => {
     rejectFn = reject
     timerId = setTimeout(() => {
-      p.cancel = () => {}
+      ;(p as CancellablePromise<void>).cancel = () => {}
       rejectFn = null
       resolve()
     }, time)
-  })
+  }) as CancellablePromise<void>
 
   p.cancel = () => {
-    clearTimeout(timerId)
+    if (timerId) clearTimeout(timerId)
     timerId = null
-    rejectFn()
+    if (rejectFn) rejectFn()
     rejectFn = null
   }
   return p
@@ -22,17 +26,17 @@ export const delay = (time) => {
 const ID_PREFEX = 'mt-'
 let id = 0
 
-export const serialize = function(params) {
+export const serialize = function(params: Record<string, string | number | boolean>): string {
   return Object.keys(params)
-    .map((key) => `${key}=${encodeURI(params[key])}`)
+    .map((key) => `${key}=${encodeURI(String(params[key]))}`)
     .join('&')
 }
 
-export const merge = function(...args) {
-  return Object.assign({}, ...args)
+export const merge = function<T extends object>(...args: Array<Partial<T>>): T {
+  return Object.assign({}, ...args) as T
 }
 
-export const dataURItoBlob = function(dataURI) {
+export const dataURItoBlob = function(dataURI: string): Blob {
   const data = dataURI.split(';base64,')
   const byte = window.atob(data[1])
   const mime = data[0].split(':')[1]
@@ -46,7 +50,18 @@ export const dataURItoBlob = function(dataURI) {
   return new window.Blob([ab], { type: mime })
 }
 
-const getNearestAvailableCursor = (cursor, getLine, lineCount) => {
+export interface Cursor {
+  line: number
+  ch: number
+}
+
+type GetLineFn = (line: number) => string | undefined
+
+const getNearestAvailableCursor = (
+  cursor: Cursor,
+  getLine: GetLineFn | undefined,
+  lineCount: number
+): Cursor => {
   if (typeof getLine === 'function' && lineCount > 0) {
     const currentLine = Math.min(Math.max(cursor.line, 0), lineCount - 1)
     const currentText = getLine(currentLine)
@@ -80,7 +95,14 @@ const getNearestAvailableCursor = (cursor, getLine, lineCount) => {
   }
 }
 
-export const adjustCursor = (cursor, preline, line, nextline, getLine, lineCount) => {
+export const adjustCursor = (
+  cursor: Cursor,
+  preline: string | undefined,
+  line: string | undefined,
+  nextline: string | undefined,
+  getLine?: GetLineFn,
+  lineCount = 0
+): Cursor => {
   // Need to adjust the cursor when cursor is on a blank or unavailable line.
   if (typeof line !== 'string' || !/\S/.test(line)) {
     const nearestCursor = getNearestAvailableCursor(cursor, getLine, lineCount)
@@ -102,7 +124,7 @@ export const adjustCursor = (cursor, preline, line, nextline, getLine, lineCount
     return nearestCursor
   }
 
-  let newCursor = Object.assign({}, { line: cursor.line, ch: cursor.ch })
+  const newCursor: Cursor = Object.assign({}, { line: cursor.line, ch: cursor.ch })
   // It's need to adjust the cursor when cursor is at begin or end in table row.
   if (/\|[^|]+\|.+\|\s*$/.test(line)) {
     if (/\|\s*:?-+:?\s*\|[:-\s|]+\|\s*$/.test(line)) {
@@ -137,7 +159,12 @@ export const adjustCursor = (cursor, preline, line, nextline, getLine, lineCount
   return newCursor
 }
 
-export const animatedScrollTo = function(element, to, duration, callback) {
+export const animatedScrollTo = function(
+  element: HTMLElement,
+  to: number,
+  duration: number,
+  callback?: () => void
+): void {
   const start = element.scrollTop
   const change = to - start
   const animationStart = +new Date()
@@ -148,14 +175,14 @@ export const animatedScrollTo = function(element, to, duration, callback) {
     return
   }
 
-  const easeInOutQuad = function(t, b, c, d) {
+  const easeInOutQuad = function(t: number, b: number, c: number, d: number): number {
     t /= d / 2
     if (t < 1) return (c / 2) * t * t + b
     t--
     return (-c / 2) * (t * (t - 2) - 1) + b
   }
 
-  const animateScroll = function() {
+  const animateScroll = function(): void {
     const now = +new Date()
     const val = Math.floor(easeInOutQuad(now - animationStart, start, change, duration))
 
@@ -174,43 +201,48 @@ export const animatedScrollTo = function(element, to, duration, callback) {
   requestAnimationFrame(animateScroll)
 }
 
-export const getUniqueId = () => {
+export const getUniqueId = (): string => {
   return `${ID_PREFEX}${id++}`
 }
 
-export const hasKeys = (obj) => Object.keys(obj).length > 0
+export const hasKeys = (obj: object): boolean => Object.keys(obj).length > 0
 
 /**
  * Clone an object as a shallow or deep copy.
  *
- * @param {*} obj Object to clone
- * @param {Boolean} deepCopy Create a shallow (false) or deep copy (true)
+ * @param obj Object to clone
+ * @param deepCopy Create a shallow (false) or deep copy (true)
  * @deprecated Use `cloneObject` (shallow copy) or `deepClone` (deep copy).
  */
-export const cloneObj = (obj, deepCopy = true) => {
+export const cloneObj = <T>(obj: T, deepCopy = true): T => {
   return deepCopy ? JSON.parse(JSON.stringify(obj)) : Object.assign({}, obj)
 }
 
 /**
  * Shallow clone the given object.
  *
- * @param {*} obj Object to clone
- * @param {boolean} inheritFromObject Whether the clone should inherit from `Object`
+ * @param obj Object to clone
+ * @param inheritFromObject Whether the clone should inherit from `Object`
  */
-export const cloneObject = (obj, inheritFromObject = true) => {
+export const cloneObject = <T extends object>(obj: T, inheritFromObject = true): T => {
   return Object.assign(inheritFromObject ? {} : Object.create(null), obj)
 }
 
 /**
  * Deep clone the given object.
  *
- * @param {*} obj Object to clone
+ * @param obj Object to clone
  */
-export const deepClone = (obj) => {
+export const deepClone = <T>(obj: T): T => {
   return JSON.parse(JSON.stringify(obj))
 }
 
-const platform = (typeof window !== 'undefined' && window.electron && window.electron.process && window.electron.process.platform) || ''
+const platform =
+  (typeof window !== 'undefined' &&
+    window.electron &&
+    window.electron.process &&
+    window.electron.process.platform) ||
+  ''
 export const isOsx = platform === 'darwin'
 export const isWindows = platform === 'win32'
 export const isLinux = platform === 'linux'

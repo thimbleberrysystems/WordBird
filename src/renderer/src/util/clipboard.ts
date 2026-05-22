@@ -1,6 +1,6 @@
 import { isLinux } from './index'
 
-export const guessClipboardFilePath = async() => {
+export const guessClipboardFilePath = async(): Promise<string> => {
   if (isLinux) return ''
   try {
     const result = await window.electron.clipboard.guessFilePath()

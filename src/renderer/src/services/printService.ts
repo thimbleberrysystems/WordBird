@@ -1,14 +1,16 @@
 import { getImageInfo } from 'muya/lib/utils'
 
 class MarkdownPrint {
+  private container: HTMLElement | null = null
+
   /**
    * Prepare document export and append a hidden print container to the window.
    * Everything outside of this hidden print container will be hidden with display: none.
    *
-   * @param {string} html HTML string
-   * @param {boolean} [renderStatic] Render for static files like PDF documents
+   * @param html HTML string
+   * @param renderStatic Render for static files like PDF documents
    */
-  renderMarkdown(html, renderStatic) {
+  renderMarkdown(html: string, renderStatic?: boolean): void {
     this.clearup()
     const printContainer = document.createElement('article')
     printContainer.classList.add('print-container')
@@ -19,8 +21,8 @@ class MarkdownPrint {
     if (renderStatic) {
       // Traverse through the DOM tree and fix all relative image sources.
       const images = printContainer.getElementsByTagName('img')
-      for (const image of images) {
-        const rawSrc = image.getAttribute('src')
+      for (const image of Array.from(images)) {
+        const rawSrc = image.getAttribute('src') ?? ''
         image.src = getImageInfo(rawSrc).src
       }
     }
@@ -31,7 +33,7 @@ class MarkdownPrint {
   /**
    * Remove the print container from the window.
    */
-  clearup() {
+  clearup(): void {
     if (this.container) {
       this.container.remove()
     }

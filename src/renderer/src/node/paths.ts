@@ -5,13 +5,15 @@ const exposedPaths = (window.electron && window.electron.paths) || {}
 
 // Allow a local override (e.g. an optimized ripgrep build). Otherwise use the
 // asar-unpacked path resolved by the main process and forwarded via boot info.
-const ripgrepBinaryPath = env.MARKTEXT_RIPGREP_PATH || exposedPaths.ripgrepBinary || ''
+const ripgrepBinaryPath: string = env.MARKTEXT_RIPGREP_PATH || exposedPaths.ripgrepBinary || ''
 
 class RendererPaths extends EnvPaths {
+  private readonly _ripgrepBinaryPath: string
+
   /**
-   * @param {string} userDataPath The user data path.
+   * @param userDataPath The user data path.
    */
-  constructor(userDataPath) {
+  constructor(userDataPath: string) {
     if (!userDataPath) {
       throw new Error('No user data path is given.')
     }
@@ -19,7 +21,7 @@ class RendererPaths extends EnvPaths {
     this._ripgrepBinaryPath = ripgrepBinaryPath
   }
 
-  get ripgrepBinaryPath() {
+  get ripgrepBinaryPath(): string {
     return this._ripgrepBinaryPath
   }
 }
