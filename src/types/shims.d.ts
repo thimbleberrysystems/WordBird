@@ -1,4 +1,23 @@
 // Module shims for third-party libraries that ship no type declarations.
-// Populated in Commit 2 as conversion uncovers each one.
+// Each entry is `any`-typed; refine as we discover the real shape.
 
-export {}
+declare module 'dom-autoscroller'
+declare module 'flowchart.js'
+declare module 'joplin-turndown-plugin-gfm'
+declare module 'snapsvg-cjs'
+declare module '@hfelix/electron-localshortcut'
+declare module 'execall'
+declare module 'iso-639-1'
+declare module 'fuzzaldrin'
+declare module 'ced'
+declare module 'font-list'
+declare module 'command-exists'
+declare module 'pako'
+declare module 'snabbdom-to-html'
+declare module 'prismjs/themes/*'
+declare module 'codemirror/keymap/*'
+declare module 'codemirror/mode/*'
+declare module 'codemirror/addon/*'
+declare module 'electron-window-state'
+declare module 'plist'
+declare module 'webfontloader'
