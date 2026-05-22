@@ -17,9 +17,12 @@ export const useNotificationStore = defineStore('notification', () => {
       notice.notify(options)
     })
 
-    window.electron.ipcRenderer.on('mt::pandoc-not-exists', async(_e) => {
+    window.electron.ipcRenderer.on('mt::pandoc-not-exists', async(_e, opts) => {
+      // Preserve the custom title/message from main (e.g. dialog.importWarning
+      // / dialog.installPandoc); previously the opts arg was dropped and the
+      // user saw the generic defaultTitle/defaultMessage.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const options: any = { ...DEFAULT_OPTS, showConfirm: true }
+      const options: any = Object.assign({ ...DEFAULT_OPTS }, opts, { showConfirm: true })
       await notice.notify(options)
       window.electron.shell.openExternal('http://pandoc.org')
     })

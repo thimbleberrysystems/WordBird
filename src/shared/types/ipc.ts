@@ -75,7 +75,9 @@ export interface IpcInvokeChannels {
   'mt::uploader::upload': { args: [req: unknown]; ret: unknown }
   'mt::win::is-fullscreen': { args: []; ret: boolean }
   'mt::win::is-maximized': { args: []; ret: boolean }
-  'update-buffer-state': { args: [windowId: number, payload: unknown]; ret: void }
+  // Main derives the BrowserWindow via BrowserWindow.fromWebContents(e.sender);
+  // no need to pass windowId. Payload is the editor+project+layout snapshot.
+  'update-buffer-state': { args: [payload: unknown]; ret: void }
 }
 
 // =================================================================
@@ -216,9 +218,9 @@ export interface IpcMainEventChannels {
   'mt::editor-ask-file-save-as': []
   'mt::editor-close-tab': [tabId?: string]
   'mt::editor-edit-action': [action: string]
-  'mt::editor-format-action': [action: string]
+  'mt::editor-format-action': [payload: { type: string }]
   'mt::editor-move-file': []
-  'mt::editor-paragraph-action': [action: string]
+  'mt::editor-paragraph-action': [payload: { type: string }]
   'mt::editor-rename-file': []
   'mt::execute-command-by-id': [commandId: string]
   'mt::export-success': [type: string]
@@ -236,7 +238,7 @@ export interface IpcMainEventChannels {
     options?: TabOptions,
     selected?: boolean
   ]
-  'mt::pandoc-not-exists': []
+  'mt::pandoc-not-exists': [opts: Record<string, unknown>]
   'mt::print-service-clearup': []
   'mt::rg::cancelled': [payload: unknown]
   'mt::rg::done': [payload: unknown]

@@ -44,11 +44,7 @@ export const createBufferedState = (): Record<string, any> | null => {
 export const sendBufferedState = (): Promise<unknown> => {
   const snapshot = createBufferedState()
   if (snapshot) {
-    return window.electron.ipcRenderer.invoke(
-      'update-buffer-state',
-      Number(window.marktext?.env?.windowId ?? 0),
-      snapshot
-    )
+    return window.electron.ipcRenderer.invoke('update-buffer-state', snapshot)
   }
 
   return Promise.resolve(false)

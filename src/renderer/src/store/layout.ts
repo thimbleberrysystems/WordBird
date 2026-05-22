@@ -21,7 +21,7 @@ const normalizeSideBarWidth = (width: unknown): number => {
 }
 
 interface BufferedLayout {
-  rightColumn: string
+  rightColumn: string | undefined
   showSideBar: boolean
   showTabBar: boolean
   sideBarWidth: number
@@ -31,8 +31,11 @@ const createBufferedLayoutState = (state: unknown): BufferedLayout | null => {
   if (!state || typeof state !== 'object') return null
   const s = state as LayoutPartial
 
+  // Pass through `rightColumn` (may be undefined). The pre-migration JS did
+  // not coerce to 'files' here — RESTORE_BUFFERED_STATE then routes through
+  // SET_LAYOUT which only assigns when the key is defined.
   return {
-    rightColumn: s.rightColumn ?? 'files',
+    rightColumn: s.rightColumn,
     showSideBar: !!s.showSideBar,
     showTabBar: !!s.showTabBar,
     sideBarWidth: normalizeSideBarWidth(s.sideBarWidth)
@@ -65,10 +68,13 @@ export const useLayoutStore = defineStore('layout', () => {
         value: !!layout.showSideBar
       })
     }
+    // Match the pre-migration `Object.assign(this, layout)` semantics: assign
+    // each known field as-is (no normalization here; SET_SIDE_BAR_WIDTH owns
+    // sideBarWidth's normalization), and skip unknown keys silently.
     if (layout.rightColumn !== undefined) rightColumn.value = layout.rightColumn
     if (layout.showSideBar !== undefined) showSideBar.value = !!layout.showSideBar
     if (layout.showTabBar !== undefined) showTabBar.value = !!layout.showTabBar
-    if (layout.sideBarWidth !== undefined) { sideBarWidth.value = normalizeSideBarWidth(layout.sideBarWidth) }
+    if (layout.sideBarWidth !== undefined) sideBarWidth.value = layout.sideBarWidth as number
     if (scheduleBufferUpdate) {
       debouncedSendBufferedState()
     }
