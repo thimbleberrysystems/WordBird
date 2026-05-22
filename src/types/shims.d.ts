@@ -21,3 +21,14 @@ declare module 'codemirror/addon/*'
 declare module 'electron-window-state'
 declare module 'plist'
 declare module 'webfontloader'
+declare module 'minimatch' {
+  export function minimatch(target: string, pattern: string, options?: unknown): boolean
+}
+
+// Electron augments `process` with `resourcesPath` (and a few other fields)
+// at runtime. Surface them so common/* code can read them without casts.
+declare namespace NodeJS {
+  interface Process {
+    resourcesPath: string
+  }
+}

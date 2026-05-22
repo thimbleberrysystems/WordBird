@@ -5,7 +5,7 @@ import { minimatch } from 'minimatch'
 
 const isOsx = process.platform === 'darwin'
 
-export const MARKDOWN_EXTENSIONS = Object.freeze([
+export const MARKDOWN_EXTENSIONS: readonly string[] = Object.freeze([
   'markdown',
   'mdown',
   'mkdn',
@@ -19,26 +19,31 @@ export const MARKDOWN_EXTENSIONS = Object.freeze([
   'txt'
 ])
 
-export const MARKDOWN_INCLUSIONS = Object.freeze(MARKDOWN_EXTENSIONS.map((x) => '*.' + x))
+export const MARKDOWN_INCLUSIONS: readonly string[] = Object.freeze(
+  MARKDOWN_EXTENSIONS.map((x) => '*.' + x)
+)
 
-export const IMAGE_EXTENSIONS = Object.freeze(['jpeg', 'jpg', 'png', 'gif', 'svg', 'webp'])
+export const IMAGE_EXTENSIONS: readonly string[] = Object.freeze([
+  'jpeg',
+  'jpg',
+  'png',
+  'gif',
+  'svg',
+  'webp'
+])
 
 /**
  * Returns true if the filename matches one of the markdown extensions.
- *
- * @param {string} filename Path or filename
  */
-export const hasMarkdownExtension = (filename) => {
+export const hasMarkdownExtension = (filename: string): boolean => {
   if (!filename || typeof filename !== 'string') return false
   return MARKDOWN_EXTENSIONS.some((ext) => filename.toLowerCase().endsWith(`.${ext}`))
 }
 
 /**
  * Returns true if the path is an image file.
- *
- * @param {string} filepath The path
  */
-export const isImageFile = (filepath) => {
+export const isImageFile = (filepath: string): boolean => {
   const extname = path.extname(filepath)
   return (
     isFile(filepath) &&
@@ -50,14 +55,11 @@ export const isImageFile = (filepath) => {
 }
 
 /**
- * Returns true if the path is a markdown file or symbolic link to a markdown file.
- *
- * @param {string} filepath The path or link path.
+ * Returns true if the path is a markdown file or symbolic link to one.
  */
-export const isMarkdownFile = (filepath) => {
+export const isMarkdownFile = (filepath: string): boolean => {
   if (!isFile2(filepath)) return false
 
-  // Check symbolic link.
   if (isSymbolicLink(filepath)) {
     const targetPath = path.resolve(path.dirname(filepath), fs.readlinkSync(filepath))
     return isFile(targetPath) && hasMarkdownExtension(targetPath)
@@ -67,12 +69,12 @@ export const isMarkdownFile = (filepath) => {
 
 /**
  * Check if the both paths point to the same file.
- *
- * @param {string} pathA The first path.
- * @param {string} pathB The second path.
- * @param {boolean} [isNormalized] Are both paths already normalized.
  */
-export const isSamePathSync = (pathA, pathB, isNormalized = false) => {
+export const isSamePathSync = (
+  pathA: string,
+  pathB: string,
+  isNormalized: boolean = false
+): boolean => {
   if (!pathA || !pathB) return false
   const a = isNormalized ? pathA : path.normalize(pathA)
   const b = isNormalized ? pathB : path.normalize(pathB)
@@ -85,8 +87,8 @@ export const isSamePathSync = (pathA, pathB, isNormalized = false) => {
       const fiA = fs.statSync(a)
       const fiB = fs.statSync(b)
       return fiA.ino === fiB.ino
-    } catch (_) {
-      // Ignore error
+    } catch {
+      // Ignore stat errors and fall through.
     }
   }
   return false
@@ -94,17 +96,14 @@ export const isSamePathSync = (pathA, pathB, isNormalized = false) => {
 
 /**
  * Check whether a file or directory is a child of the given directory.
- *
- * @param {string} dir The parent directory.
- * @param {string} child The file or directory path to check.
  */
-export const isChildOfDirectory = (dir, child) => {
+export const isChildOfDirectory = (dir: string, child: string): boolean => {
   if (!dir || !child) return false
   const relative = path.relative(dir, child)
-  return relative && !relative.startsWith('..') && !path.isAbsolute(relative)
+  return !!relative && !relative.startsWith('..') && !path.isAbsolute(relative)
 }
 
-export const getResourcesPath = () => {
+export const getResourcesPath = (): string => {
   let resPath = process.resourcesPath
   if (process.env.NODE_ENV === 'development') {
     // Default locations:
@@ -120,11 +119,11 @@ export const getResourcesPath = () => {
 
 /**
  * Returns true if the pathname matches one of the exclude patterns.
- *
- * @param {string} pathname Path of file or directory
- * @param {string} patterns Glob expressions
  */
-export const checkPathExcludePattern = (pathname, patterns) => {
+export const checkPathExcludePattern = (
+  pathname: string,
+  patterns: readonly string[]
+): boolean => {
   if (!pathname || typeof pathname !== 'string') return false
   for (const pattern of patterns) {
     if (minimatch(pathname, pattern, { matchBase: true })) {

@@ -106,6 +106,8 @@ const COMMANDS = Object.freeze({
   WINDOW_TOGGLE_FULL_SCREEN: 'window.toggle-full-screen',
   WINDOW_ZOOM_IN: 'window.zoomIn',
   WINDOW_ZOOM_OUT: 'window.zoomOut'
-})
+} as const)
+
+export type CommandId = (typeof COMMANDS)[keyof typeof COMMANDS]
 
 export default COMMANDS
