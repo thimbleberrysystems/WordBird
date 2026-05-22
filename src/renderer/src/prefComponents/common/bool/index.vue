@@ -102,11 +102,10 @@ const handleSwitchChange = (value: boolean | string | number) => {
     & svg:hover {
       color: var(--themeColor);
     }
-  }
-
-  & .notes {
-    font-style: italic;
-    font-size: 12px;
+    & > .notes {
+      display: inline;
+      margin: 0 0 0 8px;
+    }
   }
 }
 
