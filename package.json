@@ -32,18 +32,18 @@
     "pnpm": ">=10"
   },
   "scripts": {
-    "postinstall": "node scripts/postinstall.js",
+    "postinstall": "tsx scripts/postinstall.ts",
     "format": "prettier --write .",
     "lint": "eslint --cache .",
-    "minify-locales": "node scripts/minify-locales.mjs",
+    "minify-locales": "tsx scripts/minify-locales.ts",
     "rebuild-native": "electron-rebuild -f",
     "start": "cross-env PERF_TESTING=true electron-vite preview",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "build:unpack": "node scripts/minify-locales.mjs && electron-vite build",
-    "build:win": "node scripts/minify-locales.mjs && electron-rebuild && electron-vite build && electron-builder --win --publish never",
-    "build:mac": "node scripts/minify-locales.mjs && electron-rebuild && electron-vite build && electron-builder --mac --publish never",
-    "build:linux": "node scripts/minify-locales.mjs && electron-rebuild && electron-vite build && electron-builder --linux --publish never",
+    "build:unpack": "tsx scripts/minify-locales.ts && electron-vite build",
+    "build:win": "tsx scripts/minify-locales.ts && electron-rebuild && electron-vite build && electron-builder --win --publish never",
+    "build:mac": "tsx scripts/minify-locales.ts && electron-rebuild && electron-vite build && electron-builder --mac --publish never",
+    "build:linux": "tsx scripts/minify-locales.ts && electron-rebuild && electron-vite build && electron-builder --linux --publish never",
     "perf:inspect": "cross-env PERF_TESTING=true electron-vite preview -- --inspect=5858",
     "perf:inspect-brk": "cross-env PERF_TESTING=true electron-vite preview -- --inspect-brk=5858",
     "test": "vitest run",
@@ -52,8 +52,8 @@
     "typecheck": "vue-tsc --noEmit -p tsconfig.json",
     "typecheck:watch": "vue-tsc --noEmit -p tsconfig.json --watch",
     "check": "pnpm lint && pnpm typecheck",
-    "gen-third-party": "node scripts/generateThirdPartyLicense.js",
-    "validate-licenses": "node scripts/validateLicenses.js"
+    "gen-third-party": "tsx scripts/generateThirdPartyLicense.ts",
+    "validate-licenses": "tsx scripts/validateLicenses.ts"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
