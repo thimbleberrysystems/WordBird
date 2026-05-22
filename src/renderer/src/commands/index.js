@@ -1,5 +1,4 @@
 // List of all static commands that are loaded into command center.
-import { getCurrentWindow } from '@electron/remote'
 import bus from '../bus'
 import { delay, isOsx } from '@/util'
 import { isUpdatable } from './utils'
@@ -426,7 +425,7 @@ const commands = [
   {
     id: 'window.minimize',
     execute: async() => {
-      getCurrentWindow().minimize()
+      window.electron.windowControl.minimize()
     }
   },
   {
@@ -438,8 +437,7 @@ const commands = [
   {
     id: 'window.toggle-full-screen',
     execute: async() => {
-      const win = getCurrentWindow()
-      win.setFullScreen(!win.isFullScreen())
+      window.electron.windowControl.toggleFullScreen()
     }
   },
 
@@ -663,6 +661,7 @@ const commands = [
 if (isUpdatable()) {
   commands.push({
     id: 'file.check-update',
+    description: getCommandDescriptionById('file.check-update'),
     execute: async() => {
       window.electron.ipcRenderer.send('mt::check-for-update')
     }
