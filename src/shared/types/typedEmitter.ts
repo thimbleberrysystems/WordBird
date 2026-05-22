@@ -16,34 +16,39 @@ import { EventEmitter } from 'node:events'
  *   }
  *   class BaseWindow extends TypedEmitter<BaseWindowEvents> { ... }
  */
-export class TypedEmitter<Events extends Record<string, unknown[]>> extends EventEmitter {
+// We use a permissive constraint (`unknown` instead of `Record<string, unknown[]>`)
+// because TS 5.x rejects plain `interface X { foo: [] }` declarations from
+// satisfying a string-indexed record. The looser constraint lets concrete
+// event maps stay as readable interfaces while still enforcing per-event
+// argument tuples in on/emit/etc.
+export class TypedEmitter<Events> extends EventEmitter {
   declare on: <K extends keyof Events & string>(
     event: K,
-    listener: (...args: Events[K]) => void
+    listener: (...args: Events[K] extends unknown[] ? Events[K] : any[]) => void
   ) => this
 
   declare once: <K extends keyof Events & string>(
     event: K,
-    listener: (...args: Events[K]) => void
+    listener: (...args: Events[K] extends unknown[] ? Events[K] : any[]) => void
   ) => this
 
   declare off: <K extends keyof Events & string>(
     event: K,
-    listener: (...args: Events[K]) => void
+    listener: (...args: Events[K] extends unknown[] ? Events[K] : any[]) => void
   ) => this
 
   declare emit: <K extends keyof Events & string>(
     event: K,
-    ...args: Events[K]
+    ...args: Events[K] extends unknown[] ? Events[K] : any[]
   ) => boolean
 
   declare removeListener: <K extends keyof Events & string>(
     event: K,
-    listener: (...args: Events[K]) => void
+    listener: (...args: Events[K] extends unknown[] ? Events[K] : any[]) => void
   ) => this
 
   declare addListener: <K extends keyof Events & string>(
     event: K,
-    listener: (...args: Events[K]) => void
+    listener: (...args: Events[K] extends unknown[] ? Events[K] : any[]) => void
   ) => this
 }

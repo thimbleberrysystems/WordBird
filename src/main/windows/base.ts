@@ -1,13 +1,13 @@
-import EventEmitter from 'events'
 import path from 'path'
+import type { BrowserWindow } from 'electron'
+import { TypedEmitter } from '@shared/types/typedEmitter'
 
 /**
  * A MarkText window.
- * @typedef {BaseWindow} IApplicationWindow
- * @property {number | null} id Identifier (= browserWindow.id) or null during initialization.
- * @property {Electron.BrowserWindow} browserWindow The browse window.
- * @property {WindowLifecycle} lifecycle The window lifecycle state.
- * @property {WindowType} type The window type.
+ * @property id Identifier (= browserWindow.id) or null during initialization.
+ * @property browserWindow The browser window.
+ * @property lifecycle The window lifecycle state.
+ * @property type The window type.
  */
 
 // Window type marktext support.
@@ -15,20 +15,64 @@ export const WindowType = {
   BASE: 'base', // You shold never create a `BASE` window.
   EDITOR: 'editor',
   SETTINGS: 'settings'
-}
+} as const
+
+export type WindowTypeValue = (typeof WindowType)[keyof typeof WindowType]
 
 export const WindowLifecycle = {
   NONE: 0,
   LOADING: 1,
   READY: 2,
   QUITTED: 3
+} as const
+
+export type WindowLifecycleValue = (typeof WindowLifecycle)[keyof typeof WindowLifecycle]
+
+/**
+ * Event payload map for `BaseWindow` and its subclasses (editor/setting).
+ * Listeners are subscribed by `WindowManager` and other main-process code.
+ */
+export interface BaseWindowEvents {
+  'window-ready': []
+  'window-focus': []
+  'window-blur': []
+  'window-close': []
+  'window-closed': []
 }
 
-class BaseWindow extends EventEmitter {
+// Minimal shape for the accessor we keep a private reference to. The real
+// Accessor lives in src/main/app/accessor.ts and is not strongly typed here
+// because of the wide preferences/menu/keybinding surface it carries.
+type AccessorLike = unknown
+
+// Subset of preference accessor used while building the renderer URL.
+interface PreferenceLike {
+  getAll(): {
+    codeFontFamily: string
+    codeFontSize: number
+    hideScrollbar: boolean
+    theme: string
+    titleBarStyle: string
+    [key: string]: unknown
+  }
+}
+
+interface EnvLike {
+  debug: boolean
+  paths: { userDataPath: string }
+}
+
+class BaseWindow extends TypedEmitter<BaseWindowEvents> {
+  protected _accessor: AccessorLike
+  public id: number | null
+  public browserWindow: BrowserWindow | null
+  public lifecycle: WindowLifecycleValue
+  public type: WindowTypeValue
+
   /**
-   * @param {Accessor} accessor The application accessor for application instances.
+   * @param accessor The application accessor for application instances.
    */
-  constructor(accessor) {
+  constructor(accessor: AccessorLike) {
     super()
 
     this._accessor = accessor
@@ -38,19 +82,20 @@ class BaseWindow extends EventEmitter {
     this.type = WindowType.BASE
   }
 
-  bringToFront() {
+  bringToFront(): void {
     const { browserWindow: win } = this
+    if (!win) return
     if (win.isMinimized()) win.restore()
     if (!win.isVisible()) win.show()
     win.focus()
     win.moveTop()
   }
 
-  reload() {
-    this.browserWindow.reload()
+  reload(): void {
+    this.browserWindow?.reload()
   }
 
-  destroy() {
+  destroy(): void {
     this.lifecycle = WindowLifecycle.QUITTED
     this.emit('window-closed')
 
@@ -64,7 +109,11 @@ class BaseWindow extends EventEmitter {
 
   // --- private ---------------------------------
 
-  _buildUrlWithSettings(windowId, env, userPreference) {
+  protected _buildUrlWithSettings(
+    windowId: number | null,
+    env: EnvLike,
+    userPreference: PreferenceLike
+  ): URL {
     // NOTE: Only send absolutely necessary values. Full settings are delay loaded.
     const { type } = this
     const { debug, paths } = env
@@ -73,18 +122,18 @@ class BaseWindow extends EventEmitter {
 
     const baseUrl =
       process.env.NODE_ENV === 'development'
-        ? process.env['ELECTRON_RENDERER_URL']
+        ? process.env['ELECTRON_RENDERER_URL']!
         : `file://${path.join(__dirname, '../renderer/index.html')}` // <-- This points to the path inside the packed ASAR archive, hence it is always correct
 
     const url = new URL(baseUrl)
     url.searchParams.set('udp', paths.userDataPath)
     url.searchParams.set('debug', debug ? '1' : '0')
-    url.searchParams.set('wid', windowId)
+    url.searchParams.set('wid', String(windowId))
     url.searchParams.set('type', type)
 
     // Settings
     url.searchParams.set('cff', codeFontFamily)
-    url.searchParams.set('cfs', codeFontSize)
+    url.searchParams.set('cfs', String(codeFontSize))
     url.searchParams.set('hsb', hideScrollbar ? '1' : '0')
     url.searchParams.set('theme', theme)
     url.searchParams.set('tbs', titleBarStyle)
@@ -92,11 +141,17 @@ class BaseWindow extends EventEmitter {
     return url
   }
 
-  _buildUrlString(windowId, env, userPreference) {
+  protected _buildUrlString(
+    windowId: number | null,
+    env: EnvLike,
+    userPreference: PreferenceLike,
+
+    _category?: string | null
+  ): string {
     return this._buildUrlWithSettings(windowId, env, userPreference).toString()
   }
 
-  _getPreferredBackgroundColor(theme) {
+  protected _getPreferredBackgroundColor(theme: string): string {
     // Hardcode the theme background color and show the window direct for the fastet window ready time.
     // Later with custom themes we need the background color (e.g. from meta information) and wait
     // that the window is loaded and then pass theme data to the renderer.

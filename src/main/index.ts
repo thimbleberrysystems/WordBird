@@ -7,6 +7,7 @@ import { electronApp, optimizer } from '@electron-toolkit/utils'
 import cli from './cli'
 import setupExceptionHandler, { initExceptionLogger } from './exceptionHandler'
 import setupEnvironment from './app/env'
+import type { AppEnvironment } from './app/env'
 import { getLogLevel } from './utils'
 import Accessor from './app/accessor'
 import App from './app'
@@ -21,23 +22,27 @@ process.env.MARKTEXT_VERSION_STRING = MARKTEXT_VERSION_STRING
 // Exception handling and logging setup
 setupExceptionHandler()
 const args = cli()
-const appEnvironment = setupEnvironment(args)
+const appEnvironment = setupEnvironment(args as Record<string, unknown>)
 
-const initializeLogger = (env) => {
+const initializeLogger = (env: AppEnvironment): void => {
   log.initialize() // allows listening for logs from the renderer process
   log.transports.console.level = process.env.NODE_ENV === 'development' ? 'info' : 'error'
   log.transports.file.resolvePathFn = (variables) => {
-    if (variables.browserWindow && variables.browserWindow.id) {
-      return path.join(env.paths.logPath, `renderer-${variables.browserWindow.id}.log`)
+    // electron-log's PathVariables type doesn't model the browserWindow field
+    // that's available at runtime for renderer-process logs. Cast through
+    // unknown to access it without weakening the rest of the variables type.
+    const vars = variables as unknown as { browserWindow?: { id?: number } }
+    if (vars.browserWindow && vars.browserWindow.id) {
+      return path.join(env.paths.logPath, `renderer-${vars.browserWindow.id}.log`)
     }
     return path.join(env.paths.logPath, 'main.log')
   }
   log.transports.file.level = getLogLevel()
   log.transports.file.sync = true
   log.errorHandler.startCatching({
-    onError(error) {
+    onError(error: unknown) {
       // This callback receives the full Error object with stack
-      log.error('Uncaught Exception:', error.stack)
+      log.error('Uncaught Exception:', (error as Error)?.stack)
     }
   })
   initExceptionLogger()
@@ -52,7 +57,7 @@ crashReporter.start({
   uploadToServer: false, // collect locally
   compress: true
 })
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', (err: Error) => {
   log.error('Main uncaughtException:', err.stack)
 })
 process.on('unhandledRejection', (reason) => {
@@ -86,23 +91,27 @@ app.on('browser-window-created', (_, window) => {
 })
 
 // Instantiate and start the main App controller
-let accessor
+let accessor: Accessor
 try {
   accessor = new Accessor(appEnvironment)
 } catch (err) {
-  const msgHint = err.message.includes('Config schema violation')
+  const errorObj = err instanceof Error ? err : new Error(String(err))
+  const msgHint = errorObj.message.includes('Config schema violation')
     ? t('error.configSchemaViolation')
     : ''
-  log.error(t('error.initializationFailed', { hint: msgHint }), err)
+  log.error(t('error.initializationFailed', { hint: msgHint }), errorObj)
 
   const EXIT_ON_ERROR = !!process.env.MARKTEXT_EXIT_ON_ERROR
   const SHOW_ERROR_DIALOG = !process.env.MARKTEXT_ERROR_INTERACTION
   if (!EXIT_ON_ERROR && SHOW_ERROR_DIALOG) {
-    dialog.showErrorBox(t('error.startupError'), `${msgHint}${err.message}\n\n${err.stack}`)
+    dialog.showErrorBox(
+      t('error.startupError'),
+      `${msgHint}${errorObj.message}\n\n${errorObj.stack ?? ''}`
+    )
   }
   process.exit(1)
 }
-const appController = new App(accessor, args)
+const appController = new App(accessor, args as unknown as { _: string[] })
 appController.init()
 
 // Quit when all windows are closed (except on macOS)

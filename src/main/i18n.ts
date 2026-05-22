@@ -5,28 +5,23 @@ import { BrowserWindow } from 'electron'
 let currentLanguage = 'en'
 
 /**
- * Gets the translated text
- * @param {string} key - Translation key
- * @param {object} params - Parameter object
- * @returns {string} Translated text
+ * Gets the translated text.
  */
-export function t(key, params = {}) {
+export function t(key: string, params: Record<string, string | number> = {}): string {
   return getTranslation(key, currentLanguage, params)
 }
 
 /**
- * Gets the current language
- * @returns {string} Current language code
+ * Gets the current language.
  */
-export function getCurrentLanguage() {
+export function getCurrentLanguage(): string {
   return currentLanguage
 }
 
 /**
- * Sets the language
- * @param {string} language - Language code
+ * Sets the language.
  */
-export function setLanguage(language) {
+export function setLanguage(language: string): void {
   currentLanguage = language
 
   const windows = BrowserWindow.getAllWindows()

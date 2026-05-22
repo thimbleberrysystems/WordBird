@@ -12,18 +12,21 @@ import log from 'electron-log'
 import { createAndOpenGitHubIssueUrl } from './utils/createGitHubIssue'
 import { t } from './i18n'
 
+type ErrorType = 'main' | 'renderer'
+type Logger = (s: string) => void
+
 const EXIT_ON_ERROR = !!process.env.MARKTEXT_EXIT_ON_ERROR
 const SHOW_ERROR_DIALOG = !process.env.MARKTEXT_ERROR_INTERACTION
-const ERROR_MSG_MAIN = () => t('error.unexpectedMainProcess')
-const ERROR_MSG_RENDERER = () => t('error.unexpectedRendererProcess')
+const ERROR_MSG_MAIN = (): string => t('error.unexpectedMainProcess')
+const ERROR_MSG_RENDERER = (): string => t('error.unexpectedRendererProcess')
 
-let logger = (s) => console.error(s)
+let logger: Logger = (s) => console.error(s)
 
-const getOSInformation = () => {
+const getOSInformation = (): string => {
   return `${os.type()} ${os.arch()} ${os.release()} (${os.platform()})`
 }
 
-const exceptionToString = (error, type) => {
+const exceptionToString = (error: Error, type: ErrorType): string => {
   const { message, stack } = error
   return (
     `Version: ${MARKTEXT_VERSION_STRING || app.getVersion()}\n` +
@@ -35,7 +38,7 @@ const exceptionToString = (error, type) => {
   )
 }
 
-const handleError = async(title, error, type) => {
+const handleError = async(title: string, error: Error, type: ErrorType): Promise<void> => {
   const { message, stack } = error
 
   // Write error into file
@@ -48,7 +51,10 @@ const handleError = async(title, error, type) => {
     process.exit(1)
     // eslint, don't lie to me, the return statement is important!
     return
-  } else if (!SHOW_ERROR_DIALOG || (global.MARKTEXT_IS_STABLE && type === 'renderer')) {
+  } else if (
+    !SHOW_ERROR_DIALOG ||
+    ((global as unknown as { MARKTEXT_IS_STABLE?: boolean }).MARKTEXT_IS_STABLE && type === 'renderer')
+  ) {
     return
   }
 
@@ -95,24 +101,26 @@ Operating system: ${getOSInformation()}`
     }
   } else {
     // error during Electron initialization
-    dialog.showErrorBox(title, stack)
+    dialog.showErrorBox(title, stack ?? '')
     process.exit(1)
   }
 }
 
-const setupExceptionHandler = () => {
+const setupExceptionHandler = (): void => {
   // Suppress EPIPE errors when electron-log writes to a closed pipe.
-  const ignoreEpipe = err => { if (err.code !== 'EPIPE') throw err }
+  const ignoreEpipe = (err: NodeJS.ErrnoException): void => {
+    if (err.code !== 'EPIPE') throw err
+  }
   process.stdout.on('error', ignoreEpipe)
   process.stderr.on('error', ignoreEpipe)
 
   // main process error handler
-  process.on('uncaughtException', (error) => {
+  process.on('uncaughtException', (error: Error) => {
     handleError(ERROR_MSG_MAIN(), error, 'main')
   })
 
   // renderer process error handler
-  ipcMain.on('mt::handle-renderer-error', (e, error) => {
+  ipcMain.on('mt::handle-renderer-error', (_e, error: Error) => {
     handleError(ERROR_MSG_RENDERER(), error, 'renderer')
   })
 
@@ -126,9 +134,9 @@ const setupExceptionHandler = () => {
   })
 }
 
-export const initExceptionLogger = () => {
+export const initExceptionLogger = (): void => {
   // replace placeholder logger
-  logger = log.error
+  logger = log.error as unknown as Logger
 }
 
 export default setupExceptionHandler

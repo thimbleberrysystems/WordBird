@@ -181,7 +181,7 @@ class Watcher {
     const usePolling = isOsx ? true : this._preferences.getItem('watcherUsePolling')
 
     const id = getUniqueId()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const watcher = chokidar.watch(watchPath, {
       ignored: (pathname: string, fileInfo?: { isDirectory: () => boolean }) => {
         if (!fileInfo) {

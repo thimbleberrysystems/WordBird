@@ -6,12 +6,30 @@ import Keybindings from '../keyboard/shortcutHandler'
 import AppMenu from '../menu'
 import { loadMenuCommands } from '../menu/actions'
 import { CommandManager, loadDefaultCommands } from '../commands'
+import type { AppEnvironment } from './env'
+import type AppPaths from './paths'
 
 class Accessor {
+  public env: AppEnvironment
+  public paths: AppPaths
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public preferences: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public dataCenter: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public editorBufferStore: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public commandManager: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public keybindings: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public menu: any
+  public windowManager: WindowManager
+
   /**
-   * @param {AppEnvironment} appEnvironment The application environment instance.
+   * @param appEnvironment The application environment instance.
    */
-  constructor(appEnvironment) {
+  constructor(appEnvironment: AppEnvironment) {
     const userDataPath = appEnvironment.paths.userDataPath
 
     this.env = appEnvironment
@@ -29,7 +47,7 @@ class Accessor {
     this.windowManager = new WindowManager(this.menu, this.preferences, this.editorBufferStore)
   }
 
-  _loadCommands() {
+  private _loadCommands(): void {
     const { commandManager } = this
     loadDefaultCommands(commandManager)
     loadMenuCommands(commandManager)

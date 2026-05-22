@@ -1,9 +1,11 @@
 import path from 'path'
-export const isOsx = process.platform === 'darwin'
-export const isWindows = process.platform === 'win32'
-export const isLinux = process.platform === 'linux'
+import type { BrowserWindowConstructorOptions } from 'electron'
 
-export const editorWinOptions = Object.freeze({
+export const isOsx: boolean = process.platform === 'darwin'
+export const isWindows: boolean = process.platform === 'win32'
+export const isLinux: boolean = process.platform === 'linux'
+
+export const editorWinOptions: Readonly<BrowserWindowConstructorOptions> = Object.freeze({
   minWidth: 550,
   minHeight: 350,
   webPreferences: {
@@ -22,9 +24,9 @@ export const editorWinOptions = Object.freeze({
   frame: false,
   titleBarStyle: 'hiddenInset',
   zoomFactor: 1.0
-})
+} as BrowserWindowConstructorOptions)
 
-export const preferencesWinOptions = Object.freeze({
+export const preferencesWinOptions: Readonly<BrowserWindowConstructorOptions> = Object.freeze({
   minWidth: 450,
   minHeight: 350,
   width: 950,
@@ -46,9 +48,9 @@ export const preferencesWinOptions = Object.freeze({
   frame: false,
   thickFrame: !isOsx,
   zoomFactor: 1.0
-})
+} as BrowserWindowConstructorOptions)
 
-export const PANDOC_EXTENSIONS = Object.freeze([
+export const PANDOC_EXTENSIONS: readonly string[] = Object.freeze([
   'html',
   'docx',
   'odt',
@@ -65,14 +67,14 @@ export const PANDOC_EXTENSIONS = Object.freeze([
   'epub'
 ])
 
-export const BLACK_LIST = Object.freeze(['$RECYCLE.BIN'])
+export const BLACK_LIST: readonly string[] = Object.freeze(['$RECYCLE.BIN'])
 
-export const EXTENSION_HASN = Object.freeze({
+export const EXTENSION_HASN: Readonly<{ styledHtml: string; pdf: string }> = Object.freeze({
   styledHtml: '.html',
   pdf: '.pdf'
 })
 
-export const TITLE_BAR_HEIGHT = isOsx ? 21 : 32
+export const TITLE_BAR_HEIGHT: number = isOsx ? 21 : 32
 export const LINE_ENDING_REG = /(?:\r\n|\n)/g
 export const LF_LINE_ENDING_REG = /(?:[^\r]\n)|(?:^\n$)/
 export const CRLF_LINE_ENDING_REG = /\r\n/

@@ -3,7 +3,16 @@ import fsPromises from 'fs/promises'
 import { exec } from 'child_process'
 import dayjs from 'dayjs'
 import log from 'electron-log'
-import { app, BrowserWindow, clipboard, dialog, nativeTheme, shell, ipcMain } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  dialog,
+  nativeTheme,
+  shell,
+  ipcMain
+} from 'electron'
+import type { BrowserWindowConstructorOptions } from 'electron'
 import { isChildOfDirectory } from 'common/filesystem/paths'
 import { isLinux, isOsx, isWindows } from '../config'
 import parseArgs from '../cli/parser'
@@ -19,15 +28,34 @@ import EditorWindow from '../windows/editor'
 import SettingWindow from '../windows/setting'
 import { setLanguage } from '../i18n'
 import { getNativeThemeSource, isDarkApplicationTheme } from './nativeTheme'
+import type Accessor from './accessor'
+
+interface CliArgs {
+  _: string[]
+  [flag: string]: unknown
+}
+
+interface PathInfo {
+  isDir: boolean
+  path: string
+}
 
 class App {
+  private _accessor: Accessor
+  private _args: CliArgs
+  private _openFilesCache: PathInfo[]
+  private _openFilesTimer: ReturnType<typeof setTimeout> | null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private _windowManager: any
+  private _themeListenerRegistered: boolean
+
   /**
-   * @param {Accessor} accessor The application accessor for application instances.
-   * @param {arg.Result} args Parsed application arguments.
+   * @param accessor The application accessor for application instances.
+   * @param args Parsed application arguments.
    */
-  constructor(accessor, args) {
+  constructor(accessor: Accessor, args: Partial<CliArgs>) {
     this._accessor = accessor
-    this._args = args || { _: [] }
+    this._args = (args as CliArgs) || ({ _: [] } as CliArgs)
     this._openFilesCache = []
     this._openFilesTimer = null
     this._windowManager = this._accessor.windowManager
@@ -44,17 +72,17 @@ class App {
   /**
    * The entry point into the application.
    */
-  init() {
+  init(): void {
     // Enable these features to use `backdrop-filter` css rules!
     if (isOsx) {
       app.commandLine.appendSwitch('enable-experimental-web-platform-features', 'true')
     }
 
-    app.on('second-instance', (event, argv, workingDirectory) => {
+    app.on('second-instance', (_event, argv, workingDirectory) => {
       const { _openFilesCache, _windowManager } = this
-      const args = parseArgs(argv.slice(1))
+      const args = parseArgs(argv.slice(1)) as CliArgs
 
-      const buf = []
+      const buf: PathInfo[] = []
       for (const pathname of args._) {
         // Ignore all unknown flags
         if (pathname.startsWith('--')) {
@@ -63,7 +91,7 @@ class App {
 
         const info = normalizeMarkdownPath(path.resolve(workingDirectory, pathname))
         if (info) {
-          buf.push(info)
+          buf.push(info as PathInfo)
         }
       }
 
@@ -108,14 +136,14 @@ class App {
     })
 
     // Prevent to load webview and opening links or new windows via HTML/JS.
-    app.on('web-contents-created', (event, contents) => {
+    app.on('web-contents-created', (_event, contents) => {
       contents.on('will-attach-webview', (event) => {
         event.preventDefault()
       })
       contents.on('will-navigate', (event) => {
         event.preventDefault()
       })
-      contents.setWindowOpenHandler((details) => {
+      contents.setWindowOpenHandler(() => {
         return { action: 'deny' }
       })
     })
@@ -124,7 +152,7 @@ class App {
   /**
    * Initialize main process language from preferences
    */
-  async _initializeLanguage() {
+  private async _initializeLanguage(): Promise<void> {
     try {
       let currentLanguage = this._accessor.preferences.getItem('language')
 
@@ -148,7 +176,7 @@ class App {
         ]
 
         // Language mapping: system language code -> application language code
-        const languageMap = {
+        const languageMap: Record<string, string> = {
           'zh-CN': 'zh-CN',
           'zh-TW': 'zh-TW',
           'zh-HK': 'zh-TW',
@@ -193,13 +221,13 @@ class App {
     }
   }
 
-  async getScreenshotFileName() {
+  async getScreenshotFileName(): Promise<string> {
     const screenshotFolderPath = await this._accessor.dataCenter.getItem('screenshotFolderPath')
     const fileName = `${dayjs().format('YYYY-MM-DD-HH-mm-ss')}-screenshot.png`
     return path.join(screenshotFolderPath, fileName)
   }
 
-  ready = () => {
+  ready = (): void => {
     const { _args: args, _openFilesCache } = this
     const { preferences, editorBufferStore } = this._accessor
 
@@ -228,7 +256,7 @@ class App {
 
         const info = normalizeMarkdownPath(pathname)
         if (info) {
-          _openFilesCache.push(info)
+          _openFilesCache.push(info as PathInfo)
         }
       }
     }
@@ -242,12 +270,12 @@ class App {
       } else if (startUpAction === 'folder' && defaultDirectoryToOpen) {
         const info = normalizeMarkdownPath(defaultDirectoryToOpen)
         if (info) {
-          _openFilesCache.unshift(info)
+          _openFilesCache.unshift(info as PathInfo)
         }
       } else if (startUpAction === 'openLastFolder' && lastOpenedFolder) {
         const info = normalizeMarkdownPath(lastOpenedFolder)
         if (info) {
-          _openFilesCache.unshift(info)
+          _openFilesCache.unshift(info as PathInfo)
         }
       }
     }
@@ -266,7 +294,8 @@ class App {
       selectTheme(newTheme)
     }
 
-    ipcMain.on('broadcast-preferences-changed', (change) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ipcMain.on('broadcast-preferences-changed', (change: any) => {
       const nextPreferences = {
         ...preferences.getAll(),
         ...change
@@ -335,7 +364,7 @@ class App {
     }
 
     if (isOsx) {
-      app.dock.setMenu(dockMenu)
+      app.dock?.setMenu(dockMenu)
     } else if (isWindows) {
       app.setJumpList([
         {
@@ -358,11 +387,14 @@ class App {
       ])
     }
 
-    const createWindow = () => {
+    const createWindow = (): void => {
       if (isRestorePathway) {
         // We will restore based off the previous buffer, one window per buffer store file
         const bufferStores = editorBufferStore.getAll()
-        const bufferStoreList = Object.values(bufferStores)
+        const bufferStoreList = Object.values(bufferStores) as Array<{
+          id: string
+          filePath: string | null
+        }>
         if (bufferStoreList.length === 0) {
           this._createEditorWindow()
           return
@@ -384,7 +416,7 @@ class App {
     if (isLinux) {
       let windowCreated = false
 
-      const createWindowOnce = () => {
+      const createWindowOnce = (): void => {
         if (windowCreated) return
         windowCreated = true
         createWindow()
@@ -422,11 +454,11 @@ class App {
     // })
   }
 
-  openFile = (event, pathname) => {
+  openFile = (event: Electron.Event, pathname: string): void => {
     event.preventDefault()
     const info = normalizeMarkdownPath(pathname)
     if (info) {
-      this._openFilesCache.push(info)
+      this._openFilesCache.push(info as PathInfo)
 
       if (app.isReady()) {
         // It might come more files
@@ -445,21 +477,14 @@ class App {
 
   /**
    * Creates a new editor window.
-   *
-   * @param {string} [rootDirectory] The root directory to open.
-   * @param {string[]} [fileList] A list of markdown files to open.
-   * @param {string[]} [markdownList] Array of markdown data to open.
-   * @param {*} [options] The BrowserWindow options.
-   * @param {*|null} [bufferStoreInfo] The editor state to restore the window with.
-   * @returns {EditorWindow} The created editor window.
    */
-  _createEditorWindow(
-    rootDirectory = null,
-    fileList = [],
-    markdownList = [],
-    options = {},
-    bufferStoreInfo = null
-  ) {
+  private _createEditorWindow(
+    rootDirectory: string | null = null,
+    fileList: string[] = [],
+    markdownList: string[] = [],
+    options: Partial<BrowserWindowConstructorOptions> = {},
+    bufferStoreInfo: { id: string; filePath: string | null } | null = null
+  ): EditorWindow {
     const editor = new EditorWindow(this._accessor)
     if (rootDirectory) {
       this._accessor.preferences.setItems({ lastOpenedFolder: rootDirectory })
@@ -475,32 +500,32 @@ class App {
   /**
    * Create a new setting window.
    */
-  _createSettingWindow(category) {
+  private _createSettingWindow(category?: string | null): void {
     const setting = new SettingWindow(this._accessor)
-    setting.createWindow(category)
+    setting.createWindow(category ?? null)
     this._windowManager.add(setting)
     if (this._windowManager.windowCount === 1) {
       this._accessor.menu.setActiveWindow(setting.id)
     }
   }
 
-  _openFilesToOpen() {
+  private _openFilesToOpen(): void {
     this._openPathList(this._openFilesCache, false)
   }
 
   /**
    * Open the path list in the best window(s).
    *
-   * @param {string[]} pathsToOpen The path list to open.
-   * @param {boolean} openFilesInSameWindow Open all files in the same window with
+   * @param pathsToOpen The path list to open.
+   * @param openFilesInSameWindow Open all files in the same window with
    * the first directory and discard other directories.
    */
-  _openPathList(pathsToOpen, openFilesInSameWindow = false) {
+  private _openPathList(pathsToOpen: PathInfo[], openFilesInSameWindow: boolean = false): void {
     const { _windowManager } = this
     const openFilesInNewWindow = this._accessor.preferences.getItem('openFilesInNewWindow')
 
-    const fileSet = new Set()
-    const directorySet = new Set()
+    const fileSet = new Set<string>()
+    const directorySet = new Set<string>()
     for (const { isDir, path } of pathsToOpen) {
       if (isDir) {
         directorySet.add(path)
@@ -510,7 +535,8 @@ class App {
     }
 
     // Filter out directories that are already opened.
-    for (const window of _windowManager.windows.values()) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const window of _windowManager.windows.values() as Iterable<any>) {
       if (window.type === WindowType.EDITOR) {
         const { openedRootDirectory } = window
         if (directorySet.has(openedRootDirectory)) {
@@ -520,7 +546,9 @@ class App {
       }
     }
 
-    const directoriesToOpen = Array.from(directorySet).map((dir) => ({
+    const directoriesToOpen: { rootDirectory: string | null; fileList: string[] }[] = Array.from(
+      directorySet
+    ).map((dir) => ({
       rootDirectory: dir,
       fileList: []
     }))
@@ -548,7 +576,7 @@ class App {
         let breakOuterLoop = false
         for (let j = 0; j < filesToOpen.length; ++j) {
           const pathname = filesToOpen[j]
-          if (isChildOfDirectory(rootDirectory, pathname)) {
+          if (isChildOfDirectory(rootDirectory ?? '', pathname)) {
             if (isFirstWindow) {
               fileList.push(...filesToOpen)
               filesToOpen.length = 0
@@ -573,7 +601,8 @@ class App {
         filesToOpen.length = 0
       } else {
         const windowList = _windowManager.findBestWindowToOpenIn(filesToOpen)
-        for (const item of windowList) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        for (const item of windowList as any[]) {
           const { windowId, fileList } = item
 
           // File list is empty when all files are already opened.
@@ -616,7 +645,7 @@ class App {
     pathsToOpen.length = 0
   }
 
-  _openSettingsWindow(category) {
+  private _openSettingsWindow(category?: string | null): void {
     const settingWins = this._windowManager.getWindowsByType(WindowType.SETTINGS)
     if (settingWins.length >= 1) {
       // A setting window is already created
@@ -632,7 +661,7 @@ class App {
     this._createSettingWindow(category)
   }
 
-  _listenForIpcMain() {
+  private _listenForIpcMain(): void {
     registerKeyboardListeners()
     registerSpellcheckerListeners()
 
@@ -646,7 +675,8 @@ class App {
       this._createEditorWindow()
     })
 
-    ipcMain.on('screen-capture', async(win) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ipcMain.on('screen-capture', async(win: any) => {
       if (isOsx) {
         // Use macOs `screencapture` command line when in macOs system.
         const screenshotFileName = await this.getScreenshotFileName()
@@ -660,8 +690,8 @@ class App {
             const image = clipboard.readImage()
             const bufferImage = image.toPNG()
             await fsPromises.writeFile(screenshotFileName, bufferImage)
-          } catch (err) {
-            log.error(err)
+          } catch (writeErr) {
+            log.error(writeErr)
           }
           win.webContents.send('mt::screenshot-captured')
         })
@@ -674,61 +704,71 @@ class App {
       }
     })
 
-    ipcMain.on('app-create-settings-window', (category) => {
-      this._openSettingsWindow(category)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ipcMain.on('app-create-settings-window', (category: any) => {
+      this._openSettingsWindow(category as string | undefined)
     })
 
-    ipcMain.on('app-open-file-by-id', (windowId, filePath) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ipcMain.on('app-open-file-by-id', (windowId: any, filePath: any) => {
       const openFilesInNewWindow = this._accessor.preferences.getItem('openFilesInNewWindow')
       if (openFilesInNewWindow) {
-        this._createEditorWindow(null, [filePath])
+        this._createEditorWindow(null, [filePath as string])
       } else {
-        const editor = this._windowManager.get(windowId)
+        const editor = this._windowManager.get(windowId as number)
         if (editor) {
           editor.openTab(filePath, {}, true)
         }
       }
     })
-    ipcMain.on('app-open-files-by-id', (windowId, fileList) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ipcMain.on('app-open-files-by-id', (windowId: any, fileList: any) => {
       const openFilesInNewWindow = this._accessor.preferences.getItem('openFilesInNewWindow')
       if (openFilesInNewWindow) {
-        this._createEditorWindow(null, fileList)
+        this._createEditorWindow(null, fileList as string[])
       } else {
-        const editor = this._windowManager.get(windowId)
+        const editor = this._windowManager.get(windowId as number)
         if (editor) {
           editor.openTabsFromPaths(
-            fileList
+            (fileList as string[])
               .map((p) => normalizeMarkdownPath(p))
-              .filter((i) => i && !i.isDir)
-              .map((i) => i.path)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              .filter((i: any) => i && !i.isDir)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              .map((i: any) => i.path)
           )
         }
       }
     })
 
-    ipcMain.on('app-open-markdown-by-id', (windowId, data) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ipcMain.on('app-open-markdown-by-id', (windowId: any, data: any) => {
       const openFilesInNewWindow = this._accessor.preferences.getItem('openFilesInNewWindow')
       if (openFilesInNewWindow) {
-        this._createEditorWindow(null, [], [data])
+        this._createEditorWindow(null, [], [data as string])
       } else {
-        const editor = this._windowManager.get(windowId)
+        const editor = this._windowManager.get(windowId as number)
         if (editor) {
-          editor.openUntitledTab(true, data)
+          editor.openUntitledTab(true, data as string)
         }
       }
     })
 
-    ipcMain.on('app-open-directory-by-id', (windowId, pathname, openInSameWindow) => {
-      const { openFolderInNewWindow } = this._accessor.preferences.getAll()
-      if (openInSameWindow || !openFolderInNewWindow) {
-        const editor = this._windowManager.get(windowId)
-        if (editor) {
-          editor.openFolder(pathname)
-          return
+    ipcMain.on(
+      'app-open-directory-by-id',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (windowId: any, pathname: any, openInSameWindow: any) => {
+        const { openFolderInNewWindow } = this._accessor.preferences.getAll()
+        if (openInSameWindow || !openFolderInNewWindow) {
+          const editor = this._windowManager.get(windowId as number)
+          if (editor) {
+            editor.openFolder(pathname as string)
+            return
+          }
         }
+        this._createEditorWindow(pathname as string)
       }
-      this._createEditorWindow(pathname)
-    })
+    )
 
     // --- renderer -------------------
 
@@ -736,7 +776,7 @@ class App {
       app.quit()
     })
 
-    ipcMain.on('mt::open-file-by-window-id', (e, windowId, filePath) => {
+    ipcMain.on('mt::open-file-by-window-id', (_e, windowId: number, filePath: string) => {
       const resolvedPath = normalizeAndResolvePath(filePath)
       const openFilesInNewWindow = this._accessor.preferences.getItem('openFilesInNewWindow')
       if (openFilesInNewWindow) {
@@ -753,6 +793,7 @@ class App {
       const { preferences } = this._accessor
       const { defaultDirectoryToOpen } = preferences.getAll()
       const win = BrowserWindow.fromWebContents(e.sender)
+      if (!win) return
 
       const { filePaths } = await dialog.showOpenDialog(win, {
         defaultPath: defaultDirectoryToOpen,
@@ -774,6 +815,7 @@ class App {
 
     ipcMain.on('mt::request-keybindings', (e) => {
       const win = BrowserWindow.fromWebContents(e.sender)
+      if (!win) return
       const { keybindings } = this._accessor
       // Convert map to object
       win.webContents.send('mt::keybindings-response', Object.fromEntries(keybindings.keys))
@@ -791,12 +833,12 @@ class App {
       return { defaultKeybindings, userKeybindings }
     })
 
-    ipcMain.handle('mt::keybinding-save-user-keybindings', async(event, userKeybindings) => {
+    ipcMain.handle('mt::keybinding-save-user-keybindings', async(_event, userKeybindings) => {
       const { keybindings } = this._accessor
       return keybindings.setUserKeybindings(userKeybindings)
     })
 
-    ipcMain.handle('mt::fs-trash-item', async(event, fullPath) => {
+    ipcMain.handle('mt::fs-trash-item', async(_event, fullPath: string) => {
       return shell.trashItem(fullPath)
     })
   }
