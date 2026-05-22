@@ -1,6 +1,8 @@
+import { type BrowserWindow } from 'electron'
 import { COMMANDS } from '../../commands'
+import type { CommandManager } from '../../commands'
 
-const MENU_ID_FORMAT_MAP = Object.freeze({
+const MENU_ID_FORMAT_MAP: Readonly<Record<string, string>> = Object.freeze({
   strongMenuItem: 'strong',
   emphasisMenuItem: 'em',
   inlineCodeMenuItem: 'inline_code',
@@ -10,63 +12,65 @@ const MENU_ID_FORMAT_MAP = Object.freeze({
   inlineMathMenuItem: 'inline_math'
 })
 
-const format = (win, type) => {
+type Win = BrowserWindow | null | undefined
+
+const format = (win: Win, type: string): void => {
   if (win && win.webContents) {
     win.webContents.send('mt::editor-format-action', { type })
   }
 }
 
-export const clearFormat = win => {
+export const clearFormat = (win: Win): void => {
   format(win, 'clear')
 }
 
-export const emphasis = win => {
+export const emphasis = (win: Win): void => {
   format(win, 'em')
 }
 
-export const highlight = win => {
+export const highlight = (win: Win): void => {
   format(win, 'mark')
 }
 
-export const hyperlink = win => {
+export const hyperlink = (win: Win): void => {
   format(win, 'link')
 }
 
-export const image = win => {
+export const image = (win: Win): void => {
   format(win, 'image')
 }
 
-export const inlineCode = win => {
+export const inlineCode = (win: Win): void => {
   format(win, 'inline_code')
 }
 
-export const inlineMath = win => {
+export const inlineMath = (win: Win): void => {
   format(win, 'inline_math')
 }
 
-export const strikethrough = win => {
+export const strikethrough = (win: Win): void => {
   format(win, 'del')
 }
 
-export const strong = win => {
+export const strong = (win: Win): void => {
   format(win, 'strong')
 }
 
-export const subscript = win => {
+export const subscript = (win: Win): void => {
   format(win, 'sub')
 }
 
-export const superscript = win => {
+export const superscript = (win: Win): void => {
   format(win, 'sup')
 }
 
-export const underline = win => {
+export const underline = (win: Win): void => {
   format(win, 'u')
 }
 
 // --- Commands -------------------------------------------------------------
 
-export const loadFormatCommands = commandManager => {
+export const loadFormatCommands = (commandManager: CommandManager): void => {
   commandManager.add(COMMANDS.FORMAT_CLEAR_FORMAT, clearFormat)
   commandManager.add(COMMANDS.FORMAT_EMPHASIS, emphasis)
   commandManager.add(COMMANDS.FORMAT_HIGHLIGHT, highlight)
@@ -89,16 +93,18 @@ export const loadFormatCommands = commandManager => {
 /**
  * Update format menu entires from given state.
  *
- * @param {Electron.MenuItem} applicationMenu The application menu instance.
- * @param {Object.<string, boolean>} formats A object map with selected formats.
+ * @param applicationMenu The application menu instance.
+ * @param formats A object map with selected formats.
  */
-export const updateFormatMenu = (applicationMenu, formats) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const updateFormatMenu = (applicationMenu: any, formats: Record<string, boolean>): void => {
   const formatMenuItem = applicationMenu.getMenuItemById('formatMenuItem')
-  formatMenuItem.submenu.items.forEach(item => (item.checked = false))
-  formatMenuItem.submenu.items
-    .forEach(item => {
-      if (item.id && formats[MENU_ID_FORMAT_MAP[item.id]]) {
-        item.checked = true
-      }
-    })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  formatMenuItem.submenu.items.forEach((item: any) => (item.checked = false))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  formatMenuItem.submenu.items.forEach((item: any) => {
+    if (item.id && formats[MENU_ID_FORMAT_MAP[item.id]!]) {
+      item.checked = true
+    }
+  })
 }

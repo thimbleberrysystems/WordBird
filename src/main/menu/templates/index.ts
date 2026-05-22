@@ -1,3 +1,4 @@
+import { type MenuItemConstructorOptions } from 'electron'
 import edit from './edit'
 import prefEdit from './prefEdit'
 import file from './file'
@@ -8,14 +9,17 @@ import window from './window'
 import paragraph from './paragraph'
 import format from './format'
 import theme from './theme'
+import type Keybindings from '../../keyboard/shortcutHandler'
+import type Preference from '../../preferences'
 
 export { default as dockMenu } from './dock'
+
 /**
  * Create the setting window menu.
  *
- * @param {Keybindings} keybindings The keybindings instance
+ * @param keybindings The keybindings instance
  */
-export const configSettingMenu = (keybindings) => {
+export const configSettingMenu = (keybindings: Keybindings): MenuItemConstructorOptions[] => {
   return [
     ...(process.platform === 'darwin' ? [marktext(keybindings)] : []),
     prefEdit(keybindings),
@@ -26,11 +30,15 @@ export const configSettingMenu = (keybindings) => {
 /**
  * Create the application menu for the editor window.
  *
- * @param {Keybindings} keybindings The keybindings instance.
- * @param {Preference} preferences The preference instance.
- * @param {string[]} recentlyUsedFiles The recently used files.
+ * @param keybindings The keybindings instance.
+ * @param preferences The preference instance.
+ * @param recentlyUsedFiles The recently used files.
  */
-export default function(keybindings, preferences, recentlyUsedFiles) {
+export default function(
+  keybindings: Keybindings,
+  preferences: Preference,
+  recentlyUsedFiles: string[] = []
+): MenuItemConstructorOptions[] {
   return [
     ...(process.platform === 'darwin' ? [marktext(keybindings)] : []),
     file(keybindings, preferences, recentlyUsedFiles),

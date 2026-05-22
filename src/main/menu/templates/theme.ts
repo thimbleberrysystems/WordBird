@@ -1,18 +1,21 @@
+import { type MenuItemConstructorOptions } from 'electron'
 import * as actions from '../actions/theme'
 import { t } from '../../i18n'
+import type Preference from '../../preferences'
 
-export default function(userPreference) {
-  const { theme, followSystemTheme } = userPreference.getAll()
+export default function(userPreference: Preference): MenuItemConstructorOptions {
+  const preferences = userPreference.getAll() as { theme?: string; followSystemTheme?: boolean }
+  const { theme, followSystemTheme } = preferences
   const isThemeSelectionEnabled = !followSystemTheme
 
-  const submenu = [
+  const submenu: MenuItemConstructorOptions[] = [
     // Follow System Theme
     {
       label: t('preferences.theme.followSystemTheme'),
       type: 'checkbox',
       id: 'follow-system-theme',
-      checked: followSystemTheme,
-      click(menuItem, browserWindow) {
+      checked: !!followSystemTheme,
+      click(menuItem) {
         actions.setFollowSystemTheme(menuItem.checked)
       }
     }
@@ -37,7 +40,7 @@ export default function(userPreference) {
       id: 'ayu-light',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'ayu-light',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('ayu-light')
       }
     },
@@ -47,7 +50,7 @@ export default function(userPreference) {
       id: 'light',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'light',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('light')
       }
     },
@@ -57,7 +60,7 @@ export default function(userPreference) {
       id: 'catppuccin-latte',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'catppuccin-latte',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('catppuccin-latte')
       }
     },
@@ -67,7 +70,7 @@ export default function(userPreference) {
       id: 'everforest-light',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'everforest-light',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('everforest-light')
       }
     },
@@ -77,7 +80,7 @@ export default function(userPreference) {
       id: 'graphite',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'graphite',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('graphite')
       }
     },
@@ -87,7 +90,7 @@ export default function(userPreference) {
       id: 'gruvbox-light',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'gruvbox-light',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('gruvbox-light')
       }
     },
@@ -97,7 +100,7 @@ export default function(userPreference) {
       id: 'rose-pine-dawn',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'rose-pine-dawn',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('rose-pine-dawn')
       }
     },
@@ -107,7 +110,7 @@ export default function(userPreference) {
       id: 'solarized-light',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'solarized-light',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('solarized-light')
       }
     },
@@ -117,7 +120,7 @@ export default function(userPreference) {
       id: 'tokyo-night-light',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'tokyo-night-light',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('tokyo-night-light')
       }
     },
@@ -127,7 +130,7 @@ export default function(userPreference) {
       id: 'ulysses',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'ulysses',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('ulysses')
       }
     },
@@ -143,7 +146,7 @@ export default function(userPreference) {
       id: 'ayu-dark',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'ayu-dark',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('ayu-dark')
       }
     },
@@ -153,7 +156,7 @@ export default function(userPreference) {
       id: 'ayu-mirage',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'ayu-mirage',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('ayu-mirage')
       }
     },
@@ -163,7 +166,7 @@ export default function(userPreference) {
       id: 'dark',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'dark',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('dark')
       }
     },
@@ -173,7 +176,7 @@ export default function(userPreference) {
       id: 'catppuccin-mocha',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'catppuccin-mocha',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('catppuccin-mocha')
       }
     },
@@ -183,7 +186,7 @@ export default function(userPreference) {
       id: 'cyberdream',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'cyberdream',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('cyberdream')
       }
     },
@@ -193,7 +196,7 @@ export default function(userPreference) {
       id: 'dracula',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'dracula',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('dracula')
       }
     },
@@ -203,7 +206,7 @@ export default function(userPreference) {
       id: 'everforest-dark',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'everforest-dark',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('everforest-dark')
       }
     },
@@ -213,7 +216,7 @@ export default function(userPreference) {
       id: 'gruvbox-dark',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'gruvbox-dark',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('gruvbox-dark')
       }
     },
@@ -223,7 +226,7 @@ export default function(userPreference) {
       id: 'horizon-dark',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'horizon-dark',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('horizon-dark')
       }
     },
@@ -233,7 +236,7 @@ export default function(userPreference) {
       id: 'kanagawa',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'kanagawa',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('kanagawa')
       }
     },
@@ -243,7 +246,7 @@ export default function(userPreference) {
       id: 'material-dark',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'material-dark',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('material-dark')
       }
     },
@@ -253,7 +256,7 @@ export default function(userPreference) {
       id: 'monokai-pro',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'monokai-pro',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('monokai-pro')
       }
     },
@@ -263,7 +266,7 @@ export default function(userPreference) {
       id: 'nightfox',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'nightfox',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('nightfox')
       }
     },
@@ -273,7 +276,7 @@ export default function(userPreference) {
       id: 'nord',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'nord',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('nord')
       }
     },
@@ -283,7 +286,7 @@ export default function(userPreference) {
       id: 'one-dark',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'one-dark',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('one-dark')
       }
     },
@@ -293,7 +296,7 @@ export default function(userPreference) {
       id: 'oxocarbon-dark',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'oxocarbon-dark',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('oxocarbon-dark')
       }
     },
@@ -303,7 +306,7 @@ export default function(userPreference) {
       id: 'palenight',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'palenight',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('palenight')
       }
     },
@@ -313,7 +316,7 @@ export default function(userPreference) {
       id: 'rose-pine',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'rose-pine',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('rose-pine')
       }
     },
@@ -323,7 +326,7 @@ export default function(userPreference) {
       id: 'rose-pine-moon',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'rose-pine-moon',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('rose-pine-moon')
       }
     },
@@ -333,7 +336,7 @@ export default function(userPreference) {
       id: 'solarized-dark',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'solarized-dark',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('solarized-dark')
       }
     },
@@ -343,7 +346,7 @@ export default function(userPreference) {
       id: 'synthwave-84',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'synthwave-84',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('synthwave-84')
       }
     },
@@ -353,7 +356,7 @@ export default function(userPreference) {
       id: 'tokyo-night',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'tokyo-night',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('tokyo-night')
       }
     },
@@ -363,7 +366,7 @@ export default function(userPreference) {
       id: 'tokyo-night-storm',
       enabled: isThemeSelectionEnabled,
       checked: theme === 'tokyo-night-storm',
-      click(menuItem, browserWindow) {
+      click() {
         actions.selectTheme('tokyo-night-storm')
       }
     }

@@ -1,26 +1,27 @@
-import { app } from 'electron'
+import { app, type BrowserWindow, type MenuItemConstructorOptions } from 'electron'
 import { showAboutDialog } from '../actions/help'
 import * as actions from '../actions/marktext'
 import { t } from '../../i18n'
+import type Keybindings from '../../keyboard/shortcutHandler'
 
 // macOS only menu.
 
-export default function(keybindings) {
+export default function(keybindings: Keybindings): MenuItemConstructorOptions {
   return {
     label: t('menu.marktext.title'),
     submenu: [{
       label: t('menu.marktext.about'),
-      click(menuItem, focusedWindow) {
-        showAboutDialog(focusedWindow)
+      click(_menuItem, focusedWindow) {
+        showAboutDialog(focusedWindow as BrowserWindow | undefined)
       }
     }, {
       label: t('menu.marktext.checkUpdates'),
-      click(menuItem, focusedWindow) {
-        actions.checkUpdates(focusedWindow)
+      click(_menuItem, focusedWindow) {
+        actions.checkUpdates((focusedWindow as BrowserWindow | undefined) ?? null)
       }
     }, {
       label: t('menu.marktext.preferences'),
-      accelerator: keybindings.getAccelerator('file.preferences'),
+      accelerator: keybindings.getAccelerator('file.preferences') ?? undefined,
       click() {
         actions.userSetting()
       }
@@ -34,13 +35,13 @@ export default function(keybindings) {
       type: 'separator'
     }, {
       label: t('menu.marktext.hide'),
-      accelerator: keybindings.getAccelerator('mt.hide'),
+      accelerator: keybindings.getAccelerator('mt.hide') ?? undefined,
       click() {
         actions.osxHide()
       }
     }, {
       label: t('menu.marktext.hideOthers'),
-      accelerator: keybindings.getAccelerator('mt.hide-others'),
+      accelerator: keybindings.getAccelerator('mt.hide-others') ?? undefined,
       click() {
         actions.osxHideAll()
       }
@@ -53,7 +54,7 @@ export default function(keybindings) {
       type: 'separator'
     }, {
       label: t('menu.marktext.quit'),
-      accelerator: keybindings.getAccelerator('file.quit'),
+      accelerator: keybindings.getAccelerator('file.quit') ?? undefined,
       click: app.quit
     }]
   }

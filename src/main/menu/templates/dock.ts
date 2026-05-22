@@ -1,11 +1,11 @@
-import { app, Menu } from 'electron'
+import { app, Menu, type BrowserWindow } from 'electron'
 import * as actions from '../actions/file'
 
 const dockMenu = Menu.buildFromTemplate([{
   label: 'Open...',
-  click(menuItem, browserWindow) {
+  click(_menuItem, browserWindow) {
     if (browserWindow) {
-      actions.openFile(browserWindow)
+      actions.openFile(browserWindow as BrowserWindow)
     } else {
       actions.newEditorWindow()
     }

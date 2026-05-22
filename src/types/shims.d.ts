@@ -39,4 +39,21 @@ declare namespace NodeJS {
   interface Process {
     resourcesPath: string
   }
+  interface Global {
+    __static: string
+    MARKTEXT_DEBUG: boolean
+    MARKTEXT_DEBUG_VERBOSE: boolean
+    MARKTEXT_SAFE_MODE: boolean
+  }
 }
+
+// Main-process globals set at boot in src/main/{globalSetting,app/env}. The
+// renderer exposes its own `__static` via the build-time define block.
+// eslint-disable-next-line no-var
+declare var __static: string
+// eslint-disable-next-line no-var
+declare var MARKTEXT_DEBUG: boolean
+// eslint-disable-next-line no-var
+declare var MARKTEXT_DEBUG_VERBOSE: boolean
+// eslint-disable-next-line no-var
+declare var MARKTEXT_SAFE_MODE: boolean

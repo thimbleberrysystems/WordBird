@@ -1,6 +1,10 @@
+import { type BrowserWindow, type MenuItem } from 'electron'
 import { COMMANDS } from '../../commands'
+import type { CommandManager } from '../../commands'
 
-const DISABLE_LABELS = [
+type Win = BrowserWindow | null | undefined
+
+const DISABLE_LABELS: readonly string[] = [
   // paragraph menu items
   'heading1MenuItem', 'heading2MenuItem', 'heading3MenuItem', 'heading4MenuItem',
   'heading5MenuItem', 'heading6MenuItem',
@@ -10,7 +14,7 @@ const DISABLE_LABELS = [
   'hyperlinkMenuItem', 'imageMenuItem'
 ]
 
-const MENU_ID_MAP = Object.freeze({
+const MENU_ID_MAP: Readonly<Record<string, string>> = Object.freeze({
   heading1MenuItem: 'h1',
   heading2MenuItem: 'h2',
   heading3MenuItem: 'h3',
@@ -30,95 +34,95 @@ const MENU_ID_MAP = Object.freeze({
   frontMatterMenuItem: 'frontmatter' // 'pre'
 })
 
-const transformEditorElement = (win, type) => {
+const transformEditorElement = (win: Win, type: string): void => {
   if (win && win.webContents) {
     win.webContents.send('mt::editor-paragraph-action', { type })
   }
 }
 
-export const bulletList = win => {
+export const bulletList = (win: Win): void => {
   transformEditorElement(win, 'ul-bullet')
 }
 
-export const codeFence = win => {
+export const codeFence = (win: Win): void => {
   transformEditorElement(win, 'pre')
 }
 
-export const degradeHeading = win => {
+export const degradeHeading = (win: Win): void => {
   transformEditorElement(win, 'degrade heading')
 }
 
-export const frontMatter = win => {
+export const frontMatter = (win: Win): void => {
   transformEditorElement(win, 'front-matter')
 }
 
-export const heading1 = win => {
+export const heading1 = (win: Win): void => {
   transformEditorElement(win, 'heading 1')
 }
 
-export const heading2 = win => {
+export const heading2 = (win: Win): void => {
   transformEditorElement(win, 'heading 2')
 }
 
-export const heading3 = win => {
+export const heading3 = (win: Win): void => {
   transformEditorElement(win, 'heading 3')
 }
 
-export const heading4 = win => {
+export const heading4 = (win: Win): void => {
   transformEditorElement(win, 'heading 4')
 }
 
-export const heading5 = win => {
+export const heading5 = (win: Win): void => {
   transformEditorElement(win, 'heading 5')
 }
 
-export const heading6 = win => {
+export const heading6 = (win: Win): void => {
   transformEditorElement(win, 'heading 6')
 }
 
-export const horizontalLine = win => {
+export const horizontalLine = (win: Win): void => {
   transformEditorElement(win, 'hr')
 }
 
-export const htmlBlock = win => {
+export const htmlBlock = (win: Win): void => {
   transformEditorElement(win, 'html')
 }
 
-export const looseListItem = win => {
+export const looseListItem = (win: Win): void => {
   transformEditorElement(win, 'loose-list-item')
 }
 
-export const mathFormula = win => {
+export const mathFormula = (win: Win): void => {
   transformEditorElement(win, 'mathblock')
 }
 
-export const orderedList = win => {
+export const orderedList = (win: Win): void => {
   transformEditorElement(win, 'ol-order')
 }
 
-export const paragraph = win => {
+export const paragraph = (win: Win): void => {
   transformEditorElement(win, 'paragraph')
 }
 
-export const quoteBlock = win => {
+export const quoteBlock = (win: Win): void => {
   transformEditorElement(win, 'blockquote')
 }
 
-export const table = win => {
+export const table = (win: Win): void => {
   transformEditorElement(win, 'table')
 }
 
-export const taskList = win => {
+export const taskList = (win: Win): void => {
   transformEditorElement(win, 'ul-task')
 }
 
-export const increaseHeading = win => {
+export const increaseHeading = (win: Win): void => {
   transformEditorElement(win, 'upgrade heading')
 }
 
 // --- Commands -------------------------------------------------------------
 
-export const loadParagraphCommands = commandManager => {
+export const loadParagraphCommands = (commandManager: CommandManager): void => {
   commandManager.add(COMMANDS.PARAGRAPH_BULLET_LIST, bulletList)
   commandManager.add(COMMANDS.PARAGRAPH_CODE_FENCE, codeFence)
   commandManager.add(COMMANDS.PARAGRAPH_DEGRADE_HEADING, degradeHeading)
@@ -146,28 +150,53 @@ export const loadParagraphCommands = commandManager => {
 // NOTE: Don't use static `getMenuItemById` here, instead request the menu by
 //       window id from `AppMenu` manager.
 
-const setParagraphMenuItemStatus = (applicationMenu, bool) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const setParagraphMenuItemStatus = (applicationMenu: any, bool: boolean): void => {
   const paragraphMenuItem = applicationMenu.getMenuItemById('paragraphMenuEntry')
-  paragraphMenuItem.submenu.items
-    .forEach(item => (item.enabled = bool))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  paragraphMenuItem.submenu.items.forEach((item: any) => (item.enabled = bool))
 }
 
-const setMultipleStatus = (applicationMenu, list, status) => {
+const setMultipleStatus = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  applicationMenu: any,
+  list: readonly string[],
+  status: boolean
+): void => {
   const paragraphMenuItem = applicationMenu.getMenuItemById('paragraphMenuEntry')
   paragraphMenuItem.submenu.items
-    .filter(item => item.id && list.includes(item.id))
-    .forEach(item => (item.enabled = status))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .filter((item: any) => item.id && list.includes(item.id))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .forEach((item: any) => (item.enabled = status))
 }
 
-const setCheckedMenuItem = (applicationMenu, { affiliation, isTable, isLooseListItem, isTaskList }) => {
+interface SelectionState {
+  affiliation: Record<string, boolean>
+  isTable?: boolean
+  isLooseListItem?: boolean
+  isTaskList?: boolean
+  isDisabled?: boolean
+  isMultiline?: boolean
+  isCodeFences?: boolean
+  isCodeContent?: boolean
+}
+
+const setCheckedMenuItem = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  applicationMenu: any,
+  { affiliation, isTable, isLooseListItem, isTaskList }: SelectionState
+): void => {
   const paragraphMenuItem = applicationMenu.getMenuItemById('paragraphMenuEntry')
-  paragraphMenuItem.submenu.items.forEach(item => (item.checked = false))
-  paragraphMenuItem.submenu.items.forEach(item => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  paragraphMenuItem.submenu.items.forEach((item: any) => (item.checked = false))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  paragraphMenuItem.submenu.items.forEach((item: any) => {
     if (!item.id) {
       return false
     } else if (item.id === 'looseListItemMenuItem') {
       item.checked = !!isLooseListItem
-    } else if (Object.keys(affiliation).some(b => {
+    } else if (Object.keys(affiliation).some((b) => {
       if (b === 'ul' && isTaskList) {
         if (item.id === 'taskListMenuItem') {
           return true
@@ -182,16 +211,21 @@ const setCheckedMenuItem = (applicationMenu, { affiliation, isTable, isLooseList
     })) {
       item.checked = true
     }
+    return undefined
   })
 }
 
 /**
  * Update paragraph menu entires from given state.
  *
- * @param {Electron.MenuItem} applicationMenu The application menu instance.
- * @param {*} state The selection information.
+ * @param applicationMenu The application menu instance.
+ * @param state The selection information.
  */
-export const updateSelectionMenus = (applicationMenu, state) => {
+export const updateSelectionMenus = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  applicationMenu: any,
+  state: SelectionState
+): void => {
   const {
     // Key/boolean object like "ul: true" of block elements that are selected.
     // This may be an empty object when multiple block elements are selected.
@@ -203,8 +237,9 @@ export const updateSelectionMenus = (applicationMenu, state) => {
   } = state
 
   // Reset format menu.
-  const formatMenuItem = applicationMenu.getMenuItemById('formatMenuItem')
-  formatMenuItem.submenu.items.forEach(item => (item.enabled = true))
+  const formatMenuItem: MenuItem = applicationMenu.getMenuItemById('formatMenuItem')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ;(formatMenuItem.submenu as any).items.forEach((item: any) => (item.enabled = true))
 
   // Handle menu checked.
   setCheckedMenuItem(applicationMenu, state)
@@ -220,29 +255,20 @@ export const updateSelectionMenus = (applicationMenu, state) => {
 
     // A code line is selected.
     if (isCodeContent) {
-      formatMenuItem.submenu.items.forEach(item => (item.enabled = false))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(formatMenuItem.submenu as any).items.forEach((item: any) => (item.enabled = false))
 
-      // TODO: Allow to transform to paragraph for other code blocks too but
-      //   currently not supported by Muya.
-      // // Allow to transform to paragraph.
-      // if (affiliation.frontmatter) {
-      //   setMultipleStatus(applicationMenu, ['frontMatterMenuItem'], true)
-      // } else if (affiliation.html) {
-      //   setMultipleStatus(applicationMenu, ['htmlBlockMenuItem'], true)
-      // } else if (affiliation.multiplemath) {
-      //   setMultipleStatus(applicationMenu, ['mathBlockMenuItem'], true)
-      // } else {
-      //  setMultipleStatus(applicationMenu, ['codeFencesMenuItem'], true)
-      // }
-
-      if (Object.keys(affiliation).some(b => /code$/.test(b))) {
+      if (Object.keys(affiliation).some((b) => /code$/.test(b))) {
         setMultipleStatus(applicationMenu, ['codeFencesMenuItem'], true)
       }
     }
   } else if (isMultiline) {
-    formatMenuItem.submenu.items
-      .filter(item => item.id && DISABLE_LABELS.includes(item.id))
-      .forEach(item => (item.enabled = false))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(formatMenuItem.submenu as any).items
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter((item: any) => item.id && DISABLE_LABELS.includes(item.id))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .forEach((item: any) => (item.enabled = false))
     setMultipleStatus(applicationMenu, DISABLE_LABELS, false)
   }
 

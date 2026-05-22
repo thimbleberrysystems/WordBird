@@ -1,24 +1,39 @@
 import fs from 'fs'
 import path from 'path'
-import EventEmitter from 'events'
 import Store from 'electron-store'
 import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron'
 import log from 'electron-log'
 import { isWindows } from '../config'
 import { hasSameKeys } from '../utils'
 import { getSupportedLanguages, isLanguageSupported } from 'common/i18n'
-import schema from './schema'
+import { TypedEmitter } from '@shared/types/typedEmitter'
+import type { IUserPreferences } from '@shared/types/preferences'
+import schema from './schema.json'
 
 const PREFERENCES_FILE_NAME = 'preferences'
 
-class Preference extends EventEmitter {
+// The Preference class extends EventEmitter but does not currently emit any
+// events itself — keep the event map empty until concrete events are added.
+type PreferenceEvents = Record<string, unknown[]>
+
+// Structural subset of EnvPaths/AppPaths — only `preferencesPath` is read here.
+interface AppPaths {
+  readonly preferencesPath: string
+}
+
+class Preference extends TypedEmitter<PreferenceEvents> {
+  public readonly preferencesPath: string
+  public readonly hasPreferencesFile: boolean
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public readonly store: Store<any>
+  public readonly staticPath: string
+
   /**
-   * @param {AppPaths} userDataPath The path instance.
+   * @param paths The path instance.
    *
    * NOTE: This throws an exception when validation fails.
-   *
    */
-  constructor(paths) {
+  constructor(paths: AppPaths) {
     // TODO: Preferences should not loaded if global.MARKTEXT_SAFE_MODE is set.
     super()
 
@@ -28,7 +43,8 @@ class Preference extends EventEmitter {
       path.join(this.preferencesPath, `./${PREFERENCES_FILE_NAME}.json`)
     )
     this.store = new Store({
-      schema,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      schema: schema as any,
       name: PREFERENCES_FILE_NAME,
       migrations: {
         '0.18.6': (store) => {
@@ -46,21 +62,21 @@ class Preference extends EventEmitter {
     this.init()
   }
 
-  init = () => {
-    let defaultSettings = null
+  init = (): void => {
+    let defaultSettings: Record<string, unknown> | null = null
     try {
       defaultSettings = JSON.parse(fs.readFileSync(this.staticPath, { encoding: 'utf8' }) || '{}')
 
       // Set best theme on first application start.
       if (nativeTheme.shouldUseDarkColors) {
-        defaultSettings.theme = 'dark'
+        defaultSettings!.theme = 'dark'
       }
 
       // Set system language on first application start
       if (!this.hasPreferencesFile) {
         const systemLanguage = this._getSystemLanguage()
         if (systemLanguage) {
-          defaultSettings.language = systemLanguage
+          defaultSettings!.language = systemLanguage
         }
       }
     } catch (err) {
@@ -77,7 +93,7 @@ class Preference extends EventEmitter {
     } else {
       // Because `this.getAll()` will return a plainObject, so we can not use `hasOwnProperty` method
       // const plainObject = () => Object.create(null)
-      const userSetting = this.getAll()
+      const userSetting = this.getAll() as Record<string, unknown>
       // Update outdated settings
       const requiresUpdate = !hasSameKeys(defaultSettings, userSetting)
       const userSettingKeys = Object.keys(userSetting)
@@ -113,26 +129,25 @@ class Preference extends EventEmitter {
     this._listenForIpcMain()
   }
 
-  getAll() {
-    return this.store.store
+  getAll(): IUserPreferences {
+    return this.store.store as IUserPreferences
   }
 
-  setItem(key, value) {
-    const result = this.store.set(key, value)
+  setItem(key: string, value: unknown): void {
+    this.store.set(key, value)
     ipcMain.emit('broadcast-preferences-changed', { [key]: value })
-    return result
   }
 
-  getItem(key) {
-    return this.store.get(key)
+  getItem<T = unknown>(key: string): T {
+    return this.store.get(key) as T
   }
 
   /**
    * Change multiple setting entries.
    *
-   * @param {Object.<string, *>} settings A settings object or subset object with key/value entries.
+   * @param settings A settings object or subset object with key/value entries.
    */
-  setItems(settings) {
+  setItems(settings: Record<string, unknown> | null | undefined): void {
     if (!settings) {
       log.error('Cannot change settings without entires: object is undefined or null.')
       return
@@ -143,44 +158,49 @@ class Preference extends EventEmitter {
     })
   }
 
-  getPreferredEol() {
-    const endOfLine = this.getItem('endOfLine')
+  getPreferredEol(): 'lf' | 'crlf' {
+    const endOfLine = this.getItem<string>('endOfLine')
     if (endOfLine === 'lf') {
       return 'lf'
     }
     return endOfLine === 'crlf' || isWindows ? 'crlf' : 'lf'
   }
 
-  exportJSON() {
+  exportJSON(): void {
     // todo
   }
 
-  importJSON() {
+  importJSON(): void {
     // todo
   }
 
-  _listenForIpcMain() {
+  _listenForIpcMain(): void {
     ipcMain.on('mt::ask-for-user-preference', (e) => {
       const win = BrowserWindow.fromWebContents(e.sender)
-      win.webContents.send('mt::user-preference', this.getAll())
+      if (win) {
+        win.webContents.send('mt::user-preference', this.getAll())
+      }
     })
-    ipcMain.on('mt::set-user-preference', (e, settings) => {
+    ipcMain.on('mt::set-user-preference', (_e, settings: Record<string, unknown>) => {
       this.setItems(settings)
     })
-    ipcMain.on('mt::cmd-toggle-autosave', (e) => {
+    ipcMain.on('mt::cmd-toggle-autosave', () => {
       this.setItem('autoSave', !this.getItem('autoSave'))
     })
 
-    ipcMain.on('set-user-preference', (settings) => {
-      this.setItems(settings)
+    // Note: dispatched via `ipcMain.emit(...)`. The payload arrives as the
+    // first positional argument.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ipcMain.on('set-user-preference', (settings: any) => {
+      this.setItems(settings as Record<string, unknown>)
     })
   }
 
   /**
    * Gets the system language, or null if it's not in the supported list
-   * @returns {string|null} Supported system language code or null
+   * @returns Supported system language code or null
    */
-  _getSystemLanguage() {
+  _getSystemLanguage(): string | null {
     try {
       // Get the system language
       const systemLocale = app.getLocale()
@@ -196,7 +216,7 @@ class Preference extends EventEmitter {
       }
 
       // Attempt to match the primary part of the language (e.g. zh)
-      const primaryLanguage = systemLocale.split('-')[0]
+      const primaryLanguage = systemLocale.split('-')[0]!
       const matchedLanguage = supportedLanguages.find((lang) => lang.startsWith(primaryLanguage))
 
       if (matchedLanguage) {

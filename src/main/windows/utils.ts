@@ -2,14 +2,16 @@ import { screen } from 'electron'
 import type { BrowserWindow, BrowserWindowConstructorOptions } from 'electron'
 import { isLinux } from '../config'
 
-export const zoomIn = (win: BrowserWindow): void => {
+export const zoomIn = (win: BrowserWindow | null | undefined): void => {
+  if (!win) return
   const { webContents } = win
   const zoom = webContents.getZoomFactor()
   // WORKAROUND: We need to set zoom on the browser window due to Electron#16018.
   webContents.send('mt::window-zoom', Math.min(2.0, zoom + 0.125))
 }
 
-export const zoomOut = (win: BrowserWindow): void => {
+export const zoomOut = (win: BrowserWindow | null | undefined): void => {
+  if (!win) return
   const { webContents } = win
   const zoom = webContents.getZoomFactor()
   // WORKAROUND: We need to set zoom on the browser window due to Electron#16018.

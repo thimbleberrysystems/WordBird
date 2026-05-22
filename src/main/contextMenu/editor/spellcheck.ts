@@ -1,4 +1,4 @@
-import { MenuItem, ipcMain } from 'electron'
+import { MenuItem, ipcMain, type BrowserWindow, type MenuItemConstructorOptions } from 'electron'
 import log from 'electron-log'
 import { isOsx } from '../../config'
 import { addToDictionary } from '../../spellchecker'
@@ -8,21 +8,26 @@ import { t } from '../../i18n'
 /**
  * Build the spell checker menu depending on input.
  *
- * @param {boolean} isMisspelled Whether a the selected word is misspelled.
- * @param {[string]} misspelledWord The selected word.
- * @param {[string[]]} wordSuggestions Suggestions for `selectedWord`.
- * @returns {MenuItem[]}
+ * @param isMisspelled Whether a the selected word is misspelled.
+ * @param misspelledWord The selected word.
+ * @param wordSuggestions Suggestions for `selectedWord`.
  */
-export default (isMisspelled, misspelledWord, wordSuggestions) => {
-  const spellingSubmenu = []
+export default (
+  isMisspelled: boolean,
+  misspelledWord: string | undefined,
+  wordSuggestions: string[] | undefined
+): (MenuItem | MenuItemConstructorOptions)[] => {
+  const spellingSubmenu: (MenuItem | MenuItemConstructorOptions)[] = []
 
   spellingSubmenu.push(
     new MenuItem({
       label: t('contextMenu.changeLanguage'),
       // NB: On macOS the OS spell checker is used and will detect the language automatically.
       visible: !isOsx,
-      click(menuItem, targetWindow) {
-        targetWindow.webContents.send('mt::spelling-show-switch-language')
+      click(_menuItem, targetWindow) {
+        if (targetWindow) {
+          (targetWindow as BrowserWindow).webContents.send('mt::spelling-show-switch-language')
+        }
       }
     })
   )
@@ -31,13 +36,15 @@ export default (isMisspelled, misspelledWord, wordSuggestions) => {
   if (isMisspelled && misspelledWord && wordSuggestions) {
     spellingSubmenu.push({
       label: t('contextMenu.addToDictionary'),
-      click(menuItem, targetWindow) {
-        if (!addToDictionary(targetWindow, misspelledWord)) {
+      click(_menuItem, targetWindow) {
+        if (!targetWindow) return
+        const win = targetWindow as BrowserWindow
+        if (!addToDictionary(win, misspelledWord)) {
           log.error(`Error while adding "${misspelledWord}" to dictionary.`)
           return
         }
         // Need to notify Chromium to invalidate the spelling underline.
-        targetWindow.webContents.replaceMisspelling(misspelledWord)
+        win.webContents.replaceMisspelling(misspelledWord)
       }
     })
 
@@ -46,11 +53,13 @@ export default (isMisspelled, misspelledWord, wordSuggestions) => {
       for (const word of wordSuggestions) {
         spellingSubmenu.push({
           label: word,
-          click(menuItem, targetWindow) {
-            targetWindow.webContents.send('mt::spelling-replace-misspelling', {
-              word: misspelledWord,
-              replacement: word
-            })
+          click(_menuItem, targetWindow) {
+            if (targetWindow) {
+              (targetWindow as BrowserWindow).webContents.send('mt::spelling-replace-misspelling', {
+                word: misspelledWord,
+                replacement: word
+              })
+            }
           }
         })
       }
@@ -58,7 +67,7 @@ export default (isMisspelled, misspelledWord, wordSuggestions) => {
   } else {
     spellingSubmenu.push({
       label: t('contextMenu.editDictionary'),
-      click(menuItem, targetWindow) {
+      click() {
         ipcMain.emit('app-create-settings-window', 'spelling')
       }
     })

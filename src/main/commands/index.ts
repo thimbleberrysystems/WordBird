@@ -4,7 +4,12 @@ import { loadTabCommands } from './tab'
 
 export const COMMANDS = COMMAND_CONSTANTS
 
-export type CommandCallback = (...args: unknown[]) => unknown
+// CommandCallback is intentionally loose: registered command handlers vary
+// widely in their signatures (some take a BrowserWindow, some take nothing,
+// some take a string id, etc.). Mirrors the JS reality where callsites
+// passed any function shape and the manager just invoked it.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type CommandCallback = (...args: any[]) => any
 
 export const loadDefaultCommands = (commandManager: CommandManager): void => {
   loadFileCommands(commandManager)
