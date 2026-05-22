@@ -23,12 +23,17 @@ import 'codemirror/mode/stex/stex'
 // the source-view tokenization aligned with the inline parse.
 const INLINE_MATH_OPEN = /\$(?!\$)(?=[^$\n]*?[^$\\]\$(?!\$))/
 
-const registerMarkdownMathMode = (CodeMirror) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CodeMirrorLike = any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyObj = any
+
+const registerMarkdownMathMode = (CodeMirror: CodeMirrorLike): void => {
   if (CodeMirror.modes && Object.prototype.hasOwnProperty.call(CodeMirror.modes, 'markdown-math')) {
     return
   }
 
-  CodeMirror.defineMode('markdown-math', function(config) {
+  CodeMirror.defineMode('markdown-math', function(config: AnyObj) {
     const gfmMode = CodeMirror.getMode(config, {
       name: 'gfm',
       fencedCodeBlocks: true,

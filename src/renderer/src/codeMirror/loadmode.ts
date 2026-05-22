@@ -1,24 +1,31 @@
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: https://codemirror.net/LICENSE
 
-const codeMirrorMode = import.meta.glob('../../../../node_modules/codemirror/mode/**/*.js')
+type ModeLoader = () => Promise<unknown>
 
-const loadMore = (CodeMirror) => {
+const codeMirrorMode = import.meta.glob(
+  '../../../../node_modules/codemirror/mode/**/*.js'
+) as Record<string, ModeLoader>
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CodeMirrorLike = any
+
+const loadMore = (CodeMirror: CodeMirrorLike): void => {
   if (!CodeMirror.modeURL) {
     CodeMirror.modeURL = '../../../../node_modules/codemirror/mode/%N/%N.js'
   }
 
-  const loading = {}
-  function splitCallback(cont, n) {
+  const loading: Record<string, Array<() => void>> = {}
+  function splitCallback(cont: () => void, n: number): () => void {
     let countDown = n
     return function() {
       if (--countDown === 0) cont()
     }
   }
-  function ensureDeps(mode, cont) {
-    const deps = CodeMirror.modes[mode].dependencies
+  function ensureDeps(mode: string, cont: () => void): void {
+    const deps: string[] | undefined = CodeMirror.modes[mode].dependencies
     if (!deps) return cont()
-    const missing = []
+    const missing: string[] = []
     for (let i = 0; i < deps.length; ++i) {
       if (!Object.prototype.hasOwnProperty.call(CodeMirror.modes, deps[i])) {
         missing.push(deps[i])
@@ -31,16 +38,19 @@ const loadMore = (CodeMirror) => {
     }
   }
 
-  CodeMirror.requireMode = function(mode, cont) {
+  CodeMirror.requireMode = function(mode: string | { name: string }, cont: () => void): void {
     if (typeof mode !== 'string') {
       mode = mode.name
     }
     if (Object.prototype.hasOwnProperty.call(CodeMirror.modes, mode)) return ensureDeps(mode, cont)
-    if (Object.prototype.hasOwnProperty.call(loading, mode)) return loading[mode].push(cont)
+    if (Object.prototype.hasOwnProperty.call(loading, mode)) {
+      loading[mode].push(cont)
+      return
+    }
 
     const list = (loading[mode] = [cont])
 
-    const pathKey = CodeMirror.modeURL.replace(/%N/g, mode)
+    const pathKey: string = CodeMirror.modeURL.replace(/%N/g, mode)
 
     if (!pathKey) {
       delete loading[mode]
@@ -57,18 +67,18 @@ const loadMore = (CodeMirror) => {
 
     loader()
       .then(() => {
-        ensureDeps(mode, function() {
+        ensureDeps(mode as string, function() {
           for (let i = 0; i < list.length; ++i) {
             list[i]()
           }
         })
       })
-      .catch((err) => {
-        console.error(`Failed to load CodeMirror mode "${mode}"`, err)
+      .catch((err: unknown) => {
+        console.error(`Failed to load CodeMirror mode "${mode as string}"`, err)
       })
   }
 
-  CodeMirror.autoLoadMode = function(instance, mode) {
+  CodeMirror.autoLoadMode = function(instance: CodeMirrorLike, mode: string): void {
     if (!Object.prototype.hasOwnProperty.call(CodeMirror.modes, mode)) {
       CodeMirror.requireMode(mode, function() {
         instance.setOption('mode', instance.getOption('mode'))

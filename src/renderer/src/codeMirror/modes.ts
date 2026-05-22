@@ -1,4 +1,10 @@
-const languages = [{
+export interface LanguageDescriptor {
+  name: string
+  mode: string
+  mime: string
+}
+
+const languages: LanguageDescriptor[] = [{
   name: 'objectivec',
   mode: 'clike',
   mime: 'text/x-objectivec'

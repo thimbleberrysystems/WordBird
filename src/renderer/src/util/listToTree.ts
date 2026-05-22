@@ -69,9 +69,9 @@ const listToTree = <T extends ListItem>(list: T[]): Array<TreeNode<T>> => {
   let lastNode: TreeNode<T> | null = null
 
   for (const item of list) {
-    const parent = findParent<T>(item, lastNode, rootNode)
+    const parent: TreeNode<T> = findParent<T>(item, lastNode, rootNode)
 
-    const node = new Node<T>({ parent, ...item })
+    const node: TreeNode<T> = new Node<T>({ parent, ...item })
     ;(parent as Node<T>).addChild(node)
     lastNode = node
   }

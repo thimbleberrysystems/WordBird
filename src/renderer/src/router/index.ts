@@ -1,13 +1,16 @@
 import type { RouteRecordRaw } from 'vue-router'
-import App from '@/pages/app'
-import Preference from '@/pages/preference'
-import General from '@/prefComponents/general'
-import Editor from '@/prefComponents/editor'
-import Markdown from '@/prefComponents/markdown'
-import SpellChecker from '@/prefComponents/spellchecker'
-import Theme from '@/prefComponents/theme'
-import Image from '@/prefComponents/image'
-import Keybindings from '@/prefComponents/keybindings'
+// .vue extensions are explicit so TS resolves them through the *.vue module
+// shim in src/types/renderer.d.ts. Vite handles extension-less imports at
+// runtime, but vue-tsc needs the suffix.
+import App from '@/pages/app.vue'
+import Preference from '@/pages/preference.vue'
+import General from '@/prefComponents/general/index.vue'
+import Editor from '@/prefComponents/editor/index.vue'
+import Markdown from '@/prefComponents/markdown/index.vue'
+import SpellChecker from '@/prefComponents/spellchecker/index.vue'
+import Theme from '@/prefComponents/theme/index.vue'
+import Image from '@/prefComponents/image/index.vue'
+import Keybindings from '@/prefComponents/keybindings/index.vue'
 
 const parseSettingsPage = (type: string | null | undefined): string => {
   let pageUrl = '/preference'

@@ -3,9 +3,9 @@ import langMap from 'iso-639-1'
 /**
  * Return the native language name by language code.
  *
- * @param {string} langCode The ISO two or four-letter language code (e.g. en, en-US) or BCP-47 code.
+ * @param languageCode ISO two- or four-letter language code (e.g. en, en-US) or BCP-47.
  */
-export const getLanguageName = languageCode => {
+export const getLanguageName = (languageCode: string): string | null => {
   if (!languageCode || languageCode.length < 2) {
     return null
   }
@@ -14,9 +14,9 @@ export const getLanguageName = languageCode => {
 
   // First try to get an exact language via 4-letter ISO code.
   if (languageCode.length === 5) {
-    language = getHunspellLanguageName(languageCode)
-    if (language) {
-      return language
+    const hunspell = getHunspellLanguageName(languageCode)
+    if (hunspell) {
+      return hunspell
     }
   }
 
@@ -30,20 +30,20 @@ export const getLanguageName = languageCode => {
 
 /**
  * Return the native language name by language code for supported Hunspell languages.
- *
- * @param {string} langCode The ISO 4-letter language code.
  */
-const getHunspellLanguageName = langCode => {
-  const item = HUNSPELL_DICTIONARY_LANGUAGE_MAP.find(item => item.value === langCode)
+const getHunspellLanguageName = (langCode: string): string | null => {
+  const item = HUNSPELL_DICTIONARY_LANGUAGE_MAP.find((item) => item.value === langCode)
   if (!item) {
     return null
   }
   return item.label
 }
 
-// All available Hunspell dictionary languages - modified to support English only
-const HUNSPELL_DICTIONARY_LANGUAGE_MAP = Object.freeze([{
-
-  label: 'English (en-US)', // English
-  value: 'en-US'
-}])
+// All available Hunspell dictionary languages — modified to support English only.
+const HUNSPELL_DICTIONARY_LANGUAGE_MAP: ReadonlyArray<{ label: string; value: string }> =
+  Object.freeze([
+    {
+      label: 'English (en-US)',
+      value: 'en-US'
+    }
+  ])

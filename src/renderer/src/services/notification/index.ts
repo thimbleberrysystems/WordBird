@@ -108,7 +108,6 @@ const notification: NotificationService = {
       if (timer) clearTimeout(timer)
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const mouseleaveHandler = (_event: MouseEvent): void => {
       fluent.style.opacity = '0'
       fluent.style.height = noticeContainer.offsetHeight * 4 + 'px'

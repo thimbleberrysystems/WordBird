@@ -9,10 +9,10 @@ import {
   getDELETE,
   getShowInFolder
 } from './menuItems'
-import { popupContextMenu } from '../popupMenu'
+import { popupContextMenu, type ContextMenuItem } from '../popupMenu'
 
-export const showContextMenu = (event, hasPathCache) => {
-  const contextItems = [
+export const showContextMenu = (event: { clientX: number; clientY: number }, hasPathCache: boolean): void => {
+  const contextItems: ContextMenuItem[] = [
     getNewFile(),
     getNewDirectory(),
     SEPARATOR,
@@ -26,10 +26,10 @@ export const showContextMenu = (event, hasPathCache) => {
     getShowInFolder()
   ]
 
-  // PASTE entry (index 5) toggles based on the cached source path
+  // PASTE entry (index 5) toggles based on the cached source path.
   contextItems[5].enabled = hasPathCache
 
-  const items = contextItems.map((item) => {
+  const items: ContextMenuItem[] = contextItems.map((item) => {
     if (!item || item.type === 'separator') return item
     const click = item.click
     return {

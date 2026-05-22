@@ -8,7 +8,8 @@ import { t } from '../i18n'
 
 interface SpellcheckerSubcommand {
   id: string
-  description: string
+  // getLanguageName() can return null for unknown locales.
+  description: string | null
   value: string
 }
 

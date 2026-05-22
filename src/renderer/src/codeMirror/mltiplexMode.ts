@@ -1,12 +1,18 @@
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
-const multiplexMode = CodeMirror => {
-  CodeMirror.multiplexingMode = function(outer /*, others */) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CodeMirrorLike = any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyObj = any
+
+const multiplexMode = (CodeMirror: CodeMirrorLike): void => {
+  CodeMirror.multiplexingMode = function(outer: AnyObj /*, others */): AnyObj {
     // Others should be {open, close, mode [, delimStyle] [, innerStyle]} objects
+    // eslint-disable-next-line prefer-rest-params
     const others = Array.prototype.slice.call(arguments, 1)
 
-    function indexOf(string, pattern, from, returnEnd) {
+    function indexOf(string: string, pattern: string | RegExp, from: number, returnEnd?: boolean): number {
       if (typeof pattern === 'string') {
         const found = string.indexOf(pattern, from)
         return returnEnd && found > -1 ? found + pattern.length : found
@@ -24,7 +30,7 @@ const multiplexMode = CodeMirror => {
         }
       },
 
-      copyState(state) {
+      copyState(state: AnyObj) {
         return {
           outer: CodeMirror.copyState(outer, state.outer),
           innerActive: state.innerActive,
@@ -32,7 +38,7 @@ const multiplexMode = CodeMirror => {
         }
       },
 
-      token(stream, state) {
+      token(stream: AnyObj, state: AnyObj): string | null {
         if (!state.innerActive) {
           let cutOff = Infinity
           const oldContent = stream.string
@@ -90,13 +96,13 @@ const multiplexMode = CodeMirror => {
         }
       },
 
-      indent(state, textAfter) {
+      indent(state: AnyObj, textAfter: string) {
         const mode = state.innerActive ? state.innerActive.mode : outer
         if (!mode.indent) return CodeMirror.Pass
         return mode.indent(state.innerActive ? state.inner : state.outer, textAfter)
       },
 
-      blankLine(state) {
+      blankLine(state: AnyObj) {
         const mode = state.innerActive ? state.innerActive.mode : outer
         if (mode.blankLine) {
           mode.blankLine(state.innerActive ? state.inner : state.outer)
@@ -116,7 +122,7 @@ const multiplexMode = CodeMirror => {
 
       electricChars: outer.electricChars,
 
-      innerMode(state) {
+      innerMode(state: AnyObj) {
         return state.inner ? { state: state.inner, mode: state.innerActive.mode } : { state: state.outer, mode: outer }
       }
     }

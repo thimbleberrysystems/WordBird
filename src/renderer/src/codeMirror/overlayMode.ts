@@ -10,8 +10,13 @@
 // or state.overlay.combineTokens was true, in which case the styles are
 // combined.
 
-const overlayMode = CodeMirror => {
-  CodeMirror.overlayMode = function(base, overlay, combine) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CodeMirrorLike = any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyObj = any
+
+const overlayMode = (CodeMirror: CodeMirrorLike): void => {
+  CodeMirror.overlayMode = function(base: AnyObj, overlay: AnyObj, combine?: boolean): AnyObj {
     return {
       startState() {
         return {
@@ -25,7 +30,7 @@ const overlayMode = CodeMirror => {
         }
       },
 
-      copyState(state) {
+      copyState(state: AnyObj) {
         return {
           base: CodeMirror.copyState(base, state.base),
           overlay: CodeMirror.copyState(overlay, state.overlay),
@@ -36,7 +41,7 @@ const overlayMode = CodeMirror => {
         }
       },
 
-      token(stream, state) {
+      token(stream: AnyObj, state: AnyObj) {
         if (stream !== state.streamSeen ||
           Math.min(state.basePos, state.overlayPos) < stream.start) {
           state.streamSeen = stream
@@ -69,20 +74,20 @@ const overlayMode = CodeMirror => {
         } else return state.overlayCur
       },
 
-      indent: base.indent && function(state, textAfter) {
+      indent: base.indent && function(state: AnyObj, textAfter: string) {
         return base.indent(state.base, textAfter)
       },
 
       electricChars: base.electricChars,
 
-      innerMode(state) {
+      innerMode(state: AnyObj) {
         return {
           state: state.base,
           mode: base
         }
       },
 
-      blankLine(state) {
+      blankLine(state: AnyObj) {
         let baseToken
         let overlayToken
         if (base.blankLine) baseToken = base.blankLine(state.base)

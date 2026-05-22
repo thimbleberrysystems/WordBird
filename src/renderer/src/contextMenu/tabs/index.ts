@@ -10,7 +10,10 @@ import {
 } from './menuItems'
 import { popupContextMenu } from '../popupMenu'
 
-const wrapClick = (item, tabId) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type MenuItemShape = { type?: string; click?: (...args: any[]) => void; enabled?: boolean;[key: string]: any }
+
+const wrapClick = (item: MenuItemShape, tabId: string): MenuItemShape => {
   if (!item || item.type === 'separator') return item
   const click = item.click
   return {
@@ -19,7 +22,17 @@ const wrapClick = (item, tabId) => {
   }
 }
 
-export const showContextMenu = (event, tab) => {
+interface ContextMenuClickEvent {
+  clientX: number
+  clientY: number
+}
+
+interface TabLike {
+  id: string
+  pathname?: string | null
+}
+
+export const showContextMenu = (event: ContextMenuClickEvent, tab: TabLike): void => {
   const { pathname } = tab
   const closeThis = getCloseThis()
   const closeOthers = getCloseOthers()
@@ -29,12 +42,12 @@ export const showContextMenu = (event, tab) => {
   const copyPath = getCopyPath()
   const showInFolder = getShowInFolder()
 
-  ;[rename, copyPath, showInFolder].forEach((item) => {
+  ;([rename, copyPath, showInFolder] as MenuItemShape[]).forEach((item) => {
     item.enabled = !!pathname
   })
 
   const items = [closeThis, closeOthers, closeSaved, closeAll, SEPARATOR, rename, copyPath, showInFolder]
-    .map((item) => wrapClick(item, tab.id))
+    .map((item) => wrapClick(item as MenuItemShape, tab.id))
 
   popupContextMenu(items, { x: event.clientX, y: event.clientY })
 }

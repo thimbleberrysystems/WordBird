@@ -86,7 +86,7 @@ const startSearch = ({ mode, directories, pattern, options }: StartArgs): Cancel
     // Strip non-serializable callbacks before shipping options across IPC.
     // Pinia/Vue can hand us reactive Proxies that fail structured clone, so
     // do a JSON round-trip on the remaining options to get plain values.
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     const { didMatch: _a, didSearchPaths: _b, ...rest } = options
     let serializable: unknown
     try {

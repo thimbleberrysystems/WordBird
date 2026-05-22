@@ -51,7 +51,9 @@ export const getHash = async(
   } else {
     data = new TextEncoder().encode(String(content))
   }
-  const digest = await window.crypto.subtle.digest(algo, data)
+  // TS lib's Uint8Array<ArrayBufferLike> doesn't satisfy BufferSource's
+  // strict ArrayBuffer expectation in newer @types/node; cast through unknown.
+  const digest = await window.crypto.subtle.digest(algo, data as unknown as BufferSource)
   return toHex(digest)
 }
 

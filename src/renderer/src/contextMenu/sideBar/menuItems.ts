@@ -11,7 +11,7 @@ export const SEPARATOR = {
 export const getNewFile = () => ({
   label: t('contextMenu.sideBar.newFile'),
   id: 'newFileMenuItem',
-  click(menuItem, browserWindow) {
+  click(_menuItem: unknown, _browserWindow: unknown) {
     contextMenu.newFile()
   }
 })
@@ -19,7 +19,7 @@ export const getNewFile = () => ({
 export const getNewDirectory = () => ({
   label: t('contextMenu.sideBar.newDirectory'),
   id: 'newDirectoryMenuItem',
-  click(menuItem, browserWindow) {
+  click(_menuItem: unknown, _browserWindow: unknown) {
     contextMenu.newDirectory()
   }
 })
@@ -27,7 +27,7 @@ export const getNewDirectory = () => ({
 export const getCOPY = () => ({
   label: t('contextMenu.sideBar.copy'),
   id: 'copyMenuItem',
-  click(menuItem, browserWindow) {
+  click(_menuItem: unknown, _browserWindow: unknown) {
     contextMenu.copy()
   }
 })
@@ -35,7 +35,7 @@ export const getCOPY = () => ({
 export const getCUT = () => ({
   label: t('contextMenu.sideBar.cut'),
   id: 'cutMenuItem',
-  click(menuItem, browserWindow) {
+  click(_menuItem: unknown, _browserWindow: unknown) {
     contextMenu.cut()
   }
 })
@@ -43,7 +43,7 @@ export const getCUT = () => ({
 export const getPASTE = () => ({
   label: t('contextMenu.sideBar.paste'),
   id: 'pasteMenuItem',
-  click(menuItem, browserWindow) {
+  click(_menuItem: unknown, _browserWindow: unknown) {
     contextMenu.paste()
   }
 })
@@ -51,7 +51,7 @@ export const getPASTE = () => ({
 export const getRENAME = () => ({
   label: t('contextMenu.sideBar.rename'),
   id: 'renameMenuItem',
-  click(menuItem, browserWindow) {
+  click(_menuItem: unknown, _browserWindow: unknown) {
     contextMenu.rename()
   }
 })
@@ -59,7 +59,7 @@ export const getRENAME = () => ({
 export const getDELETE = () => ({
   label: t('contextMenu.sideBar.moveToTrash'),
   id: 'deleteMenuItem',
-  click(menuItem, browserWindow) {
+  click(_menuItem: unknown, _browserWindow: unknown) {
     contextMenu.remove()
   }
 })
@@ -67,7 +67,7 @@ export const getDELETE = () => ({
 export const getShowInFolder = () => ({
   label: t('contextMenu.sideBar.showInFolder'),
   id: 'showInFolderMenuItem',
-  click(menuItem, browserWindow) {
+  click(_menuItem: unknown, _browserWindow: unknown) {
     contextMenu.showInFolder()
   }
 })

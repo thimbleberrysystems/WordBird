@@ -14,17 +14,40 @@ import 'codemirror/lib/codemirror.css'
 import './index.css'
 import 'codemirror/theme/railscasts.css'
 
+// CodeMirror 5 ships without TypeScript declarations. The bare `codemirror`
+// and `codemirror/lib/*` specifiers are declared as `any` shims in
+// src/types/shims.d.ts, so the surface is loose by design.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CodeMirrorLike = any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CodeMirrorInstance = any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CodeMirrorDoc = any
+
+interface ModeInfoEntry {
+  name?: string
+  mime?: string | string[]
+  mimes?: string[]
+  mode?: string
+  [key: string]: unknown
+}
+
+interface MatchedMode {
+  name: string
+  mode: ModeInfoEntry
+}
+
 loadmode(codeMirror)
 overlayMode(codeMirror)
 multiplexMode(codeMirror)
 registerMarkdownMathMode(codeMirror)
-window.CodeMirror = codeMirror
+;(window as unknown as { CodeMirror: CodeMirrorLike }).CodeMirror = codeMirror
 
-const modes = codeMirror.modeInfo
+const modes: ModeInfoEntry[] = codeMirror.modeInfo
 codeMirror.modeURL = '../../../../node_modules/codemirror/mode/%N/%N.js'
 
-const getModeFromName = (name) => {
-  let result = null
+const getModeFromName = (name: string): MatchedMode | null => {
+  let result: MatchedMode | null = null
   const lang = languages.filter((lang) => lang.name === name)[0]
   if (lang) {
     const { name, mode, mime } = lang
@@ -51,15 +74,17 @@ const getModeFromName = (name) => {
   return result
 }
 
-export const search = (text) => {
+export const search = (text: string): MatchedMode[] => {
   const matchedLangs = filter(languages, text, { key: 'name' })
-  return matchedLangs.map(({ name }) => getModeFromName(name)).filter((lang) => !!lang)
+  return matchedLangs
+    .map(({ name }: { name: string }) => getModeFromName(name))
+    .filter((lang: MatchedMode | null): lang is MatchedMode => !!lang)
 }
 
 /**
  * set cursor at the end of last line.
  */
-export const setCursorAtLastLine = (cm) => {
+export const setCursorAtLastLine = (cm: CodeMirrorInstance): void => {
   const lastLine = cm.lastLine()
   const lineHandle = cm.getLineHandle(lastLine)
 
@@ -68,31 +93,31 @@ export const setCursorAtLastLine = (cm) => {
 }
 
 // if cursor at firstLine return true
-export const isCursorAtFirstLine = (cm) => {
+export const isCursorAtFirstLine = (cm: CodeMirrorInstance): boolean => {
   const cursor = cm.getCursor()
   const { line, ch, outside } = cursor
 
   return line === 0 && ch === 0 && outside
 }
 
-export const isCursorAtLastLine = (cm) => {
+export const isCursorAtLastLine = (cm: CodeMirrorInstance): boolean => {
   const lastLine = cm.lastLine()
   const cursor = cm.getCursor()
   const { line, outside, sticky } = cursor
   return line === lastLine && (outside || !sticky)
 }
 
-export const isCursorAtBegin = (cm) => {
+export const isCursorAtBegin = (cm: CodeMirrorInstance): boolean => {
   const cursor = cm.getCursor()
   const { line, ch, hitSide } = cursor
   return line === 0 && ch === 0 && !!hitSide
 }
 
-export const onlyHaveOneLine = (cm) => {
+export const onlyHaveOneLine = (cm: CodeMirrorInstance): boolean => {
   return cm.lineCount() === 1
 }
 
-export const isCursorAtEnd = (cm) => {
+export const isCursorAtEnd = (cm: CodeMirrorInstance): boolean => {
   const lastLine = cm.lastLine()
   const lastLineHandle = cm.getLineHandle(lastLine)
   const cursor = cm.getCursor()
@@ -101,14 +126,20 @@ export const isCursorAtEnd = (cm) => {
   return line === lastLine && ch === lastLineHandle.text.length && !!hitSide
 }
 
-export const getBeginPosition = () => {
+export const getBeginPosition = (): {
+  anchor: { line: number; ch: number }
+  head: { line: number; ch: number }
+} => {
   return {
     anchor: { line: 0, ch: 0 },
     head: { line: 0, ch: 0 }
   }
 }
 
-export const getEndPosition = (cm) => {
+export const getEndPosition = (cm: CodeMirrorInstance): {
+  anchor: { line: number; ch: number }
+  head: { line: number; ch: number }
+} => {
   const lastLine = cm.lastLine()
   const lastLineHandle = cm.getLineHandle(lastLine)
   const line = lastLine
@@ -116,12 +147,12 @@ export const getEndPosition = (cm) => {
   return { anchor: { line, ch }, head: { line, ch } }
 }
 
-export const setCursorAtFirstLine = (cm) => {
+export const setCursorAtFirstLine = (cm: CodeMirrorInstance): void => {
   cm.focus()
   cm.setCursor(0, 0)
 }
 
-export const setMode = (doc, text) => {
+export const setMode = (doc: CodeMirrorDoc, text: string): Promise<MatchedMode> => {
   const m = getModeFromName(text)
 
   if (!m) {
@@ -131,7 +162,7 @@ export const setMode = (doc, text) => {
     return Promise.reject(errMsg)
   }
 
-  const { mode, mime } = m.mode
+  const { mode, mime } = m.mode as { mode: string; mime: string | string[] }
   return new Promise((resolve) => {
     codeMirror.requireMode(mode, () => {
       doc.setOption('mode', mime || mode)
@@ -141,7 +172,7 @@ export const setMode = (doc, text) => {
   })
 }
 
-export const setTextDirection = (cm, textDirection) => {
+export const setTextDirection = (cm: CodeMirrorInstance, textDirection: string): void => {
   cm.setOption('direction', textDirection)
 }
 

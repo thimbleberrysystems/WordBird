@@ -8,10 +8,13 @@ export const SEPARATOR = {
 }
 
 // Use function form to avoid calling the translation function during module load
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TabMenuItem = { _tabId: string;[key: string]: any }
+
 export const getCloseThis = () => ({
   label: t('contextMenu.tabs.close'),
   id: 'closeThisTab',
-  click(menuItem, browserWindow) {
+  click(menuItem: TabMenuItem, _browserWindow?: unknown) {
     contextMenu.closeThis(menuItem._tabId)
   }
 })
@@ -19,7 +22,7 @@ export const getCloseThis = () => ({
 export const getCloseOthers = () => ({
   label: t('contextMenu.tabs.closeOthers'),
   id: 'closeOtherTabs',
-  click(menuItem, browserWindow) {
+  click(menuItem: TabMenuItem, _browserWindow?: unknown) {
     contextMenu.closeOthers(menuItem._tabId)
   }
 })
@@ -27,15 +30,18 @@ export const getCloseOthers = () => ({
 export const getCloseSaved = () => ({
   label: t('contextMenu.tabs.closeSavedTabs'),
   id: 'closeSavedTabs',
-  click(menuItem, browserWindow) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  click(_menuItem: any, _browserWindow?: unknown) {
     contextMenu.closeSaved()
-  }
+  },
+  enabled: true
 })
 
 export const getCloseAll = () => ({
   label: t('contextMenu.tabs.closeAllTabs'),
   id: 'closeAllTabs',
-  click(menuItem, browserWindow) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  click(_menuItem: any, _browserWindow?: unknown) {
     contextMenu.closeAll()
   }
 })
@@ -43,7 +49,7 @@ export const getCloseAll = () => ({
 export const getRENAME = () => ({
   label: t('contextMenu.tabs.rename'),
   id: 'renameFile',
-  click(menuItem, browserWindow) {
+  click(menuItem: TabMenuItem, _browserWindow?: unknown) {
     contextMenu.rename(menuItem._tabId)
   }
 })
@@ -51,7 +57,7 @@ export const getRENAME = () => ({
 export const getCopyPath = () => ({
   label: t('contextMenu.tabs.copyPath'),
   id: 'copyPath',
-  click(menuItem, browserWindow) {
+  click(menuItem: TabMenuItem, _browserWindow?: unknown) {
     contextMenu.copyPath(menuItem._tabId)
   }
 })
@@ -59,7 +65,7 @@ export const getCopyPath = () => ({
 export const getShowInFolder = () => ({
   label: t('contextMenu.tabs.showInFolder'),
   id: 'showInFolder',
-  click(menuItem, browserWindow) {
+  click(menuItem: TabMenuItem, _browserWindow?: unknown) {
     contextMenu.showInFolder(menuItem._tabId)
   }
 })
