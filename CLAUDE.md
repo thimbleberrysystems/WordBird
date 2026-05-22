@@ -16,6 +16,7 @@ MarkText is a WYSIWYG markdown editor built on Electron + Vue 3. It supports Com
 
 | Layer | Technology |
 |---|---|
+| Language | TypeScript 5.9 (strict mode) — `src/muya/` retained as JS via ambient shim |
 | Desktop shell | Electron 42 |
 | Build system | electron-vite 5 |
 | Packaging | electron-builder 26 |
@@ -34,8 +35,10 @@ MarkText is a WYSIWYG markdown editor built on Electron + Vue 3. It supports Com
 src/
   common/      Pure Node.js utilities — usable from main, preload, and renderer
   main/        Electron main process (IO, native dialogs, window management, auto-updater)
-  preload/     Electron preload scripts (bridge to the renderer; note: contextIsolation is
-               currently disabled and nodeIntegration is enabled for editor windows)
+  preload/     Electron preload scripts (bridge to the renderer; renderer runs sandboxed
+               with contextIsolation: true, nodeIntegration: false, sandbox: true
+               since #4244 — all Node access flows through the typed contextBridge
+               surface in src/preload/index.ts)
   renderer/    Vue 3 application (editor UI, Pinia stores, components)
     src/
       components/    Vue single-file components
@@ -108,6 +111,7 @@ pnpm run test          # All unit tests (Vitest)
 pnpm run test:unit     # Unit tests only
 pnpm run test:e2e      # End-to-end tests (Playwright)
 pnpm run lint          # ESLint (run before committing; not currently enforced by CI)
+pnpm run typecheck     # vue-tsc --noEmit (run before committing; CI enforces)
 
 # Run a single Vitest file or test name (specs live under test/unit/specs/)
 pnpm exec vitest run test/unit/specs/markdown-basic.spec.js
@@ -120,13 +124,15 @@ pnpm exec playwright test -g 'partial test name'
 
 ## Code Style
 
-Enforced by ESLint + Prettier. Run `pnpm run lint` before committing.
+Enforced by ESLint + Prettier. Run `pnpm run lint` and `pnpm run typecheck` before committing.
 
 - 2-space indentation
 - No semicolons
 - Single quotes
-- ES6+ throughout
-- JSDoc for public APIs
+- TypeScript with `strict: true`; see `docs/dev/TYPESCRIPT.md`
+- Cross-process types live in `src/shared/types/`; ambient declarations in `src/types/`
+- IPC channels are typed via the contract in `src/shared/types/ipc.ts`
+- The renderer is fully sandboxed — every IPC and Node access goes through `window.electron.*` / `window.fileUtils.*` etc. (typed in `src/types/global.d.ts`)
 
 ## Architecture: Three-Process Electron Model
 
