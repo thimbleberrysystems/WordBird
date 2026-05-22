@@ -2,8 +2,8 @@ import { ipcMain, shell, clipboard } from 'electron'
 import log from 'electron-log'
 import plist from 'plist'
 
-export const registerShellHandlers = () => {
-  ipcMain.handle('mt::shell::open-external', async(_e, url) => {
+export const registerShellHandlers = (): void => {
+  ipcMain.handle('mt::shell::open-external', async(_e, url: string) => {
     try {
       await shell.openExternal(url)
       return true
@@ -12,26 +12,26 @@ export const registerShellHandlers = () => {
       return false
     }
   })
-  ipcMain.on('mt::shell::open-external', (_e, url) => {
+  ipcMain.on('mt::shell::open-external', (_e, url: string) => {
     shell.openExternal(url).catch((err) => log.error('shell.openExternal failed:', err))
   })
-  ipcMain.on('mt::shell::show-item', (_e, fullPath) => {
+  ipcMain.on('mt::shell::show-item', (_e, fullPath: string) => {
     try {
       shell.showItemInFolder(fullPath)
     } catch (err) {
       log.error('shell.showItemInFolder failed:', err)
     }
   })
-  ipcMain.handle('mt::shell::open-path', async(_e, fullPath) => {
+  ipcMain.handle('mt::shell::open-path', async(_e, fullPath: string) => {
     try {
       return await shell.openPath(fullPath)
     } catch (err) {
       log.error('shell.openPath failed:', err)
-      return String(err?.message || err)
+      return String(err instanceof Error ? err.message : err)
     }
   })
 
-  ipcMain.on('mt::clipboard::write-text', (_e, text) => {
+  ipcMain.on('mt::clipboard::write-text', (_e, text: string) => {
     try { clipboard.writeText(text) } catch (err) { log.error('clipboard.writeText failed:', err) }
   })
   ipcMain.handle('mt::clipboard::read-text', () => {

@@ -1,11 +1,14 @@
-import { BrowserWindow, Menu, MenuItem, ipcMain } from 'electron'
+import { BrowserWindow, Menu, MenuItem, ipcMain, type IpcMainEvent, type WebContents } from 'electron'
 import log from 'electron-log'
+import type { MenuTemplate, MenuTemplateItem, MenuPopupPosition } from '@shared/types/menu'
 
-const windowFromEvent = (event) => BrowserWindow.fromWebContents(event.sender)
+const windowFromEvent = (event: IpcMainEvent): BrowserWindow | null =>
+  BrowserWindow.fromWebContents(event.sender)
 
-const popups = new Map()
+interface PopupEntry { sender: WebContents }
+const popups = new Map<number, PopupEntry>()
 
-const buildMenu = (template, windowId) => {
+const buildMenu = (template: MenuTemplate | undefined, windowId: number): Menu => {
   const menu = new Menu()
   for (const item of template || []) {
     if (item.type === 'separator') {
@@ -16,7 +19,7 @@ const buildMenu = (template, windowId) => {
     menu.append(
       new MenuItem({
         label: item.label,
-        type: item.type,
+        type: item.type as 'normal' | 'submenu' | 'checkbox' | 'radio' | undefined,
         accelerator: item.accelerator,
         enabled: item.enabled !== false,
         checked: !!item.checked,
@@ -24,16 +27,16 @@ const buildMenu = (template, windowId) => {
           const sender = popups.get(windowId)?.sender
           try {
             sender?.send('mt::menu::click', { windowId, id })
-          } catch {}
+          } catch { /* sender destroyed */ }
         },
-        submenu: item.submenu ? buildMenu(item.submenu, windowId) : undefined
+        submenu: item.submenu ? buildMenu(item.submenu as MenuTemplateItem[], windowId) : undefined
       })
     )
   }
   return menu
 }
 
-export const registerWindowHandlers = () => {
+export const registerWindowHandlers = (): void => {
   ipcMain.on('mt::win::minimize', (event) => {
     const win = windowFromEvent(event)
     if (win) win.minimize()
@@ -56,7 +59,7 @@ export const registerWindowHandlers = () => {
     const win = windowFromEvent(event)
     if (win) win.close()
   })
-  ipcMain.on('mt::win::set-fullscreen', (event, flag) => {
+  ipcMain.on('mt::win::set-fullscreen', (event, flag: boolean) => {
     const win = windowFromEvent(event)
     if (win) win.setFullScreen(!!flag)
   })
@@ -65,21 +68,21 @@ export const registerWindowHandlers = () => {
     if (win) win.setFullScreen(!win.isFullScreen())
   })
   ipcMain.handle('mt::win::is-maximized', (event) => {
-    const win = windowFromEvent(event)
+    const win = windowFromEvent(event as unknown as IpcMainEvent)
     return !!win && win.isMaximized()
   })
   ipcMain.handle('mt::win::is-fullscreen', (event) => {
-    const win = windowFromEvent(event)
+    const win = windowFromEvent(event as unknown as IpcMainEvent)
     return !!win && win.isFullScreen()
   })
 
-  ipcMain.on('mt::menu::popup', (event, template, position) => {
+  ipcMain.on('mt::menu::popup', (event, template: MenuTemplate, position?: MenuPopupPosition) => {
     const win = windowFromEvent(event)
     if (!win) return
-    // Stash the sender BEFORE calling menu.popup so the buildMenu click
-    // handlers can resolve it, but make sure we still clean up the map entry
-    // if menu.popup throws — otherwise the entry leaks and a later popup
-    // for the same window could route clicks to a dead sender.
+    // Stash sender BEFORE menu.popup so buildMenu click handlers can resolve
+    // it, but make sure we still clean up the map entry if menu.popup throws
+    // — otherwise the entry leaks and a later popup for the same window could
+    // route clicks to a dead sender.
     popups.set(win.id, { sender: event.sender })
     try {
       const menu = buildMenu(template, win.id)
@@ -89,7 +92,7 @@ export const registerWindowHandlers = () => {
         y: position?.y,
         callback: () => {
           popups.delete(win.id)
-          try { event.sender.send('mt::menu::closed', { windowId: win.id }) } catch {}
+          try { event.sender.send('mt::menu::closed', { windowId: win.id }) } catch { /* destroyed */ }
         }
       })
     } catch (err) {
@@ -98,7 +101,7 @@ export const registerWindowHandlers = () => {
     }
   })
 
-  ipcMain.on('mt::menu::popup-application', (event, position) => {
+  ipcMain.on('mt::menu::popup-application', (event, position?: MenuPopupPosition) => {
     const win = windowFromEvent(event)
     if (!win) return
     try {

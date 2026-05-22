@@ -1,12 +1,14 @@
 import path from 'path'
 import fsPromises from 'fs/promises'
 import log from 'electron-log'
-import chokidar from 'chokidar'
+import chokidar, { type FSWatcher } from 'chokidar'
 import { exists } from 'common/filesystem'
 import { hasMarkdownExtension, checkPathExcludePattern } from 'common/filesystem/paths'
 import { getUniqueId } from '../utils'
 import { loadMarkdownFile } from '../filesystem/markdown'
 import { isLinux, isOsx } from '../config'
+import type { BrowserWindow } from 'electron'
+import type { LineEnding } from '@shared/types/files'
 
 // TODO(refactor): Please see GH#1035.
 
@@ -14,23 +16,44 @@ export const WATCHER_STABILITY_THRESHOLD = 1000
 export const WATCHER_STABILITY_POLL_INTERVAL = 150
 
 const EVENT_NAME = {
-  dir: 'mt::update-object-tree',
-  file: 'mt::update-file'
+  dir: 'mt::update-object-tree' as const,
+  file: 'mt::update-file' as const
+}
+
+type WatchType = 'dir' | 'file'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Preferences = any
+
+interface IgnoreEntry {
+  windowId: number
+  pathname: string
+  duration: number
+  start: Date
+}
+
+interface WatcherEntry {
+  win: BrowserWindow
+  watcher: FSWatcher
+  pathname: string
+  type: WatchType
+  close: () => void
 }
 
 const add = async(
-  win,
-  pathname,
-  type,
-  endOfLine,
-  autoGuessEncoding,
-  trimTrailingNewline,
-  autoNormalizeLineEndings
-) => {
+  win: BrowserWindow,
+  pathname: string,
+  type: WatchType,
+  endOfLine: LineEnding,
+  autoGuessEncoding: boolean,
+  trimTrailingNewline: number,
+  autoNormalizeLineEndings: boolean
+): Promise<void> => {
   const stats = await fsPromises.stat(pathname)
   const birthTime = stats.birthtime
   const isMarkdown = hasMarkdownExtension(pathname)
-  const file = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const file: any = {
     pathname,
     name: path.basename(pathname),
     isFile: true,
@@ -55,7 +78,7 @@ const add = async(
         win.webContents.send('mt::show-notification', {
           title: 'Watcher I/O error',
           type: 'error',
-          message: err.message
+          message: err instanceof Error ? err.message : String(err)
         })
         return
       }
@@ -67,7 +90,7 @@ const add = async(
   }
 }
 
-const unlink = (win, pathname, type) => {
+const unlink = (win: BrowserWindow, pathname: string, type: WatchType): void => {
   const file = { pathname }
   win.webContents.send(EVENT_NAME[type], {
     type: 'unlink',
@@ -76,21 +99,18 @@ const unlink = (win, pathname, type) => {
 }
 
 const change = async(
-  win,
-  pathname,
-  type,
-  endOfLine,
-  autoGuessEncoding,
-  trimTrailingNewline,
-  autoNormalizeLineEndings
-) => {
-  // No need to update the tree view if the file content has changed.
+  win: BrowserWindow,
+  pathname: string,
+  type: WatchType,
+  endOfLine: LineEnding,
+  autoGuessEncoding: boolean,
+  trimTrailingNewline: number,
+  autoNormalizeLineEndings: boolean
+): Promise<void> => {
   if (type === 'dir') return
 
   const isMarkdown = hasMarkdownExtension(pathname)
   if (isMarkdown) {
-    // HACK: Markdown data should be removed completely in #1034/#1035 and
-    // should be only loaded after user interaction.
     try {
       const data = await loadMarkdownFile(
         pathname,
@@ -99,28 +119,24 @@ const change = async(
         trimTrailingNewline,
         autoNormalizeLineEndings
       )
-      const file = {
-        pathname,
-        data
-      }
+      const file = { pathname, data }
       win.webContents.send('mt::update-file', {
         type: 'change',
         change: file
       })
     } catch (err) {
-      // Only notify user about opened files.
       if (type === 'file') {
         win.webContents.send('mt::show-notification', {
           title: 'Watcher I/O error',
           type: 'error',
-          message: err.message
+          message: err instanceof Error ? err.message : String(err)
         })
       }
     }
   }
 }
 
-const addDir = (win, pathname, type) => {
+const addDir = (win: BrowserWindow, pathname: string, type: WatchType): void => {
   if (type === 'file') return
 
   const directory = {
@@ -140,7 +156,7 @@ const addDir = (win, pathname, type) => {
   })
 }
 
-const unlinkDir = (win, pathname, type) => {
+const unlinkDir = (win: BrowserWindow, pathname: string, type: WatchType): void => {
   if (type === 'file') return
 
   const directory = { pathname }
@@ -151,26 +167,23 @@ const unlinkDir = (win, pathname, type) => {
 }
 
 class Watcher {
-  /**
-   * @param {Preference} preferences The preference instance.
-   */
-  constructor(preferences) {
+  private _preferences: Preferences
+  private _ignoreChangeEvents: IgnoreEntry[]
+  watchers: Record<string, WatcherEntry>
+
+  constructor(preferences: Preferences) {
     this._preferences = preferences
     this._ignoreChangeEvents = []
     this.watchers = {}
   }
 
-  // Watch a file or directory and return a unwatch function.
-  watch(win, watchPath, type = 'dir' /* file or dir */) {
-    // TODO: Is it needed to set `watcherUsePolling` ? because macOS need to set to true.
+  watch(win: BrowserWindow, watchPath: string, type: WatchType = 'dir'): () => void {
     const usePolling = isOsx ? true : this._preferences.getItem('watcherUsePolling')
 
     const id = getUniqueId()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const watcher = chokidar.watch(watchPath, {
-      ignored: (pathname, fileInfo) => {
-        // This function is called twice, once with a single argument (the path),
-        // second time with two arguments (the path and the "fs.Stats" object of that path).
-        // Filter node_modules and .asar archives only, not hidden directories
+      ignored: (pathname: string, fileInfo?: { isDirectory: () => boolean }) => {
         if (!fileInfo) {
           return /(?:^|[/\\])(?:node_modules|(?:.+\.asar))/.test(pathname)
         }
@@ -193,7 +206,6 @@ class Watcher {
       persistent: true,
       ignorePermissionErrors: true,
 
-      // Just to be sure when a file is replaced with a directory don't watch recursively.
       depth: type === 'file' ? (isOsx ? 1 : 0) : undefined,
 
       // Please see GH#1043
@@ -202,60 +214,48 @@ class Watcher {
         pollInterval: WATCHER_STABILITY_POLL_INTERVAL
       },
 
-      // Settings options
       usePolling
-    })
+    } as any)
 
     let disposed = false
     let enospcReached = false
-    let renameTimer = null
+    let renameTimer: NodeJS.Timeout | null = null
 
     watcher
-      .on('add', async(pathname) => {
+      .on('add', async(pathname: string) => {
         if (!(await this._shouldIgnoreEvent(win.id, pathname, type, usePolling))) {
           const { _preferences } = this
-          const eol = _preferences.getPreferredEol()
+          const eol = _preferences.getPreferredEol() as LineEnding
           const { autoGuessEncoding, trimTrailingNewline, autoNormalizeLineEndings } =
             _preferences.getAll()
           add(
-            win,
-            pathname,
-            type,
-            eol,
-            autoGuessEncoding,
-            trimTrailingNewline,
-            autoNormalizeLineEndings
+            win, pathname, type, eol,
+            autoGuessEncoding, trimTrailingNewline, autoNormalizeLineEndings
           )
         }
       })
-      .on('change', async(pathname) => {
+      .on('change', async(pathname: string) => {
         if (!(await this._shouldIgnoreEvent(win.id, pathname, type, usePolling))) {
           const { _preferences } = this
-          const eol = _preferences.getPreferredEol()
+          const eol = _preferences.getPreferredEol() as LineEnding
           const { autoGuessEncoding, trimTrailingNewline, autoNormalizeLineEndings } =
             _preferences.getAll()
           change(
-            win,
-            pathname,
-            type,
-            eol,
-            autoGuessEncoding,
-            trimTrailingNewline,
-            autoNormalizeLineEndings
+            win, pathname, type, eol,
+            autoGuessEncoding, trimTrailingNewline, autoNormalizeLineEndings
           )
         }
       })
-      .on('unlink', (pathname) => unlink(win, pathname, type))
-      .on('addDir', (pathname) => addDir(win, pathname, type))
-      .on('unlinkDir', (pathname) => unlinkDir(win, pathname, type))
-      .on('raw', (event, subpath, details) => {
-        if (global.MARKTEXT_DEBUG_VERBOSE >= 3) {
+      .on('unlink', (pathname: string) => unlink(win, pathname, type))
+      .on('addDir', (pathname: string) => addDir(win, pathname, type))
+      .on('unlinkDir', (pathname: string) => unlinkDir(win, pathname, type))
+      .on('raw', (event: string, subpath: string, details: unknown) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((globalThis as any).MARKTEXT_DEBUG_VERBOSE >= 3) {
           console.log('watcher: ', event, subpath, details)
         }
 
         // Fix atomic rename on Linux (chokidar#591).
-        // TODO: This should also apply to macOS.
-        // TODO: Do we need to rewatch when the watched directory was renamed?
         if (isLinux && type === 'file' && event === 'rename') {
           if (renameTimer) {
             clearTimeout(renameTimer)
@@ -268,16 +268,15 @@ class Watcher {
 
             const fileExists = await exists(watchPath)
             if (fileExists) {
-              // File still exists but we need to rewatch the file because the inode has changed.
               watcher.unwatch(watchPath)
               watcher.add(watchPath)
             }
           }, 150)
         }
       })
-      .on('error', (error) => {
-        // Check if too many file descriptors are opened and notify the user about this issue.
-        if (error.code === 'ENOSPC') {
+      .on('error', (error: unknown) => {
+        const code = (error as NodeJS.ErrnoException)?.code
+        if (code === 'ENOSPC') {
           if (!enospcReached) {
             enospcReached = true
             log.warn('inotify limit reached: Too many file descriptors are opened.')
@@ -294,7 +293,7 @@ class Watcher {
         }
       })
 
-    const closeFn = () => {
+    const closeFn = (): void => {
       disposed = true
       if (this.watchers[id]) {
         delete this.watchers[id]
@@ -311,16 +310,13 @@ class Watcher {
       watcher,
       pathname: watchPath,
       type,
-
       close: closeFn
     }
 
-    // unwatcher function
     return closeFn
   }
 
-  // Remove a single watcher.
-  unwatch(win, watchPath, type = 'dir') {
+  unwatch(win: BrowserWindow, watchPath: string, type: WatchType = 'dir'): void {
     for (const id of Object.keys(this.watchers)) {
       const w = this.watchers[id]
       if (w.win === win && w.pathname === watchPath && w.type === type) {
@@ -331,10 +327,9 @@ class Watcher {
     }
   }
 
-  // Remove all watchers from the given window id.
-  unwatchByWindowId(windowId) {
-    const watchers = []
-    const watchIds = []
+  unwatchByWindowId(windowId: number): void {
+    const watchers: FSWatcher[] = []
+    const watchIds: string[] = []
     for (const id of Object.keys(this.watchers)) {
       const w = this.watchers[id]
       if (w.win.id === windowId) {
@@ -348,38 +343,29 @@ class Watcher {
     }
   }
 
-  close() {
+  close(): void {
     Object.keys(this.watchers).forEach((id) => this.watchers[id].close())
     this.watchers = {}
     this._ignoreChangeEvents = []
   }
 
   /**
-   * Ignore the next changed event within a certain time for the current file and window.
-   *
-   * NOTE: Only valid for files and "add"/"change" event!
-   *
-   * @param {number} windowId The window id.
-   * @param {string} pathname The path to ignore.
-   * @param {number} [duration] The duration in ms to ignore the changed event.
+   * Ignore the next changed event within a certain time for the current file
+   * and window. Only valid for files and "add"/"change" events.
    */
   ignoreChangedEvent(
-    windowId,
-    pathname,
-    duration = WATCHER_STABILITY_THRESHOLD + WATCHER_STABILITY_POLL_INTERVAL * 2
-  ) {
+    windowId: number,
+    pathname: string,
+    duration: number = WATCHER_STABILITY_THRESHOLD + WATCHER_STABILITY_POLL_INTERVAL * 2
+  ): void {
     this._ignoreChangeEvents.push({ windowId, pathname, duration, start: new Date() })
   }
 
   /**
-   * Check whether we should ignore the current event because the file may be changed from MarkText itself.
-   *
-   * @param {number} winId
-   * @param {string} pathname
-   * @param {string} type
-   * @param {boolean} usePolling
+   * Check whether we should ignore the current event because the file may be
+   * changed from MarkText itself.
    */
-  async _shouldIgnoreEvent(winId, pathname, type, usePolling) {
+  async _shouldIgnoreEvent(winId: number, pathname: string, type: WatchType, usePolling: boolean): Promise<boolean> {
     if (type === 'file') {
       const { _ignoreChangeEvents } = this
       const currentTime = new Date()
@@ -390,18 +376,20 @@ class Watcher {
           --i
 
           // Modification origin is the editor and we should ignore the event.
-          if (currentTime - start < duration) {
+          if (currentTime.getTime() - start.getTime() < duration) {
             return true
           }
 
-          // Try to catch cloud drives that emit the change event not immediately or re-sync the change (GH#3044).
+          // Try to catch cloud drives that emit the change event not
+          // immediately or re-sync the change (GH#3044).
           if (!usePolling) {
             try {
               const fileInfo = await fsPromises.stat(pathname)
-              if (fileInfo.mtime - start < duration) {
-                if (global.MARKTEXT_DEBUG_VERBOSE >= 3) {
+              if (fileInfo.mtime.getTime() - start.getTime() < duration) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                if ((globalThis as any).MARKTEXT_DEBUG_VERBOSE >= 3) {
                   console.log(
-                    `Ignoring file event after "stat": current="${currentTime}", start="${start}", file="${fileInfo.mtime}".`
+                    `Ignoring file event after "stat": current="${currentTime.toISOString()}", start="${start.toISOString()}", file="${fileInfo.mtime.toISOString()}".`
                   )
                 }
                 return true

@@ -8,7 +8,7 @@ import { ipcMain } from 'electron'
 import commandExists from 'command-exists'
 import { isImageFile } from 'common/filesystem/paths'
 
-const buildPreferredPathEnv = () => {
+const buildPreferredPathEnv = (): string => {
   const extras =
     process.platform === 'darwin'
       ? ['/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin']
@@ -21,7 +21,7 @@ const buildPreferredPathEnv = () => {
   return merged.filter(Boolean).join(path.delimiter)
 }
 
-const resolvePicgoBinary = () => {
+const resolvePicgoBinary = (): string | null => {
   const candidates =
     process.platform === 'win32'
       ? ['picgo', 'picgo.exe']
@@ -38,7 +38,7 @@ const resolvePicgoBinary = () => {
     try {
       if (commandExists.sync(c)) return c
       if (c.startsWith('/') && fs.pathExistsSync(c)) return c
-    } catch {}
+    } catch { /* not found */ }
   }
   return null
 }
@@ -47,7 +47,7 @@ const resolvePicgoBinary = () => {
 // trying to parse it. \x1b is the ESC byte.
 const ANSI_SGR_RE = /\x1b\[[0-9;]*m/g // eslint-disable-line no-control-regex
 
-const parsePicgoOutput = (text) => {
+const parsePicgoOutput = (text: unknown): string | null => {
   const raw = String(text || '')
   const cleaned = raw.replace(ANSI_SGR_RE, '')
   try {
@@ -63,12 +63,12 @@ const parsePicgoOutput = (text) => {
             }
             if (obj.success === true && typeof obj.url === 'string') return obj.url
           }
-        } catch {}
+        } catch { /* not JSON */ }
       }
       const kv = line.match(/(?:success|succeeded|uploaded)\s*:?\s*(https?:\/\/\S+)/i)
       if (kv && kv[1]) return kv[1]
     }
-  } catch {}
+  } catch { /* outer parse failed */ }
   const marker = cleaned.split('[PicGo SUCCESS]:')
   if (marker.length >= 2) {
     const candidate = marker[marker.length - 1].trim()
@@ -77,20 +77,32 @@ const parsePicgoOutput = (text) => {
   return null
 }
 
-const uploadByGithub = ({ owner, repo, branch, auth, content, filename }) =>
+interface GithubUploadArgs {
+  owner: string
+  repo: string
+  branch?: string
+  auth: string
+  content: string
+  filename: string
+}
+
+const uploadByGithub = ({ owner, repo, branch, auth, content, filename }: GithubUploadArgs): Promise<string> =>
   new Promise((resolve, reject) => {
     const octokit = new Octokit({ auth })
     const filePath = `${dayjs().format('YYYY/MM')}/${dayjs().format('DD-HH-mm-ss')}-${filename}`
     const message = `Upload by MarkText at ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`
-    const payload = { owner, repo, path: filePath, branch, message, content }
+    const payload: { owner: string; repo: string; path: string; branch?: string; message: string; content: string } = {
+      owner, repo, path: filePath, branch, message, content
+    }
     if (!branch) delete payload.branch
     octokit.repos
       .createOrUpdateFileContents(payload)
-      .then((result) => resolve(result.data.content.download_url))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .then((result: any) => resolve(result.data.content.download_url))
       .catch(() => reject(new Error('Upload failed, the image will be copied to the image folder')))
   })
 
-const uploadByPicgo = (localPath) =>
+const uploadByPicgo = (localPath: string): Promise<string> =>
   new Promise((resolve, reject) => {
     const cmd = resolvePicgoBinary()
     if (!cmd) return reject(new Error('PicGo command not found in PATH'))
@@ -107,7 +119,7 @@ const uploadByPicgo = (localPath) =>
     )
   })
 
-const uploadByCli = (cliScript, localPath) =>
+const uploadByCli = (cliScript: string, localPath: string): Promise<string> =>
   new Promise((resolve, reject) => {
     execFile(
       cliScript,
@@ -120,7 +132,7 @@ const uploadByCli = (cliScript, localPath) =>
     )
   })
 
-const writeBinaryToTmp = async(data, suffix = '') => {
+const writeBinaryToTmp = async(data: Uint8Array | number[] | null | undefined, suffix: string = ''): Promise<string> => {
   const buf = data instanceof Uint8Array ? Buffer.from(data) : Buffer.from(data || [])
   const tmpPath = path.join(tmpdir(), `${Date.now()}${suffix}`)
   await fs.writeFile(tmpPath, buf)
@@ -129,7 +141,8 @@ const writeBinaryToTmp = async(data, suffix = '') => {
 
 const MAX_SIZE = 5 * 1024 * 1024
 
-const uploadFromPath = async(imagePath, options) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const uploadFromPath = async(imagePath: string, options: any): Promise<string> => {
   const { currentUploader, imageBed, githubToken, cliScript } = options
   const { size } = await fs.stat(imagePath)
   if (size > MAX_SIZE) throw new Error('Cannot upload more than 5M image, the image will be copied to the image folder')
@@ -147,15 +160,27 @@ const uploadFromPath = async(imagePath, options) => {
   throw new Error(`Unsupported uploader: ${currentUploader}`)
 }
 
-const uploadFromBuffer = async({ data, name, byteLength }, options) => {
+interface BufferImagePayload {
+  data: Uint8Array | number[]
+  name: string
+  byteLength: number
+}
+
+const uploadFromBuffer = async({ data, name, byteLength }: BufferImagePayload, options: {
+  currentUploader: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  imageBed: any
+  githubToken: string
+  cliScript: string
+}): Promise<string> => {
   const { currentUploader, imageBed, githubToken, cliScript } = options
   if (byteLength > MAX_SIZE) throw new Error('Cannot upload more than 5M image, the image will be copied to the image folder')
   const suffix = path.extname(name || '') || ''
-  let cleanup = null
+  let cleanup: (() => Promise<void>) | null = null
   try {
     if (currentUploader === 'picgo' || currentUploader === 'cliScript') {
       const localPath = await writeBinaryToTmp(data, suffix)
-      cleanup = () => fs.unlink(localPath).catch(() => {})
+      cleanup = () => fs.unlink(localPath).catch(() => { /* ignore */ })
       if (currentUploader === 'picgo') return await uploadByPicgo(localPath)
       return await uploadByCli(cliScript, localPath)
     }
@@ -168,17 +193,25 @@ const uploadFromBuffer = async({ data, name, byteLength }, options) => {
   }
 }
 
-export const registerUploaderHandlers = () => {
-  ipcMain.handle('mt::uploader::upload', async(_event, req) => {
+interface UploadRequest {
+  pathname: string
+  image: string | BufferImagePayload
+  isPath: boolean
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  preferences: any
+}
+
+export const registerUploaderHandlers = (): void => {
+  ipcMain.handle('mt::uploader::upload', async(_event, req: UploadRequest) => {
     const { pathname, image, isPath, preferences } = req
     if (preferences.currentUploader === 'none') throw new Error('No image uploader provided.')
     if (isPath) {
       const dir = path.dirname(pathname)
-      const imagePath = path.resolve(dir, image)
+      const imagePath = path.resolve(dir, image as string)
       const isImg = isImageFile(imagePath)
       if (!isImg) return image
       return uploadFromPath(imagePath, preferences)
     }
-    return uploadFromBuffer(image, preferences)
+    return uploadFromBuffer(image as BufferImagePayload, preferences)
   })
 }

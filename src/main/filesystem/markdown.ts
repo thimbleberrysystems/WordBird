@@ -7,34 +7,50 @@ import { isDirectory2 } from 'common/filesystem'
 import { isMarkdownFile } from 'common/filesystem/paths'
 import { normalizeAndResolvePath, writeFile } from '../filesystem'
 import { guessEncoding } from './encoding'
+import type { Encoding } from 'common/encoding'
+import type { LineEnding } from '@shared/types/files'
 
-const getLineEnding = (lineEnding) => {
+interface MarkdownDocumentOptions {
+  adjustLineEndingOnSave: boolean
+  lineEnding: LineEnding
+  encoding: Encoding
+}
+
+interface MarkdownDocumentRaw {
+  markdown: string
+  filename: string
+  pathname: string
+  encoding: Encoding
+  lineEnding: LineEnding
+  adjustLineEndingOnSave: boolean
+  trimTrailingNewline: number
+  isMixedLineEndings: boolean
+}
+
+const getLineEnding = (lineEnding: LineEnding): string => {
   if (lineEnding === 'lf') {
     return '\n'
   } else if (lineEnding === 'crlf') {
     return '\r\n'
   }
 
-  // This should not happend but use fallback value.
+  // This should not happen but use fallback value.
   log.error(`Invalid end of line character: expected "lf" or "crlf" but got "${lineEnding}".`)
   return '\n'
 }
 
-const convertLineEndings = (text, lineEnding) => {
+const convertLineEndings = (text: string, lineEnding: LineEnding): string => {
   return text.replace(LINE_ENDING_REG, getLineEnding(lineEnding))
 }
 
 /**
  * Special function to normalize directory and markdown file paths.
- *
- * @param {string} pathname The path to the file or directory.
- * @returns {{isDir: boolean, path: string}?} Returns the normalize path and a
- * directory hint or null if it's not a directory or markdown file.
+ * Returns the normalized path and a directory hint, or null if it's not a
+ * directory or markdown file.
  */
-export const normalizeMarkdownPath = (pathname) => {
+export const normalizeMarkdownPath = (pathname: string): { isDir: boolean; path: string } | null => {
   const isDir = isDirectory2(pathname)
   if (isDir || isMarkdownFile(pathname)) {
-    // Normalize and resolve the path or link target.
     const resolved = normalizeAndResolvePath(pathname)
     if (resolved) {
       return { isDir, path: resolved }
@@ -47,12 +63,12 @@ export const normalizeMarkdownPath = (pathname) => {
 
 /**
  * Write the content into a file.
- *
- * @param {string} pathname The path to the file.
- * @param {string} content The buffer to save.
- * @param {IMarkdownDocumentOptions} options The markdown document options
  */
-export const writeMarkdownFile = (pathname, content, options) => {
+export const writeMarkdownFile = (
+  pathname: string,
+  content: string,
+  options: MarkdownDocumentOptions
+): Promise<void> => {
   const { adjustLineEndingOnSave, lineEnding } = options
   const { encoding, isBom } = options.encoding
   const extension = path.extname(pathname) || '.md'
@@ -69,25 +85,18 @@ export const writeMarkdownFile = (pathname, content, options) => {
 
 /**
  * Reads the contents of a markdown file.
- *
- * @param {string} pathname The path to the markdown file.
- * @param {string} preferredEol The preferred EOL.
- * @param {boolean} autoGuessEncoding Whether we should try to auto guess encoding.
- * @param {*} trimTrailingNewline The trim trailing newline option.
- * @param {boolean} autoNormalizeLineEndings Whether to automatically normalize line endings
- * @returns {IMarkdownDocumentRaw} Returns a raw markdown document.
  */
 export const loadMarkdownFile = async(
-  pathname,
-  preferredEol,
-  autoGuessEncoding = true,
-  trimTrailingNewline = 2,
-  autoNormalizeLineEndings = false
-) => {
+  pathname: string,
+  preferredEol: LineEnding,
+  autoGuessEncoding: boolean = true,
+  trimTrailingNewline: number = 2,
+  autoNormalizeLineEndings: boolean = false
+): Promise<MarkdownDocumentRaw> => {
   // TODO: Use streams to not buffer the file multiple times and only guess
   //       encoding on the first 256/512 bytes.
 
-  let buffer = await fsPromises.readFile(path.resolve(pathname))
+  const buffer = await fsPromises.readFile(path.resolve(pathname))
 
   const encoding = guessEncoding(buffer, autoGuessEncoding)
   const supported = iconv.encodingExists(encoding.encoding)
@@ -102,7 +111,7 @@ export const loadMarkdownFile = async(
   const isCrlf = CRLF_LINE_ENDING_REG.test(markdown)
   const isMixedLineEndings = isLf && isCrlf
   const isUnknownEnding = !isLf && !isCrlf
-  let lineEnding = preferredEol
+  let lineEnding: LineEnding = preferredEol
   if (isLf && !isCrlf) {
     lineEnding = 'lf'
   } else if (isCrlf && !isLf) {
@@ -113,26 +122,22 @@ export const loadMarkdownFile = async(
 
   if (isMixedLineEndings || isUnknownEnding || lineEnding !== 'lf') {
     markdown = convertLineEndings(markdown, 'lf')
-    // Marktext always uses LF internally.
-    // If the user did not request LF line endings, we need to adjust on save.
+    // MarkText always uses LF internally. If the user did not request LF line
+    // endings, we need to adjust on save.
     adjustLineEndingOnSave = !autoNormalizeLineEndings && lineEnding !== 'lf'
   }
 
   // Detect final newline
   if (trimTrailingNewline === 2) {
     if (!markdown) {
-      // Use default value
       trimTrailingNewline = 3
     } else {
       const lastIndex = markdown.length - 1
       if (lastIndex >= 1 && markdown[lastIndex] === '\n' && markdown[lastIndex - 1] === '\n') {
-        // Disabled
         trimTrailingNewline = 2
       } else if (markdown[lastIndex] === '\n') {
-        // Ensure single trailing newline
         trimTrailingNewline = 1
       } else {
-        // Trim trailing newlines
         trimTrailingNewline = 0
       }
     }
@@ -141,18 +146,13 @@ export const loadMarkdownFile = async(
   const filename = path.basename(pathname)
 
   return {
-    // document information
     markdown,
     filename,
     pathname,
-
-    // options
     encoding,
     lineEnding,
     adjustLineEndingOnSave,
     trimTrailingNewline,
-
-    // raw file information
     isMixedLineEndings
   }
 }

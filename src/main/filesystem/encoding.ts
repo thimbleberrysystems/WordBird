@@ -1,6 +1,7 @@
 import ced from 'ced'
+import type { Encoding } from 'common/encoding'
 
-const CED_ICONV_ENCODINGS = {
+const CED_ICONV_ENCODINGS: Record<string, string> = {
   'BIG5-CP950': 'big5',
   KSC: 'euckr',
   'ISO-2022-KR': 'euckr',
@@ -9,7 +10,7 @@ const CED_ICONV_ENCODINGS = {
 
   Unicode: 'utf8',
 
-  // Map ASCII, subsets of utf-8 to UTF-8,
+  // Map ASCII / subsets of UTF-8 to UTF-8.
   JIS: 'utf8',
   SJS: 'utf8',
   shiftjis: 'utf8',
@@ -18,14 +19,14 @@ const CED_ICONV_ENCODINGS = {
   MACINTOSH: 'utf8'
 }
 
-// Byte Order Mark's to detect endianness and encoding.
-const BOM_ENCODINGS = {
+// Byte Order Marks to detect endianness and encoding.
+const BOM_ENCODINGS: Record<string, number[]> = {
   utf8: [0xef, 0xbb, 0xbf],
   utf16be: [0xfe, 0xff],
   utf16le: [0xff, 0xfe]
 }
 
-const checkSequence = (buffer, sequence) => {
+const checkSequence = (buffer: Buffer, sequence: number[]): boolean => {
   if (buffer.length < sequence.length) {
     return false
   }
@@ -34,13 +35,9 @@ const checkSequence = (buffer, sequence) => {
 
 /**
  * Guess the encoding from the buffer.
- *
- * @param {Buffer} buffer
- * @param {boolean} autoGuessEncoding
- * @returns {Encoding}
  */
-export const guessEncoding = (buffer, autoGuessEncoding) => {
-  let isBom = false
+export const guessEncoding = (buffer: Buffer, autoGuessEncoding: boolean): Encoding => {
+  const isBom = false
   let encoding = 'utf8'
 
   // Detect UTF8- and UTF16-BOM encodings.
@@ -50,20 +47,7 @@ export const guessEncoding = (buffer, autoGuessEncoding) => {
     }
   }
 
-  // // Try to detect binary files. Text files should not containt four 0x00 characters.
-  // let zeroSeenCounter = 0
-  // for (let i = 0; i < Math.min(buffer.byteLength, 256); ++i) {
-  //   if (buffer[i] === 0x00) {
-  //     if (zeroSeenCounter >= 3) {
-  //       return { encoding: 'binary', isBom: false }
-  //     }
-  //     zeroSeenCounter++
-  //   } else {
-  //     zeroSeenCounter = 0
-  //   }
-  // }
-
-  // Auto guess encoding, otherwise use UTF8.
+  // Auto guess encoding, otherwise use UTF-8.
   if (autoGuessEncoding) {
     encoding = ced(buffer)
     if (CED_ICONV_ENCODINGS[encoding]) {

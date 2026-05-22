@@ -3,6 +3,7 @@ import fs from 'fs-extra'
 import { app, ipcMain } from 'electron'
 import { rgPath } from '@vscode/ripgrep'
 import { MARKDOWN_INCLUSIONS } from 'common/filesystem/paths'
+import type { BootInfo } from '@shared/types/ipc'
 
 const ENV_ALLOWLIST = [
   'NODE_ENV',
@@ -16,22 +17,23 @@ const ENV_ALLOWLIST = [
   'HOME'
 ]
 
-const pickEnv = () => {
-  const out = {}
+const pickEnv = (): Record<string, string> => {
+  const out: Record<string, string> = {}
   for (const key of ENV_ALLOWLIST) {
-    if (process.env[key] !== undefined) out[key] = process.env[key]
+    const value = process.env[key]
+    if (value !== undefined) out[key] = value
   }
   return out
 }
 
-const resolveRipgrepBinary = () => {
+const resolveRipgrepBinary = (): string => {
   if (process.env.MARKTEXT_RIPGREP_PATH) {
     return process.env.MARKTEXT_RIPGREP_PATH
   }
   return rgPath.replace(/\bapp\.asar\b/, 'app.asar.unpacked')
 }
 
-const computeIsUpdatable = () => {
+const computeIsUpdatable = (): boolean => {
   const resources = process.resourcesPath
   if (!resources) return false
   try {
@@ -50,7 +52,7 @@ const computeIsUpdatable = () => {
   return false
 }
 
-const buildBootInfo = () => ({
+const buildBootInfo = (): BootInfo => ({
   platform: process.platform,
   arch: process.arch,
   versions: {
@@ -62,16 +64,16 @@ const buildBootInfo = () => ({
   paths: {
     ripgrepBinary: resolveRipgrepBinary(),
     resources: process.resourcesPath,
-    appPath: app.getAppPath(),
+    userData: app.getPath('userData'),
     cwd: process.cwd()
   },
   isUpdatable: computeIsUpdatable(),
   MARKDOWN_INCLUSIONS: [...MARKDOWN_INCLUSIONS]
 })
 
-let cached = null
+let cached: BootInfo | null = null
 
-export const registerBootInfo = () => {
+export const registerBootInfo = (): void => {
   ipcMain.on('mt::boot-info', (event) => {
     if (!cached) cached = buildBootInfo()
     event.returnValue = cached
@@ -82,7 +84,7 @@ export const registerBootInfo = () => {
   })
 }
 
-export const getBootInfo = () => {
+export const getBootInfo = (): BootInfo => {
   if (!cached) cached = buildBootInfo()
   return cached
 }

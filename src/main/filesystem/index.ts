@@ -5,11 +5,10 @@ import { isDirectory, isFile, isSymbolicLink } from 'common/filesystem'
 /**
  * Normalize the path into an absolute path and resolves the link target if needed.
  *
- * @param {string} pathname The path or link path.
- * @returns {string} Returns the absolute path and resolved link. If the link target
- *                   cannot be resolved, an empty string is returned.
+ * Returns the absolute path and resolved link, or an empty string if the link
+ * target cannot be resolved.
  */
-export const normalizeAndResolvePath = (pathname) => {
+export const normalizeAndResolvePath = (pathname: string): string => {
   if (isSymbolicLink(pathname)) {
     const absPath = path.dirname(pathname)
     const targetPath = path.resolve(absPath, readlinkSync(pathname))
@@ -22,11 +21,18 @@ export const normalizeAndResolvePath = (pathname) => {
   return path.resolve(pathname)
 }
 
-export const writeFile = (pathname, content, extension, options = 'utf-8') => {
+export const writeFile = (
+  pathname: string,
+  content: string | Buffer,
+  extension?: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  options: BufferEncoding | { encoding?: BufferEncoding } | undefined | any = 'utf-8'
+): Promise<void> => {
   if (!pathname) {
     return Promise.reject(new Error('[ERROR] Cannot save file without path.'))
   }
   pathname = !extension || pathname.endsWith(extension) ? pathname : `${pathname}${extension}`
 
-  return outputFile(pathname, content, options)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return outputFile(pathname, content as any, options)
 }

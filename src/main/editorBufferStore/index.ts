@@ -1,14 +1,48 @@
 import fs from 'fs'
 import path from 'path'
-import EventEmitter from 'events'
-import { BrowserWindow, ipcMain } from 'electron'
-class EditorBufferStore extends EventEmitter {
-  constructor(paths) {
+import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
+import { TypedEmitter } from '@shared/types/typedEmitter'
+
+interface EditorBufferStorePaths {
+  editorBufferStorePath: string
+}
+
+interface BufferStoreEntry {
+  id: string
+  filePath: string
+}
+
+interface BufferStoreContent {
+  tabs: Array<{ isSaved: boolean;[key: string]: unknown }>
+  [key: string]: unknown
+}
+
+interface EditorWindow {
+  id: number
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any
+}
+
+// No instance-level events emitted; kept as TypedEmitter for parity with the
+// other main classes.
+type EditorBufferStoreEvents = Record<string, unknown[]>
+
+class EditorBufferStore extends TypedEmitter<EditorBufferStoreEvents> {
+  editorBufferStorePath: string
+  bufferStores: Record<string, BufferStoreEntry> | null
+  serviceName: string
+  encryptKeys: string[]
+  writeSequence: number
+
+  constructor(paths: EditorBufferStorePaths) {
     super()
 
     const { editorBufferStorePath } = paths
     this.editorBufferStorePath = editorBufferStorePath
-    this.bufferStores = null // This is an object of paths to buffer stores, buffer stores are NOT stored in memory for performance reasons, they are read from disk when needed and written to disk when updated
+    // Object of paths to buffer stores. Buffer stores are NOT held in memory
+    // for performance reasons — they are read from disk when needed and
+    // written to disk when updated.
+    this.bufferStores = null
     this.serviceName = 'marktext'
     this.encryptKeys = ['githubToken']
     this.writeSequence = 0
@@ -16,18 +50,18 @@ class EditorBufferStore extends EventEmitter {
     this.init()
   }
 
-  init() {
+  init(): void {
     if (!fs.existsSync(this.editorBufferStorePath)) {
       fs.mkdirSync(this.editorBufferStorePath, { recursive: true })
     }
     this._listenForIpcMain()
   }
 
-  getAll() {
+  getAll(): Record<string, BufferStoreEntry> {
     return this.getAllBufferStores()
   }
 
-  getAllBufferStores() {
+  getAllBufferStores(): Record<string, BufferStoreEntry> {
     if (!this.bufferStores) {
       this.bufferStores = this.findEditorBufferStores(this.editorBufferStorePath)
     }
@@ -35,25 +69,29 @@ class EditorBufferStore extends EventEmitter {
     return this.bufferStores
   }
 
-  clearBufferStoresWithAllSaved() {
+  clearBufferStoresWithAllSaved(): void {
     this.bufferStores = this.getAllBufferStores()
 
     for (const id in this.bufferStores) {
-      const buffer = this.readBufferStoreFile(this.bufferStores[id].filePath)
-      const allSaved = buffer.tabs.every((file) => file.isSaved)
-      if (buffer.tabs.length === 0 || allSaved) {
-        try {
-          fs.unlinkSync(this.bufferStores[id].filePath)
-        } catch (e) {
-          console.error('Failed to delete buffer store file during clear', e)
+      try {
+        const buffer = this.readBufferStoreFile(this.bufferStores[id].filePath)
+        const allSaved = buffer.tabs.every((file) => file.isSaved)
+        if (buffer.tabs.length === 0 || allSaved) {
+          try {
+            fs.unlinkSync(this.bufferStores[id].filePath)
+          } catch (e) {
+            console.error('Failed to delete buffer store file during clear', e)
+          }
         }
+      } catch (e) {
+        console.error('Failed to read buffer store file during clear', e)
       }
     }
   }
 
-  handleClose(restoreBufferId, editorWindows) {
-    // If > 1 window is present, and the window being closed has all files saved, we can delete its saved buffer
-    // This allows the case where we want to actually close an extra window
+  handleClose(restoreBufferId: string | undefined, editorWindows: EditorWindow[]): void {
+    // If > 1 window is present, and the window being closed has all files
+    // saved, we can delete its saved buffer.
 
     if (!restoreBufferId) {
       console.warn('No restoreBufferId found for window, skipping buffer cleanup')
@@ -70,7 +108,6 @@ class EditorBufferStore extends EventEmitter {
     }
 
     if (editorWindows.length > 1) {
-      // Check if all files in the buffer store are saved OR there are no more tabs opened
       if (!fs.existsSync(this.bufferStores[restoreBufferId].filePath)) {
         return
       }
@@ -87,8 +124,8 @@ class EditorBufferStore extends EventEmitter {
     }
   }
 
-  findEditorBufferStores(dir) {
-    const results = {}
+  findEditorBufferStores(dir: string): Record<string, BufferStoreEntry> {
+    const results: Record<string, BufferStoreEntry> = {}
     if (!fs.existsSync(dir)) {
       return results
     }
@@ -100,17 +137,14 @@ class EditorBufferStore extends EventEmitter {
 
       if (entry.isFile() && entry.name.endsWith('_editor_buffer_store.json')) {
         const id = entry.name.replace('_editor_buffer_store.json', '')
-        results[id] = {
-          id, // Add the id to the buffer store data for easier access later (in Editor)
-          filePath: fullPath
-        }
+        results[id] = { id, filePath: fullPath }
       }
     }
 
     return results
   }
 
-  getBufferStoreInfo(restoreBufferId) {
+  getBufferStoreInfo(restoreBufferId: string): BufferStoreEntry {
     if (!this.bufferStores) {
       this.bufferStores = this.findEditorBufferStores(this.editorBufferStorePath)
     }
@@ -128,13 +162,13 @@ class EditorBufferStore extends EventEmitter {
     return this.bufferStores[restoreBufferId]
   }
 
-  readBufferStoreFile(filePath) {
+  readBufferStoreFile(filePath: string): BufferStoreContent {
     const content = fs.readFileSync(filePath, 'utf8')
     if (!content.trim()) {
       throw new Error('Buffer store file is empty.')
     }
 
-    const buffer = JSON.parse(content)
+    const buffer = JSON.parse(content) as BufferStoreContent
     if (!buffer || !Array.isArray(buffer.tabs)) {
       throw new Error('Invalid editor buffer state.')
     }
@@ -142,14 +176,15 @@ class EditorBufferStore extends EventEmitter {
     return buffer
   }
 
-  writeBufferStoreFile(filePath, newState) {
+  writeBufferStoreFile(filePath: string, newState: unknown): void {
     const tempPath = path.join(
       path.dirname(filePath),
       `.${path.basename(filePath)}.${process.pid}.${Date.now()}.${++this.writeSequence}.tmp`
     )
 
     try {
-      // Write the temp file first, then rename it to the final file to ensure atomicity and reduce the risk of data corruption
+      // Write temp file first, then rename to the final file for atomicity
+      // and reduced risk of data corruption.
       fs.writeFileSync(tempPath, JSON.stringify(newState), 'utf8')
       fs.renameSync(tempPath, filePath)
     } catch (err) {
@@ -164,9 +199,10 @@ class EditorBufferStore extends EventEmitter {
     }
   }
 
-  updateBufferState(e, newState) {
+  updateBufferState(e: IpcMainInvokeEvent, newState: unknown): boolean {
     const win = BrowserWindow.fromWebContents(e.sender)
-    const restoreBufferId = win?.restoreBufferId
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const restoreBufferId = (win as any)?.restoreBufferId as string | undefined
 
     if (!restoreBufferId) {
       console.warn('No restoreBufferId found for window, skipping buffer state update')
@@ -178,12 +214,12 @@ class EditorBufferStore extends EventEmitter {
     return true
   }
 
-  getUnUsedBufferUUID() {
+  getUnUsedBufferUUID(): string {
     if (!this.bufferStores) {
       this.bufferStores = this.findEditorBufferStores(this.editorBufferStorePath)
     }
 
-    let uuid
+    let uuid: string
     do {
       uuid = crypto.randomUUID()
     } while (uuid in this.bufferStores)
@@ -191,8 +227,7 @@ class EditorBufferStore extends EventEmitter {
     return uuid
   }
 
-  _listenForIpcMain() {
-    // local main events
+  _listenForIpcMain(): void {
     ipcMain.handle('update-buffer-state', (e, newState) => {
       return this.updateBufferState(e, newState)
     })

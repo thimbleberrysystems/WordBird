@@ -9,7 +9,7 @@ import { registerWindowHandlers } from './window'
 import { registerCmdHandlers } from './cmd'
 import { registerI18nHandlers } from './i18n'
 
-export const registerSandboxIpcHandlers = () => {
+export const registerSandboxIpcHandlers = (): void => {
   registerBootInfo()
   registerFsHandlers()
   registerPathHandlers()
