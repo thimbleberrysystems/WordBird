@@ -81,7 +81,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import log from 'electron-log'
 import { usePreferencesStore } from '@/store/preferences'
 import { ref, onMounted } from 'vue'

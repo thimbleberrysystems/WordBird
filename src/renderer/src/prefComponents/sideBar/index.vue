@@ -40,7 +40,8 @@
     </section>
   </div>
 </template>
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { getCategory, getTranslatedSearchContent } from './config'
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'

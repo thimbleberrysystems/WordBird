@@ -5,7 +5,8 @@
   />
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useEditorStore } from '@/store/editor'
 import { usePreferencesStore } from '@/store/preferences'
@@ -129,7 +130,10 @@ const handleFileChange = ({ id, markdown: newMarkdown, muyaIndexCursor }) => {
     let node = sourceCodeContainer.value?.parentElement
     while (node && node !== document.body) {
       const overflowY = window.getComputedStyle(node).overflowY
-      if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight) {
+      if (
+        (overflowY === 'auto' || overflowY === 'scroll') &&
+        node.scrollHeight > node.clientHeight
+      ) {
         consider(node)
         break
       }

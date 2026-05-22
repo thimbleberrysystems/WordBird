@@ -134,7 +134,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { usePreferencesStore } from '@/store/preferences.js'
 import { useLayoutStore } from '@/store/layout.js'
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
@@ -285,8 +286,14 @@ const onLeaveFullScreen = () => {
 
 const offMaximize = window.electron.ipcRenderer.on('mt::window-maximize', onMaximize)
 const offUnmaximize = window.electron.ipcRenderer.on('mt::window-unmaximize', onUnmaximize)
-const offEnterFullScreen = window.electron.ipcRenderer.on('mt::window-enter-full-screen', onEnterFullScreen)
-const offLeaveFullScreen = window.electron.ipcRenderer.on('mt::window-leave-full-screen', onLeaveFullScreen)
+const offEnterFullScreen = window.electron.ipcRenderer.on(
+  'mt::window-enter-full-screen',
+  onEnterFullScreen
+)
+const offLeaveFullScreen = window.electron.ipcRenderer.on(
+  'mt::window-leave-full-screen',
+  onLeaveFullScreen
+)
 
 onBeforeUnmount(() => {
   offMaximize()

@@ -16,7 +16,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { closePath as windowIconClose } from '../../assets/window-controls.js'
 
 const handleCloseClick = () => {

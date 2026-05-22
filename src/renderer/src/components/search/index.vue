@@ -148,7 +148,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import bus from '../../bus'
 import FindCaseIcon from '@/assets/icons/searchIcons/iconCase.svg'

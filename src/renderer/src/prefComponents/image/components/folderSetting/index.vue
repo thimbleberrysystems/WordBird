@@ -13,17 +13,13 @@
         size="mini"
         @click="modifyImageFolderPath(undefined)"
       >
-        {{
-          t('preferences.image.folderSetting.open')
-        }}
+        {{ t('preferences.image.folderSetting.open') }}
       </el-button>
       <el-button
         size="mini"
         @click="openImageFolder"
       >
-        {{
-          t('preferences.image.folderSetting.showInFolder')
-        }}
+        {{ t('preferences.image.folderSetting.showInFolder') }}
       </el-button>
     </div>
     <compound>
@@ -59,7 +55,8 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'

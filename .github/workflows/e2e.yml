@@ -27,7 +27,7 @@ jobs:
       # Run the full postinstall: Electron binary download, patch-package,
       # electron-rebuild, and minify-locales.
       - name: Run postinstall
-        run: node scripts/postinstall.js
+        run: pnpm tsx scripts/postinstall.ts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           npm_config_user_agent: 'pnpm'

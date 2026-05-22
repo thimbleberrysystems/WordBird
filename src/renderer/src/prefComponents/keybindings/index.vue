@@ -84,7 +84,9 @@
       class="keyboard-debug"
     >
       <separator />
-      <div><strong>{{ t('preferences.keybindings.debugOptions') }}:</strong></div>
+      <div>
+        <strong>{{ t('preferences.keybindings.debugOptions') }}:</strong>
+      </div>
       <el-button
         size="medium"
         @click="dumpKeyboardInformation"
@@ -99,7 +101,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import log from 'electron-log'
 import { setKeyboardLayout } from '@hfelix/electron-localshortcut'
 import { ref, onMounted, onUnmounted, watch } from 'vue'

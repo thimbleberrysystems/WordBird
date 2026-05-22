@@ -287,7 +287,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import bus from '../../bus'
 import Bool from '@/prefComponents/common/bool'
@@ -482,9 +483,7 @@ const loadThemesFromDisk = async () => {
     if (!(await window.fileUtils.isFile(fullname))) continue
     try {
       const buf = await window.fileUtils.readFile(fullname)
-      const content = buf instanceof Uint8Array
-        ? new TextDecoder('utf-8').decode(buf)
-        : String(buf)
+      const content = buf instanceof Uint8Array ? new TextDecoder('utf-8').decode(buf) : String(buf)
       const match = content.match(/^(?:\/\*+[ \t]*([A-z0-9 -]+)[ \t]*(?:\*+\/|[\n\r])?)/)
       const label = match && match[1] ? match[1] : filename
       themeList.value.push({ value: filename, label })

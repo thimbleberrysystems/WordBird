@@ -74,9 +74,7 @@
             type="primary"
             @click="handleDialogTableConfirm"
           >
-            {{
-              t('common.ok')
-            }}
+            {{ t('common.ok') }}
           </el-button>
         </div>
       </template>
@@ -85,7 +83,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck
 import { ref, reactive, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import log from 'electron-log'
 import Muya from 'muya/lib'
@@ -571,10 +570,9 @@ const imageAction = async (image, id, alt = '') => {
   }
 
   const getResolvedImagePath = (imagePath) => {
-    const replacement =
-      isTabSavedOnDisk
-        ? filename.replace(/\.[^/.]+$/, '') // Filename w/o extension
-        : ''
+    const replacement = isTabSavedOnDisk
+      ? filename.replace(/\.[^/.]+$/, '') // Filename w/o extension
+      : ''
     return imagePath.replace(/\${filename}/g, replacement)
   }
 
