@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
+// Options Store kept verbatim from the pre-migration JS so consumers
+// using `storeToRefs(preferencesStore).<field>` keep getting top-level
+// refs. Follow-up PR rewrites this as a Setup Store with per-field refs.
 import { defineStore } from 'pinia'
 import bus from '../bus'
 import { setLanguage } from '../i18n'

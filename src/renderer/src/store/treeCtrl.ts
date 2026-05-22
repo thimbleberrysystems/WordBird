@@ -1,14 +1,34 @@
 import { getUniqueId } from '../util'
 import { PATH_SEPARATOR } from '../config'
 
+// Helper module (NOT a Pinia store): file-tree mutation helpers.
+
+interface TreeFolder {
+  id?: string
+  pathname: string
+  name: string
+  isCollapsed?: boolean
+  isDirectory: true
+  isFile: false
+  isMarkdown: false
+  folders: TreeFolder[]
+  files: TreeFile[]
+}
+
+interface TreeFile {
+  id?: string
+  pathname: string
+  name: string
+  birthTime?: number | Date
+  isDirectory: false
+  isFile: true
+  isMarkdown: boolean
+}
+
 /**
  * Return all sub-directories relative to the root directory.
- *
- * @param {string} rootPath Root directory path
- * @param {string} pathname Full directory path
- * @returns {Array<string>} Sub-directories relative to root.
  */
-const getSubdirectoriesFromRoot = (rootPath, pathname) => {
+const getSubdirectoriesFromRoot = (rootPath: string, pathname: string): string[] => {
   if (!window.path.isAbsolute(pathname)) {
     throw new Error('Invalid path!')
   }
@@ -18,18 +38,16 @@ const getSubdirectoriesFromRoot = (rootPath, pathname) => {
 
 /**
  * Add a new file to the tree list.
- *
- * @param {*} tree Root file tree
- * @param {*} file The file that should be added
  */
-export const addFile = (tree, file) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const addFile = (tree: TreeFolder, file: any): void => {
   const { pathname, name } = file
   const dirname = window.path.dirname(pathname)
   const subDirectories = getSubdirectoriesFromRoot(tree.pathname, dirname)
 
   let currentPath = tree.pathname
-  let currentFolder = tree
-  let currentSubFolders = tree.folders
+  let currentFolder: TreeFolder = tree
+  let currentSubFolders: TreeFolder[] = tree.folders
   for (const directoryName of subDirectories) {
     let childFolder = currentSubFolders.find((f) => f.name === directoryName)
     if (!childFolder) {
@@ -52,10 +70,10 @@ export const addFile = (tree, file) => {
     currentSubFolders = childFolder.folders
   }
 
-  // Add file to related directory
+  // Add file to related directory.
   if (!currentFolder.files.find((f) => f.name === name)) {
     // Remove file content from object.
-    const fileCopy = {
+    const fileCopy: TreeFile = {
       id: getUniqueId(),
       birthTime: file.birthTime,
       isDirectory: file.isDirectory,
@@ -65,9 +83,7 @@ export const addFile = (tree, file) => {
       pathname: file.pathname
     }
 
-    const idx = currentFolder.files.findIndex((f) => {
-      return f.name.localeCompare(name) > 0
-    })
+    const idx = currentFolder.files.findIndex((f) => f.name.localeCompare(name) > 0)
     if (idx !== -1) {
       currentFolder.files.splice(idx, 0, fileCopy)
     } else {
@@ -78,15 +94,12 @@ export const addFile = (tree, file) => {
 
 /**
  * Add a new directory to the tree list.
- *
- * @param {*} tree Root file tree
- * @param {*} dir The directory that should be added
  */
-export const addDirectory = (tree, dir) => {
+export const addDirectory = (tree: TreeFolder, dir: { pathname: string }): void => {
   const subDirectories = getSubdirectoriesFromRoot(tree.pathname, dir.pathname)
 
   let currentPath = tree.pathname
-  let currentSubFolders = tree.folders
+  let currentSubFolders: TreeFolder[] = tree.folders
   for (const directoryName of subDirectories) {
     let childFolder = currentSubFolders.find((f) => f.name === directoryName)
     if (!childFolder) {
@@ -101,10 +114,7 @@ export const addDirectory = (tree, dir) => {
         folders: [],
         files: []
       }
-      // Insert folder in alphabetical order
-      const idx = currentSubFolders.findIndex((f) => {
-        return f.name.localeCompare(directoryName) > 0
-      })
+      const idx = currentSubFolders.findIndex((f) => f.name.localeCompare(directoryName) > 0)
       if (idx !== -1) {
         currentSubFolders.splice(idx, 0, childFolder)
       } else {
@@ -119,17 +129,14 @@ export const addDirectory = (tree, dir) => {
 
 /**
  * Remove the given file from the tree list.
- *
- * @param {*} tree Root file tree
- * @param {*} file The file that should be deleted
  */
-export const unlinkFile = (tree, file) => {
+export const unlinkFile = (tree: TreeFolder, file: { pathname: string }): void => {
   const { pathname } = file
   const dirname = window.path.dirname(pathname)
   const subDirectories = getSubdirectoriesFromRoot(tree.pathname, dirname)
 
-  let currentFolder = tree
-  let currentSubFolders = tree.folders
+  let currentFolder: TreeFolder = tree
+  let currentSubFolders: TreeFolder[] = tree.folders
   for (const directoryName of subDirectories) {
     const childFolder = currentSubFolders.find((f) => f.name === directoryName)
     if (!childFolder) return
@@ -145,16 +152,13 @@ export const unlinkFile = (tree, file) => {
 
 /**
  * Remove the given directory from the tree list.
- *
- * @param {*} tree Root file tree
- * @param {*} dir The directory that should be deleted
  */
-export const unlinkDirectory = (tree, dir) => {
+export const unlinkDirectory = (tree: TreeFolder, dir: { pathname: string }): void => {
   const { pathname } = dir
   const subDirectories = getSubdirectoriesFromRoot(tree.pathname, pathname)
 
   subDirectories.pop()
-  let currentFolder = tree.folders
+  let currentFolder: TreeFolder[] = tree.folders
   for (const directoryName of subDirectories) {
     const childFolder = currentFolder.find((f) => f.name === directoryName)
     if (!childFolder) return

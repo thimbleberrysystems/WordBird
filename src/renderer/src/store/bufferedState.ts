@@ -6,13 +6,20 @@ import { useLayoutStore } from './layout'
 const BUFFERED_STATE_DEBOUNCE_MS = 1000
 const BUFFERED_STATE_VERSION = 1
 
-let stores = {
+interface StoreCache {
+  editorStore: ReturnType<typeof useEditorStore> | null
+  projectStore: ReturnType<typeof useProjectStore> | null
+  layoutStore: ReturnType<typeof useLayoutStore> | null
+}
+
+const stores: StoreCache = {
   editorStore: null,
   projectStore: null,
   layoutStore: null
 }
 
-export const createBufferedState = () => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const createBufferedState = (): Record<string, any> | null => {
   if (!stores.editorStore) {
     stores.editorStore = useEditorStore()
   }
@@ -34,10 +41,10 @@ export const createBufferedState = () => {
   }
 }
 
-export const sendBufferedState = () => {
+export const sendBufferedState = (): Promise<unknown> => {
   const snapshot = createBufferedState()
   if (snapshot) {
-    return window.electron.ipcRenderer.invoke('update-buffer-state', snapshot)
+    return window.electron.ipcRenderer.invoke('update-buffer-state', Number(window.marktext?.env?.windowId ?? 0), snapshot)
   }
 
   return Promise.resolve(false)

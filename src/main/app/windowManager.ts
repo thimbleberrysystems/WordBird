@@ -494,7 +494,11 @@ class WindowManager extends TypedEmitter<WindowManagerEvents> {
       this._appMenu.updateAlwaysOnTopMenu(win.id, flag)
     })
 
-    ipcMain.on('broadcast-preferences-changed', (_event, prefs: Record<string, unknown>) => {
+    // Dispatched in-process via `ipcMain.emit(channel, payload)` — emit passes
+    // args directly to listeners (no synthetic IpcMainEvent). Single-arg
+    // signature here, unlike the renderer-IPC listeners below.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(ipcMain as any).on('broadcast-preferences-changed', (prefs: Record<string, unknown>) => {
       // We can not dynamic change the title bar style, so do not need to send it to renderer.
       if (typeof prefs.titleBarStyle !== 'undefined') {
         delete prefs.titleBarStyle
@@ -506,7 +510,9 @@ class WindowManager extends TypedEmitter<WindowManagerEvents> {
       }
     })
 
-    ipcMain.on('broadcast-user-data-changed', (_event, userData: Record<string, unknown>) => {
+    // Dispatched in-process via `ipcMain.emit` — see comment above.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(ipcMain as any).on('broadcast-user-data-changed', (userData: Record<string, unknown>) => {
       for (const { browserWindow } of this._windows.values()) {
         browserWindow?.webContents.send('mt::user-preference', userData)
       }

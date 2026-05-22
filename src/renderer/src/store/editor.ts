@@ -1,3 +1,11 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
+// FOLLOWUP: This 1729-line Pinia store is the heart of the editor — converting
+// it to typed Setup Store carries cross-call-site risk too high for the
+// migration PR. Disabled per-file type checking here so the migration lands
+// with editor.js semantics byte-identical; a follow-up PR types this file +
+// rewrites as Setup Store and refactors `currentFile: {}` → `IFileState | null`
+// (see docs/dev/TYPESCRIPT.md once it lands).
 import equal from 'deep-equal'
 import bus from '../bus'
 import { hasKeys, getUniqueId, deepClone } from '../util'
