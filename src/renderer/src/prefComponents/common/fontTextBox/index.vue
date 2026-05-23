@@ -5,11 +5,11 @@
   >
     <div class="description">
       <span>{{ description }}:</span>
-      <InfoFilled
+      <LinkIcon
         v-if="more"
+        :size="14"
+        class="link-icon"
         style="margin-left: 4px"
-        width="16"
-        height="16"
         @click="handleMoreClick"
       />
     </div>
@@ -39,7 +39,8 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import { InfoFilled, ArrowDown } from '@element-plus/icons-vue'
+import { ArrowDown } from '@element-plus/icons-vue'
+import LinkIcon from '@/components/icons/LinkIcon.vue'
 import { useI18n } from 'vue-i18n'
 import type { PrefControlProps } from '../types'
 
@@ -126,7 +127,7 @@ onMounted(async () => {
 }
 
 .pref-font-input-item {
-  margin: 20px 0;
+  margin: 12px 0;
   font-size: 14px;
   color: var(--editorColor);
   & .font-autocomplete {

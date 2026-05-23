@@ -9,10 +9,10 @@
       style="display: flex; align-items: center"
     >
       <span>{{ description }}:</span>
-      <InfoFilled
+      <LinkIcon
         v-if="more"
-        width="16"
-        height="16"
+        :size="14"
+        class="link-icon"
         @click="handleMoreClick"
       />
     </div>
@@ -39,7 +39,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { InfoFilled } from '@element-plus/icons-vue'
+import LinkIcon from '@/components/icons/LinkIcon.vue'
 import type { PrefControlBaseProps, PrefSelectOption } from '../types'
 
 type SelectValue = string | number | boolean
@@ -82,7 +82,7 @@ const select = (value: SelectValue) => {
 
 <style>
 .pref-select-item {
-  margin: 20px 0;
+  margin: 12px 0;
   font-size: 14px;
   color: var(--editorColor);
   & .el-select {

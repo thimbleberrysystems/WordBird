@@ -160,7 +160,10 @@
               <span
                 class="link"
                 @click="open('https://github.com/PicGo/PicGo-Core')"
-              >picgo</span>
+              >picgo<LinkIcon
+                :size="14"
+                class="link-icon"
+              /></span>
               {{ t('preferences.image.uploader.pleaseInstall') }}
             </div>
           </div>
@@ -199,7 +202,10 @@
                 @click="open('https://picgo.github.io/PicGo-Core-Doc/')"
               >{{
                 t('preferences.image.uploader.usageGuide.documentation')
-              }}</span>
+              }}<LinkIcon
+                :size="14"
+                class="link-icon"
+              /></span>
             </div>
           </div>
 
@@ -338,6 +344,7 @@ import CurSelect from '@/prefComponents/common/select/index.vue'
 import notice from '@/services/notification'
 import { storeToRefs } from 'pinia'
 import { InfoFilled } from '@element-plus/icons-vue'
+import LinkIcon from '@/components/icons/LinkIcon.vue'
 import type { PrefSelectOption } from '@/prefComponents/common/types'
 
 const { t } = useI18n()
@@ -1013,6 +1020,16 @@ const validate = (value: string): boolean => {
 .pref-image-uploader .link {
   color: var(--themeColor);
   cursor: pointer;
+}
+
+.pref-image-uploader .link .link-icon {
+  margin-left: 2px;
+  vertical-align: -2px;
+  opacity: 0.7;
+  color: var(--iconColor);
+}
+.pref-image-uploader .link .link-icon:hover {
+  color: var(--themeColor);
 }
 
 .pref-image-uploader .detection-status {

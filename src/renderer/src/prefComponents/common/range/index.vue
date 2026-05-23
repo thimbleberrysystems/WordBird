@@ -13,10 +13,10 @@
           v-if="selectValue"
           class="value"
         >{{ selectValue }} <span v-if="unit">{{ unit }}</span></span>
-        <InfoFilled
+        <LinkIcon
           v-if="more"
-          width="16"
-          height="16"
+          :size="14"
+          class="link-icon"
           style="margin-left: 4px"
           @click="handleMoreClick"
         />
@@ -35,7 +35,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { InfoFilled } from '@element-plus/icons-vue'
+import LinkIcon from '@/components/icons/LinkIcon.vue'
 import type { PrefControlBaseProps } from '../types'
 
 interface RangeProps extends PrefControlBaseProps {
@@ -81,7 +81,7 @@ const select = (value: number | number[]) => {
 
 <style>
 .pref-range-item {
-  margin: 20px 0;
+  margin: 12px 0;
   font-size: 14px;
   color: var(--editorColor);
   width: 100%;
