@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import { _electron, type ElectronApplication, type Page } from 'playwright'
 import * as fs from 'node:fs'
 import * as os from 'node:os'
@@ -51,24 +52,111 @@ export interface LaunchResult {
   page: Page
 }
 
-export const launchElectron = async(userArgs?: string[]): Promise<LaunchResult> => {
+export interface LaunchOptions {
+  // When true, sets MARKTEXT_ERROR_INTERACTION=1 in the launch env so
+  // src/main/exceptionHandler.ts suppresses the modal "Unexpected error"
+  // dialog. Only crash-guard specs that explicitly call expectNoRendererErrors
+  // should opt in — otherwise existing specs would silently ignore renderer
+  // exceptions that previously surfaced as a dialog (a hidden regression risk).
+  suppressErrorDialog?: boolean
+}
+
+export const launchElectron = async(
+  userArgs?: string[],
+  options: LaunchOptions = {}
+): Promise<LaunchResult> => {
   userArgs = userArgs || []
   const executablePath = getElectronPath()
   // Pass project root as entry so Electron reads package.json and getAppPath() returns project root.
   // Passing out/main/index.js directly bypasses package.json and breaks __static path resolution.
   const userDataDir = trackTempDir(getTempPath())
   const args = [projectRoot, '--user-data-dir', userDataDir].concat(userArgs)
+  const env: Record<string, string> = {}
+  for (const [k, v] of Object.entries(process.env)) if (v !== undefined) env[k] = v
+  env.PERF_TESTING = 'true'
+  if (options.suppressErrorDialog) env.MARKTEXT_ERROR_INTERACTION = '1'
   const app = await _electron.launch({
     executablePath,
     args,
     cwd: projectRoot,
-    env: { ...process.env, PERF_TESTING: 'true' },
+    env,
     timeout: 30000
   })
+  if (options.suppressErrorDialog) await installRendererErrorCounter(app)
   const page = await app.firstWindow()
   await page.waitForLoadState('domcontentloaded')
   await new Promise((resolve) => setTimeout(resolve, 500))
   return { app, page }
+}
+
+// Capture renderer-process errors that would otherwise pop the "Unexpected
+// error" dialog. We attach a parallel listener to the same IPC channel
+// (`mt::handle-renderer-error`) that exceptionHandler.ts listens on, and
+// accumulate the count in a shared global so specs can read it back via
+// `getRendererErrors`. Multiple listeners are allowed on ipcMain.
+const installRendererErrorCounter = async(app: ElectronApplication): Promise<void> => {
+  await app.evaluate(({ ipcMain }) => {
+    const g = global as unknown as {
+      __mt_renderer_errors__?: Array<{ message?: string; name?: string; stack?: string }>
+    }
+    if (!g.__mt_renderer_errors__) {
+      const sink: Array<{ message?: string; name?: string; stack?: string }> = []
+      g.__mt_renderer_errors__ = sink
+      ipcMain.on('mt::handle-renderer-error', (_e, error) => {
+        sink.push(error)
+      })
+    }
+  })
+}
+
+export const getRendererErrors = async(
+  app: ElectronApplication
+): Promise<Array<{ message?: string; name?: string; stack?: string }>> => {
+  return await app.evaluate(() => {
+    const g = global as unknown as {
+      __mt_renderer_errors__?: Array<{ message?: string; name?: string; stack?: string }>
+    }
+    return (g.__mt_renderer_errors__ || []).slice()
+  })
+}
+
+export const clearRendererErrors = async(app: ElectronApplication): Promise<void> => {
+  await app.evaluate(() => {
+    const g = global as unknown as {
+      __mt_renderer_errors__?: Array<unknown>
+    }
+    if (g.__mt_renderer_errors__) g.__mt_renderer_errors__.length = 0
+  })
+}
+
+// Assert that no renderer-process error has been captured since the last clear.
+// On failure, prints the captured stacks so the spec output is actionable.
+export const expectNoRendererErrors = async(app: ElectronApplication): Promise<void> => {
+  const errors = await getRendererErrors(app)
+  if (errors.length > 0) {
+    const summary = errors.map((e) => `- ${e.name ?? 'Error'}: ${e.message}\n${e.stack ?? ''}`).join('\n\n')
+    throw new Error(`Expected no renderer errors, captured ${errors.length}:\n\n${summary}`)
+  }
+  expect(errors.length).toBe(0)
+}
+
+// Poll until a renderer error matching `predicate` is captured (or timeout).
+// Prefer this over a fixed `waitForTimeout` when waiting for an error to
+// surface — IPC delivery time varies on slower CI runners.
+export const waitForRendererError = async(
+  app: ElectronApplication,
+  predicate: (e: { message?: string; name?: string; stack?: string }) => boolean,
+  timeoutMs = 5000,
+  pollMs = 50
+): Promise<{ message?: string; name?: string; stack?: string } | null> => {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    const errors = await getRendererErrors(app)
+    const match = errors.find(predicate)
+    if (match) return match
+    await new Promise((resolve) => setTimeout(resolve, pollMs))
+  }
+  return null
 }
 
 export const waitForMenuReady = async(
@@ -250,8 +338,11 @@ const writeTempMarkdown = (content: string): string => {
   return filePath
 }
 
-export const launchWithDoc = async(relativeFixture: string): Promise<LaunchResult> => {
-  const { app, page } = await launchElectron([relativeFixture])
+export const launchWithDoc = async(
+  relativeFixture: string,
+  options: LaunchOptions = {}
+): Promise<LaunchResult> => {
+  const { app, page } = await launchElectron([relativeFixture], options)
   await waitForEditor(page)
   await waitForMenuReady(app)
   return { app, page }
@@ -261,9 +352,12 @@ export interface LaunchWithMarkdownResult extends LaunchResult {
   filePath: string
 }
 
-export const launchWithMarkdown = async(markdown = ''): Promise<LaunchWithMarkdownResult> => {
+export const launchWithMarkdown = async(
+  markdown = '',
+  options: LaunchOptions = {}
+): Promise<LaunchWithMarkdownResult> => {
   const filePath = writeTempMarkdown(markdown)
-  const { app, page } = await launchElectron([filePath])
+  const { app, page } = await launchElectron([filePath], options)
   await waitForEditor(page)
   await waitForMenuReady(app)
   return { app, page, filePath }
