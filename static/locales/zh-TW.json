@@ -528,7 +528,15 @@
         "fileSortBy": {
           "title": "檔案排序方式",
           "creationTime": "建立時間",
-          "modificationTime": "修改時間"
+          "modificationTime": "修改時間",
+          "filename": "檔案名稱"
+        },
+        "fileSortOrder": {
+          "title": "排序順序",
+          "aToZ": "A → Z",
+          "zToA": "Z → A",
+          "oldestFirst": "從舊到新",
+          "newestFirst": "從新到舊"
         }
       },
       "misc": {

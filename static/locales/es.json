@@ -527,7 +527,15 @@
         "fileSortBy": {
           "title": "Ordenar Archivos Por",
           "creationTime": "Tiempo de Creación",
-          "modificationTime": "Tiempo de Modificación"
+          "modificationTime": "Tiempo de Modificación",
+          "filename": "Nombre de archivo"
+        },
+        "fileSortOrder": {
+          "title": "Orden de clasificación",
+          "aToZ": "A → Z",
+          "zToA": "Z → A",
+          "oldestFirst": "Más antiguo primero",
+          "newestFirst": "Más reciente primero"
         }
       },
       "misc": {

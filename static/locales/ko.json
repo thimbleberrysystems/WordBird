@@ -528,7 +528,15 @@
         "fileSortBy": {
           "title": "파일 정렬 기준",
           "creationTime": "생성 시간",
-          "modificationTime": "수정 시간"
+          "modificationTime": "수정 시간",
+          "filename": "파일 이름"
+        },
+        "fileSortOrder": {
+          "title": "정렬 순서",
+          "aToZ": "A → Z",
+          "zToA": "Z → A",
+          "oldestFirst": "오래된 순",
+          "newestFirst": "최신 순"
         }
       },
       "misc": {
