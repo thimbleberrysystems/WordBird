@@ -5,7 +5,7 @@
     </div>
 
     <!-- Opened tabs -->
-    <div class="opened-files">
+    <div v-if="openedFilesInSidebar" class="opened-files">
       <div class="title">
         <el-icon
           class="icon-arrow"
@@ -119,7 +119,7 @@
           <div class="centered-group">
             <button
               class="button-primary"
-              @click="createFile"
+              @click.stop="createFile"
             >
               {{ t('sideBar.tree.createFile') }}
             </button>
@@ -150,6 +150,7 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useProjectStore } from '@/store/project'
 import { useEditorStore } from '@/store/editor'
+import { usePreferencesStore } from '@/store/preferences'
 import Folder from './treeFolder.vue'
 import File from './treeFile.vue'
 import OpenedFile from './treeOpenedTab.vue'
@@ -178,9 +179,11 @@ const input = ref<HTMLInputElement | null>(null)
 
 const projectStore = useProjectStore()
 const editorStore = useEditorStore()
+const preferencesStore = usePreferencesStore()
 
 // Computed properties
 const { createCache } = storeToRefs(projectStore)
+const { openedFilesInSidebar } = storeToRefs(preferencesStore)
 
 // The createCache state is `{ dirname, type }` while an input is shown, and
 // `{}` otherwise. Expose a typed accessor for the template so we don't have
@@ -229,10 +232,11 @@ const handleInputEnter = (): void => {
 onMounted(() => {
   bus.on('SIDEBAR::show-new-input', handleInputFocus)
 
-  // hide rename or create input if needed
+  // Hide rename / create inputs on outside clicks. Buttons that open these
+  // inputs must use @click.stop so their click never reaches this listener.
   document.addEventListener('click', (event) => {
     const target = event.target as HTMLElement | null
-    if (target && target.tagName !== 'INPUT' && target.textContent !== 'Create File') {
+    if (target && target.tagName !== 'INPUT') {
       projectStore.CHANGE_ACTIVE_ITEM({})
       projectStore.createCache = {}
       projectStore.renameCache = null
@@ -339,7 +343,7 @@ onMounted(() => {
   cursor: pointer;
 }
 .opened-files .opened-files-list {
-  max-height: 200px;
+  max-height: 112px;
   overflow: auto;
   flex: 1;
 }

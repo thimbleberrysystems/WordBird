@@ -8,6 +8,7 @@
   "hideScrollbar": false,
   "wordWrapInToc": false,
   "fileSortBy": "created",
+  "fileSortOrder": "asc",
   "startUpAction": "restoreAll",
   "restoreLayoutState": true,
   "defaultDirectoryToOpen": "",
@@ -68,6 +69,7 @@
   "sideBarVisibility": false,
   "tabBarVisibility": false,
   "sourceCodeModeEnabled": false,
+  "openedFilesInSidebar": true,
 
   "searchExclusions": [],
   "searchMaxFileSize": "",
