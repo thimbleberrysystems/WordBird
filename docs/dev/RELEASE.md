@@ -74,7 +74,14 @@ gh release view vX.Y.Z-rc.N
 Confirm:
 
 - `Pre-release` badge on the release page (RC only)
-- **12 assets**: 5 Linux (`AppImage`, `deb`, `rpm`, `snap`, `tar.gz`) + 4 macOS (`arm64.dmg`, `arm64.zip`, `x64.dmg`, `x64.zip`) + 2 Windows (`setup.exe`, `zip`) + `SHA256SUMS.txt`
+- **24 assets**:
+  - **Linux** (5): `AppImage`, `deb`, `rpm`, `snap`, `tar.gz`
+  - **macOS arm64** (4): `dmg`, `dmg.blockmap`, `zip`, `zip.blockmap`
+  - **macOS x64** (4): `dmg`, `dmg.blockmap`, `zip`, `zip.blockmap`
+  - **Windows x64** (3): `setup.exe`, `setup.exe.blockmap`, `zip`
+  - **Windows arm64** (3): `setup.exe`, `setup.exe.blockmap`, `zip`
+  - **Auto-updater metadata** (4): `latest.yml`, `latest-mac.yml`, `latest-linux.yml`, `builder-debug.yml`
+  - **Checksums** (1): `SHA256SUMS.txt`
 - Auto-generated release notes list the PRs merged since the previous tag
 
 ## 8. Post-stable cleanup (after stable `vX.Y.0` ships)
