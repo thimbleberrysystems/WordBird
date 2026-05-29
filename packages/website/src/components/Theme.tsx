@@ -1,12 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react'
-import themeMd from '../markdowns/themes.md'
-import mermaid from 'mermaid'
-import { addThemeStyle } from '../utils/theme'
-import markdownToHtml from '../utils/markdownToHtml'
+'use client'
 
-import 'katex/dist/katex.min.css'
-import '../themes/default.css'
-import './Theme.css'
+import { useState, useRef, useEffect } from 'react'
+import { addThemeStyle } from '@/utils/theme'
+import { markdownHtml } from '@/generated/markdown-html'
+import { setMermaidTheme, runMermaid } from '@/lib/mermaid'
 
 interface ThemeItem {
   name: string
@@ -15,92 +12,57 @@ interface ThemeItem {
 }
 
 const lightThemes: ThemeItem[] = [
-  {
-    name: 'Cadmium Light',
-    label: 'light',
-    color: 'rgba(33, 181, 111, 1)'
-  },
-  {
-    name: 'Graphite Light',
-    label: 'graphite',
-    color: 'rgb(104, 134, 170)'
-  },
-  {
-    name: 'Ulysses Light',
-    label: 'ulysses',
-    color: 'rgb(12, 139, 186)'
-  }
+  { name: 'Cadmium Light', label: 'light', color: 'rgba(33, 181, 111, 1)' },
+  { name: 'Graphite Light', label: 'graphite', color: 'rgb(104, 134, 170)' },
+  { name: 'Ulysses Light', label: 'ulysses', color: 'rgb(12, 139, 186)' }
 ]
 
 const darkThemes: ThemeItem[] = [
-  {
-    name: 'Dark',
-    label: 'dark',
-    color: '#409eff'
-  },
-  {
-    name: 'Material Dark',
-    label: 'material-dark',
-    color: '#f48237'
-  },
-  {
-    name: 'One Dark',
-    label: 'one-dark',
-    color: '#e2c08d'
-  }
+  { name: 'Dark', label: 'dark', color: '#409eff' },
+  { name: 'Material Dark', label: 'material-dark', color: '#f48237' },
+  { name: 'One Dark', label: 'one-dark', color: '#e2c08d' }
 ]
+
+const isDarkLabel = (label: string) => /dark/i.test(label)
 
 const Theme: React.FC = () => {
   const [currentTheme, setCurrentTheme] = useState<ThemeItem>(lightThemes[0])
-  const [themeHtml, setThemeHtml] = useState<string>('')
   const muyaContainerRef = useRef<HTMLDivElement>(null)
+  const themeHtml = markdownHtml.themes ?? ''
+  const isDark = isDarkLabel(currentTheme.label)
 
+  // Swap the page CSS on every theme change (light themes need this too).
   useEffect(() => {
+    addThemeStyle(currentTheme.label)
+  }, [currentTheme])
+
+  // Repaint mermaid only when darkness flips: all light themes share mermaid's
+  // 'default' theme and all dark themes share 'dark', so light↔light switches
+  // do not need a re-render. Initial mount also runs here.
+  useEffect(() => {
+    const container = muyaContainerRef.current
+    if (!container) return
     let cancelled = false
-    markdownToHtml(themeMd)
-      .then(html => {
-        if (!cancelled) setThemeHtml(html)
+    void (async () => {
+      await setMermaidTheme(isDark ? 'dark' : 'default')
+      if (cancelled) return
+      const nodes = container.querySelectorAll<HTMLElement>('div.mermaid')
+      nodes.forEach((n) => {
+        const src = n.getAttribute('data-source')
+        if (src) n.textContent = src
+        n.removeAttribute('data-processed')
       })
-      .catch(error => {
-        console.error('Error rendering theme markdown:', error)
-        if (!cancelled) setThemeHtml('<p>Error rendering theme content</p>')
-      })
+      await runMermaid(Array.from(nodes))
+    })()
     return () => {
       cancelled = true
     }
-  }, [])
-
-  useEffect(() => {
-    if (!themeHtml || !muyaContainerRef.current) return
-    const codes = muyaContainerRef.current.querySelectorAll('code.language-mermaid')
-    for (const code of codes) {
-      const preEle = code.parentNode as HTMLElement
-      const mermaidContainer = document.createElement('div')
-      mermaidContainer.innerHTML = code.innerHTML
-      mermaidContainer.classList.add('mermaid')
-      preEle.replaceWith(mermaidContainer)
-    }
-    mermaid.init({}, muyaContainerRef.current.querySelectorAll('div.mermaid'))
-  }, [themeHtml])
-
-  const selectTheme = (theme: ThemeItem) => {
-    if (/dark/i.test(theme.label)) {
-      mermaid.initialize({
-        theme: 'dark'
-      })
-    } else {
-      mermaid.initialize({
-        theme: 'default'
-      })
-    }
-    addThemeStyle(theme.label)
-    setCurrentTheme(theme)
-  }
+  }, [isDark])
 
   return (
     <div className="theme">
-      <h2 className="slogan" id="themes">&#123; Themes &#125;</h2>
-      <img src={new URL('../assets/notes.image.svg', import.meta.url).href} alt="" className="bg-image" />
+      <h2 className="slogan" id="themes">{'{ Themes }'}</h2>
+      <img src="/assets/notes.image.svg" alt="" className="bg-image" />
       <div className="app-container">
         <div className="app-header">
           <span className="dot red"></span>
@@ -118,7 +80,7 @@ const Theme: React.FC = () => {
               <li
                 key={theme.name}
                 className={theme.name === currentTheme.name ? 'active' : ''}
-                onClick={() => selectTheme(theme)}
+                onClick={() => setCurrentTheme(theme)}
               >
                 <span style={{ background: theme.color, boxShadow: `0 3px 12px 0 ${theme.color}` }}></span>
                 <span>{theme.name}</span>
@@ -133,7 +95,7 @@ const Theme: React.FC = () => {
               <li
                 key={theme.name}
                 className={theme.name === currentTheme.name ? 'active' : ''}
-                onClick={() => selectTheme(theme)}
+                onClick={() => setCurrentTheme(theme)}
               >
                 <span style={{ background: theme.color, boxShadow: `0 3px 12px 0 ${theme.color}` }}></span>
                 <span>{theme.name}</span>
