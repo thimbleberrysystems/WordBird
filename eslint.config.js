@@ -15,11 +15,15 @@ export default [
   {
     ignores: [
       '.claude/**',
-      'out/**',
-      'dist/**',
-      'src/muya/lib/assets/libs/**',
-      'src/muya/lib/parser/marked/urlify.js',
-      'src/renderer/src/assets/symbolIcon/index.js',
+      '**/out/**',
+      '**/dist/**',
+      // The website ships with its own ESLint v8 config (React conventions).
+      // The root config here is desktop-focused; mixing the two surfaces
+      // pre-existing website style errors into desktop CI.
+      'packages/website/**',
+      'packages/muyajs/lib/assets/libs/**',
+      'packages/muyajs/lib/parser/marked/urlify.js',
+      'packages/desktop/src/renderer/src/assets/symbolIcon/index.js',
       '**/*.min.json',
       'test-results/**',
       'playwright-report/**'
@@ -73,6 +77,10 @@ export default [
       'no-unused-vars': 'off',
       'no-undef': 'off',
       'no-redeclare': 'off',
+      // Defer to @stylistic/no-extra-semi (set by neostandard) — it knows
+      // about leading-semi standard-style guards; the deprecated core rule
+      // does not.
+      'no-extra-semi': 'off',
       '@stylistic/indent': ['error', 2, { SwitchCase: 1, ignoreComments: true }],
       '@stylistic/semi': ['error', 'never'],
       '@stylistic/space-before-function-paren': ['error', 'never'],
@@ -110,16 +118,16 @@ export default [
   },
 
   // 6. JS/MJS/CJS files: keep Babel parser. After Commit 11 (allowJs:false),
-  // the only remaining JS in the source tree is src/muya/ (kept JS pending
+  // the only remaining JS in the source tree is packages/muyajs/ (kept JS pending
   // upstream TS muya replacement) + a couple of assets/symbolIcon files.
   // Narrow the JS-file scope to prevent stray .js files in the migrated
   // directories from slipping past the TS lint rules.
   {
     files: [
-      'src/muya/**/*.js',
-      'src/muya/**/*.mjs',
-      'src/muya/**/*.cjs',
-      'src/renderer/src/assets/symbolIcon/**/*.js',
+      'packages/muyajs/**/*.js',
+      'packages/muyajs/**/*.mjs',
+      'packages/muyajs/**/*.cjs',
+      'packages/desktop/src/renderer/src/assets/symbolIcon/**/*.js',
       'eslint.config.js'
     ],
     plugins: {
@@ -155,12 +163,12 @@ export default [
       'prefer-const': 'off',
       'no-prototype-builtins': 'off'
     },
-    ignores: ['node_modules', 'src/muya/dist/**/*', 'src/muya/webpack.config.js']
+    ignores: ['node_modules', 'packages/muyajs/dist/**/*', 'packages/muyajs/webpack.config.js']
   },
 
   // 7. Test files: add Vitest globals (covers both .js and .ts specs)
   {
-    files: ['test/**/*.js', 'test/**/*.ts'],
+    files: ['packages/desktop/test/**/*.js', 'packages/desktop/test/**/*.ts'],
     languageOptions: {
       globals: { ...globals.vitest }
     }
@@ -168,11 +176,12 @@ export default [
 
   // 8. Relax behavioral rules for the legacy muya editor engine (JS only — muya stays JS)
   {
-    files: ['src/muya/lib/**/*.js'],
+    files: ['packages/muyajs/lib/**/*.js'],
     rules: {
       'no-sequences': 'off',
       'no-unused-expressions': 'off',
       'no-return-assign': 'off',
+      'no-extra-semi': 'off',
       eqeqeq: 'warn',
       'no-var': 'warn'
     }
@@ -183,7 +192,7 @@ export default [
 
   // 10. i18n JSON locales
   {
-    files: ['src/shared/i18n/locales/*.json'],
+    files: ['packages/desktop/src/shared/i18n/locales/*.json'],
     plugins: {
       'i18n-json': pluginI18nJson
     },
@@ -193,7 +202,7 @@ export default [
       'i18n-json/identical-keys': [
         'error',
         {
-          filePath: 'src/shared/i18n/locales/en.json'
+          filePath: 'packages/desktop/src/shared/i18n/locales/en.json'
         }
       ]
     }
