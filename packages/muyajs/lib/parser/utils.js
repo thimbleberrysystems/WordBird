@@ -39,6 +39,30 @@ export const WHITELIST_ATTRIBUTES = Object.freeze([
 
 const UNICODE_WHITESPACE_REG = /^\s/
 
+// NON-STANDARD EXTENSION — this is a deliberate divergence from CommonMark.
+//
+// CommonMark spec 6.2 (https://spec.commonmark.org/0.31.2/#emphasis-and-strong-emphasis)
+// only counts Unicode whitespace and Unicode punctuation as flanking
+// boundaries. CJK Unified Ideographs are Lo (Letter, other) — neither
+// whitespace nor punctuation — so under a literal reading of the spec,
+// `中文**"加粗"**中文` MUST NOT open a strong run. GitHub/GFM behaves this way
+// and is, strictly speaking, spec-conformant.
+//
+// However, CJK scripts do not use spaces between words, so in practice this
+// rule denies emphasis to virtually any CJK paragraph that surrounds the
+// `**` run with punctuation (quotes, parentheses, brackets, …). Typora,
+// VSCode markdownlint, Joplin, and most CJK-oriented Markdown tools ship
+// the same extension we ship here: treat CJK ideographs (BMP + Ext-A +
+// Ext-B via surrogate pairs + Compatibility Ideographs), Hiragana,
+// Katakana, Halfwidth Katakana, and Hangul Syllables as boundary-equivalent
+// for purposes of the flanking check. The extension never *rejects*
+// emphasis that CommonMark accepts — it only widens what counts as a left
+// or right boundary — so all spec-conformant English inputs continue to
+// parse identically.
+//
+// Tracking: marktext/marktext#4307.
+const CJK_REG = /[぀-ヿ㐀-䶿一-鿿豈-﫿가-힯ｦ-ﾝ]|[\uD840-\uD87F][\uDC00-\uDFFF]/
+
 const validWidthAndHeight = value => {
   if (!/^\d{1,}$/.test(value)) return ''
   value = parseInt(value)
@@ -114,9 +138,41 @@ export const parseSrcAndTitle = (text = '') => {
   return { src, title }
 }
 
+// Extract the trailing Unicode code point of `s` as a 1- or 2-char string,
+// or '' when `s` is empty. `String.prototype.charAt` and bracket indexing
+// return a single UTF-16 code unit, splitting non-BMP code points into raw
+// surrogate halves — those halves never match PUNCTUATION_REG / CJK_REG /
+// UNICODE_WHITESPACE_REG, so the surrogate-pair branches in those regexes
+// are effectively dead when callers feed in half-surrogates. Use this helper
+// at every flanking-boundary read so non-BMP CJK ideographs (e.g. CJK Ext-B)
+// and non-BMP Unicode punctuation are actually testable.
+const lastCodePointChar = (s) => {
+  if (!s) return ''
+  const len = s.length
+  const lastUnit = s.charCodeAt(len - 1)
+  if (lastUnit >= 0xDC00 && lastUnit <= 0xDFFF && len >= 2) {
+    const prevUnit = s.charCodeAt(len - 2)
+    if (prevUnit >= 0xD800 && prevUnit <= 0xDBFF) return s.slice(len - 2)
+  }
+  return s.charAt(len - 1)
+}
+
+// Same idea at an arbitrary index. Returns undefined past the end so the
+// existing `|| '\n'` / `UNICODE_WHITESPACE_REG.test(undefined)` semantics
+// at callers are preserved verbatim.
+const codePointCharAt = (s, i) => {
+  if (i >= s.length) return undefined
+  const unit = s.charCodeAt(i)
+  if (unit >= 0xD800 && unit <= 0xDBFF && i + 1 < s.length) {
+    const next = s.charCodeAt(i + 1)
+    if (next >= 0xDC00 && next <= 0xDFFF) return s.slice(i, i + 2)
+  }
+  return s.charAt(i)
+}
+
 const canOpenEmphasis = (src, marker, pending) => {
-  const precededChar = pending.charAt(pending.length - 1) || '\n'
-  const followedChar = src[marker.length]
+  const precededChar = lastCodePointChar(pending) || '\n'
+  const followedChar = codePointCharAt(src, marker.length)
   // not followed by Unicode whitespace,
   if (UNICODE_WHITESPACE_REG.test(followedChar)) {
     return false
@@ -124,28 +180,32 @@ const canOpenEmphasis = (src, marker, pending) => {
   // and either (2a) not followed by a punctuation character,
   // or (2b) followed by a punctuation character and preceded by Unicode whitespace or a punctuation character.
   // For purposes of this definition, the beginning and the end of the line count as Unicode whitespace.
-  if (PUNCTUATION_REG.test(followedChar) && !(UNICODE_WHITESPACE_REG.test(precededChar) || PUNCTUATION_REG.test(precededChar))) {
+  // Non-standard CJK widening (see CJK_REG block above) — additive only:
+  // CJK ideographs are accepted as "preceded by" boundary, on top of the
+  // CommonMark-defined whitespace/punctuation set.
+  if (PUNCTUATION_REG.test(followedChar) && !(UNICODE_WHITESPACE_REG.test(precededChar) || PUNCTUATION_REG.test(precededChar) || CJK_REG.test(precededChar))) {
     return false
   }
-  if (/_/.test(marker) && !(UNICODE_WHITESPACE_REG.test(precededChar) || PUNCTUATION_REG.test(precededChar))) {
+  if (/_/.test(marker) && !(UNICODE_WHITESPACE_REG.test(precededChar) || PUNCTUATION_REG.test(precededChar) || CJK_REG.test(precededChar))) {
     return false
   }
   return true
 }
 
 const canCloseEmphasis = (src, offset, marker) => {
-  const precededChar = src[offset - marker.length - 1]
-  const followedChar = src[offset] || '\n'
+  const precededChar = lastCodePointChar(src.substring(0, offset - marker.length))
+  const followedChar = codePointCharAt(src, offset) || '\n'
   // not preceded by Unicode whitespace,
   if (UNICODE_WHITESPACE_REG.test(precededChar)) {
     return false
   }
   // either (2a) not preceded by a punctuation character,
   // or (2b) preceded by a punctuation character and followed by Unicode whitespace or a punctuation character.
-  if (PUNCTUATION_REG.test(precededChar) && !(UNICODE_WHITESPACE_REG.test(followedChar) || PUNCTUATION_REG.test(followedChar))) {
+  // Non-standard CJK widening: symmetric to canOpenEmphasis.
+  if (PUNCTUATION_REG.test(precededChar) && !(UNICODE_WHITESPACE_REG.test(followedChar) || PUNCTUATION_REG.test(followedChar) || CJK_REG.test(followedChar))) {
     return false
   }
-  if (/_/.test(marker) && !(UNICODE_WHITESPACE_REG.test(followedChar) || PUNCTUATION_REG.test(followedChar))) {
+  if (/_/.test(marker) && !(UNICODE_WHITESPACE_REG.test(followedChar) || PUNCTUATION_REG.test(followedChar) || CJK_REG.test(followedChar))) {
     return false
   }
   return true
