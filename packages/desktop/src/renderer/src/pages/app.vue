@@ -17,17 +17,22 @@
         v-if="!init"
         class="editor-placeholder"
       />
-      <recent v-if="!hasCurrentFile && init" />
-      <editor-with-tabs
-        v-if="hasCurrentFile && init"
-        :markdown="markdown"
-        :cursor="cursor"
-        :muya-index-cursor="muyaIndexCursor"
-        :source-code="sourceCode"
-        :show-tab-bar="showTabBar"
-        :text-direction="textDirection"
-        :platform="platform"
-      />
+      <div v-else class="main-workspace">
+        <div class="editor-area">
+          <recent v-if="!hasCurrentFile" />
+          <editor-with-tabs
+            v-if="hasCurrentFile"
+            :markdown="markdown"
+            :cursor="cursor"
+            :muya-index-cursor="muyaIndexCursor"
+            :source-code="sourceCode"
+            :show-tab-bar="showTabBar"
+            :text-direction="textDirection"
+            :platform="platform"
+          />
+        </div>
+        <RightPrompt />
+      </div>
       <command-palette />
       <about-dialog />
       <export-setting-dialog />
@@ -46,6 +51,7 @@ import Recent from '@/components/recent/index.vue'
 import EditorWithTabs from '@/components/editorWithTabs/index.vue'
 import TitleBar from '@/components/titleBar/index.vue'
 import SideBar from '@/components/sideBar/index.vue'
+import RightPrompt from '@/components/rightPrompt/RightPrompt.vue'
 import AboutDialog from '@/components/about/index.vue'
 import CommandPalette from '@/components/commandPalette/index.vue'
 import ExportSettingDialog from '@/components/exportSettings/index.vue'
@@ -245,5 +251,28 @@ onMounted(async () => {
   & > .editor {
     flex: 1;
   }
+}
+
+.main-workspace {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.editor-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.editor-area > .editor-placeholder,
+.editor-area > recent,
+.editor-area > editor-with-tabs {
+  min-width: 0;
 }
 </style>
