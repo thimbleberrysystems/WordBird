@@ -48,7 +48,7 @@
             @click="openAiSettings"
           >
             <span class="status-indicator" :class="{ 'connected': aiIsConnected }"></span>
-            {{ aiIsConnected ? 'Connected' : 'Disconnected' }}
+            {{ currentModelName }}
           </el-button>
 
           <el-button
@@ -75,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '../../store/preferences'
@@ -87,6 +87,13 @@ import {
 // Store
 const preferencesStore = usePreferencesStore()
 const { aiProvider, aiConfigs, aiIsConnected } = storeToRefs(preferencesStore)
+
+const currentModelName = computed(() => {
+  if (!aiIsConnected.value) return 'Disconnected'
+  const config = aiConfigs.value[aiProvider.value]
+  const name = config?.model || 'Connected'
+  return name.length > 15 ? name.substring(0, 12) + '...' : name
+})
 
 // Reactive state
 const promptBody = ref<HTMLElement | null>(null)
