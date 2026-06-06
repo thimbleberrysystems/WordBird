@@ -229,7 +229,8 @@ const uploaderAPI = {
 const projectAPI = {
   create: (args: ProjectCreateArgs = {}) => invoke('mt::project:create', args),
   load: (args: ProjectLoadArgs = {}) => invoke('mt::project:load', args),
-  validate: (path: string) => invoke('mt::project:validate', path)
+  validate: (path: string) => invoke('mt::project:validate', path),
+  saveAs: (currentPath: string) => invoke('mt::project:save-as', currentPath)
 }
 
 const fontsAPI = {

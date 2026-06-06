@@ -269,6 +269,7 @@ export interface IpcMainEventChannels {
   'mt::open-directory': [directoryPath: string]
   'mt::project:create-request': []
   'mt::project:load-request': []
+  'mt::project:save-as-request': []
   'mt::open-new-tab': [
     markdownDocument: MarkdownDocument | null,
     options?: TabOptions,

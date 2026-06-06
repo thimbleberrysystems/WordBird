@@ -13,6 +13,9 @@
       "open": "打开",
       "openFile": "打开文件…",
       "openFolder": "打开文件夹…",
+      "createProject": "创建项目...",
+      "loadProject": "加载项目...",
+      "saveProjectAs": "项目另存为...",
       "openRecent": "打开最近",
       "clearRecentlyUsed": "清除最近使用",
       "save": "保存",
@@ -384,8 +387,9 @@
     "deleteTable": "删除表格"
   },
   "recent": {
-    "noTabsOpen": "您没有打开的标签页。",
-    "newFile": "新建文件"
+    "noProjectOpen": "您没有打开的项目。",
+    "createProject": "创建项目",
+    "loadProject": "加载项目"
   },
   "import": {
     "title": "导入或打开",

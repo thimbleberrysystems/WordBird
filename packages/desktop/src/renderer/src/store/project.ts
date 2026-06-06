@@ -193,6 +193,18 @@ export const useProjectStore = defineStore('project', () => {
     window.electron.ipcRenderer.on('mt::project:load-request', () => {
       loadProject()
     })
+    window.electron.ipcRenderer.on('mt::project:save-as-request', () => {
+      saveProjectAs()
+    })
+  }
+
+  const saveProjectAs = async(): Promise<void> => {
+    if (!currentProjectPath.value) return
+    try {
+      await window.electron.project.saveAs(currentProjectPath.value)
+    } catch (err) {
+      console.error('Project save as failed:', err)
+    }
   }
 
   function LISTEN_FOR_UPDATE_PROJECT(): void {

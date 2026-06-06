@@ -100,7 +100,11 @@ export const registerProjectHandlers = (): void => {
       }
 
       // Write project marker file
-      const markerPath = path.join(location, 'wordbird.json')
+      const dotWordbirdPath = path.join(location, '.wordbird')
+      if (!fs.existsSync(dotWordbirdPath)) {
+        fs.mkdirSync(dotWordbirdPath, { recursive: true })
+      }
+      const markerPath = path.join(dotWordbirdPath, 'project.json')
       fs.writeFileSync(markerPath, JSON.stringify({
         name,
         createdAt: new Date().toISOString(),
@@ -131,7 +135,7 @@ export const registerProjectHandlers = (): void => {
     }
 
     // Phase 2: Validate project marker
-    const markerPath = path.join(loadPath, 'wordbird.json')
+    const markerPath = path.join(loadPath, '.wordbird', 'project.json')
     const hasMarker = fs.existsSync(markerPath)
 
     if (!hasMarker) {
@@ -149,6 +153,35 @@ export const registerProjectHandlers = (): void => {
     }
 
     return { projectPath: loadPath, valid: true }
+  })
+
+  ipcMain.handle('mt::project:save-as', async(e, currentPath: string) => {
+    const win = BrowserWindow.fromWebContents(e.sender)
+    const destPath = await chooseDirectory(win)
+
+    if (!destPath || destPath === currentPath) {
+      return { success: false }
+    }
+
+    try {
+      const fsExtra = require('fs-extra')
+      await fsExtra.copy(currentPath, destPath, {
+        overwrite: true,
+        errorOnExist: false
+      })
+
+      updateLastOpenedFolder(win, destPath)
+
+      if (win) {
+        ipcMain.emit('app-open-directory-by-id', win.id, destPath, false, true)
+        win.close()
+      }
+
+      return { success: true, projectPath: destPath }
+    } catch (err) {
+      console.error('Project save-as failed:', err)
+      return { success: false }
+    }
   })
 
   ipcMain.handle('mt::project:validate', async(_e, path: string) => {

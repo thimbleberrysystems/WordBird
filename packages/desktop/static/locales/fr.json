@@ -13,6 +13,9 @@
       "open": "Ouvrir",
       "openFile": "Ouvrir un fichier...",
       "openFolder": "Ouvrir un dossier...",
+      "createProject": "Créer un projet...",
+      "loadProject": "Charger un projet...",
+      "saveProjectAs": "Enregistrer le projet sous...",
       "openRecent": "Ouvrir récent",
       "clearRecentlyUsed": "Effacer les récents",
       "save": "Enregistrer",
@@ -384,8 +387,9 @@
     "deleteTable": "Supprimer le Tableau"
   },
   "recent": {
-    "noTabsOpen": "Vous n'avez aucun onglet ouvert.",
-    "newFile": "Nouveau fichier"
+    "noProjectOpen": "Aucun projet ouvert.",
+    "createProject": "Créer un projet",
+    "loadProject": "Charger un projet"
   },
   "import": {
     "title": "Importer ou ouvrir",

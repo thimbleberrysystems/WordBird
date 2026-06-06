@@ -12,14 +12,14 @@ import type { Encoding } from 'common/encoding'
 import type { LineEnding } from '@shared/types/files'
 
 /**
- * Check if a directory is a valid project (contains wordbird.json marker).
+ * Check if a directory is a valid project (contains .wordbird/project.json marker).
  */
 export const isValidProjectPath = (pathname: string): boolean => {
   try {
     if (!isDirectory2(pathname)) {
       return false
     }
-    const markerPath = path.join(pathname, 'wordbird.json')
+    const markerPath = path.join(pathname, '.wordbird', 'project.json')
     return fs.existsSync(markerPath)
   } catch (err) {
     return false

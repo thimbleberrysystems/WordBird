@@ -13,6 +13,9 @@
       "open": "Abrir",
       "openFile": "Abrir Archivo...",
       "openFolder": "Abrir Carpeta...",
+      "createProject": "Crear proyecto...",
+      "loadProject": "Cargar proyecto...",
+      "saveProjectAs": "Guardar proyecto como...",
       "openRecent": "Abrir Reciente",
       "clearRecentlyUsed": "Limpiar Recientes",
       "save": "Guardar",
@@ -383,8 +386,9 @@
     "deleteTable": "Eliminar Tabla"
   },
   "recent": {
-    "noTabsOpen": "No tienes pestañas abiertas.",
-    "newFile": "Nuevo Archivo"
+    "noProjectOpen": "No tienes ningún proyecto abierto.",
+    "createProject": "Crear proyecto",
+    "loadProject": "Cargar proyecto"
   },
   "import": {
     "title": "Importar o Abrir",

@@ -33,6 +33,12 @@ export default function(
       click(_menuItem, browserWindow) {
         actions.loadProject((browserWindow as BrowserWindow | undefined) ?? null)
       }
+    },
+    {
+      label: t('menu.file.saveProjectAs'),
+      click(_menuItem, browserWindow) {
+        actions.saveProjectAs((browserWindow as BrowserWindow | undefined) ?? null)
+      }
     }
   ]
 

@@ -1,4 +1,5 @@
 import { rename as fsRename } from 'fs-extra'
+import fsPromises from 'fs/promises'
 import path from 'path'
 import {
   app,
@@ -574,7 +575,7 @@ ipcMain.on('mt::ask-for-open-project-in-sidebar', async(e) => {
       dialog.showMessageBox(win, {
         type: 'warning',
         message: t('Project Validation Error'),
-        detail: 'Selected folder is not a valid project (missing wordbird.json).'
+        detail: 'Selected folder is not a valid project (missing .wordbird/project.json).'
       })
     }
   }
@@ -734,6 +735,12 @@ export const createProject = (win: Win): void => {
 export const loadProject = (win: Win): void => {
   if (win && win.webContents) {
     win.webContents.send('mt::project:load-request')
+  }
+}
+
+export const saveProjectAs = (win: Win): void => {
+  if (win && win.webContents) {
+    win.webContents.send('mt::project:save-as-request')
   }
 }
 

@@ -13,6 +13,9 @@
       "open": "Öffnen",
       "openFile": "Datei öffnen...",
       "openFolder": "Ordner öffnen...",
+      "createProject": "Projekt erstellen...",
+      "loadProject": "Projekt laden...",
+      "saveProjectAs": "Projekt speichern unter...",
       "openRecent": "Zuletzt verwendet",
       "clearRecentlyUsed": "Zuletzt verwendet löschen",
       "save": "Speichern",
@@ -383,8 +386,9 @@
     "deleteTable": "Tabelle löschen"
   },
   "recent": {
-    "noTabsOpen": "Sie haben keine Tabs geöffnet.",
-    "newFile": "Neue Datei"
+    "noProjectOpen": "Kein Projekt geöffnet.",
+    "createProject": "Projekt erstellen",
+    "loadProject": "Projekt laden"
   },
   "import": {
     "title": "Importieren oder öffnen",
