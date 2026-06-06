@@ -1,7 +1,7 @@
 <template>
-  <aside class="right-prompt" role="complementary" aria-label="WordBird chat panel">
+  <aside class="right-prompt" role="complementary" aria-label="Biscuit chat panel">
     <header class="prompt-header">
-      <div class="prompt-title">WordBird</div>
+      <div class="prompt-title">Biscuit</div>
     </header>
 
     <section class="prompt-body" ref="promptBody">
@@ -34,7 +34,7 @@
             v-model="userInput"
             rows="4"
             aria-label="Chat input"
-            placeholder="Type your message... (Enter to send, Shift+Enter for newline)"
+              placeholder="Greetings! I'm Biscuit. Bring the ink and your wildest ideas, and let's bring them to life."
             @keydown.enter.exact.prevent="sendMessage"
           ></textarea>
         </div>
