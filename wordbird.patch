@@ -1,0 +1,930 @@
+diff --git a/packages/desktop/src/main/app/accessor.ts b/packages/desktop/src/main/app/accessor.ts
+index 90e7a314..ca0c76e5 100644
+--- a/packages/desktop/src/main/app/accessor.ts
++++ b/packages/desktop/src/main/app/accessor.ts
+@@ -37,6 +37,7 @@ class Accessor {
+ 
+     this.preferences = new Preference(this.paths)
+     this.dataCenter = new DataCenter(this.paths)
++    this.preferences.setDataCenter(this.dataCenter)
+     this.editorBufferStore = new EditorBufferStore(this.paths)
+ 
+     this.commandManager = CommandManager
+diff --git a/packages/desktop/src/main/dataCenter/index.ts b/packages/desktop/src/main/dataCenter/index.ts
+index 38ba1dff..3a813b77 100644
+--- a/packages/desktop/src/main/dataCenter/index.ts
++++ b/packages/desktop/src/main/dataCenter/index.ts
+@@ -36,7 +36,13 @@ class DataCenter extends TypedEmitter<DataCenterEvents> {
+     this.dataCenterPath = dataCenterPath
+     this.userDataPath = userDataPath
+     this.serviceName = 'marktext'
+-    this.encryptKeys = []
++    this.encryptKeys = [
++      'openai_apiKey',
++      'anthropic_apiKey',
++      'google_apiKey',
++      'ollama_apiKey',
++      'openrouter_apiKey'
++    ]
+     this.hasDataCenterFile = fs.existsSync(
+       path.join(this.dataCenterPath, `./${DATA_CENTER_NAME}.json`)
+     )
+diff --git a/packages/desktop/src/main/preferences/index.ts b/packages/desktop/src/main/preferences/index.ts
+index aedd9eff..060005fe 100644
+--- a/packages/desktop/src/main/preferences/index.ts
++++ b/packages/desktop/src/main/preferences/index.ts
+@@ -1,7 +1,7 @@
+ import fs from 'fs'
+ import path from 'path'
+ import Store from 'electron-store'
+-import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron'
++import { app, BrowserWindow, ipcMain, nativeTheme, dialog } from 'electron'
+ import log from 'electron-log'
+ import { isWindows } from '../config'
+ import { hasSameKeys } from '../utils'
+@@ -9,6 +9,7 @@ import { getSupportedLanguages, isLanguageSupported } from 'common/i18n'
+ import { TypedEmitter } from '@shared/types/typedEmitter'
+ import type { IUserPreferences } from '@shared/types/preferences'
+ import schema from './schema.json'
++import type DataCenter from '../dataCenter'
+ 
+ const PREFERENCES_FILE_NAME = 'preferences'
+ 
+@@ -27,6 +28,7 @@ class Preference extends TypedEmitter<PreferenceEvents> {
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   public readonly store: Store<any>
+   public readonly staticPath: string
++  private dataCenter: DataCenter | null = null
+ 
+   /**
+    * @param paths The path instance.
+@@ -133,7 +135,30 @@ class Preference extends TypedEmitter<PreferenceEvents> {
+     return this.store.store as IUserPreferences
+   }
+ 
++  setDataCenter(dataCenter: DataCenter): void {
++    this.dataCenter = dataCenter
++  }
++
+   setItem(key: string, value: unknown): void {
++    if (key === 'aiConfigs' && this.dataCenter) {
++      const aiConfigs = value as Record<string, any>
++      for (const provider of Object.keys(aiConfigs)) {
++        const config = aiConfigs[provider]
++        // ONLY attempt to encrypt if there is an actual non-empty string to encrypt
++        if (config && typeof config.apiKey === 'string' && config.apiKey.trim().length > 0) {
++          // Move apiKey to DataCenter (keytar)
++          try {
++            this.dataCenter.setItem(`${provider}_apiKey`, config.apiKey)
++            // Store empty string in preferences.json to keep schema valid but avoid duplication
++            config.apiKey = ''
++          } catch (err) {
++            log.error(`[AI-Config] Failed to encrypt ${provider} key:`, err)
++            // If encryption fails, we leave it as-is in the preference file 
++            // rather than losing the user's key entirely.
++          }
++        }
++      }
++    }
+     this.store.set(key, value)
+     ipcMain.emit('broadcast-preferences-changed', { [key]: value })
+   }
+@@ -154,6 +179,8 @@ class Preference extends TypedEmitter<PreferenceEvents> {
+     }
+ 
+     Object.keys(settings).forEach((key) => {
++      // Skip internal electron-store keys that might be in exported files
++      if (key === '__internal__') return
+       this.setItem(key, settings[key])
+     })
+   }
+@@ -166,24 +193,108 @@ class Preference extends TypedEmitter<PreferenceEvents> {
+     return endOfLine === 'crlf' || isWindows ? 'crlf' : 'lf'
+   }
+ 
+-  exportJSON(): void {
+-    // todo
++  async exportJSON(win: BrowserWindow): Promise<void> {
++    const { filePath } = await dialog.showSaveDialog(win, {
++      title: 'Export Preferences',
++      defaultPath: 'preferences.json',
++      filters: [{ name: 'JSON', extensions: ['json'] }]
++    })
++
++    if (filePath) {
++      const prefs = this.getAll()
++      
++      // Hydrate for export so the file contains the keys
++      if (this.dataCenter && prefs.aiConfigs) {
++        for (const provider of Object.keys(prefs.aiConfigs)) {
++          try {
++            const apiKey = await this.dataCenter.getItem(`${provider}_apiKey`)
++            if (apiKey) {
++              prefs.aiConfigs[provider].apiKey = apiKey
++            }
++          } catch (err) {
++            log.warn(`[AI-Config] Could not decrypt ${provider} key for export (likely no keyring service)`)
++          }
++        }
++      }
++
++      const content = JSON.stringify(prefs, null, 2)
++      await fs.promises.writeFile(filePath, content, 'utf8')
++    }
+   }
+ 
+-  importJSON(): void {
+-    // todo
++  async importJSON(win: BrowserWindow): Promise<void> {
++    const { filePaths } = await dialog.showOpenDialog(win, {
++      title: 'Import Preferences',
++      filters: [{ name: 'JSON', extensions: ['json'] }],
++      properties: ['openFile']
++    })
++
++    if (filePaths && filePaths.length > 0) {
++      try {
++        const content = await fs.promises.readFile(filePaths[0], 'utf8')
++        const settings = JSON.parse(content)
++        this.setItems(settings)
++        
++        // Hydrate after import to ensure renderer gets the decrypted keys
++        const hydrated = this.getAll()
++        if (this.dataCenter && hydrated.aiConfigs) {
++          for (const provider of Object.keys(hydrated.aiConfigs)) {
++            try {
++              const apiKey = await this.dataCenter.getItem(`${provider}_apiKey`)
++              if (apiKey) {
++                hydrated.aiConfigs[provider].apiKey = apiKey
++              }
++            } catch (err) {
++              log.warn(`[AI-Config] Could not decrypt ${provider} key after import`)
++            }
++          }
++        }
++        win.webContents.send('mt::user-preference', hydrated)
++      } catch (err) {
++        log.error('Error importing preferences:', err)
++        dialog.showErrorBox('Import Error', 'Failed to import preferences. Please make sure the file is a valid JSON.')
++      }
++    }
+   }
+ 
+   _listenForIpcMain(): void {
+-    ipcMain.on('mt::ask-for-user-preference', (e) => {
++    ipcMain.on('mt::ask-for-user-preference', async (e) => {
+       const win = BrowserWindow.fromWebContents(e.sender)
+       if (win) {
+-        win.webContents.send('mt::user-preference', this.getAll())
++        const prefs = this.getAll()
++        
++        // Hydrate AI configs with encrypted keys from DataCenter
++        if (this.dataCenter && prefs.aiConfigs) {
++          for (const provider of Object.keys(prefs.aiConfigs)) {
++            const apiKey = await this.dataCenter.getItem(`${provider}_apiKey`)
++            if (apiKey) {
++              prefs.aiConfigs[provider].apiKey = apiKey
++            }
++          }
++        }
++        
++        win.webContents.send('mt::user-preference', prefs)
+       }
+     })
+-    ipcMain.on('mt::set-user-preference', (_e, settings: Record<string, unknown>) => {
+-      this.setItems(settings)
++    
++    ipcMain.on('mt::set-user-preference', (_e, settingsValue: Record<string, unknown>) => {
++      this.setItems(settingsValue)
++    })
++    
++    ipcMain.on('mt::export-preferences', (e) => {
++      const win = BrowserWindow.fromWebContents(e.sender)
++      if (win) {
++        this.exportJSON(win)
++      }
++    })
++
++    ipcMain.on('mt::import-preferences', (e) => {
++      const win = BrowserWindow.fromWebContents(e.sender)
++      if (win) {
++        this.importJSON(win)
++      }
+     })
++    
+     ipcMain.on('mt::cmd-toggle-autosave', () => {
+       this.setItem('autoSave', !this.getItem('autoSave'))
+     })
+diff --git a/packages/desktop/src/main/preferences/schema.json b/packages/desktop/src/main/preferences/schema.json
+index e69eb143..ef0265e6 100644
+--- a/packages/desktop/src/main/preferences/schema.json
++++ b/packages/desktop/src/main/preferences/schema.json
+@@ -405,11 +405,22 @@
+   "aiProvider": {
+     "description": "AI--The selected AI provider.",
+     "type": "string",
++    "enum": ["openai", "anthropic", "google", "ollama", "openrouter"],
+     "default": "openai"
+   },
+   "aiConfigs": {
+     "description": "AI--The configurations for each AI provider.--internal",
+     "type": "object",
++    "additionalProperties": {
++      "type": "object",
++      "properties": {
++        "apiKey": { "type": "string", "description": "Obsolete: Moved to DataCenter/Keychain for encryption" },
++        "baseUrl": { "type": "string" },
++        "model": { "type": "string" },
++        "temperature": { "type": "number" },
++        "maxTokens": { "type": "number" }
++      }
++    },
+     "default": {
+       "openai": { "apiKey": "", "model": "gpt-4o" },
+       "anthropic": { "apiKey": "", "model": "claude-3-5-sonnet-latest" },
+diff --git a/packages/desktop/src/renderer/src/components/rightPrompt/RightPrompt.vue b/packages/desktop/src/renderer/src/components/rightPrompt/RightPrompt.vue
+index 1a4ffc72..57b820e9 100644
+--- a/packages/desktop/src/renderer/src/components/rightPrompt/RightPrompt.vue
++++ b/packages/desktop/src/renderer/src/components/rightPrompt/RightPrompt.vue
+@@ -11,10 +11,20 @@
+         :class="['message', `message--${message.role}`]"
+       >
+         <div class="message__header">
+-          <span class="message__label">{{ message.role === 'user' ? 'You' : 'AI' }}</span>
++          <span class="message__label">
++            {{ message.role === 'user' ? 'You' : (message.role === 'error' ? 'System' : 'AI') }}
++          </span>
+         </div>
+         <div class="message__text">{{ message.content }}</div>
+       </div>
++
++      <!-- Thinking Indicator -->
++      <div v-if="sending" class="message message--assistant message--thinking">
++        <div class="message__header">
++          <span class="message__label">AI</span>
++        </div>
++        <div class="message__text italic">Thinking...</div>
++      </div>
+     </section>
+ 
+     <footer class="prompt-footer">
+@@ -29,15 +39,24 @@
+           ></textarea>
+         </div>
+         <div class="prompt-input-actions">
+-          <el-button
+-            type="primary"
+-            size="small"
+-            :disabled="!aiIsConnected || !userInput.trim()"
+-            :loading="sending"
+-            @click="sendMessage"
+-          >
+-            Send
+-          </el-button>
++            <!-- Stop button: appears to the left of Send, cancels ongoing request -->
++            <el-button
++              type="danger"
++              size="small"
++              :disabled="!sending"
++              @click="stopGeneration"
++            >
++              Stop
++            </el-button>
++            <el-button
++              type="primary"
++              size="small"
++              :disabled="!aiIsConnected || !userInput.trim()"
++              :loading="sending"
++              @click="sendMessage"
++            >
++              Send
++            </el-button>
+         </div>
+       </div>
+     </footer>
+@@ -48,6 +67,7 @@
+ import { ref, nextTick, onMounted, watch } from 'vue'
+ import { ElMessage } from 'element-plus'
+ import { storeToRefs } from 'pinia'
++import { Promotion, VideoPause } from '@element-plus/icons-vue'
+ import { usePreferencesStore } from '../../store/preferences'
+ import { langGraphService } from '../../services/langgraph'
+ import type { AIProvider, IAIConfig, ILangGraphMessage } from '../../shared/types/langgraph'
+@@ -62,6 +82,7 @@ const userInput = ref('')
+ const aiIsConnected = ref(false)
+ const sending = ref(false)
+ const aiMessages = ref<ILangGraphMessage[]>([])
++const currentAbortController = ref<AbortController | null>(null)
+ 
+ // Connect to AI provider
+ async function connect(): Promise<void> {
+@@ -87,6 +108,16 @@ async function connect(): Promise<void> {
+       baseUrl: currentConfig.baseUrl,
+       model: currentConfig.model
+     }
++    
++    // Check if the service is already connected to this EXACT config
++    // to avoid redundant reconnections
++    if (langGraphService.isConnected && 
++        langGraphService.currentProvider === currentProvider &&
++        (langGraphService as any)._currentModel === (currentConfig.model || null)) {
++      aiIsConnected.value = true
++      return
++    }
++
+     await langGraphService.connect(config)
+     aiIsConnected.value = true
+     console.log('[RightPrompt] AI Connected successfully')
+@@ -105,6 +136,14 @@ onMounted(() => {
+   connect()
+ })
+ 
++// Stop generation
++function stopGeneration(): void {
++  if (currentAbortController.value) {
++    currentAbortController.value.abort()
++    currentAbortController.value = null
++  }
++}
++
+ // Send message to AI
+ async function sendMessage(): Promise<void> {
+   if (!userInput.value.trim() || !aiIsConnected.value || sending.value) return
+@@ -116,6 +155,9 @@ async function sendMessage(): Promise<void> {
+   aiMessages.value.push(userMessage)
+   userInput.value = ''
+   sending.value = true
++  
++  // Initialize AbortController for this request
++  currentAbortController.value = new AbortController()
+ 
+   // Auto-scroll to bottom
+   await nextTick()
+@@ -124,23 +166,46 @@ async function sendMessage(): Promise<void> {
+   }
+ 
+   try {
+-    const response = await langGraphService.sendMessage(aiMessages.value)
++    const response = await langGraphService.sendMessage(aiMessages.value, currentAbortController.value.signal)
+     if (response.content) {
+       aiMessages.value.push({
+         role: 'assistant',
+         content: response.content
+       })
+-      // Auto-scroll to bottom after response
+-      await nextTick()
+-      if (promptBody.value) {
+-        promptBody.value.scrollTop = promptBody.value.scrollHeight
+-      }
++    } else {
++      throw new Error('AI returned an empty response')
+     }
+-  } catch (error) {
++    // Auto-scroll to bottom after response
++    await nextTick()
++    if (promptBody.value) {
++      promptBody.value.scrollTop = promptBody.value.scrollHeight
++    }
++  } catch (error: any) {
+     console.error('[RightPrompt] Send message error:', error)
+-    ElMessage.error('Failed to send message: ' + (error as Error).message)
++    
++    // Check if it was aborted
++    if (error.message === 'Request aborted by user') {
++      aiMessages.value.push({
++        role: 'error',
++        content: 'Generation stopped by user.'
++      })
++    } else {
++      const errorMessage = error.message || String(error)
++      // Add error to chat history so user can see the hint
++      aiMessages.value.push({
++        role: 'error',
++        content: `Error: ${errorMessage}`
++      })
++      ElMessage.error('Failed to send message: ' + errorMessage)
++    }
++    
++    await nextTick()
++    if (promptBody.value) {
++      promptBody.value.scrollTop = promptBody.value.scrollHeight
++    }
+   } finally {
+     sending.value = false
++    currentAbortController.value = null
+   }
+ }
+ </script>
+@@ -193,6 +258,30 @@ async function sendMessage(): Promise<void> {
+   color: var(--color-secondary, #909399);
+ }
+ 
++.message--error .message__label {
++  color: #f56c6c;
++}
++
++.message--error .message__text {
++  color: #f56c6c;
++  font-size: 0.8rem;
++  background: rgba(245, 108, 108, 0.1);
++  padding: 8px;
++  border-radius: 4px;
++}
++
++.message--thinking .message__text {
++  color: var(--color-secondary, #909399);
++  font-style: italic;
++  animation: pulse 1.5s infinite ease-in-out;
++}
++
++@keyframes pulse {
++  0% { opacity: 0.6; }
++  50% { opacity: 1; }
++  100% { opacity: 0.6; }
++}
++
+ .message__header {
+   display: flex;
+   align-items: center;
+diff --git a/packages/desktop/src/renderer/src/prefComponents/ai/index.vue b/packages/desktop/src/renderer/src/prefComponents/ai/index.vue
+index f2e3fb0a..cbd70257 100644
+--- a/packages/desktop/src/renderer/src/prefComponents/ai/index.vue
++++ b/packages/desktop/src/renderer/src/prefComponents/ai/index.vue
+@@ -1,6 +1,8 @@
+ <template>
+   <div class="pref-ai">
+-    <h4>{{ t('preferences.ai.title') || 'AI Settings' }}</h4>
++    <div class="header-with-actions">
++      <h4>{{ t('preferences.ai.title') || 'AI Settings' }}</h4>
++    </div>
+     
+     <compound>
+       <template #children>
+@@ -47,19 +49,6 @@
+ 
+         <div v-if="connectionStatus?.type === 'success'" class="model-select-container">
+           <div class="dynamic-model-select">
+-            <div class="description-row space-between">
+-              <span class="description">Select model</span>
+-              <el-button 
+-                link 
+-                type="primary" 
+-                size="small"
+-                :loading="loadingModels"
+-                @click="fetchDynamicModels"
+-              >
+-                Refresh Models
+-              </el-button>
+-            </div>
+-            
+             <cur-select
+               :value="currentConfig.model"
+               :options="modelOptions"
+@@ -67,7 +56,22 @@
+               allow-create
+               placeholder="Select a model"
+               :on-change="(val: string) => updateConfig({ model: val })"
+-            />
++            >
++              <template #label>
++                <div class="description-row space-between">
++                  <span class="description">Select model</span>
++                  <el-button 
++                    link 
++                    type="primary" 
++                    size="small"
++                    :loading="loadingModels"
++                    @click="fetchDynamicModels"
++                  >
++                    Refresh Models
++                  </el-button>
++                </div>
++              </template>
++            </cur-select>
+             
+             <div class="action-group">
+               <el-button
+@@ -124,12 +128,11 @@ const providerOptions = [
+ // Computed
+ const currentConfig = computed(() => aiConfigs.value[aiProvider.value])
+ const defaultBaseUrl = computed(() => PROVIDER_BASE_URLS[aiProvider.value as AIProvider])
+-const requiresBaseUrl = computed(() => 
+-  ['ollama', 'openrouter'].includes(aiProvider.value) || 
+-  (aiProvider.value === 'openai' && currentConfig.value?.baseUrl)
+-)
++const requiresBaseUrl = computed(() => true) // Always allow custom endpoints for proxies/local tunnels
+ 
+-const modelOptions = computed(() => dynamicModels.value.map(m => ({ label: m, value: m })))
++const modelOptions = computed(() => {
++  return dynamicModels.value.map(m => ({ label: m, value: m }))
++})
+ 
+ // State
+ const loadingModels = ref(false)
+@@ -171,16 +174,21 @@ const fetchDynamicModels = async () => {
+   
+   try {
+     const config = currentConfig.value
++    // Note: langGraphService.fetchModels returns a fresh array from the API
+     const models = await langGraphService.fetchModels(
+       aiProvider.value as AIProvider, 
+       config.apiKey, 
+       config.baseUrl
+     )
+     
+-    if (models.length === 0) {
++    if (!models || models.length === 0) {
+       modelError.value = 'No models found. Please check your credentials.'
+     } else {
+-      dynamicModels.value = models
++      // Use assignment with spread to ensure a new reference for reactivity
++      dynamicModels.value = [...models]
++      
++      // Validation: If current model isn't in the list AND it's not a custom one, 
++      // we don't clear it yet, but we ensure the dropdown sees the new options
+     }
+   } catch (err) {
+     modelError.value = `Failed to fetch models: ${getErrorMessage(err)}`
+diff --git a/packages/desktop/src/renderer/src/prefComponents/common/select/index.vue b/packages/desktop/src/renderer/src/prefComponents/common/select/index.vue
+index 349469f7..68cde89c 100644
+--- a/packages/desktop/src/renderer/src/prefComponents/common/select/index.vue
++++ b/packages/desktop/src/renderer/src/prefComponents/common/select/index.vue
+@@ -19,8 +19,10 @@
+     <el-select
+       v-model="selectValue"
+       :disabled="disable"
++      v-bind="$attrs"
+       @change="select"
+     >
++      <slot name="label" />
+       <el-option
+         v-for="item in options"
+         :key="item.value"
+diff --git a/packages/desktop/src/renderer/src/prefComponents/sideBar/index.vue b/packages/desktop/src/renderer/src/prefComponents/sideBar/index.vue
+index 200a3964..b1d27e75 100644
+--- a/packages/desktop/src/renderer/src/prefComponents/sideBar/index.vue
++++ b/packages/desktop/src/renderer/src/prefComponents/sideBar/index.vue
+@@ -38,6 +38,23 @@
+         <span>{{ c.name }}</span>
+       </div>
+     </section>
++
++    <div class="sidebar-footer">
++      <el-button
++        link
++        size="small"
++        @click="exportConfigs"
++      >
++        {{ t('preferences.export') || 'Export' }}
++      </el-button>
++      <el-button
++        link
++        size="small"
++        @click="importConfigs"
++      >
++        {{ t('preferences.import') || 'Import' }}
++      </el-button>
++    </div>
+   </div>
+ </template>
+ <script setup lang="ts">
+@@ -72,6 +89,14 @@ const currentCategory = ref<string>('general')
+ const restaurants = ref<SearchEntry[]>([])
+ const state = ref<string>('')
+ 
++const exportConfigs = (): void => {
++  window.electron.ipcRenderer.send('mt::export-preferences')
++}
++
++const importConfigs = (): void => {
++  window.electron.ipcRenderer.send('mt::import-preferences')
++}
++
+ watch(
+   () => route.name,
+   (newRouteName) => {
+@@ -225,6 +250,16 @@ onUnmounted(() => {
+     }
+   }
+ }
++
++.sidebar-footer {
++  -webkit-app-region: no-drag;
++  margin-top: auto;
++  padding: 16px;
++  display: flex;
++  justify-content: space-around;
++  border-top: 1px solid var(--sidebarBorderColor, rgba(128, 128, 128, 0.1));
++}
++
+ .category {
+   -webkit-app-region: no-drag;
+   overflow-y: auto;
+diff --git a/packages/desktop/src/renderer/src/services/langgraph.ts b/packages/desktop/src/renderer/src/services/langgraph.ts
+index 52255f40..ab787573 100644
+--- a/packages/desktop/src/renderer/src/services/langgraph.ts
++++ b/packages/desktop/src/renderer/src/services/langgraph.ts
+@@ -34,29 +34,17 @@ class LangGraphService {
+     this._currentProvider = provider
+     this._currentModel = config.model || null
+ 
+-    console.log('[LangGraph] connect called, provider:', provider)
+-
+     try {
+-      // 1. Test connectivity and credentials FIRST
+-      console.log('[LangGraph] Fetching models to verify connection...')
+-      const models = await this.fetchModels(provider, apiKey, baseUrl)
+-      
+-      if (!models || models.length === 0) {
+-        throw new Error('No models returned. Please check your API key, Base URL, and network connection.')
+-      }
+-      console.log(`[LangGraph] Connection verified. Found ${models.length} models.`)
+-
+-      // 2. Only build the model client and graph AFTER validation succeeds
++      // 1. Only build the model client and graph
+       this._agent = null // reset just in case
+       
+       const modelClient = this._createChatModel(config)
+-      console.log('[LangGraph] Model client created successfully')
+-      
+       this._agent = this._buildGraph(modelClient)
+-      console.log('[LangGraph] Agent compiled successfully')
+-
++      
++      // We don't fetch models on connect anymore to prevent blocking UI
++      // and potentially failing on network/API key issues before the user even sends a message.
++      // Connection status "connected" now means the SDK is ready.
+     } catch (error) {
+-      console.error('[LangGraph] Connect error details:', error) // Log the full trace in console
+       this.disconnect() // Ensure clean state on failure
+       
+       // Extract a readable error message
+@@ -69,15 +57,15 @@ class LangGraphService {
+     this._currentModel = model
+   }
+ 
+-  async sendMessage(messages: ILangGraphMessage[]): Promise<ILangGraphResponse> {
+-    console.log('[LangGraph] sendMessage called, agent:', !!this._agent, 'messages:', messages.length)
+-    
++  async sendMessage(messages: ILangGraphMessage[], signal?: AbortSignal): Promise<ILangGraphResponse> {
+     if (!this._agent) {
+       throw new Error('Not connected to any AI provider')
+     }
+ 
+     // Map unified messages to LangChain specific classes
+-    const langchainMessages = messages.map(msg => {
++    const langchainMessages = messages
++      .filter(msg => msg.role !== 'error') // Don't send internal error messages back to the LLM
++      .map(msg => {
+       switch (msg.role) {
+         case 'system': return new SystemMessage(msg.content)
+         case 'user': return new HumanMessage(msg.content)
+@@ -87,20 +75,48 @@ class LangGraphService {
+       }
+     })
+     
+-    console.log('[LangGraph] Invoking agent with messages:', langchainMessages.length)
+-
+-    // Invoke the LangGraph agent
+-    // Cast to any locally to allow invocation on unknown type while keeping class property safe
+-    const response = await (this._agent as any).invoke({ messages: langchainMessages })
+-    console.log('[LangGraph] Agent response:', JSON.stringify(response, null, 2))
++    try {
++      // Invoke the LangGraph agent with a timeout (90 seconds)
++      const response = await Promise.race([
++        (this._agent as any).invoke({ messages: langchainMessages }, { signal }),
++        new Promise((_, reject) => {
++          const timer = setTimeout(() => reject(new Error('Request timed out after 90 seconds')), 90000)
++          if (signal) {
++            signal.addEventListener('abort', () => {
++              clearTimeout(timer)
++              reject(new Error('Request aborted by user'))
++            })
++          }
++        })
++      ])
+ 
+-    // Safely extract the content string from the final message
+-    const content = this._extractResponseContent(response)
+-    console.log('[LangGraph] Extracted content:', content)
++      // Safely extract the content string from the final message
++      const content = this._extractResponseContent(response)
++      
++      if (!content) {
++        throw new Error('AI returned an empty response. This may be due to model configuration or credit limits.')
++      }
+ 
+-    return {
+-      content,
+-      model: this._currentModel || this._currentProvider || 'unknown'
++      return {
++        content,
++        model: this._currentModel || this._currentProvider || 'unknown'
++      }
++    } catch (error) {
++      // Provide more specific hints based on common errors
++      let hint = error instanceof Error ? error.message : String(error)
++      
++      if (hint.includes('401')) hint = 'Invalid API Key (401 Unauthorized)'
++      if (hint.includes('429')) hint = 'Rate limit exceeded (429 Too Many Requests)'
++      if (hint.includes('404')) hint = 'Model or endpoint not found (404 Not Found)'
++      if (hint.includes('fetch')) hint = 'Network error: Check your internet connection or proxy settings'
++      if (hint.includes('cloned')) hint = 'IPC Error: Response contains non-serializable data'
++      if (hint.includes('timed out')) {
++        hint = this._currentProvider === 'ollama' 
++          ? 'Request timed out. Ensure Ollama is running and the model is loaded.'
++          : 'Request timed out after 90 seconds. The provider may be overloaded.'
++      }
++      
++      throw new Error(hint)
+     }
+   }
+ 
+@@ -131,7 +147,7 @@ class LangGraphService {
+           model: model || PROVIDER_DEFAULT_MODELS.anthropic,
+           temperature,
+           maxTokens,
+-          // Use clientOptions for custom base URL if supported in this version
++          // Anthropic SDK in LangChain usually expects baseURL (capital URL)
+           clientOptions: baseUrl ? { baseURL: baseUrl } : undefined
+         }) as unknown as BaseChatModel
+ 
+@@ -140,8 +156,11 @@ class LangGraphService {
+           apiKey,
+           modelName: model || PROVIDER_DEFAULT_MODELS.google,
+           temperature,
+-          maxOutputTokens: maxTokens 
+-        }) as unknown as BaseChatModel
++          maxOutputTokens: maxTokens,
++          // Google SDK in LangChain uses API_VERSION and potentially other env/internal flags
++          // for custom endpoints, or doesn't support a simple baseUrl in this version.
++          apiVersion: 'v1beta'
++        } as any) as unknown as BaseChatModel
+ 
+       case 'ollama':
+         return new ChatOllama({
+@@ -157,6 +176,7 @@ class LangGraphService {
+           temperature,
+           maxTokens,
+           configuration: {
++            // OpenRouter always needs the /api/v1 suffix which is in our default
+             baseURL: baseUrl || PROVIDER_BASE_URLS.openrouter
+           }
+         }) as unknown as BaseChatModel
+@@ -202,64 +222,55 @@ class LangGraphService {
+ 
+   public async fetchModels(provider: AIProvider, apiKey?: string, baseUrl?: string): Promise<string[]> {
+     // Helper to format endpoints dynamically
+-    const getUrl = (defaultUrl: string, customPath: string) => {
+-      if (baseUrl) {
+-        let url = baseUrl.trim().replace(/\/$/, '')
+-        if (!url.startsWith('http')) {
+-          url = `http://${url}`
+-        }
+-        return `${url}${customPath}`
+-      }
+-      return defaultUrl
++    const getUrl = (defaultBase: string, customPath: string) => {
++      const base = (baseUrl || defaultBase).replace(/\/$/, '')
++      return `${base}${customPath}`
+     }
+ 
+     try {
+-      console.log(`[LangGraph] fetchModels for ${provider} using base: ${baseUrl || 'default'}`)
+       switch (provider) {
+         case 'openai': {
+-          if (!apiKey) throw new Error('API key is required for OpenAI');
+-          const url = getUrl(`${PROVIDER_BASE_URLS.openai}/models`, '/models');
++          if (!apiKey) throw new Error('API key is required for OpenAI')
++          const url = getUrl(PROVIDER_BASE_URLS.openai, '/models')
+           const resp = await fetch(url, {
+             headers: { Authorization: `Bearer ${apiKey}` }
+-          });
+-          if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${await resp.text()}`);
+-          const data = await resp.json();
+-          return data.data?.map((m: { id: string }) => m.id).filter((id: string) => id.includes('gpt')) || [];
++          })
++          if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${await resp.text()}`)
++          const data = await resp.json()
++          return data.data?.map((m: { id: string }) => m.id).filter((id: string) => id.includes('gpt')) || []
+         }
+ 
+         case 'anthropic': {
+-          if (!apiKey) throw new Error('API key is required for Anthropic');
+-          const url = getUrl(`${PROVIDER_BASE_URLS.anthropic}/models`, '/models');
++          if (!apiKey) throw new Error('API key is required for Anthropic')
++          const url = getUrl(PROVIDER_BASE_URLS.anthropic, '/models')
+           const resp = await fetch(url, {
+             headers: { 
+               'x-api-key': apiKey, 
+               'anthropic-version': '2023-06-01',
+-              // Anthropic strictly blocks browser requests. This header *might* help 
+-              // if Langchain/Anthropic SDK relies on it, but CORS may still apply.
+               'anthropic-dangerously-allow-browser': 'true' 
+             }
+-          });
+-          if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${await resp.text()}`);
+-          const data = await resp.json();
+-          return data.data?.map((m: { id: string }) => m.id) || [];
++          })
++          if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${await resp.text()}`)
++          const data = await resp.json()
++          return data.data?.map((m: { id: string }) => m.id) || []
+         }
+ 
+         case 'google': {
+-          if (!apiKey) throw new Error('API key is required for Google Gemini');
++          if (!apiKey) throw new Error('API key is required for Google Gemini')
+           // Google puts the key in the query string
+-          const base = baseUrl ? baseUrl.replace(/\/$/, '') : PROVIDER_BASE_URLS.google;
+-          const resp = await fetch(`${base}/v1beta/models?key=${apiKey}`);
+-          if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${await resp.text()}`);
+-          const data = await resp.json();
+-          return data.models?.map((m: { name: string }) => m.name.replace('models/', '')) || [];
++          const url = getUrl(PROVIDER_BASE_URLS.google, '/v1beta/models')
++          const resp = await fetch(`${url}?key=${apiKey}`)
++          if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${await resp.text()}`)
++          const data = await resp.json()
++          return data.models?.map((m: { name: string }) => m.name.replace('models/', '')) || []
+         }
+ 
+         case 'ollama': {
+-          const url = getUrl(PROVIDER_BASE_URLS.ollama, '/api/tags');
+-          const resp = await fetch(url);
+-          if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${await resp.text()}`);
+-          const data = await resp.json();
+-          return data.models?.map((m: { name: string }) => m.name) || [];
++          const url = getUrl(PROVIDER_BASE_URLS.ollama, '/api/tags')
++          const resp = await fetch(url)
++          if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${await resp.text()}`)
++          const data = await resp.json()
++          return data.models?.map((m: { name: string }) => m.name) || []
+         }
+ 
+         case 'openrouter': {
+diff --git a/packages/desktop/src/renderer/src/shared/types/langgraph.ts b/packages/desktop/src/renderer/src/shared/types/langgraph.ts
+index dd9a4d3c..0f679284 100644
+--- a/packages/desktop/src/renderer/src/shared/types/langgraph.ts
++++ b/packages/desktop/src/renderer/src/shared/types/langgraph.ts
+@@ -3,7 +3,7 @@ export type AIProvider = 'openai' | 'anthropic' | 'google' | 'ollama' | 'openrou
+ 
+ // Configuration stored per provider
+ export interface IAIProviderConfig {
+-  apiKey: string
++  apiKey?: string
+   baseUrl?: string
+   model?: string
+   temperature?: number
+@@ -24,7 +24,7 @@ export interface IAIConnectionState {
+ 
+ // Message types
+ export interface ILangGraphMessage {
+-  role: 'user' | 'assistant' | 'system' | 'ai'
++  role: 'user' | 'assistant' | 'system' | 'ai' | 'error'
+   content: string
+ }
+ 
+diff --git a/packages/desktop/src/renderer/src/store/preferences.ts b/packages/desktop/src/renderer/src/store/preferences.ts
+index 7f04cf18..e895131d 100644
+--- a/packages/desktop/src/renderer/src/store/preferences.ts
++++ b/packages/desktop/src/renderer/src/store/preferences.ts
+@@ -293,12 +293,15 @@ export const usePreferencesStore = defineStore('preferences', {
+     },
+ 
+     ASK_FOR_USER_PREFERENCE(): void {
+-      window.electron.ipcRenderer.send('mt::ask-for-user-preference')
+-      window.electron.ipcRenderer.send('mt::ask-for-user-data')
+-
+-      window.electron.ipcRenderer.on('mt::user-preference', (_e, preferences) => {
++      // Use 'once' to ensure listener is only registered once and auto-cleaned
++      window.electron.ipcRenderer.once('mt::user-preference', (_e, preferences) => {
+         this.SET_USER_PREFERENCE(preferences as Partial<PreferencesState>)
+       })
++      
++      // Send requests to main process to fetch preferences
++      // Must register listener BEFORE sending to avoid race condition
++      window.electron.ipcRenderer.send('mt::ask-for-user-preference')
++      window.electron.ipcRenderer.send('mt::ask-for-user-data')
+     },
+ 
+     SET_SINGLE_PREFERENCE({ type, value }: SingleSetPreferencePayload): void {
+diff --git a/packages/desktop/static/preference.json b/packages/desktop/static/preference.json
+index 376f3c8f..16cd1270 100644
+--- a/packages/desktop/static/preference.json
++++ b/packages/desktop/static/preference.json
+@@ -77,5 +77,14 @@
+   "searchNoIgnore": false,
+   "searchFollowSymlinks": true,
+ 
+-  "watcherUsePolling": false
++  "watcherUsePolling": false,
++
++  "aiProvider": "openai",
++  "aiConfigs": {
++    "openai": { "apiKey": "", "model": "gpt-4o" },
++    "anthropic": { "apiKey": "", "model": "claude-3-5-sonnet-latest" },
++    "google": { "apiKey": "", "model": "gemini-1.5-pro" },
++    "ollama": { "apiKey": "ollama", "baseUrl": "http://127.0.0.1:11434", "model": "llama3" },
++    "openrouter": { "apiKey": "", "baseUrl": "https://openrouter.ai/api/v1", "model": "openai/gpt-4o" }
++  }
+ }

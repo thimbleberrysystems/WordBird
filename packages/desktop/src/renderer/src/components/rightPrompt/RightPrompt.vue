@@ -40,6 +40,18 @@
         </div>
         <div class="prompt-input-actions">
           <el-button
+            :type="aiIsConnected ? 'success' : 'info'"
+            size="small"
+            plain
+            class="connection-status-btn"
+            title="Configure AI"
+            @click="openAiSettings"
+          >
+            <span class="status-indicator" :class="{ 'connected': aiIsConnected }"></span>
+            {{ aiIsConnected ? 'Connected' : 'Disconnected' }}
+          </el-button>
+
+          <el-button
             type="danger"
             size="small"
             :disabled="!sending"
@@ -63,82 +75,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted, watch } from 'vue'
+import { ref, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '../../store/preferences'
 import { langGraphService } from '../../services/langgraph'
 import { 
-  type AIProvider, 
-  type IAIConfig, 
   type ILangGraphMessage
 } from '../../shared/types/langgraph'
-import { PROVIDERS_WITHOUT_KEY } from '@shared/constants/ai'
 
 // Store
 const preferencesStore = usePreferencesStore()
-const { aiProvider, aiConfigs } = storeToRefs(preferencesStore)
+const { aiProvider, aiConfigs, aiIsConnected } = storeToRefs(preferencesStore)
 
 // Reactive state
 const promptBody = ref<HTMLElement | null>(null)
 const userInput = ref('')
-const aiIsConnected = ref(false)
 const sending = ref(false)
 const aiMessages = ref<ILangGraphMessage[]>([])
 const currentAbortController = ref<AbortController | null>(null)
 
-// Connect to AI provider
-async function connect(): Promise<void> {
-  const currentProvider = aiProvider.value as AIProvider
-  const currentConfig = aiConfigs.value[currentProvider]
-
-  if (!currentConfig) {
-    console.warn('[RightPrompt] No config found for provider:', currentProvider)
-    return
-  }
-
-  // Validate API key for providers that need it
-  const needsKey = !PROVIDERS_WITHOUT_KEY.includes(currentProvider)
-  if (needsKey && !currentConfig.apiKey?.trim()) {
-    console.warn('[RightPrompt] Missing API key for provider:', currentProvider)
-    aiIsConnected.value = false
-    return
-  }
-
-  try {
-    const config: IAIConfig = {
-      provider: currentProvider,
-      apiKey: currentConfig.apiKey,
-      baseUrl: currentConfig.baseUrl,
-      model: currentConfig.model
-    }
-    
-    // Check if the service is already connected to this EXACT config
-    // to avoid redundant reconnections
-    if (langGraphService.isConnected && 
-        langGraphService.currentProvider === currentProvider &&
-        (langGraphService as any)._currentModel === (currentConfig.model || null)) {
-      aiIsConnected.value = true
-      return
-    }
-
-    await langGraphService.connect(config)
-    aiIsConnected.value = true
-    console.log('[RightPrompt] AI Connected successfully')
-  } catch (error) {
-    console.error('[RightPrompt] Connect error:', error)
-    aiIsConnected.value = false
-  }
+// Open settings window to AI page
+function openAiSettings(): void {
+  console.log('[RightPrompt] Opening AI settings...')
+  window.electron.ipcRenderer.send('mt::open-setting-window', 'ai')
 }
-
-// Watch for provider/config changes and reconnect
-watch([aiProvider, aiConfigs], () => {
-  connect()
-}, { deep: true })
-
-onMounted(() => {
-  connect()
-})
 
 // Stop generation
 function stopGeneration(): void {
@@ -388,7 +349,31 @@ async function sendMessage(): Promise<void> {
 
 .prompt-input-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  align-items: center;
   gap: var(--spacing-2);
+}
+
+.connection-status-btn {
+  margin-right: auto;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  transition: all 0.2s ease;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #909399; /* el-color-info fallback */
+  display: inline-block;
+}
+
+.status-indicator.connected {
+  background-color: #67c23a; /* el-color-success fallback */
+  box-shadow: 0 0 5px rgba(103, 194, 58, 0.5);
 }
 </style>

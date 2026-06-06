@@ -29,6 +29,10 @@ class LangGraphService {
     return this._currentProvider
   }
 
+  public get currentModel(): string | null {
+    return this._currentModel
+  }
+
   async connect(config: IAIConfig): Promise<void> {
     const { provider, apiKey, baseUrl } = config
     this._currentProvider = provider

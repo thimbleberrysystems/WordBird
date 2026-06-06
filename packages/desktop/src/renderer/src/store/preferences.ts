@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
-import { AI_DEFAULTS } from '@shared/constants/ai'
+import { AI_DEFAULTS, PROVIDERS_WITHOUT_KEY } from '@shared/constants/ai'
+import type { AIProvider, IAIConfig } from '../shared/types/langgraph'
+import { langGraphService } from '../services/langgraph'
 import bus from '../bus'
 import { setLanguage } from '../i18n'
 
@@ -112,6 +114,7 @@ export interface PreferencesState {
   // ----- AI -----
   aiProvider: string
   aiConfigs: Record<string, { apiKey: string; baseUrl?: string; model?: string; temperature?: number; maxTokens?: number }>
+  aiIsConnected: boolean
 
   // ----- Edit modes (per-window, not persisted) -----
   typewriter: boolean
@@ -228,6 +231,7 @@ export const usePreferencesStore = defineStore('preferences', {
     // ----- AI -----
     aiProvider: AI_DEFAULTS.provider,
     aiConfigs: { ...AI_DEFAULTS.configs },
+    aiIsConnected: false,
 
     // --------------------------------------------------------------------------
 
@@ -284,6 +288,7 @@ export const usePreferencesStore = defineStore('preferences', {
 
       window.electron.ipcRenderer.on('mt::user-preference', (_e, preferences) => {
         this.SET_USER_PREFERENCE(preferences as Partial<PreferencesState>)
+        this.CHECK_AI_CONNECTION()
       })
     },
 
@@ -301,6 +306,11 @@ export const usePreferencesStore = defineStore('preferences', {
         ? JSON.parse(JSON.stringify(value))
         : value
       window.electron.ipcRenderer.send('mt::set-user-preference', { [type as string]: payload })
+
+      // Re-verify AI connection if provider changed
+      if (type === 'aiProvider') {
+        this.CHECK_AI_CONNECTION()
+      }
     },
 
     SET_AI_CONFIG(provider: string, config: Record<string, unknown>): void {
@@ -311,6 +321,54 @@ export const usePreferencesStore = defineStore('preferences', {
       // Clone to avoid "object could not be cloned" error with Proxy objects in IPC
       const rawConfigs = JSON.parse(JSON.stringify(this.aiConfigs))
       window.electron.ipcRenderer.send('mt::set-user-preference', { aiConfigs: rawConfigs })
+
+      // Re-verify AI connection if current provider's config changed
+      if (provider === this.aiProvider) {
+        this.CHECK_AI_CONNECTION()
+      }
+    },
+
+    async CHECK_AI_CONNECTION(): Promise<void> {
+      const currentProvider = this.aiProvider as AIProvider
+      const currentConfig = this.aiConfigs[currentProvider]
+
+      if (!currentConfig) {
+        this.aiIsConnected = false
+        return
+      }
+
+      // 1. Validate mandatory fields locally
+      const needsKey = !PROVIDERS_WITHOUT_KEY.includes(currentProvider)
+      const hasKey = currentConfig.apiKey?.trim()
+      const hasModel = !!currentConfig.model
+
+      if ((needsKey && !hasKey) || !hasModel) {
+        this.aiIsConnected = false
+        return
+      }
+
+      // 2. Check for redundant configuration match to avoid network flicker 
+      if (langGraphService.isConnected && 
+          langGraphService.currentProvider === currentProvider &&
+          langGraphService.currentModel === (currentConfig.model || null)) {
+        this.aiIsConnected = true
+        return
+      }
+
+      // 3. Perform live handshake
+      try {
+        const config: IAIConfig = {
+          provider: currentProvider,
+          apiKey: currentConfig.apiKey,
+          baseUrl: currentConfig.baseUrl,
+          model: currentConfig.model
+        }
+        await langGraphService.connect(config)
+        this.aiIsConnected = true
+      } catch (error) {
+        console.error('[PreferencesStore] AI Connection failed:', error)
+        this.aiIsConnected = false
+      }
     },
 
     SET_USER_DATA({ type, value }: SetUserDataPayload): void {
