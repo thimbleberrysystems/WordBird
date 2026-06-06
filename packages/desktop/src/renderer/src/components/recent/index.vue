@@ -1,27 +1,43 @@
 <template>
   <div class="recent-files-projects">
     <div class="centered-group">
-      {{ t('recent.noTabsOpen') }}
-      <el-button
-        text
-        bg
-        type="primary"
-        @click="newFile"
-      >
-        {{ t('recent.newFile') }}
-      </el-button>
+      <div class="project-prompt">
+        <p class="prompt-text">{{ t('recent.noProjectOpen') }}</p>
+        <div class="centered-group">
+          <el-button
+            text
+            bg
+            type="primary"
+            @click="createProject"
+          >
+            {{ t('recent.createProject') }}
+          </el-button>
+          <el-button
+            text
+            bg
+            type="primary"
+            @click="loadProject"
+          >
+            {{ t('recent.loadProject') }}
+          </el-button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useEditorStore } from '@/store/editor'
+import { useProjectStore } from '@/store/project'
 import { t } from '../../i18n'
 
-const editorStore = useEditorStore()
+const projectStore = useProjectStore()
 
-const newFile = () => {
-  editorStore.NEW_UNTITLED_TAB({})
+const createProject = () => {
+  projectStore.createProject()
+}
+
+const loadProject = () => {
+  projectStore.loadProject()
 }
 </script>
 

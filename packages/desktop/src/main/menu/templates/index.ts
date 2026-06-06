@@ -32,16 +32,14 @@ export const configSettingMenu = (keybindings: Keybindings): MenuItemConstructor
  *
  * @param keybindings The keybindings instance.
  * @param preferences The preference instance.
- * @param recentlyUsedFiles The recently used files.
  */
 export default function(
   keybindings: Keybindings,
-  preferences: Preference,
-  recentlyUsedFiles: string[] = []
+  preferences: Preference
 ): MenuItemConstructorOptions[] {
   return [
     ...(process.platform === 'darwin' ? [marktext(keybindings)] : []),
-    file(keybindings, preferences, recentlyUsedFiles),
+    file(keybindings, preferences),
     edit(keybindings),
     paragraph(keybindings),
     format(keybindings),

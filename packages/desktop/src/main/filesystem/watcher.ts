@@ -12,13 +12,8 @@ import type { LineEnding } from '@shared/types/files'
 
 // TODO(refactor): Please see GH#1035.
 
-export const WATCHER_STABILITY_THRESHOLD = 1000
-export const WATCHER_STABILITY_POLL_INTERVAL = 150
-
-const EVENT_NAME = {
-  dir: 'mt::update-object-tree' as const,
-  file: 'mt::update-file' as const
-}
+export const WATCHER_STABILITY_THRESHOLD = 200
+export const WATCHER_STABILITY_POLL_INTERVAL = 100
 
 type WatchType = 'dir' | 'file'
 
@@ -63,17 +58,19 @@ const add = async(
     mtimeMs,
     isMarkdown
   }
-  if (isMarkdown) {
+  if (isMarkdown || type === 'dir') {
     // HACK: But this should be removed completely in #1034/#1035.
     try {
-      const data = await loadMarkdownFile(
-        pathname,
-        endOfLine,
-        autoGuessEncoding,
-        trimTrailingNewline,
-        autoNormalizeLineEndings
-      )
-      file.data = data
+      if (isMarkdown) {
+        const data = await loadMarkdownFile(
+          pathname,
+          endOfLine,
+          autoGuessEncoding,
+          trimTrailingNewline,
+          autoNormalizeLineEndings
+        )
+        file.data = data
+      }
     } catch (err) {
       // Only notify user about opened files.
       if (type === 'file') {
@@ -85,19 +82,38 @@ const add = async(
         return
       }
     }
-    win.webContents.send(EVENT_NAME[type], {
+
+    // Always notify the object tree for directories and markdown files
+    win.webContents.send('mt::update-object-tree', {
       type: 'add',
       change: file
     })
+
+    // If it's a markdown file, also notify the editor store
+    if (type === 'file' && isMarkdown) {
+      win.webContents.send('mt::update-file', {
+        type: 'add',
+        change: file
+      })
+    }
   }
 }
 
 const unlink = (win: BrowserWindow, pathname: string, type: WatchType): void => {
   const file = { pathname }
-  win.webContents.send(EVENT_NAME[type], {
+  // Always notify the object tree
+  win.webContents.send('mt::update-object-tree', {
     type: 'unlink',
     change: file
   })
+
+  // If it's a file, also notify the editor store
+  if (type === 'file') {
+    win.webContents.send('mt::update-file', {
+      type: 'unlink',
+      change: file
+    })
+  }
 }
 
 const change = async(
@@ -134,6 +150,12 @@ const change = async(
       win.webContents.send('mt::update-file', {
         type: 'change',
         change: file
+      })
+
+      // Notify object tree of mtime change for sorting
+      win.webContents.send('mt::update-object-tree', {
+        type: 'change',
+        change: { pathname, mtimeMs: stats.mtimeMs }
       })
     } catch (err) {
       if (type === 'file') {
@@ -211,9 +233,12 @@ class Watcher {
         if (fileInfo.isDirectory()) {
           return false
         }
-        return !hasMarkdownExtension(pathname)
+        return (
+          !hasMarkdownExtension(pathname) &&
+          path.basename(pathname) !== 'wordbird.json'
+        )
       },
-      ignoreInitial: type === 'file',
+      ignoreInitial: false,
       persistent: true,
       ignorePermissionErrors: true,
 

@@ -9,7 +9,7 @@ import { isChildOfDirectory } from 'common/filesystem/paths'
 import { isLinux, isOsx, isWindows } from '../config'
 import parseArgs from '../cli/parser'
 import { normalizeAndResolvePath } from '../filesystem'
-import { normalizeMarkdownPath } from '../filesystem/markdown'
+import { normalizeMarkdownPath, isValidProjectPath } from '../filesystem/markdown'
 import { registerKeyboardListeners } from '../keyboard'
 import { selectTheme } from '../menu/actions/theme'
 import { dockMenu } from '../menu/templates'
@@ -259,15 +259,36 @@ class App {
       if (startUpAction === 'restoreAll') {
         // Restore based off the previous buffer
         isRestorePathway = true
+        // Also open the last opened folder if available and it's a valid project
+        if (lastOpenedFolder) {
+          if (isValidProjectPath(lastOpenedFolder)) {
+            const info = normalizeMarkdownPath(lastOpenedFolder)
+            if (info) {
+              _openFilesCache.unshift(info as PathInfo)
+            }
+          } else {
+            // Project no longer exists or is invalid, clear the preference
+            this._accessor.preferences.setItem('lastOpenedFolder', '')
+          }
+        }
       } else if (startUpAction === 'folder' && defaultDirectoryToOpen) {
-        const info = normalizeMarkdownPath(defaultDirectoryToOpen)
-        if (info) {
-          _openFilesCache.unshift(info as PathInfo)
+        // Only open if it's a valid project
+        if (isValidProjectPath(defaultDirectoryToOpen)) {
+          const info = normalizeMarkdownPath(defaultDirectoryToOpen)
+          if (info) {
+            _openFilesCache.unshift(info as PathInfo)
+          }
         }
       } else if (startUpAction === 'openLastFolder' && lastOpenedFolder) {
-        const info = normalizeMarkdownPath(lastOpenedFolder)
-        if (info) {
-          _openFilesCache.unshift(info as PathInfo)
+        // Only open if it's a valid project
+        if (isValidProjectPath(lastOpenedFolder)) {
+          const info = normalizeMarkdownPath(lastOpenedFolder)
+          if (info) {
+            _openFilesCache.unshift(info as PathInfo)
+          }
+        } else {
+          // Project no longer exists or is invalid, clear the preference
+          this._accessor.preferences.setItem('lastOpenedFolder', '')
         }
       }
     }
@@ -388,13 +409,22 @@ class App {
           filePath: string | null
         }>
         if (bufferStoreList.length === 0) {
-          this._createEditorWindow()
+          // If we have a project in cache (like lastOpenedFolder), use it
+          if (_openFilesCache.length > 0 && _openFilesCache[0].isDir) {
+            this._createEditorWindow(_openFilesCache[0].path)
+          } else {
+            this._createEditorWindow()
+          }
           return
         }
 
+        const restoredRoot = (_openFilesCache.length > 0 && _openFilesCache[0].isDir)
+          ? _openFilesCache[0].path
+          : null
+
         bufferStoreList.forEach((bufferStoreInfo) => {
           // Read the buffer store file and pass the content
-          this._createEditorWindow(null, [], [], {}, bufferStoreInfo)
+          this._createEditorWindow(restoredRoot, [], [], {}, bufferStoreInfo)
         })
       } else if (_openFilesCache.length) {
         // We should wipe the buffer store if not it will keep creating new windows whenever we open files via double click in the file manager
@@ -478,7 +508,7 @@ class App {
     bufferStoreInfo: { id: string; filePath: string | null } | null = null
   ): EditorWindow {
     const editor = new EditorWindow(this._accessor)
-    if (rootDirectory) {
+    if (rootDirectory && isValidProjectPath(rootDirectory)) {
       this._accessor.preferences.setItems({ lastOpenedFolder: rootDirectory })
     }
     editor.createWindow(rootDirectory, fileList, markdownList, options, bufferStoreInfo)
@@ -749,9 +779,9 @@ class App {
     ipcMain.on(
       'app-open-directory-by-id',
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (windowId: any, pathname: any, openInSameWindow: any) => {
+      (windowId: any, pathname: any, openInSameWindow: any, forceNewWindow: any) => {
         const { openFolderInNewWindow } = this._accessor.preferences.getAll()
-        if (openInSameWindow || !openFolderInNewWindow) {
+        if (!forceNewWindow && (openInSameWindow || !openFolderInNewWindow)) {
           const editor = this._windowManager.get(windowId as number)
           if (editor) {
             editor.openFolder(pathname as string)

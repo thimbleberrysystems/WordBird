@@ -33,6 +33,24 @@ import type {
 import type { BufferedState as BufferedStateType } from './bufferedState'
 import type { MenuTemplate, MenuPopupPosition } from './menu'
 
+export interface ProjectCreateArgs {
+  name?: string
+  location?: string
+}
+
+export interface ProjectCreateResult {
+  projectPath: string | null
+}
+
+export interface ProjectLoadArgs {
+  path?: string
+}
+
+export interface ProjectLoadResult {
+  projectPath: string | null
+  valid: boolean
+}
+
 // =================================================================
 // Invoke channels (renderer → main, returns Promise<T>)
 // =================================================================
@@ -77,6 +95,9 @@ export interface IpcInvokeChannels {
   'mt::spellchecker-remove-word': { args: [word: string]; ret: boolean }
   'mt::spellchecker-set-enabled': { args: [enabled: boolean]; ret: void }
   'mt::spellchecker-switch-language': { args: [language: string]; ret: void }
+  'mt::project:create': { args: [ProjectCreateArgs?]; ret: ProjectCreateResult }
+  'mt::project:load': { args: [ProjectLoadArgs?]; ret: ProjectLoadResult }
+  'mt::project:validate': { args: [path: string]; ret: boolean }
   'mt::uploader::upload': { args: [req: unknown]; ret: unknown }
   'mt::win::is-fullscreen': { args: []; ret: boolean }
   'mt::win::is-maximized': { args: []; ret: boolean }
@@ -246,6 +267,8 @@ export interface IpcMainEventChannels {
   'mt::menu::closed': []
   'mt::new-untitled-tab': [selected?: boolean, markdown?: string]
   'mt::open-directory': [directoryPath: string]
+  'mt::project:create-request': []
+  'mt::project:load-request': []
   'mt::open-new-tab': [
     markdownDocument: MarkdownDocument | null,
     options?: TabOptions,
@@ -260,7 +283,7 @@ export interface IpcMainEventChannels {
   'mt::rg::progress': [payload: unknown]
   'mt::screenshot-captured': []
   'mt::set-line-ending': [lineEnding: LineEnding]
-  'mt::set-pathname': [payload: { id: string; pathname: string; filename: string }]
+  'mt::set-pathname': [payload: { id: string; pathname: string; filename: string; mtimeMs?: number }]
   'mt::set-view-layout': [layout: unknown]
   'mt::show-command-palette': []
   'mt::show-export-dialog': [type: ExportType]
@@ -270,7 +293,7 @@ export interface IpcMainEventChannels {
   'mt::switch-tab-by-file_path': [filePath: string]
   'mt::switch-tab-by-index': [index: number]
   'mt::tab-save-failure': [tabId: string, message: string]
-  'mt::tab-saved': [tabId: string]
+  'mt::tab-saved': [tabId: string, mtimeMs?: number]
   'mt::tabs-cycle-left': []
   'mt::tabs-cycle-right': []
   'mt::toggle-view-layout-entry': [entry: string]

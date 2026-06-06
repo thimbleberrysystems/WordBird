@@ -107,39 +107,6 @@
           :file="file"
           :depth="depth"
         />
-        <div
-          v-if="
-            projectTree.files.length === 0 &&
-              projectTree.folders.length === 0 &&
-              createCacheDirname !== projectTree.pathname
-          "
-          class="empty-project"
-        >
-          <span>{{ t('sideBar.tree.emptyProject') }}</span>
-          <div class="centered-group">
-            <button
-              class="button-primary"
-              @click.stop="createFile"
-            >
-              {{ t('sideBar.tree.createFile') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div
-      v-else
-      class="open-project"
-    >
-      <div class="centered-group">
-        <el-button
-          text
-          bg
-          type="primary"
-          @click="openFolder"
-        >
-          {{ t('sideBar.tree.openFolder') }}
-        </el-button>
       </div>
     </div>
   </div>
@@ -194,7 +161,7 @@ const createCacheDirname = computed<string | undefined>(() => {
 })
 
 // Methods
-const openFolder = (): void => {
+const openProject = (): void => {
   projectStore.ASK_FOR_OPEN_PROJECT()
 }
 

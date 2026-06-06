@@ -80,6 +80,7 @@ export const useProjectStore = defineStore('project', () => {
   const newFileNameCache = ref<string>('')
   const renameCache = ref<string | null>(null)
   const clipboard = ref<ClipboardEntry | null>(null)
+  const currentProjectPath = ref<string | null>(null)
   const projectTree = ref<ProjectTree | null>(null)
   const pendingTreeEvents = ref<PendingEvent[]>([])
 
@@ -94,15 +95,26 @@ export const useProjectStore = defineStore('project', () => {
     }
   )
 
-  function OPEN_PROJECT(
+  async function OPEN_PROJECT(
     pathname: string,
     { scheduleBufferUpdate = true }: OpenProjectOptions = {}
-  ): void {
+  ): Promise<void> {
     const layoutStore = useLayoutStore()
+
+    // Verify project still exists on disk before opening
+    const isValid = await window.electron.project.validate(pathname)
+    if (!isValid) {
+      console.warn(`Attempted to open invalid or non-existent project: ${pathname}`)
+      projectTree.value = null
+      currentProjectPath.value = null
+      return
+    }
+
     const tree = createProjectRoot(pathname)
     if (!tree) return
 
     projectTree.value = tree
+    currentProjectPath.value = pathname
 
     const layout = {
       rightColumn: 'files',
@@ -120,6 +132,34 @@ export const useProjectStore = defineStore('project', () => {
 
     if (scheduleBufferUpdate) {
       debouncedSendBufferedState()
+    }
+  }
+
+  function setCurrentProject(pathname: string | null): void {
+    if (!pathname) {
+      currentProjectPath.value = null
+      projectTree.value = null
+      return
+    }
+    if (currentProjectPath.value === pathname) return
+    currentProjectPath.value = pathname
+  }
+
+  const createProject = async(): Promise<void> => {
+    try {
+      await window.electron.project.create()
+      // The main process will emit 'mt::open-directory' to trigger file loading
+    } catch (err) {
+      console.error('Project creation failed:', err)
+    }
+  }
+
+  const loadProject = async(): Promise<void> => {
+    try {
+      await window.electron.project.load()
+      // The main process will emit 'mt::open-directory' to trigger file loading
+    } catch (err) {
+      console.error('Project load failed:', err)
     }
   }
 
@@ -143,6 +183,15 @@ export const useProjectStore = defineStore('project', () => {
   function LISTEN_FOR_LOAD_PROJECT(): void {
     window.electron.ipcRenderer.on('mt::open-directory', (_e, pathname) => {
       OPEN_PROJECT(String(pathname))
+    })
+  }
+
+  function LISTEN_FOR_PROJECT_REQUESTS(): void {
+    window.electron.ipcRenderer.on('mt::project:create-request', () => {
+      createProject()
+    })
+    window.electron.ipcRenderer.on('mt::project:load-request', () => {
+      loadProject()
     })
   }
 
@@ -317,13 +366,18 @@ export const useProjectStore = defineStore('project', () => {
     newFileNameCache,
     renameCache,
     clipboard,
+    currentProjectPath,
     projectTree,
     pendingTreeEvents,
     OPEN_PROJECT,
     CREATE_BUFFERED_STATE,
     RESTORE_BUFFERED_STATE,
     LISTEN_FOR_LOAD_PROJECT,
+    LISTEN_FOR_PROJECT_REQUESTS,
     LISTEN_FOR_UPDATE_PROJECT,
+    createProject,
+    loadProject,
+    setCurrentProject,
     CHANGE_ACTIVE_ITEM,
     CHANGE_CLIPBOARD,
     ASK_FOR_OPEN_PROJECT,

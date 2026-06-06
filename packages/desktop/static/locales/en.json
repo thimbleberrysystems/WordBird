@@ -13,6 +13,8 @@
       "open": "Open",
       "openFile": "Open File...",
       "openFolder": "Open Folder...",
+      "createProject": "Create Project...",
+      "loadProject": "Load Project...",
       "openRecent": "Open Recent",
       "clearRecentlyUsed": "Clear Recently Used",
       "save": "Save",
@@ -383,8 +385,9 @@
     "deleteTable": "Delete Table"
   },
   "recent": {
-    "noTabsOpen": "You have no tabs open.",
-    "newFile": "New File"
+    "noProjectOpen": "You have no project open.",
+    "createProject": "Create Project",
+    "loadProject": "Load Project"
   },
   "import": {
     "title": "Import or Open",

@@ -85,6 +85,7 @@ export interface IFileState {
   muyaIndexCursor: unknown
   notifications: FileNotification[]
   lastSavedHistoryId?: number
+  mtimeMs: number
   // Muya block tree; only populated for the actively edited tab.
   blocks?: unknown
   isMixedLineEndings?: boolean
@@ -142,6 +143,7 @@ export interface UnsavedFile {
 export interface BootstrapEditorConfig {
   isNewWindow?: boolean
   addBlankTab?: boolean
+  rootDirectory?: string
   /**
    * Raw markdown contents used to seed new untitled tabs. Main fills this
    * from `_markdownToOpen` (e.g. stdin-piped launches and

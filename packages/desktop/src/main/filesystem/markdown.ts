@@ -1,5 +1,6 @@
 import fsPromises from 'fs/promises'
 import path from 'path'
+import fs from 'fs'
 import log from 'electron-log'
 import iconv from 'iconv-lite'
 import { LINE_ENDING_REG, LF_LINE_ENDING_REG, CRLF_LINE_ENDING_REG } from '../config'
@@ -9,6 +10,21 @@ import { normalizeAndResolvePath, writeFile } from '../filesystem'
 import { guessEncoding } from './encoding'
 import type { Encoding } from 'common/encoding'
 import type { LineEnding } from '@shared/types/files'
+
+/**
+ * Check if a directory is a valid project (contains wordbird.json marker).
+ */
+export const isValidProjectPath = (pathname: string): boolean => {
+  try {
+    if (!isDirectory2(pathname)) {
+      return false
+    }
+    const markerPath = path.join(pathname, 'wordbird.json')
+    return fs.existsSync(markerPath)
+  } catch (err) {
+    return false
+  }
+}
 
 interface MarkdownDocumentOptions {
   adjustLineEndingOnSave: boolean
@@ -25,6 +41,7 @@ interface MarkdownDocumentRaw {
   adjustLineEndingOnSave: boolean
   trimTrailingNewline: number
   isMixedLineEndings: boolean
+  mtimeMs: number
 }
 
 const getLineEnding = (lineEnding: LineEnding): string => {
@@ -52,10 +69,18 @@ export const normalizeMarkdownPath = (
   pathname: string
 ): { isDir: boolean; path: string } | null => {
   const isDir = isDirectory2(pathname)
-  if (isDir || isMarkdownFile(pathname)) {
+  if (isDir) {
+    if (!isValidProjectPath(pathname)) {
+      return null
+    }
     const resolved = normalizeAndResolvePath(pathname)
     if (resolved) {
-      return { isDir, path: resolved }
+      return { isDir: true, path: resolved }
+    }
+  } else if (isMarkdownFile(pathname)) {
+    const resolved = normalizeAndResolvePath(pathname)
+    if (resolved) {
+      return { isDir: false, path: resolved }
     } else {
       console.error(`[ERROR] Cannot resolve "${pathname}".`)
     }
@@ -98,7 +123,10 @@ export const loadMarkdownFile = async(
   // TODO: Use streams to not buffer the file multiple times and only guess
   //       encoding on the first 256/512 bytes.
 
-  const buffer = await fsPromises.readFile(path.resolve(pathname))
+  const [buffer, stats] = await Promise.all([
+    fsPromises.readFile(path.resolve(pathname)),
+    fsPromises.stat(path.resolve(pathname))
+  ])
 
   const encoding = guessEncoding(buffer, autoGuessEncoding)
   const supported = iconv.encodingExists(encoding.encoding)
@@ -155,6 +183,7 @@ export const loadMarkdownFile = async(
     lineEnding,
     adjustLineEndingOnSave,
     trimTrailingNewline,
-    isMixedLineEndings
+    isMixedLineEndings,
+    mtimeMs: stats.mtimeMs
   }
 }

@@ -8,18 +8,10 @@ import type Preference from '../../preferences'
 
 export default function(
   keybindings: Keybindings,
-  userPreference: Preference,
-  recentlyUsedFiles: string[]
+  userPreference: Preference
 ): MenuItemConstructorOptions {
   const { autoSave } = userPreference.getAll() as { autoSave?: boolean }
   const submenu: MenuItemConstructorOptions[] = [
-    {
-      label: t('menu.file.newTab'),
-      accelerator: keybindings.getAccelerator('file.new-tab') ?? undefined,
-      click(_menuItem, browserWindow) {
-        actions.newBlankTab(browserWindow as BrowserWindow | undefined)
-      }
-    },
     {
       label: t('menu.file.newWindow'),
       accelerator: keybindings.getAccelerator('file.new-window') ?? undefined,
@@ -31,17 +23,15 @@ export default function(
       type: 'separator'
     },
     {
-      label: t('menu.file.openFile'),
-      accelerator: keybindings.getAccelerator('file.open-file') ?? undefined,
+      label: t('menu.file.createProject'),
       click(_menuItem, browserWindow) {
-        actions.openFile((browserWindow as BrowserWindow | undefined) ?? null)
+        actions.createProject((browserWindow as BrowserWindow | undefined) ?? null)
       }
     },
     {
-      label: t('menu.file.openFolder'),
-      accelerator: keybindings.getAccelerator('file.open-folder') ?? undefined,
+      label: t('menu.file.loadProject'),
       click(_menuItem, browserWindow) {
-        actions.openFolder((browserWindow as BrowserWindow | undefined) ?? null)
+        actions.loadProject((browserWindow as BrowserWindow | undefined) ?? null)
       }
     }
   ]
@@ -49,53 +39,6 @@ export default function(
   const fileMenu: MenuItemConstructorOptions = {
     label: t('menu.file.file'),
     submenu
-  }
-
-  if (!isOsx) {
-    const recentlyUsedSubmenu: MenuItemConstructorOptions[] = []
-    const recentlyUsedMenu: MenuItemConstructorOptions = {
-      label: t('menu.file.openRecent'),
-      submenu: recentlyUsedSubmenu
-    }
-
-    for (const item of recentlyUsedFiles) {
-      recentlyUsedSubmenu.push({
-        label: item,
-        click(menuItem, browserWindow) {
-          if (browserWindow) {
-            actions.openFileOrFolder(browserWindow as BrowserWindow, menuItem.label)
-          }
-        }
-      })
-    }
-
-    recentlyUsedSubmenu.push(
-      {
-        type: 'separator',
-        visible: recentlyUsedFiles.length > 0
-      },
-      {
-        label: t('menu.file.clearRecentlyUsed'),
-        enabled: recentlyUsedFiles.length > 0,
-        click() {
-          actions.clearRecentlyUsed()
-        }
-      }
-    )
-    submenu.push(recentlyUsedMenu)
-  } else {
-    submenu.push({
-      // Electron accepts these MenuItem roles. The types stub camelCase
-      // ('recentDocuments' / 'clearRecentDocuments') in recent versions; the JS
-      // original used lowercase. Cast to satisfy strict role typing while
-      // preserving the original runtime string.
-      role: 'recentdocuments' as unknown as MenuItemConstructorOptions['role'],
-      submenu: [
-        {
-          role: 'clearrecentdocuments' as unknown as MenuItemConstructorOptions['role']
-        }
-      ]
-    })
   }
 
   submenu.push(

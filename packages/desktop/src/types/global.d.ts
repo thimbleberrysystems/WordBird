@@ -8,7 +8,11 @@ import type {
   IpcSendChannels,
   IpcSyncChannels,
   IpcMainEventChannels,
-  BootInfo
+  BootInfo,
+  ProjectCreateArgs,
+  ProjectCreateResult,
+  ProjectLoadArgs,
+  ProjectLoadResult
 } from '@shared/types/ipc'
 import type { MenuTemplate, MenuPopupPosition } from '@shared/types/menu'
 import type { SerializedStat } from '@shared/types/files'
@@ -93,6 +97,11 @@ declare global {
     }
     paths: Partial<BootInfo['paths']>
     isUpdatable: boolean
+    project: {
+      create: (args?: ProjectCreateArgs) => Promise<ProjectCreateResult>
+      load: (args?: ProjectLoadArgs) => Promise<ProjectLoadResult>
+      validate: (path: string) => Promise<boolean>
+    }
     windowControl: ElectronWindowControlAPI
   }
 

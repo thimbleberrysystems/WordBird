@@ -1,0 +1,10 @@
+{
+  "folders": [
+    "src",
+    "docs"
+  ],
+  "files": {
+    "README.md": "# {{name}}\n\nA new project created with WordBird.",
+    "src/index.md": "<!-- Main content file -->\n\n# Welcome to {{name}}"
+  }
+}

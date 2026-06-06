@@ -8,7 +8,7 @@ import BaseWindow, { WindowLifecycle, WindowType } from './base'
 import { ensureWindowPosition, zoomIn, zoomOut } from './utils'
 import { TITLE_BAR_HEIGHT, editorWinOptions, isLinux, isOsx } from '../config'
 import { showEditorContextMenu } from '../contextMenu/editor'
-import { loadMarkdownFile } from '../filesystem/markdown'
+import { loadMarkdownFile, isValidProjectPath } from '../filesystem/markdown'
 import { switchLanguage } from '../spellchecker'
 import fs from 'fs'
 
@@ -159,6 +159,7 @@ class EditorWindow extends BaseWindow {
 
       win!.webContents.send('mt::bootstrap-editor', {
         addBlankTab,
+        rootDirectory: this._openedRootDirectory,
         markdownList: this.bufferStoreInfo!.filePath ? [] : this._markdownToOpen,
         lineEnding,
         sideBarVisibility: resolvedSideBarVisibility,
@@ -372,7 +373,8 @@ class EditorWindow extends BaseWindow {
     if (
       !pathname ||
       this.lifecycle === WindowLifecycle.QUITTED ||
-      isSamePathSync(pathname, this._openedRootDirectory ?? '')
+      isSamePathSync(pathname, this._openedRootDirectory ?? '') ||
+      !isValidProjectPath(pathname)
     ) {
       return
     }
@@ -482,6 +484,7 @@ class EditorWindow extends BaseWindow {
       const lineEnding = preferences.getPreferredEol()
       browserWindow!.webContents.send('mt::bootstrap-editor', {
         addBlankTab: true,
+        rootDirectory: this._openedRootDirectory,
         markdownList: [],
         lineEnding,
         sideBarVisibility: resolvedSideBarVisibility,
@@ -568,10 +571,13 @@ class EditorWindow extends BaseWindow {
       if (!Array.isArray(bufferState.restoreWarnings)) {
         bufferState.restoreWarnings = []
       }
-      const rootDirectory = bufferState.project?.rootDirectory
-      if (rootDirectory) {
-        this.openFolder(rootDirectory)
+
+      // Restore project directory if it was passed via createWindow or exists in buffer state
+      const rootDirectoryToOpen = this._directoryToOpen || bufferState.project?.rootDirectory
+      if (rootDirectoryToOpen && isValidProjectPath(rootDirectoryToOpen)) {
+        this.openFolder(rootDirectoryToOpen)
       }
+      this._directoryToOpen = null
 
       // We still need to load the files of all opened tabs and check for errors/changed files
       const eol = preferences.getPreferredEol()
@@ -600,6 +606,8 @@ class EditorWindow extends BaseWindow {
                   tab.markdown = rawDocument.markdown
                 }
               }
+
+              tab.mtimeMs = rawDocument.mtimeMs
 
               if (!this._openedFiles!.includes(tab.pathname)) {
                 this.addToOpenedFiles(tab.pathname)

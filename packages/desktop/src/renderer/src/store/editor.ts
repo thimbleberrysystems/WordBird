@@ -351,6 +351,7 @@ export const useEditorStore = defineStore('editor', {
       tab.id = oldId
       tab.notifications = oldNotifications
       tab.scrollTop = oldScrollTop
+      tab.mtimeMs = change.mtimeMs ?? 0
       if (oldHistory) {
         tab.history = oldHistory
       }
@@ -555,7 +556,10 @@ export const useEditorStore = defineStore('editor', {
         }
 
         // SET_PATHNAME
-        const { filename } = fileInfo
+        const { filename, mtimeMs } = fileInfo
+        if (mtimeMs) {
+          tab.mtimeMs = mtimeMs
+        }
         if (id === this.currentFile?.id && pathname) {
           window.DIRNAME = window.path.dirname(pathname)
         }
@@ -565,9 +569,12 @@ export const useEditorStore = defineStore('editor', {
         }
       })
 
-      window.electron.ipcRenderer.on('mt::tab-saved', (_, tabId) => {
+      window.electron.ipcRenderer.on('mt::tab-saved', (_, tabId, mtimeMs) => {
         const tab = this.tabs.find((f) => f.id === tabId)
         if (tab) {
+          if (mtimeMs) {
+            tab.mtimeMs = mtimeMs
+          }
           const lastEditIndex = tab.history.lastEditIndex
           if (
             typeof lastEditIndex === 'number' &&
@@ -842,6 +849,7 @@ export const useEditorStore = defineStore('editor', {
       window.electron.ipcRenderer.on('mt::bootstrap-editor', (_, config) => {
         const {
           addBlankTab,
+          rootDirectory,
           markdownList,
           lineEnding,
           sideBarVisibility,
@@ -851,6 +859,10 @@ export const useEditorStore = defineStore('editor', {
 
         window.electron.ipcRenderer.send('mt::window-initialized')
         mainStore.SET_INITIALIZED()
+
+        if (rootDirectory) {
+          projectStore.OPEN_PROJECT(rootDirectory)
+        }
         preferencesStore.SET_USER_PREFERENCE({ endOfLine: lineEnding })
         layoutStore.SET_LAYOUT({
           rightColumn: 'files',
@@ -1576,7 +1588,13 @@ export const useEditorStore = defineStore('editor', {
         const { pathname } = change
         const tab = tabs.find((t) => window.fileUtils.isSamePathSync(t.pathname, pathname))
         if (tab) {
-          const { id, isSaved, filename } = tab
+          const { id, isSaved, filename, mtimeMs } = tab
+
+          // Ignore events if the file on disk was not modified since we loaded or saved it.
+          if (change.mtimeMs && mtimeMs && change.mtimeMs <= mtimeMs) {
+            return
+          }
+
           switch (type) {
             case 'unlink': {
               tab.isSaved = false
@@ -1916,6 +1934,7 @@ interface BufferedTabState {
   wordCount: IFileState['wordCount']
   muyaIndexCursor: unknown
   scrollTop: number
+  mtimeMs: number
 }
 
 const createBufferedTabState = (tab: Partial<IFileState> & { id: string }): BufferedTabState => {
@@ -1935,7 +1954,8 @@ const createBufferedTabState = (tab: Partial<IFileState> & { id: string }): Buff
     cursor: toSerializableValue(tab.cursor, defaultFileState.cursor),
     wordCount: toSerializableValue(tab.wordCount, defaultFileState.wordCount),
     muyaIndexCursor: toSerializableValue(tab.muyaIndexCursor, defaultFileState.muyaIndexCursor),
-    scrollTop: tab.scrollTop ?? defaultFileState.scrollTop
+    scrollTop: tab.scrollTop ?? defaultFileState.scrollTop,
+    mtimeMs: tab.mtimeMs ?? 0
   }
 }
 

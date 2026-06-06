@@ -1,8 +1,8 @@
 import { rename as fsRename } from 'fs-extra'
 import path from 'path'
 import {
-  BrowserWindow,
   app,
+  BrowserWindow,
   dialog,
   shell,
   ipcMain,
@@ -10,7 +10,7 @@ import {
   type MenuItem
 } from 'electron'
 import log from 'electron-log'
-import { isDirectory, isFile, exists } from 'common/filesystem'
+import { isFile } from 'common/filesystem'
 import { MARKDOWN_EXTENSIONS, isMarkdownFile } from 'common/filesystem/paths'
 import { checkUpdates, userSetting } from './marktext'
 import { showTabBar } from './view'
@@ -18,7 +18,7 @@ import { COMMANDS } from '../../commands'
 import type { CommandManager } from '../../commands'
 import { EXTENSION_HASN, PANDOC_EXTENSIONS, URL_REG } from '../../config'
 import { normalizeAndResolvePath, writeFile } from '../../filesystem'
-import { writeMarkdownFile } from '../../filesystem/markdown'
+import { writeMarkdownFile, isValidProjectPath } from '../../filesystem/markdown'
 import { getPath, getRecommendTitleFromMarkdownString } from '../../utils'
 import pandoc from '../../utils/pandoc'
 import { t } from '../../i18n'
@@ -196,16 +196,18 @@ const handleResponseForSave = async(
   // populates every field for the unsaved-file dialog payload, so the cast
   // is safe at this seam.
   return writeMarkdownFile(filePath, markdown, options as Parameters<typeof writeMarkdownFile>[2])
-    .then(() => {
+    .then(async() => {
+      const stats = await fsPromises.stat(filePath!)
+      const mtimeMs = stats.mtimeMs
       if (!alreadyExistOnDisk) {
         ipcMain.emit('window-add-file-path', win.id, filePath)
         ipcMain.emit('menu-add-recently-used', filePath)
 
         const newFilename = path.basename(filePath!)
-        win.webContents.send('mt::set-pathname', { id, pathname: filePath, filename: newFilename })
+        win.webContents.send('mt::set-pathname', { id, pathname: filePath, filename: newFilename, mtimeMs })
       } else {
         ipcMain.emit('window-file-saved', win.id, filePath)
-        win.webContents.send('mt::tab-saved', id)
+        win.webContents.send('mt::tab-saved', id, mtimeMs)
       }
       return id
     })
@@ -566,7 +568,15 @@ ipcMain.on('mt::ask-for-open-project-in-sidebar', async(e) => {
 
   if (filePaths && filePaths[0]) {
     const resolvedPath = normalizeAndResolvePath(filePaths[0])
-    ipcMain.emit('app-open-directory-by-id', win.id, resolvedPath, true)
+    if (isValidProjectPath(resolvedPath)) {
+      ipcMain.emit('app-open-directory-by-id', win.id, resolvedPath, true)
+    } else {
+      dialog.showMessageBox(win, {
+        type: 'warning',
+        message: t('Project Validation Error'),
+        detail: 'Selected folder is not a valid project (missing wordbird.json).'
+      })
+    }
   }
 })
 
@@ -715,27 +725,15 @@ export const openFile = async(win: BrowserWindow | null): Promise<void> => {
   }
 }
 
-export const openFolder = async(win: BrowserWindow | null): Promise<void> => {
-  if (!win) {
-    return
-  }
-  const { filePaths } = await dialog.showOpenDialog(win, {
-    properties: ['openDirectory', 'createDirectory']
-  })
-
-  if (filePaths && filePaths[0]) {
-    openFileOrFolder(win, filePaths[0])
+export const createProject = (win: Win): void => {
+  if (win && win.webContents) {
+    win.webContents.send('mt::project:create-request')
   }
 }
 
-export const openFileOrFolder = (win: BrowserWindow, pathname: string): void => {
-  const resolvedPath = normalizeAndResolvePath(pathname)
-  if (isFile(resolvedPath)) {
-    ipcMain.emit('app-open-file-by-id', win.id, resolvedPath)
-  } else if (isDirectory(resolvedPath)) {
-    ipcMain.emit('app-open-directory-by-id', win.id, resolvedPath)
-  } else {
-    console.error(`[ERROR] Cannot open unknown file: "${resolvedPath}"`)
+export const loadProject = (win: Win): void => {
+  if (win && win.webContents) {
+    win.webContents.send('mt::project:load-request')
   }
 }
 
@@ -812,8 +810,6 @@ export const loadFileCommands = (commandManager: CommandManager): void => {
   commandManager.add(COMMANDS.FILE_MOVE_FILE, moveTo)
   commandManager.add(COMMANDS.FILE_NEW_FILE, newEditorWindow)
   commandManager.add(COMMANDS.FILE_NEW_TAB, newBlankTab)
-  commandManager.add(COMMANDS.FILE_OPEN_FILE, openFile)
-  commandManager.add(COMMANDS.FILE_OPEN_FOLDER, openFolder)
   commandManager.add(COMMANDS.FILE_PREFERENCES, userSetting)
   commandManager.add(COMMANDS.FILE_PRINT, printDocument)
   commandManager.add(COMMANDS.FILE_QUIT, app.quit)

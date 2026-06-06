@@ -15,7 +15,11 @@ import type {
   IpcSendChannels,
   IpcSyncChannels,
   IpcMainEventChannels,
-  BootInfo
+  BootInfo,
+  ProjectCreateArgs,
+  ProjectCreateResult,
+  ProjectLoadArgs,
+  ProjectLoadResult
 } from '@shared/types/ipc'
 
 type RendererEventListener<K extends keyof IpcMainEventChannels> = (
@@ -222,6 +226,12 @@ const uploaderAPI = {
   uploadImage: (req: unknown) => invoke('mt::uploader::upload', req)
 }
 
+const projectAPI = {
+  create: (args: ProjectCreateArgs = {}) => invoke('mt::project:create', args),
+  load: (args: ProjectLoadArgs = {}) => invoke('mt::project:load', args),
+  validate: (path: string) => invoke('mt::project:validate', path)
+}
+
 const fontsAPI = {
   list: () => invoke('mt::fonts::list')
 }
@@ -242,6 +252,7 @@ const electronAPI = {
   },
   paths: bootInfo?.paths || {},
   isUpdatable: !!bootInfo?.isUpdatable,
+  project: projectAPI,
   windowControl: windowControlAPI
 }
 

@@ -19,7 +19,7 @@
       />
       <div v-else class="main-workspace">
         <div class="editor-area">
-          <recent v-if="!hasCurrentFile" />
+          <recent v-if="showRecentPrompt" />
           <editor-with-tabs
             v-if="hasCurrentFile"
             :markdown="markdown"
@@ -107,6 +107,11 @@ const hasCurrentFile = computed<boolean>(() => {
   return currentFile.value?.markdown !== undefined
 })
 
+// Show the recent component when there's no current file AND no project open
+const showRecentPrompt = computed<boolean>(() => {
+  return !hasCurrentFile.value && !projectTree.value
+})
+
 // Watchers
 watch(theme, (value, oldValue) => {
   if (value !== oldValue) {
@@ -171,6 +176,7 @@ onMounted(async () => {
   listenForMainStore.LISTEN_FOR_PARAGRAPH_INLINE_STYLE()
   projectStore.LISTEN_FOR_UPDATE_PROJECT()
   projectStore.LISTEN_FOR_LOAD_PROJECT()
+  projectStore.LISTEN_FOR_PROJECT_REQUESTS()
   projectStore.LISTEN_FOR_SIDEBAR_CONTEXT_MENU()
   autoUpdateStore.LISTEN_FOR_UPDATE()
   preferencesStore.ASK_FOR_USER_PREFERENCE()
