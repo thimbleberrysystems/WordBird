@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import path from 'path'
 import fs from 'fs'
+import * as git from 'isomorphic-git'
 import { isDirectory2 } from 'common/filesystem'
 import { isValidProjectPath } from '../filesystem/markdown'
 import type {
@@ -110,6 +111,13 @@ export const registerProjectHandlers = (): void => {
         createdAt: new Date().toISOString(),
         templateId: 'default'
       }, null, 2), 'utf8')
+
+      // Phase 3: Initialize git repository
+      try {
+        await git.init({ fs, dir: location })
+      } catch (gitErr) {
+        console.warn('Git initialization failed:', gitErr)
+      }
 
       // Update lastOpenedFolder preference
       updateLastOpenedFolder(win, location)

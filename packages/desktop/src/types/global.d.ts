@@ -101,6 +101,7 @@ declare global {
       create: (args?: ProjectCreateArgs) => Promise<ProjectCreateResult>
       load: (args?: ProjectLoadArgs) => Promise<ProjectLoadResult>
       validate: (path: string) => Promise<boolean>
+      saveAs: (currentPath: string) => Promise<ProjectCreateResult>
     }
     windowControl: ElectronWindowControlAPI
   }

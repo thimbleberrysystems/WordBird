@@ -98,6 +98,7 @@ export interface IpcInvokeChannels {
   'mt::project:create': { args: [ProjectCreateArgs?]; ret: ProjectCreateResult }
   'mt::project:load': { args: [ProjectLoadArgs?]; ret: ProjectLoadResult }
   'mt::project:validate': { args: [path: string]; ret: boolean }
+  'mt::project:save-as': { args: [path: string]; ret: ProjectCreateResult }
   'mt::uploader::upload': { args: [req: unknown]; ret: unknown }
   'mt::win::is-fullscreen': { args: []; ret: boolean }
   'mt::win::is-maximized': { args: []; ret: boolean }
