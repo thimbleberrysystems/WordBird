@@ -133,7 +133,30 @@ class Preference extends TypedEmitter<PreferenceEvents> {
     return this.store.store as IUserPreferences
   }
 
+  setDataCenter(dataCenter: DataCenter): void {
+    this.dataCenter = dataCenter
+  }
+
   setItem(key: string, value: unknown): void {
+    if (key === 'aiConfigs' && this.dataCenter) {
+      const aiConfigs = value as Record<string, any>
+      for (const provider of Object.keys(aiConfigs)) {
+        const config = aiConfigs[provider]
+        // ONLY attempt to encrypt if there is an actual non-empty string to encrypt
+        if (config && typeof config.apiKey === 'string' && config.apiKey.trim().length > 0) {
+          // Move apiKey to DataCenter (keytar)
+          try {
+            this.dataCenter.setItem(`${provider}_apiKey`, config.apiKey)
+            // Store empty string in preferences.json to keep schema valid but avoid duplication
+            config.apiKey = ''
+          } catch (err) {
+            log.error(`[AI-Config] Failed to encrypt ${provider} key:`, err)
+            // If encryption fails, we leave it as-is in the preference file 
+            // rather than losing the user's key entirely.
+          }
+        }
+      }
+    }
     this.store.set(key, value)
     ipcMain.emit('broadcast-preferences-changed', { [key]: value })
   }
@@ -175,14 +198,30 @@ class Preference extends TypedEmitter<PreferenceEvents> {
   }
 
   _listenForIpcMain(): void {
-    ipcMain.on('mt::ask-for-user-preference', (e) => {
+    ipcMain.on('mt::ask-for-user-preference', async (e) => {
       const win = BrowserWindow.fromWebContents(e.sender)
       if (win) {
-        win.webContents.send('mt::user-preference', this.getAll())
+        const prefs = this.getAll()
+
+        // Hydrate AI configs with encrypted keys from DataCenter
+        if (this.dataCenter && prefs.aiConfigs) {
+          for (const provider of Object.keys(prefs.aiConfigs)) {
+            try {
+              const apiKey = await this.dataCenter.getItem(`${provider}_apiKey`)
+              if (apiKey) {
+                prefs.aiConfigs[provider].apiKey = apiKey
+              }
+            } catch (err) {
+              log.warn(`[AI-Config] Could not decrypt ${provider} key for hydration`)
+            }
+          }
+        }
+
+        win.webContents.send('mt::user-preference', prefs)
       }
     })
-    ipcMain.on('mt::set-user-preference', (_e, settings: Record<string, unknown>) => {
-      this.setItems(settings)
+    ipcMain.on('mt::set-user-preference', (_e, settingsValue: Record<string, unknown>) => {
+      this.setItems(settingsValue)
     })
     ipcMain.on('mt::cmd-toggle-autosave', () => {
       this.setItem('autoSave', !this.getItem('autoSave'))

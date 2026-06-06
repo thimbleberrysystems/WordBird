@@ -4,45 +4,34 @@
   "titleBarStyle": "custom",
   "openFilesInNewWindow": false,
   "openFolderInNewWindow": false,
-  "zoom": 1.0,
+  "zoom": 1,
   "hideScrollbar": false,
   "wordWrapInToc": false,
   "fileSortBy": "created",
   "fileSortOrder": "asc",
   "startUpAction": "restoreAll",
-  "restoreLayoutState": true,
-  "defaultDirectoryToOpen": "",
-  "lastOpenedFolder": "",
-  "treePathExcludePatterns": [],
   "language": "en",
-
   "editorFontFamily": "Open Sans",
   "fontSize": 16,
   "lineHeight": 1.6,
+  "wrapCodeBlocks": false,
+  "editorLineWidth": "",
   "codeFontSize": 14,
   "codeFontFamily": "DejaVu Sans Mono",
   "codeBlockLineNumbers": true,
   "trimUnnecessaryCodeBlockEmptyLines": true,
-  "wrapCodeBlocks": false,
-  "editorLineWidth": "",
-
   "autoPairBracket": true,
   "autoPairMarkdownSyntax": true,
   "autoPairQuote": true,
   "endOfLine": "default",
   "defaultEncoding": "utf8",
   "autoGuessEncoding": true,
-  "autoNormalizeLineEndings": false,
   "trimTrailingNewline": 2,
   "textDirection": "ltr",
   "hideQuickInsertHint": false,
-  "imageInsertAction": "path",
-  "imagePreferRelativeDirectory": false,
-  "imageRelativeDirectoryBase": "file",
-  "imageRelativeDirectoryName": "assets",
   "hideLinkPopup": false,
   "autoCheck": false,
-
+  "autoNormalizeLineEndings": false,
   "preferLooseListItem": true,
   "bulletListMarker": "-",
   "orderListDelimiter": ".",
@@ -55,36 +44,60 @@
   "isHtmlEnabled": true,
   "isGitlabCompatibilityEnabled": false,
   "sequenceTheme": "hand",
-
-  "theme": "light",
-  "followSystemTheme": true,
+  "theme": "tokyo-night-light",
+  "followSystemTheme": false,
   "lightModeTheme": "light",
+  "restoreLayoutState": true,
   "darkModeTheme": "dark",
   "customCss": "",
-
   "spellcheckerEnabled": false,
   "spellcheckerNoUnderline": false,
   "spellcheckerLanguage": "en-US",
-
-  "sideBarVisibility": false,
+  "imageInsertAction": "path",
+  "imagePreferRelativeDirectory": false,
+  "imageRelativeDirectoryBase": "file",
+  "imageRelativeDirectoryName": "assets",
+  "sideBarVisibility": true,
   "tabBarVisibility": false,
   "sourceCodeModeEnabled": false,
   "openedFilesInSidebar": true,
-
   "searchExclusions": [],
   "searchMaxFileSize": "",
   "searchIncludeHidden": false,
   "searchNoIgnore": false,
   "searchFollowSymlinks": true,
-
   "watcherUsePolling": false,
-
-  "aiProvider": "openai",
+  "defaultDirectoryToOpen": "",
+  "lastOpenedFolder": "/home/franklynece/WordBird/WordBird/packages/desktop",
+  "treePathExcludePatterns": [],
+  "aiProvider": "ollama",
   "aiConfigs": {
-    "openai": { "apiKey": "", "model": "gpt-4o" },
-    "anthropic": { "apiKey": "", "model": "claude-3-5-sonnet-latest" },
-    "google": { "apiKey": "", "model": "gemini-1.5-pro" },
-    "ollama": { "apiKey": "ollama", "baseUrl": "http://127.0.0.1:11434", "model": "llama3" },
-    "openrouter": { "apiKey": "", "baseUrl": "https://openrouter.ai/api/v1", "model": "openai/gpt-4o" }
+    "openai": {
+      "apiKey": "",
+      "model": "gpt-4o"
+    },
+    "anthropic": {
+      "apiKey": "",
+      "model": "claude-3-5-sonnet-latest"
+    },
+    "google": {
+      "apiKey": "",
+      "model": "gemini-1.5-pro"
+    },
+    "ollama": {
+      "apiKey": "ollama",
+      "baseUrl": "http://127.0.0.1:11434",
+      "model": "smollm:135m"
+    },
+    "openrouter": {
+      "apiKey": "",
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "model": "openai/gpt-4o"
+    }
+  },
+  "__internal__": {
+    "migrations": {
+      "version": "0.20.0-dev"
+    }
   }
 }

@@ -37,6 +37,7 @@ class Accessor {
 
     this.preferences = new Preference(this.paths)
     this.dataCenter = new DataCenter(this.paths)
+    this.preferences.setDataCenter(this.dataCenter)
     this.editorBufferStore = new EditorBufferStore(this.paths)
 
     this.commandManager = CommandManager

@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { PROVIDER_BASE_URLS, PROVIDER_DEFAULT_MODELS } from '../shared/types/langgraph'
 import bus from '../bus'
 import { setLanguage } from '../i18n'
 
@@ -107,6 +108,10 @@ export interface PreferencesState {
   searchFollowSymlinks: boolean
 
   watcherUsePolling: boolean
+
+  // ----- AI -----
+  aiProvider: string
+  aiConfigs: Record<string, { apiKey: string; baseUrl?: string; model?: string; temperature?: number; maxTokens?: number }>
 
   // ----- Edit modes (per-window, not persisted) -----
   typewriter: boolean
@@ -220,6 +225,24 @@ export const usePreferencesStore = defineStore('preferences', {
 
     watcherUsePolling: false,
 
+    // ----- AI -----
+    aiProvider: 'openai',
+    aiConfigs: {
+      openai: { apiKey: '', model: PROVIDER_DEFAULT_MODELS.openai },
+      anthropic: { apiKey: '', model: PROVIDER_DEFAULT_MODELS.anthropic },
+      google: { apiKey: '', model: PROVIDER_DEFAULT_MODELS.google },
+      ollama: { 
+        apiKey: 'ollama', 
+        baseUrl: PROVIDER_BASE_URLS.ollama, 
+        model: PROVIDER_DEFAULT_MODELS.ollama 
+      },
+      openrouter: { 
+        apiKey: '', 
+        baseUrl: PROVIDER_BASE_URLS.openrouter, 
+        model: PROVIDER_DEFAULT_MODELS.openrouter 
+      }
+    },
+
     // --------------------------------------------------------------------------
 
     // Edit modes of the current window (not part of persistent settings)
@@ -288,11 +311,27 @@ export const usePreferencesStore = defineStore('preferences', {
       }
 
       // save to electron-store
-      window.electron.ipcRenderer.send('mt::set-user-preference', { [type as string]: value })
+      const payload = typeof value === 'object' && value !== null
+        ? JSON.parse(JSON.stringify(value))
+        : value
+      window.electron.ipcRenderer.send('mt::set-user-preference', { [type as string]: payload })
+    },
+
+    SET_AI_CONFIG(provider: string, config: Record<string, unknown>): void {
+      this.aiConfigs[provider] = {
+        ...this.aiConfigs[provider] as Record<string, unknown>,
+        ...config
+      }
+      // Clone to avoid "object could not be cloned" error with Proxy objects in IPC
+      const rawConfigs = JSON.parse(JSON.stringify(this.aiConfigs))
+      window.electron.ipcRenderer.send('mt::set-user-preference', { aiConfigs: rawConfigs })
     },
 
     SET_USER_DATA({ type, value }: SetUserDataPayload): void {
-      window.electron.ipcRenderer.send('mt::set-user-data', { [type]: value })
+      const payload = typeof value === 'object' && value !== null
+        ? JSON.parse(JSON.stringify(value))
+        : value
+      window.electron.ipcRenderer.send('mt::set-user-data', { [type]: payload })
     },
 
     SET_IMAGE_FOLDER_PATH(value?: string): void {

@@ -5,7 +5,8 @@ import {
   Brush as ThemeIcon,
   Picture as ImageIcon,
   Reading as SpellIcon,
-  Operation as KeyBindingIcon
+  Operation as KeyBindingIcon,
+  ChatLineRound as AIIcon
 } from '@element-plus/icons-vue'
 
 import preferences from '../../../../main/preferences/schema.json'
@@ -101,6 +102,12 @@ export const getCategory = (): PrefCategory[] => [
     label: 'image',
     icon: ImageIcon,
     path: '/preference/image'
+  },
+  {
+    name: t('preferences.categories.ai') || 'AI',
+    label: 'ai',
+    icon: AIIcon,
+    path: '/preference/ai'
   },
   {
     name: t('preferences.categories.keybindings'),

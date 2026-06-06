@@ -36,7 +36,13 @@ class DataCenter extends TypedEmitter<DataCenterEvents> {
     this.dataCenterPath = dataCenterPath
     this.userDataPath = userDataPath
     this.serviceName = 'marktext'
-    this.encryptKeys = []
+    this.encryptKeys = [
+      'openai_apiKey',
+      'anthropic_apiKey',
+      'google_apiKey',
+      'ollama_apiKey',
+      'openrouter_apiKey'
+    ]
     this.hasDataCenterFile = fs.existsSync(
       path.join(this.dataCenterPath, `./${DATA_CENTER_NAME}.json`)
     )

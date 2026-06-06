@@ -483,6 +483,7 @@
       "spelling": "Spelling",
       "theme": "Theme",
       "image": "Image",
+      "ai": "AI",
       "keybindings": "Keybindings"
     },
     "general": {
@@ -711,6 +712,12 @@
         "scriptPath": "Script path"
       },
       "defaultBehavior": "The default behavior after pasting or dragging the image to MarkText"
+    },
+    "ai": {
+      "title": "AI Settings",
+      "provider": {
+        "title": "AI Provider"
+      }
     },
     "markdown": {
       "title": "Markdown",

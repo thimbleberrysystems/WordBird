@@ -4,6 +4,7 @@
     :class="{ 'ag-underdevelop': disable }"
   >
     <div
+      v-if="description"
       class="description"
       style="display: flex; align-items: center"
     >

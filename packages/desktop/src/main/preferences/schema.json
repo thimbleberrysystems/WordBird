@@ -401,5 +401,21 @@
     "description": "Watcher--Whether to use polling. Polling may leads to high CPU utilization but is necessary to watch files over a network.--internal",
     "type": "boolean",
     "default": false
+  },
+  "aiProvider": {
+    "description": "AI--The selected AI provider.",
+    "type": "string",
+    "default": "openai"
+  },
+  "aiConfigs": {
+    "description": "AI--The configurations for each AI provider.--internal",
+    "type": "object",
+    "default": {
+      "openai": { "apiKey": "", "model": "gpt-4o" },
+      "anthropic": { "apiKey": "", "model": "claude-3-5-sonnet-latest" },
+      "google": { "apiKey": "", "model": "gemini-1.5-pro" },
+      "ollama": { "apiKey": "ollama", "baseUrl": "http://127.0.0.1:11434", "model": "llama3" },
+      "openrouter": { "apiKey": "", "baseUrl": "https://openrouter.ai/api/v1", "model": "openai/gpt-4o" }
+    }
   }
 }
