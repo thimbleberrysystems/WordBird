@@ -6,7 +6,7 @@ import { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages'
 import { StateGraph, StateSchema, MessagesValue, CompiledStateGraph } from '@langchain/langgraph'
 import type { AIProvider, IAIConfig, ILangGraphMessage, ILangGraphResponse } from '../shared/types/langgraph'
-import { PROVIDER_BASE_URLS, PROVIDER_DEFAULT_MODELS } from '../shared/types/langgraph'
+import { PROVIDER_BASE_URLS, PROVIDER_DEFAULT_MODELS } from '@shared/constants/ai'
 
 // Define the shape of our graph state
 const AgentState = new StateSchema({

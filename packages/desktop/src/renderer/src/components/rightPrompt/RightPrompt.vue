@@ -68,7 +68,12 @@ import { ElMessage } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '../../store/preferences'
 import { langGraphService } from '../../services/langgraph'
-import type { AIProvider, IAIConfig, ILangGraphMessage } from '../../shared/types/langgraph'
+import { 
+  type AIProvider, 
+  type IAIConfig, 
+  type ILangGraphMessage
+} from '../../shared/types/langgraph'
+import { PROVIDERS_WITHOUT_KEY } from '@shared/constants/ai'
 
 // Store
 const preferencesStore = usePreferencesStore()
@@ -93,7 +98,8 @@ async function connect(): Promise<void> {
   }
 
   // Validate API key for providers that need it
-  if (currentProvider !== 'ollama' && !currentConfig.apiKey?.trim()) {
+  const needsKey = !PROVIDERS_WITHOUT_KEY.includes(currentProvider)
+  if (needsKey && !currentConfig.apiKey?.trim()) {
     console.warn('[RightPrompt] Missing API key for provider:', currentProvider)
     aiIsConnected.value = false
     return

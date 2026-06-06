@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { PROVIDER_BASE_URLS, PROVIDER_DEFAULT_MODELS } from '../shared/types/langgraph'
+import { AI_DEFAULTS } from '@shared/constants/ai'
 import bus from '../bus'
 import { setLanguage } from '../i18n'
 
@@ -226,22 +226,8 @@ export const usePreferencesStore = defineStore('preferences', {
     watcherUsePolling: false,
 
     // ----- AI -----
-    aiProvider: 'openai',
-    aiConfigs: {
-      openai: { apiKey: '', model: PROVIDER_DEFAULT_MODELS.openai },
-      anthropic: { apiKey: '', model: PROVIDER_DEFAULT_MODELS.anthropic },
-      google: { apiKey: '', model: PROVIDER_DEFAULT_MODELS.google },
-      ollama: { 
-        apiKey: 'ollama', 
-        baseUrl: PROVIDER_BASE_URLS.ollama, 
-        model: PROVIDER_DEFAULT_MODELS.ollama 
-      },
-      openrouter: { 
-        apiKey: '', 
-        baseUrl: PROVIDER_BASE_URLS.openrouter, 
-        model: PROVIDER_DEFAULT_MODELS.openrouter 
-      }
-    },
+    aiProvider: AI_DEFAULTS.provider,
+    aiConfigs: { ...AI_DEFAULTS.configs },
 
     // --------------------------------------------------------------------------
 
@@ -319,9 +305,9 @@ export const usePreferencesStore = defineStore('preferences', {
 
     SET_AI_CONFIG(provider: string, config: Record<string, unknown>): void {
       this.aiConfigs[provider] = {
-        ...this.aiConfigs[provider] as Record<string, unknown>,
+        ...(this.aiConfigs[provider] || { apiKey: '' }),
         ...config
-      }
+      } as PreferencesState['aiConfigs'][string]
       // Clone to avoid "object could not be cloned" error with Proxy objects in IPC
       const rawConfigs = JSON.parse(JSON.stringify(this.aiConfigs))
       window.electron.ipcRenderer.send('mt::set-user-preference', { aiConfigs: rawConfigs })

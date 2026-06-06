@@ -8,7 +8,9 @@ import { hasSameKeys } from '../utils'
 import { getSupportedLanguages, isLanguageSupported } from 'common/i18n'
 import { TypedEmitter } from '@shared/types/typedEmitter'
 import type { IUserPreferences } from '@shared/types/preferences'
+import DataCenter from '../dataCenter'
 import schema from './schema.json'
+import { AI_DEFAULTS } from '@shared/constants/ai'
 
 const PREFERENCES_FILE_NAME = 'preferences'
 
@@ -27,6 +29,7 @@ class Preference extends TypedEmitter<PreferenceEvents> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public readonly store: Store<any>
   public readonly staticPath: string
+  private dataCenter: DataCenter | null = null
 
   /**
    * @param paths The path instance.
@@ -151,8 +154,9 @@ class Preference extends TypedEmitter<PreferenceEvents> {
             config.apiKey = ''
           } catch (err) {
             log.error(`[AI-Config] Failed to encrypt ${provider} key:`, err)
-            // If encryption fails, we leave it as-is in the preference file 
-            // rather than losing the user's key entirely.
+            // If encryption fails, we MUST NOT store the plain text key.
+            // We clear it to protect user security, even if it means the setting is lost.
+            config.apiKey = ''
           }
         }
       }
@@ -203,6 +207,17 @@ class Preference extends TypedEmitter<PreferenceEvents> {
       if (win) {
         const prefs = this.getAll()
 
+        // Ensure AI provider and configs are properly initialized if missing or corrupted
+        if (!prefs.aiProvider) {
+          prefs.aiProvider = AI_DEFAULTS.provider
+          this.setItem('aiProvider', AI_DEFAULTS.provider)
+        }
+
+        if (!prefs.aiConfigs || Object.keys(prefs.aiConfigs).length === 0) {
+          prefs.aiConfigs = { ...AI_DEFAULTS.configs }
+          this.setItem('aiConfigs', prefs.aiConfigs)
+        }
+
         // Hydrate AI configs with encrypted keys from DataCenter
         if (this.dataCenter && prefs.aiConfigs) {
           for (const provider of Object.keys(prefs.aiConfigs)) {
@@ -234,7 +249,6 @@ class Preference extends TypedEmitter<PreferenceEvents> {
       this.setItems(settings as Record<string, unknown>)
     })
   }
-
   /**
    * Gets the system language, or null if it's not in the supported list
    * @returns Supported system language code or null

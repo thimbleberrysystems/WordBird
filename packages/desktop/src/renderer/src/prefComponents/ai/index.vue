@@ -16,7 +16,7 @@
     <compound v-if="currentConfig">
       <template #children>
         <text-box
-          v-if="aiProvider !== 'ollama'"
+          v-if="!PROVIDERS_WITHOUT_KEY.includes(aiProvider as AIProvider)"
           description="Enter API key"
           :input="currentConfig.apiKey || ''"
           placeholder="sk-..."
@@ -103,7 +103,7 @@ import { usePreferencesStore } from '@/store/preferences'
 import Compound from '../common/compound/index.vue'
 import textBox from '../common/textBox/index.vue'
 import curSelect from '../common/select/index.vue'
-import { PROVIDER_BASE_URLS, PROVIDER_DEFAULT_MODELS } from '@/shared/types/langgraph'
+import { PROVIDER_BASE_URLS, PROVIDER_LABELS, AI_PROVIDERS, PROVIDERS_WITHOUT_KEY } from '@shared/constants/ai'
 import { langGraphService } from '@/services/langgraph'
 import type { AIProvider, IAIConfig, IAIProviderConfig } from '@/shared/types/langgraph'
 
@@ -113,13 +113,10 @@ const preferencesStore = usePreferencesStore()
 const { aiProvider, aiConfigs } = storeToRefs(preferencesStore)
 
 // Constants
-const providerOptions = [
-  { label: 'OpenAI', value: 'openai' },
-  { label: 'Anthropic', value: 'anthropic' },
-  { label: 'Google Gemini', value: 'google' },
-  { label: 'Ollama (Local)', value: 'ollama' },
-  { label: 'OpenRouter', value: 'openrouter' }
-]
+const providerOptions = AI_PROVIDERS.map(p => ({
+  label: PROVIDER_LABELS[p],
+  value: p as string
+}))
 
 // Computed
 const currentConfig = computed(() => aiConfigs.value[aiProvider.value])
