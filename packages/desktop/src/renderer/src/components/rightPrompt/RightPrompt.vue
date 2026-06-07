@@ -1,10 +1,31 @@
 <template>
-  <aside class="right-prompt" role="complementary" aria-label="Biscuit chat panel">
+  <aside
+    class="right-prompt"
+    role="complementary"
+    aria-label="Biscuit chat panel"
+    :style="rightPromptStyle"
+  >
+    <div
+      class="resizer"
+      @mousedown="startResizing"
+    />
     <header class="prompt-header">
-      <div class="prompt-title">Biscuit</div>
+      <div
+        class="toggle-btn"
+        title="Collapse AI Panel"
+        @click="togglePanel"
+      >
+        <el-icon><DArrowRight /></el-icon>
+      </div>
+      <div class="prompt-title">
+        Biscuit
+      </div>
     </header>
 
-    <section class="prompt-body" ref="promptBody">
+    <section
+      ref="promptBody"
+      class="prompt-body"
+    >
       <div
         v-for="(message, index) in aiMessages"
         :key="index"
@@ -15,15 +36,22 @@
             {{ message.role === 'user' ? 'You' : (message.role === 'error' ? 'System' : 'AI') }}
           </span>
         </div>
-        <div class="message__text">{{ message.content }}</div>
+        <div class="message__text">
+          {{ message.content }}
+        </div>
       </div>
 
       <!-- Thinking Indicator -->
-      <div v-if="sending" class="message message--assistant message--thinking">
+      <div
+        v-if="sending"
+        class="message message--assistant message--thinking"
+      >
         <div class="message__header">
           <span class="message__label">AI</span>
         </div>
-        <div class="message__text italic">Thinking...</div>
+        <div class="message__text italic">
+          Thinking...
+        </div>
       </div>
     </section>
 
@@ -34,9 +62,9 @@
             v-model="userInput"
             rows="4"
             aria-label="Chat input"
-              placeholder="Greetings! I'm Biscuit. Bring the ink and your wildest ideas, and let's bring them to life."
+            placeholder="Greetings! I'm Biscuit. Bring the ink and your wildest ideas, and let's bring them to life."
             @keydown.enter.exact.prevent="sendMessage"
-          ></textarea>
+          />
         </div>
         <div class="prompt-input-actions">
           <el-button
@@ -47,7 +75,10 @@
             title="Configure AI"
             @click="openAiSettings"
           >
-            <span class="status-indicator" :class="{ 'connected': aiIsConnected }"></span>
+            <span
+              class="status-indicator"
+              :class="{ 'connected': aiIsConnected }"
+            />
             {{ currentModelName }}
           </el-button>
 
@@ -75,17 +106,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed } from 'vue'
+import { ref, nextTick, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '../../store/preferences'
+import { useLayoutStore } from '../../store/layout'
 import { langGraphService } from '../../services/langgraph'
-import { 
+import { DArrowRight } from '@element-plus/icons-vue'
+import {
   type ILangGraphMessage
 } from '@shared/types/langgraph'
 
 // Store
 const preferencesStore = usePreferencesStore()
+const layoutStore = useLayoutStore()
 const { aiProvider, aiConfigs, aiIsConnected } = storeToRefs(preferencesStore)
 
 const currentModelName = computed(() => {
@@ -93,6 +127,57 @@ const currentModelName = computed(() => {
   const config = aiConfigs.value[aiProvider.value]
   const name = config?.model || 'Connected'
   return name.length > 15 ? name.substring(0, 12) + '...' : name
+})
+
+// Resize logic
+const DEFAULT_WIDTH = 340
+const MIN_WIDTH = 250
+const MAX_WIDTH = 600
+const panelWidth = ref(Number(localStorage.getItem('right-prompt-width')) || DEFAULT_WIDTH)
+const isResizing = ref(false)
+
+const rightPromptStyle = computed(() => ({
+  width: `${panelWidth.value}px`,
+  flex: `0 0 ${panelWidth.value}px`
+}))
+
+const startResizing = (event: MouseEvent) => {
+  isResizing.value = true
+  document.addEventListener('mousemove', handleMouseMove)
+  document.addEventListener('mouseup', stopResizing)
+  document.body.style.cursor = 'col-resize'
+}
+
+const handleMouseMove = (event: MouseEvent) => {
+  if (!isResizing.value) return
+
+  // Calculate width from the right side
+  const newWidth = window.innerWidth - event.clientX
+
+  if (newWidth < 150) {
+    // If pushed too far right, hide it
+    layoutStore.SET_LAYOUT({ showRightPrompt: false })
+    stopResizing()
+    return
+  }
+
+  panelWidth.value = Math.max(MIN_WIDTH, Math.min(newWidth, MAX_WIDTH))
+}
+
+const stopResizing = () => {
+  isResizing.value = false
+  document.removeEventListener('mousemove', handleMouseMove)
+  document.removeEventListener('mouseup', stopResizing)
+  document.body.style.cursor = ''
+  localStorage.setItem('right-prompt-width', String(panelWidth.value))
+}
+
+const togglePanel = () => {
+  layoutStore.SET_LAYOUT({ showRightPrompt: false })
+}
+
+onBeforeUnmount(() => {
+  stopResizing()
 })
 
 // Reactive state
@@ -103,13 +188,13 @@ const aiMessages = ref<ILangGraphMessage[]>([])
 const currentAbortController = ref<AbortController | null>(null)
 
 // Open settings window to AI page
-function openAiSettings(): void {
+function openAiSettings (): void {
   console.log('[RightPrompt] Opening AI settings...')
   window.electron.ipcRenderer.send('mt::open-setting-window', 'ai')
 }
 
 // Stop generation
-function stopGeneration(): void {
+function stopGeneration (): void {
   if (currentAbortController.value) {
     currentAbortController.value.abort()
     currentAbortController.value = null
@@ -117,7 +202,7 @@ function stopGeneration(): void {
 }
 
 // Send message to AI
-async function sendMessage(): Promise<void> {
+async function sendMessage (): Promise<void> {
   if (!userInput.value.trim() || !aiIsConnected.value || sending.value) return
 
   const userMessage: ILangGraphMessage = {
@@ -128,7 +213,7 @@ async function sendMessage(): Promise<void> {
   aiMessages.value.push(userMessage)
   userInput.value = ''
   sending.value = true
-  
+
   // Initialize AbortController for this request
   currentAbortController.value = new AbortController()
 
@@ -139,7 +224,7 @@ async function sendMessage(): Promise<void> {
 
   try {
     const response = await langGraphService.sendMessage(aiMessages.value)
-    
+
     if (response && response.content) {
       aiMessages.value.push({
         role: 'assistant',
@@ -155,7 +240,7 @@ async function sendMessage(): Promise<void> {
     }
   } catch (error: any) {
     console.error('[RightPrompt] Send message error:', error)
-    
+
     // Check if it was aborted
     if (error.message === 'Request aborted by user') {
       aiMessages.value.push({
@@ -171,7 +256,7 @@ async function sendMessage(): Promise<void> {
       })
       ElMessage.error('Failed to send message: ' + errorMessage)
     }
-    
+
     await nextTick()
     if (promptBody.value) {
       promptBody.value.scrollTop = promptBody.value.scrollHeight
@@ -185,30 +270,68 @@ async function sendMessage(): Promise<void> {
 
 <style scoped>
 .right-prompt {
-  width: var(--prompt-width, 340px);
-  min-width: 300px;
-  max-width: 450px;
   display: flex;
   flex-direction: column;
   background: var(--editorBgColor);
-  border-left: 1px solid var(--color-border, rgba(128, 128, 128, 0.2));
-  overflow: hidden;
+  overflow: visible;
   box-sizing: border-box;
+  position: relative;
+}
+
+.resizer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  z-index: 10;
+  transition: background 0.2s;
+}
+
+.resizer:hover, .resizer:active {
+  background: var(--color-primary, #409eff);
 }
 
 .prompt-header {
-  padding: 12px var(--spacing-4);
-  border-bottom: 1px solid var(--color-border, rgba(128, 128, 128, 0.2));
-  background: var(--dialogBgColor, var(--editorBgColor));
+  height: 28px;
+  padding: 0 var(--spacing-4);
+  background: var(--editorBgColor);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.toggle-btn {
+  position: absolute;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-secondary, #909399);
+  transition: color 0.2s;
+  padding: 2px;
+}
+
+.toggle-btn:hover {
+  color: var(--color-primary, #409eff);
 }
 
 .prompt-title {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-primary, #409eff);
   letter-spacing: 0.05em;
   text-align: center;
+  border: 1px solid var(--color-primary, #409eff);
+  padding: 1px 10px;
+  border-radius: 12px;
+  background: rgba(64, 158, 255, 0.05);
+  line-height: normal;
 }
 
 .prompt-body {

@@ -141,6 +141,7 @@
       "showTabBar": "顯示標籤欄",
       "toc": "目錄",
       "toggleTableOfContents": "切換目錄",
+      "toggleAiPanel": "切換 Biscuit",
       "reloadImages": "重新載入圖片",
       "showDeveloperTools": "顯示開發者工具",
       "reloadWindow": "重新載入視窗"

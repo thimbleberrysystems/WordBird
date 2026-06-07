@@ -141,6 +141,7 @@
       "showTabBar": "Show Tab Bar",
       "toc": "Table of Contents",
       "toggleTableOfContents": "Toggle Table of Contents",
+      "toggleAiPanel": "Toggle Biscuit",
       "reloadImages": "Reload Images",
       "showDeveloperTools": "Show Developer Tools",
       "reloadWindow": "Reload Window"
@@ -288,6 +289,7 @@
       "files": "Files",
       "search": "Search",
       "toc": "Table of Contents",
+      "biscuit": "Biscuit",
       "settings": "Settings"
     }
   },

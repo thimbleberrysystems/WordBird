@@ -219,21 +219,33 @@ const showCustomTitleBar = computed(() => {
   return titleBarStyle.value === 'custom' && !isOsx
 })
 
-watch(
-  () => props.filename,
-  (value) => {
-    // Set filename when hover on dock
-    const hasOpenFolder = !!(props.project && props.project.name)
-    const projectName = props.project?.name ?? ''
-    let title = ''
-    if (value) {
-      title = hasOpenFolder ? `${value} - ${projectName}` : `${value}`
+// Set the document title based on current file and project state
+const updateDocumentTitle = () => {
+  const projectName = props.project?.name ?? ''
+  const filename = props.filename ?? ''
+  const hasProject = !!projectName
+  let title = ''
+  if (filename) {
+    // When a file is open, show filename
+    if (hasProject) {
+      title = `${filename} - ${projectName}`
     } else {
-      title = hasOpenFolder ? projectName : ''
+      // No project open, show filename with app name
+      title = `${filename} - WordBird`
     }
-
-    document.title = title
+  } else {
+    // No file open: show project name or default app name
+    title = projectName || 'WordBird'
   }
+  // Ensure title is never empty
+  document.title = title || 'WordBird'
+}
+
+// Watch for changes and set title immediately
+watch(
+  [() => props.filename, () => props.project?.name],
+  updateDocumentTitle,
+  { immediate: true, flush: 'post' }
 )
 
 const handleWordClick = () => {

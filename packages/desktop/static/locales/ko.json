@@ -141,6 +141,7 @@
       "showTabBar": "탭바 보기",
       "toc": "목차",
       "toggleTableOfContents": "목차 토글",
+      "toggleAiPanel": "Biscuit 토글",
       "reloadImages": "이미지 새로고침",
       "showDeveloperTools": "개발자 도구 보기",
       "reloadWindow": "창 새로고침"

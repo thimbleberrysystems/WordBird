@@ -5,6 +5,15 @@
     class="side-bar"
     :style="[!rightColumn ? { 'min-width': '45px' } : {}, { width: `${finalSideBarWidth}px` }]"
   >
+    <!-- Expand button when RightPrompt is hidden -->
+    <div
+      v-if="showExpandIcon"
+      class="expand-biscuit-btn"
+      title="Expand AI Panel"
+      @click="handleExpandClick"
+    >
+      <el-icon><DArrowLeft /></el-icon>
+    </div>
     <div class="left-column">
       <ul>
         <li
@@ -57,6 +66,7 @@ import { sideBarIcons, sideBarBottomIcons } from './help'
 import Tree from './tree.vue'
 import SideBarSearch from './search.vue'
 import Toc from './toc.vue'
+import { DArrowLeft } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
 import type { TabDescriptor } from './types'
 
@@ -71,6 +81,7 @@ const openedFiles = ref<TabDescriptor[]>([])
 const sideBarViewWidth = ref(280)
 
 const { rightColumn, showSideBar, sideBarWidth } = storeToRefs(layoutStore)
+const { showRightPrompt } = storeToRefs(layoutStore)
 
 const { projectTree } = storeToRefs(projectStore)
 const { tabs } = storeToRefs(editorStore)
@@ -131,11 +142,47 @@ const handleLeftIconClick = (name: string): void => {
 const handleLeftBottomClick = (name: string): void => {
   if (name === 'settings') {
     projectStore.OPEN_SETTING_WINDOW()
+  } else if (name === 'biscuit') {
+    layoutStore.TOGGLE_LAYOUT_ENTRY('showRightPrompt')
   }
+}
+
+const showExpandIcon = computed(() => {
+  return !showRightPrompt.value
+})
+
+const handleExpandClick = () => {
+  layoutStore.SET_LAYOUT({ showRightPrompt: true })
 }
 </script>
 
 <style scoped>
+.expand-biscuit-btn {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 60px;
+  background: var(--editorBgColor);
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.2));
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  color: var(--color-secondary, #909399);
+  transition: all 0.2s;
+}
+
+.expand-biscuit-btn:hover {
+  width: 20px;
+  color: var(--color-primary, #409eff);
+  background: var(--dialogBgColor, var(--editorBgColor));
+}
+
 .side-bar {
   display: flex;
   flex-shrink: 0;

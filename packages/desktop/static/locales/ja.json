@@ -141,6 +141,7 @@
       "showTabBar": "タブバーを表示",
       "toc": "目次",
       "toggleTableOfContents": "目次の切り替え",
+      "toggleAiPanel": "Biscuitの切り替え",
       "reloadImages": "画像を再読み込み",
       "showDeveloperTools": "開発者ツールを表示",
       "reloadWindow": "ウィンドウを再読み込み"

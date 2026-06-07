@@ -16,6 +16,24 @@ const waitForVisibilityFlip = (page: Page, selector: string, wasVisible: boolean
     { timeout: 5000 }
   )
 
+// Helper to hide the AI panel for layout tests
+const hideAiPanel = async (page: Page) => {
+  // Check if AI panel is visible
+  const aiPanelVisible = await page.evaluate(
+    () => !!document.querySelector('.right-prompt')
+  )
+  if (aiPanelVisible) {
+    // Click the Biscuit icon in the sidebar to toggle it off
+    await page.locator('.side-bar .left-column > ul.bottom li').first().click()
+    // Wait for the panel to be removed from the DOM
+    await page.waitForFunction(
+      () => !document.querySelector('.right-prompt'),
+      null,
+      { timeout: 5000 }
+    )
+  }
+}
+
 test.describe('Layout panel toggles', () => {
   let app: ElectronApplication
   let page: Page
@@ -89,6 +107,12 @@ test.describe('Layout panel toggles', () => {
         { timeout: 5000 }
       )
     }
+
+    // Hide the AI panel to ensure a clean layout measurement
+    // The AI panel is in the sidebar's bottom section, so we need to ensure
+    // the sidebar is fully rendered before interacting with it.
+    await page.waitForTimeout(100)
+    await hideAiPanel(page)
 
     // Open search panel and then collapse it back to the icon strip by
     // clicking the search icon. We use a locator-based click (not a DOM

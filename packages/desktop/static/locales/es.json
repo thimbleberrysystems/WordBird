@@ -141,6 +141,7 @@
       "showTabBar": "Mostrar Barra de Pestañas",
       "toc": "Tabla de Contenidos",
       "toggleTableOfContents": "Alternar Tabla de Contenidos",
+      "toggleAiPanel": "Alternar Biscuit",
       "reloadImages": "Recargar Imágenes",
       "showDeveloperTools": "Mostrar Herramientas de Desarrollador",
       "reloadWindow": "Recargar Ventana"

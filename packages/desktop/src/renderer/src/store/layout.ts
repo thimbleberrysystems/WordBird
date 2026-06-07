@@ -8,6 +8,7 @@ interface LayoutPartial {
   rightColumn?: string
   showSideBar?: boolean
   showTabBar?: boolean
+  showRightPrompt?: boolean
   sideBarWidth?: number | string
 }
 
@@ -24,6 +25,7 @@ interface BufferedLayout {
   rightColumn: string | undefined
   showSideBar: boolean
   showTabBar: boolean
+  showRightPrompt: boolean
   sideBarWidth: number
 }
 
@@ -38,6 +40,7 @@ const createBufferedLayoutState = (state: unknown): BufferedLayout | null => {
     rightColumn: s.rightColumn,
     showSideBar: !!s.showSideBar,
     showTabBar: !!s.showTabBar,
+    showRightPrompt: s.showRightPrompt !== undefined ? !!s.showRightPrompt : true,
     sideBarWidth: normalizeSideBarWidth(s.sideBarWidth)
   }
 }
@@ -49,6 +52,7 @@ export const useLayoutStore = defineStore('layout', () => {
   const rightColumn = ref<string>('files')
   const showSideBar = ref(false)
   const showTabBar = ref(false)
+  const showRightPrompt = ref(true)
   const sideBarWidth = ref<number>(initialSideBarWidth)
 
   // Actual rendered sidebar width. `sideBarWidth` is the right-column width
@@ -84,6 +88,7 @@ export const useLayoutStore = defineStore('layout', () => {
     if (layout.rightColumn !== undefined) rightColumn.value = layout.rightColumn
     if (layout.showSideBar !== undefined) showSideBar.value = !!layout.showSideBar
     if (layout.showTabBar !== undefined) showTabBar.value = !!layout.showTabBar
+    if (layout.showRightPrompt !== undefined) showRightPrompt.value = !!layout.showRightPrompt
     if (layout.sideBarWidth !== undefined) sideBarWidth.value = layout.sideBarWidth as number
     if (scheduleBufferUpdate) {
       debouncedSendBufferedState()
@@ -95,6 +100,7 @@ export const useLayoutStore = defineStore('layout', () => {
       rightColumn: rightColumn.value,
       showSideBar: showSideBar.value,
       showTabBar: showTabBar.value,
+      showRightPrompt: showRightPrompt.value,
       sideBarWidth: sideBarWidth.value
     })
   }
@@ -108,14 +114,15 @@ export const useLayoutStore = defineStore('layout', () => {
       {
         rightColumn: layout.rightColumn,
         showSideBar: layout.showSideBar,
-        showTabBar: layout.showTabBar
+        showTabBar: layout.showTabBar,
+        showRightPrompt: layout.showRightPrompt
       },
       { scheduleBufferUpdate: false }
     )
     DISPATCH_LAYOUT_MENU_ITEMS()
   }
 
-  function TOGGLE_LAYOUT_ENTRY(entryName: 'showSideBar' | 'showTabBar'): void {
+  function TOGGLE_LAYOUT_ENTRY(entryName: 'showSideBar' | 'showTabBar' | 'showRightPrompt'): void {
     if (entryName === 'showSideBar') {
       showSideBar.value = !showSideBar.value
       const preferencesStore = usePreferencesStore()
@@ -125,6 +132,8 @@ export const useLayoutStore = defineStore('layout', () => {
       })
     } else if (entryName === 'showTabBar') {
       showTabBar.value = !showTabBar.value
+    } else if (entryName === 'showRightPrompt') {
+      showRightPrompt.value = !showRightPrompt.value
     }
     debouncedSendBufferedState()
   }
@@ -157,16 +166,16 @@ export const useLayoutStore = defineStore('layout', () => {
     })
 
     window.electron.ipcRenderer.on('mt::toggle-view-layout-entry', (_e, entryName) => {
-      TOGGLE_LAYOUT_ENTRY(entryName as 'showSideBar' | 'showTabBar')
+      TOGGLE_LAYOUT_ENTRY(entryName as 'showSideBar' | 'showTabBar' | 'showRightPrompt')
       DISPATCH_LAYOUT_MENU_ITEMS()
     })
 
     bus.on('view:toggle-layout-entry', (entryName: unknown) => {
-      const name = entryName as 'showSideBar' | 'showTabBar'
+      const name = entryName as 'showSideBar' | 'showTabBar' | 'showRightPrompt'
       TOGGLE_LAYOUT_ENTRY(name)
       const { windowId } = window.marktext?.env ?? {}
       window.electron.ipcRenderer.send('mt::view-layout-changed', Number(windowId), {
-        [name]: name === 'showSideBar' ? showSideBar.value : showTabBar.value
+        [name]: name === 'showSideBar' ? showSideBar.value : name === 'showTabBar' ? showTabBar.value : showRightPrompt.value
       })
     })
   }
@@ -175,7 +184,8 @@ export const useLayoutStore = defineStore('layout', () => {
     const { windowId } = window.marktext?.env ?? {}
     window.electron.ipcRenderer.send('mt::view-layout-changed', Number(windowId), {
       showTabBar: showTabBar.value,
-      showSideBar: showSideBar.value
+      showSideBar: showSideBar.value,
+      showRightPrompt: showRightPrompt.value
     })
   }
 
@@ -187,6 +197,7 @@ export const useLayoutStore = defineStore('layout', () => {
     rightColumn,
     showSideBar,
     showTabBar,
+    showRightPrompt,
     sideBarWidth,
     effectiveSideBarWidth,
     SET_LAYOUT,

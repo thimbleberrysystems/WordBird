@@ -2,6 +2,11 @@ import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
 import { launchElectron } from './helpers'
 
+// Centralized app name for test assertions
+const APP_NAME = 'WordBird'
+// Title can be just "WordBird" or "Untitled-1 - WordBird"
+const APP_TITLE_REGEX = new RegExp(`^(${APP_NAME}|Untitled-1 - ${APP_NAME})$`)
+
 test.describe('Check Launch MarkText', () => {
   let app: ElectronApplication
   let page: Page
@@ -18,6 +23,6 @@ test.describe('Check Launch MarkText', () => {
 
   test('Empty MarkText', async() => {
     const title = await page.title()
-    expect(/^MarkText|Untitled-1 - MarkText$/.test(title)).toBeTruthy()
+    expect(APP_TITLE_REGEX.test(title)).toBeTruthy()
   })
 })

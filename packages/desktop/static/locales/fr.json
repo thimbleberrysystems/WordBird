@@ -141,6 +141,7 @@
       "showTabBar": "Afficher la barre d'onglets",
       "toc": "Table des matières",
       "toggleTableOfContents": "Basculer la table des matières",
+      "toggleAiPanel": "Basculer Biscuit",
       "reloadImages": "Recharger les images",
       "showDeveloperTools": "Afficher les outils de développement",
       "reloadWindow": "Recharger la fenêtre"

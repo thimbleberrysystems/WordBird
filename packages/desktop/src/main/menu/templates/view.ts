@@ -77,6 +77,14 @@ export default function(keybindings: Keybindings): MenuItemConstructorOptions {
       }
     },
     {
+      label: t('menu.view.toggleAiPanel'),
+      id: 'aiPanelMenuItem',
+      accelerator: keybindings.getAccelerator('view.toggle-ai-panel') ?? undefined,
+      click(_item, focusedWindow) {
+        actions.toggleAiPanel(focusedWindow as BrowserWindow | undefined)
+      }
+    },
+    {
       label: t('menu.view.reloadImages'),
       accelerator: keybindings.getAccelerator('view.reload-images') ?? undefined,
       click(_item, focusedWindow) {

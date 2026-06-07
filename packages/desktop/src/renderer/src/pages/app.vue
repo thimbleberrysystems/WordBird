@@ -31,7 +31,7 @@
             :platform="platform"
           />
         </div>
-        <RightPrompt />
+        <RightPrompt v-if="showRightPrompt" />
       </div>
       <command-palette />
       <about-dialog />
@@ -82,7 +82,7 @@ const timer = ref<ReturnType<typeof setTimeout> | null>(null)
 
 // States from Pinia
 const { windowActive, platform, init } = storeToRefs(mainStore)
-const { showTabBar } = storeToRefs(layoutStore)
+const { showTabBar, showRightPrompt } = storeToRefs(layoutStore)
 const { sourceCode, theme, customCss, textDirection, zoom } = storeToRefs(preferencesStore)
 const { projectTree } = storeToRefs(projectStore)
 const { currentFile } = storeToRefs(editorStore)
