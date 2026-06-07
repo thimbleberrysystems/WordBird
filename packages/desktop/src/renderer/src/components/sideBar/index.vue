@@ -9,7 +9,7 @@
     <div
       v-if="showExpandIcon"
       class="expand-biscuit-btn"
-      title="Expand AI Panel"
+      title="Expand Biscuit"
       @click="handleExpandClick"
     >
       <el-icon><DArrowLeft /></el-icon>

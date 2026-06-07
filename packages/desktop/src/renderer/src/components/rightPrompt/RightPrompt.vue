@@ -12,7 +12,7 @@
     <header class="prompt-header">
       <div
         class="toggle-btn"
-        title="Collapse AI Panel"
+        title="Collapse Biscuit"
         @click="togglePanel"
       >
         <el-icon><DArrowRight /></el-icon>
@@ -50,7 +50,7 @@
           <span class="message__label">AI</span>
         </div>
         <div class="message__text italic">
-          Thinking...
+          Analyzing the crumbs you just dropped...
         </div>
       </div>
     </section>
