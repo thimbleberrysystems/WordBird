@@ -15,10 +15,12 @@
     >
       <div
         class="title"
+        :style="{ paddingLeft: `${effectiveSideBarWidth + 12}px` }"
         @dblclick.stop="toggleMaxmizeOnMacOS"
       >
-        <span v-if="!filename">WordBird</span>
-        <span v-else>
+        <span
+          v-if="paths.length > 0"
+        >
           <span
             v-for="(path, index) of paths"
             :key="index"
@@ -31,18 +33,20 @@
               <ArrowRight />
             </el-icon>
           </span>
-          <span
-            class="filename"
-            :class="{ isOsx: platform === 'darwin' }"
-            @click="rename"
-          >
-            {{ filename }}
-          </span>
-          <span
-            class="save-dot"
-            :class="{ show: !isSaved }"
-          />
         </span>
+        <span
+          v-if="filename"
+          class="filename"
+          :class="{ isOsx: platform === 'darwin' }"
+          @click="rename"
+        >
+          {{ filename }}
+        </span>
+        <span
+          v-if="filename"
+          class="save-dot"
+          :class="{ show: !isSaved }"
+        />
       </div>
       <div :class="showCustomTitleBar ? 'left-toolbar title-no-drag' : 'right-toolbar'">
         <div
@@ -74,7 +78,10 @@
             class="word-count"
             @click.stop="handleWordClick"
           >
-            <span class="text-center-vertical">{{ `${HASH[show].short} ${wordCount[show]}` }}</span>
+            <span class="text-center-vertical">
+              {{ `${HASH[show].short} ${wordCount[show]}` }}
+            </span>
+            <span class="app-name-inline">WordBird</span>
           </div>
         </el-tooltip>
       </div>
@@ -207,7 +214,7 @@ onMounted(async () => {
 })
 
 const { titleBarStyle } = storeToRefs(preferencesStore)
-const { showTabBar } = storeToRefs(layoutStore)
+const { showTabBar, effectiveSideBarWidth } = storeToRefs(layoutStore)
 
 const paths = computed(() => {
   if (!props.pathname) return []
@@ -228,14 +235,14 @@ const updateDocumentTitle = () => {
   if (filename) {
     // When a file is open, show filename
     if (hasProject) {
-      title = `${filename} - ${projectName}`
+      title = `${filename} - ${projectName} - WordBird`
     } else {
       // No project open, show filename with app name
       title = `${filename} - WordBird`
     }
   } else {
     // No file open: show project name or default app name
-    title = projectName || 'WordBird'
+    title = projectName ? `${projectName} - WordBird` : 'WordBird'
   }
   // Ensure title is never empty
   document.title = title || 'WordBird'
@@ -354,12 +361,19 @@ img {
   margin-top: 1px;
   vertical-align: top;
 }
+.app-name-inline {
+  margin-left: 40px;
+  font-weight: bold;
+  color: var(--color-primary, #409eff);
+  white-space: nowrap;
+}
+
 .title {
-  padding: 0 142px;
+  padding: 0 142px 0 0;
   height: 100%;
   line-height: var(--titleBarHeight);
   font-size: 14px;
-  text-align: center;
+  text-align: left;
   transition: all 0.25s ease-in-out;
   & .filename {
     transition: all 0.25s ease-in-out;
@@ -376,11 +390,12 @@ img {
 }
 div.title > span {
   /* Workaround for GH#339 */
-  display: block;
-  direction: rtl;
+  display: inline-block;
+  direction: ltr;
   overflow: hidden;
   text-overflow: clip;
   white-space: nowrap;
+  vertical-align: top;
 }
 
 .title-bar .title .filename.isOsx:hover {
@@ -434,17 +449,16 @@ div.title > span {
   font-size: 14px;
   color: var(--editorColor30);
   text-align: center;
-  line-height: 24px;
+  line-height: var(--titleBarHeight);
   padding: 0 5px;
   box-sizing: border-box;
   transition: all 0.25s ease-in-out;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
   & > .text-center-vertical {
-    padding: 2px 5px;
     border-radius: 3px;
-  }
-  &:hover > span {
-    background: var(--sideBarBgColor);
-    color: var(--sideBarTitleColor);
+    display: inline-block;
   }
 }
 

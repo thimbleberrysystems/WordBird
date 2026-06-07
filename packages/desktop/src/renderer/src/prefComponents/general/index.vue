@@ -108,30 +108,6 @@
     <compound>
       <template #head>
         <h6 class="title">
-          {{ t('preferences.general.startup.title') }}
-        </h6>
-      </template>
-      <template #children>
-        <h6>{{ t('preferences.general.startup.layoutOptions') }}</h6>
-        <section>
-          <el-radio-group
-            v-model="restoreLayoutState"
-            class="startup-action-ctrl"
-          >
-            <el-radio :label="true">
-              {{ t('preferences.general.startup.restorePreviousState') }}
-            </el-radio>
-            <el-radio :label="false">
-              {{ t('preferences.general.startup.openBlankState') }}
-            </el-radio>
-          </el-radio-group>
-        </section>
-      </template>
-    </compound>
-
-    <compound>
-      <template #head>
-        <h6 class="title">
           {{ t('preferences.general.misc.title') }}
         </h6>
       </template>
@@ -186,14 +162,6 @@ const {
   language,
   openedFilesInSidebar
 } = storeToRefs(preferenceStore)
-
-const restoreLayoutState = computed<boolean>({
-  get: () => preferenceStore.restoreLayoutState,
-  set: (value: boolean) => {
-    const type = 'restoreLayoutState'
-    preferenceStore.SET_SINGLE_PREFERENCE({ type, value })
-  }
-})
 
 const onSelectChange = (type: keyof PreferencesState, value: unknown): void => {
   preferenceStore.SET_SINGLE_PREFERENCE({ type, value })
