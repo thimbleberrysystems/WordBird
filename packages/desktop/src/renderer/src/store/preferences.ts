@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { AI_DEFAULTS, PROVIDERS_WITHOUT_KEY } from '@shared/constants/ai'
-import type { AIProvider, IAIConfig } from '../shared/types/langgraph'
+import type { AIProvider, IAIConfig } from '@shared/types/langgraph'
 import { langGraphService } from '../services/langgraph'
 import bus from '../bus'
 import { setLanguage } from '../i18n'

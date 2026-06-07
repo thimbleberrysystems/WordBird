@@ -82,7 +82,7 @@ import { usePreferencesStore } from '../../store/preferences'
 import { langGraphService } from '../../services/langgraph'
 import { 
   type ILangGraphMessage
-} from '../../shared/types/langgraph'
+} from '@shared/types/langgraph'
 
 // Store
 const preferencesStore = usePreferencesStore()
@@ -138,7 +138,7 @@ async function sendMessage(): Promise<void> {
   }
 
   try {
-    const response = await langGraphService.sendMessage(aiMessages.value, currentAbortController.value.signal)
+    const response = await langGraphService.sendMessage(aiMessages.value)
     
     if (response && response.content) {
       aiMessages.value.push({

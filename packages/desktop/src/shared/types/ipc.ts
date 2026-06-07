@@ -18,6 +18,7 @@
  */
 
 import type { IKeyboardLayoutInfo, IKeyboardMapping } from 'native-keymap'
+import type { AIProvider, IAIConfig, ILangGraphMessage, ILangGraphResponse } from './langgraph'
 import type {
   MarkdownDocument,
   TabOptions,
@@ -95,6 +96,10 @@ export interface IpcInvokeChannels {
   'mt::spellchecker-remove-word': { args: [word: string]; ret: boolean }
   'mt::spellchecker-set-enabled': { args: [enabled: boolean]; ret: void }
   'mt::spellchecker-switch-language': { args: [language: string]; ret: void }
+  'mt::ai:connect': { args: [IAIConfig]; ret: void }
+  'mt::ai:disconnect': { args: []; ret: void }
+  'mt::ai:send-message': { args: [ILangGraphMessage[]]; ret: ILangGraphResponse }
+  'mt::ai:fetch-models': { args: [AIProvider, string, string?]; ret: string[] }
   'mt::project:create': { args: [ProjectCreateArgs?]; ret: ProjectCreateResult }
   'mt::project:load': { args: [ProjectLoadArgs?]; ret: ProjectLoadResult }
   'mt::project:validate': { args: [path: string]; ret: boolean }

@@ -63,6 +63,7 @@ interface PushTabNotificationPayload {
 
 interface FileChangePayload {
   pathname: string
+  mtimeMs?: number
   data: {
     isMixedLineEndings?: boolean
     lineEnding?: LineEnding | string

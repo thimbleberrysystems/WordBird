@@ -105,7 +105,7 @@ import textBox from '../common/textBox/index.vue'
 import curSelect from '../common/select/index.vue'
 import { PROVIDER_BASE_URLS, PROVIDER_LABELS, AI_PROVIDERS, PROVIDERS_WITHOUT_KEY } from '@shared/constants/ai'
 import { langGraphService } from '@/services/langgraph'
-import type { AIProvider, IAIConfig, IAIProviderConfig } from '@/shared/types/langgraph'
+import type { AIProvider, IAIConfig, IAIProviderConfig } from '@shared/types/langgraph'
 
 // Hooks
 const { t } = useI18n()

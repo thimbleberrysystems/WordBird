@@ -1,4 +1,4 @@
-import { rename as fsRename } from 'fs-extra'
+import { rename as fsRename, pathExists as exists } from 'fs-extra'
 import fsPromises from 'fs/promises'
 import path from 'path'
 import {
@@ -704,6 +704,23 @@ export const importFile = async(win: BrowserWindow | null): Promise<void> => {
 export const printDocument = (win: Win): void => {
   if (win) {
     win.webContents.send('mt::show-export-dialog', 'print')
+  }
+}
+
+export const openFileOrFolder = (win: BrowserWindow, pathname: string): void => {
+  ipcMain.emit('app-open-file-by-id', win.id, pathname)
+}
+
+export const openFolder = async (win: BrowserWindow | null): Promise<void> => {
+  if (!win) {
+    return
+  }
+  const { filePaths } = await dialog.showOpenDialog(win, {
+    properties: ['openDirectory']
+  })
+
+  if (Array.isArray(filePaths) && filePaths.length > 0) {
+    ipcMain.emit('app-open-directory-by-id', win.id, filePaths[0])
   }
 }
 

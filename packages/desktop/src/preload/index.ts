@@ -22,6 +22,12 @@ import type {
   ProjectLoadResult
 } from '@shared/types/ipc'
 
+import type {
+  AIProvider,
+  IAIConfig,
+  ILangGraphMessage
+} from '@shared/types/langgraph'
+
 type RendererEventListener<K extends keyof IpcMainEventChannels> = (
   event: IpcRendererEvent,
   ...args: IpcMainEventChannels[K]
@@ -233,6 +239,13 @@ const projectAPI = {
   saveAs: (currentPath: string) => invoke('mt::project:save-as', currentPath)
 }
 
+const aiAPI = {
+  connect: (config: IAIConfig) => invoke('mt::ai:connect', config),
+  disconnect: () => invoke('mt::ai:disconnect'),
+  sendMessage: (messages: ILangGraphMessage[]) => invoke('mt::ai:send-message', messages),
+  fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) => invoke('mt::ai:fetch-models', provider, apiKey, baseUrl)
+}
+
 const fontsAPI = {
   list: () => invoke('mt::fonts::list')
 }
@@ -254,6 +267,7 @@ const electronAPI = {
   paths: bootInfo?.paths || {},
   isUpdatable: !!bootInfo?.isUpdatable,
   project: projectAPI,
+  ai: aiAPI,
   windowControl: windowControlAPI
 }
 

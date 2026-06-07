@@ -103,6 +103,12 @@ declare global {
       validate: (path: string) => Promise<boolean>
       saveAs: (currentPath: string) => Promise<ProjectCreateResult>
     }
+    ai: {
+      connect: (config: IAIConfig) => Promise<void>
+      disconnect: () => Promise<void>
+      sendMessage: (messages: ILangGraphMessage[]) => Promise<ILangGraphResponse>
+      fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) => Promise<string[]>
+    }
     windowControl: ElectronWindowControlAPI
   }
 
