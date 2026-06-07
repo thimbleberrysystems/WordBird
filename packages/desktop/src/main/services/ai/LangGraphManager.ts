@@ -18,6 +18,7 @@ export class LangGraphManager {
   private _agent: any | null = null
   private _currentProvider: AIProvider | null = null
   private _currentModel: string | null = null
+  private _currentAbortController: AbortController | null = null
 
   public get isConnected(): boolean {
     return !!this._agent
@@ -31,31 +32,43 @@ export class LangGraphManager {
     return this._currentModel
   }
 
+  setCurrentAbortController(controller: AbortController): void {
+    this._currentAbortController = controller
+  }
+
+  clearAbortController(): void {
+    this._currentAbortController = null
+  }
+
+  abort(): void {
+    if (this._currentAbortController) {
+      this._currentAbortController.abort()
+      this._currentAbortController = null
+    }
+  }
+
   async connect(config: IAIConfig): Promise<void> {
     const { provider, apiKey, baseUrl } = config
     this._currentProvider = provider
     this._currentModel = config.model || null
 
-    console.log('[LangGraphMain] connect called, provider:', provider)
-
     try {
       // 1. Test connectivity and credentials FIRST
-      console.log('[LangGraphMain] Fetching models to verify connection...')
       const models = await this.fetchModels(provider, apiKey, baseUrl)
       
-      if (!models || models.length === 0) {
-        throw new Error('No models returned. Please check your API key, Base URL, and network connection.')
+      if (models && models.length > 0) {
+        // Models found
+      } else {
+        // For Ollama providers, models list may be empty but we can still proceed
+        // For other providers, we'll still try to connect - the model client will validate
       }
-      console.log(`[LangGraphMain] Connection verified. Found ${models.length} models.`)
 
       // 2. Only build the model client and graph AFTER validation succeeds
       this._agent = null 
       
       const modelClient = this._createChatModel(config)
-      console.log('[LangGraphMain] Model client created successfully')
       
       this._agent = this._buildGraph(modelClient)
-      console.log('[LangGraphMain] Agent compiled successfully')
 
     } catch (error) {
       console.error('[LangGraphMain] Connect error details:', error)
@@ -75,8 +88,8 @@ export class LangGraphManager {
     const actualBaseUrl = baseUrl || PROVIDER_BASE_URLS[provider]
     
     try {
-      if (provider === 'openai' || provider === 'ollama' || provider === 'openrouter') {
-        const url = provider === 'ollama' ? `${actualBaseUrl}/api/tags` : `${actualBaseUrl}/models`
+      if (provider === 'openai' || provider === 'ollama' || provider === 'ollama_bundled' || provider === 'openrouter') {
+        const url = (provider === 'ollama' || provider === 'ollama_bundled') ? `${actualBaseUrl}/api/tags` : `${actualBaseUrl}/models`
         const headers = (provider === 'openai' || provider === 'openrouter') ? { Authorization: `Bearer ${apiKey}` } : {}
         
         const response = await axios.get(url, { headers })
@@ -105,7 +118,22 @@ export class LangGraphManager {
         })
         return response.data.data?.map((m: any) => m.id) || []
       } else if (provider === 'google') {
-        return ['gemini-1.5-pro', 'gemini-1.5-flash']
+        if (!apiKey) {
+          throw new Error('API Key is required for Google Gemini')
+        }
+        // Google Generative AI doesn't have a simple REST endpoint for models that is easily accessible without the SDK
+        // but we can use the hardcoded list while ensuring the key exists, 
+        // OR better, we just return the hardcoded list if the key is present.
+        // For a more robust check, we'd need to hit a discovery endpoint:
+        // https://generativelanguage.googleapis.com/v1beta/models?key=API_KEY
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+          await axios.get(url)
+          return ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-2.0-flash-exp']
+        } catch (error) {
+          console.error('[LangGraphMain] Google model verification failed:', error)
+          throw new Error('Invalid Google API Key or connection issue')
+        }
       }
       return []
     } catch (error) {
@@ -114,7 +142,50 @@ export class LangGraphManager {
     }
   }
 
-  async sendMessage(messages: ILangGraphMessage[]): Promise<ILangGraphResponse> {
+  /**
+   * Pull an Ollama model via the REST API with streaming progress.
+   * Used when a user enters a model name that does not exist locally.
+   * Emits progress events via IPC to the renderer.
+   */
+  public async pullModel(model: string, baseUrl?: string): Promise<void> {
+    const actualBaseUrl = baseUrl || PROVIDER_BASE_URLS.ollama
+    const url = `${actualBaseUrl}/api/pull`
+    console.log(`[LangGraphMain] Pulling model ${model} from ${actualBaseUrl}`)
+    
+    try {
+      const response = await axios.post(url, { name: model, stream: true }, {
+        responseType: 'stream'
+      })
+      
+      // Process the streaming response
+      for await (const chunk of response.data) {
+        const lines = chunk.toString().split('\n').filter((l: string) => l.trim())
+        for (const line of lines) {
+          try {
+            const data = JSON.parse(line)
+            // Emit progress to renderer
+            const { BrowserWindow } = await import('electron')
+            const mainWindow = BrowserWindow.getAllWindows()[0]
+            if (mainWindow) {
+              mainWindow.webContents.send('mt::ai:pull-progress', {
+                percent: data.percent,
+                status: data.status,
+                digest: data.digest
+              })
+            }
+          } catch (e) {
+            // Skip malformed JSON lines
+          }
+        }
+      }
+      console.log(`[LangGraphMain] Model ${model} pulled successfully`)
+    } catch (error: any) {
+      console.error(`[LangGraphMain] Failed to pull model ${model}:`, error)
+      throw new Error(error.response?.data?.error || error.message || 'Failed to pull model')
+    }
+  }
+
+  async sendMessage(messages: ILangGraphMessage[], signal?: AbortSignal): Promise<ILangGraphResponse> {
     if (!this._agent) {
       throw new Error('Not connected to any AI provider')
     }
@@ -129,7 +200,7 @@ export class LangGraphManager {
       }
     })
 
-    const response = await this._agent.invoke({ messages: langchainMessages })
+    const response = await this._agent.invoke({ messages: langchainMessages }, { signal })
     const content = this._extractResponseContent(response)
 
     return {
@@ -176,12 +247,17 @@ export class LangGraphManager {
         return new ChatGoogleGenerativeAI({ 
           ...common, 
           apiKey,
-          model: targetModel 
+          // Some versions of the LangChain Google GenAI package expect googleApiKey
+          googleApiKey: apiKey,
+          model: targetModel,
+          // Google Gemini uses maxOutputTokens instead of maxTokens in some underlying SDKs
+          maxOutputTokens: common.maxTokens 
         }) as unknown as BaseChatModel
 
       case 'ollama':
+      case 'ollama_bundled':
         return new ChatOllama({ 
-          ...common, 
+          ...common,
           model: targetModel,
           baseUrl: baseUrl || PROVIDER_BASE_URLS.ollama 
         }) as unknown as BaseChatModel

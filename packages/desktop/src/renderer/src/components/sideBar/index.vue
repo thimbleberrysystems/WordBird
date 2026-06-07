@@ -5,10 +5,10 @@
     class="side-bar"
     :style="[!rightColumn ? { 'min-width': '45px' } : {}, { width: `${finalSideBarWidth}px` }]"
   >
-    <!-- Expand button when RightPrompt is hidden -->
+    <!-- Unified Toggle Button (Expand) -->
     <div
       v-if="showExpandIcon"
-      class="expand-biscuit-btn"
+      class="toggle-biscuit-btn expand"
       title="Expand Biscuit"
       @click="handleExpandClick"
     >
@@ -142,8 +142,6 @@ const handleLeftIconClick = (name: string): void => {
 const handleLeftBottomClick = (name: string): void => {
   if (name === 'settings') {
     projectStore.OPEN_SETTING_WINDOW()
-  } else if (name === 'biscuit') {
-    layoutStore.TOGGLE_LAYOUT_ENTRY('showRightPrompt')
   }
 }
 
@@ -157,32 +155,6 @@ const handleExpandClick = () => {
 </script>
 
 <style scoped>
-.expand-biscuit-btn {
-  position: fixed;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 16px;
-  height: 60px;
-  background: var(--editorBgColor);
-  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.2));
-  border-right: none;
-  border-radius: 8px 0 0 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 1000;
-  color: var(--color-secondary, #909399);
-  transition: all 0.2s;
-}
-
-.expand-biscuit-btn:hover {
-  width: 20px;
-  color: var(--color-primary, #409eff);
-  background: var(--dialogBgColor, var(--editorBgColor));
-}
-
 .side-bar {
   display: flex;
   flex-shrink: 0;

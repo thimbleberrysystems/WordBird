@@ -126,41 +126,6 @@
             </el-radio>
           </el-radio-group>
         </section>
-        <h6>{{ t('preferences.general.startup.startupFilesFolders') }}</h6>
-        <section>
-          <el-radio-group
-            v-model="startUpAction"
-            class="startup-action-ctrl"
-          >
-            <!--
-              Hide "lastState" for now (#2064).
-            <el-radio class="ag-underdevelop" label="lastState">Restore last editor session</el-radio>
-            -->
-            <el-radio label="restoreAll">
-              {{ t('preferences.general.startup.restoreAll') }}
-            </el-radio>
-            <el-radio label="openLastFolder">
-              {{ t('preferences.general.startup.openLastFolder') }}
-            </el-radio>
-            <div>
-              <el-radio label="folder">
-                {{ t('preferences.general.startup.openDefaultDirectory')
-                }}<span>: {{ defaultDirectoryToOpen }}</span>
-              </el-radio>
-              <el-button
-                size="small"
-                @click="selectDefaultDirectoryToOpen"
-              >
-                {{ t('preferences.general.startup.selectFolder') }}
-              </el-button>
-            </div>
-            <div>
-              <el-radio label="blank">
-                {{ t('preferences.general.startup.openBlankPage') }}
-              </el-radio>
-            </div>
-          </el-radio-group>
-        </section>
       </template>
     </compound>
 
@@ -210,7 +175,6 @@ const {
   autoSave,
   autoSaveDelay,
   titleBarStyle,
-  defaultDirectoryToOpen,
   openFilesInNewWindow,
   openFolderInNewWindow,
   treePathExcludePatterns: projectPaths,
@@ -223,14 +187,6 @@ const {
   openedFilesInSidebar
 } = storeToRefs(preferenceStore)
 
-const startUpAction = computed<string>({
-  get: () => preferenceStore.startUpAction,
-  set: (value: string) => {
-    const type = 'startUpAction'
-    preferenceStore.SET_SINGLE_PREFERENCE({ type, value })
-  }
-})
-
 const restoreLayoutState = computed<boolean>({
   get: () => preferenceStore.restoreLayoutState,
   set: (value: boolean) => {
@@ -241,10 +197,6 @@ const restoreLayoutState = computed<boolean>({
 
 const onSelectChange = (type: keyof PreferencesState, value: unknown): void => {
   preferenceStore.SET_SINGLE_PREFERENCE({ type, value })
-}
-
-const selectDefaultDirectoryToOpen = (): void => {
-  preferenceStore.SELECT_DEFAULT_DIRECTORY_TO_OPEN()
 }
 </script>
 

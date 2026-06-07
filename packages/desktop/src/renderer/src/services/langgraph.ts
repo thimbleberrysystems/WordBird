@@ -4,6 +4,7 @@ class LangGraphService {
   private _isConnected: boolean = false
   private _currentProvider: AIProvider | null = null
   private _currentModel: string | null = null
+  private _currentApiKey: string = ''
 
   public get isConnected(): boolean {
     return this._isConnected
@@ -17,6 +18,10 @@ class LangGraphService {
     return this._currentModel
   }
 
+  public get currentApiKey(): string {
+    return this._currentApiKey
+  }
+
   async connect(config: IAIConfig): Promise<void> {
     try {
       // Ensure config is POJO
@@ -25,6 +30,7 @@ class LangGraphService {
       this._isConnected = true
       this._currentProvider = config.provider
       this._currentModel = config.model || null
+      this._currentApiKey = config.apiKey || ''
     } catch (error) {
       this._isConnected = false
       throw error
@@ -36,6 +42,7 @@ class LangGraphService {
     this._isConnected = false
     this._currentProvider = null
     this._currentModel = null
+    this._currentApiKey = ''
   }
 
   async fetchModels(provider: AIProvider, apiKey: string, baseUrl?: string): Promise<string[]> {
@@ -46,6 +53,18 @@ class LangGraphService {
     // Ensure data is POJO before sending over IPC to avoid "An object could not be cloned"
     const cleanMessages = JSON.parse(JSON.stringify(messages))
     return await window.electron.ai.sendMessage(cleanMessages)
+  }
+
+  async abort(): Promise<void> {
+    await window.electron.ai.abort()
+  }
+
+  async pullModel(model: string, baseUrl?: string): Promise<void> {
+    await window.electron.ai.pullModel(model, baseUrl)
+  }
+
+  onPullProgress(handler: (progress: { percent?: number; status?: string; digest?: string }) => void): () => void {
+    return window.electron.ai.onPullProgress(handler)
   }
 
   setModel(model: string): void {

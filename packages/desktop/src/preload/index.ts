@@ -243,7 +243,14 @@ const aiAPI = {
   connect: (config: IAIConfig) => invoke('mt::ai:connect', config),
   disconnect: () => invoke('mt::ai:disconnect'),
   sendMessage: (messages: ILangGraphMessage[]) => invoke('mt::ai:send-message', messages),
-  fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) => invoke('mt::ai:fetch-models', provider, apiKey, baseUrl)
+  abort: () => invoke('mt::ai:abort'),
+  fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) => invoke('mt::ai:fetch-models', provider, apiKey, baseUrl),
+  pullModel: (model: string, baseUrl?: string) => invoke('mt::ai:pull-model', model, baseUrl),
+  onPullProgress: (handler: (progress: { percent?: number; status?: string; digest?: string }) => void) => {
+    const subscription = (_e: unknown, progress: { percent?: number; status?: string; digest?: string }) => handler(progress)
+    ipcRenderer.on('mt::ai:pull-progress', subscription)
+    return () => ipcRenderer.removeListener('mt::ai:pull-progress', subscription)
+  }
 }
 
 const fontsAPI = {

@@ -141,8 +141,11 @@ class Preference extends TypedEmitter<PreferenceEvents> {
   }
 
   setItem(key: string, value: unknown): void {
+    let valueToStore = value
     if (key === 'aiConfigs' && this.dataCenter) {
-      const aiConfigs = value as Record<string, any>
+      // Clone the value to avoid mutating the original which might be broadcasted or used elsewhere
+      const aiConfigs = JSON.parse(JSON.stringify(value))
+      valueToStore = aiConfigs
       for (const provider of Object.keys(aiConfigs)) {
         const config = aiConfigs[provider]
         // ONLY attempt to encrypt if there is an actual non-empty string to encrypt
@@ -161,7 +164,7 @@ class Preference extends TypedEmitter<PreferenceEvents> {
         }
       }
     }
-    this.store.set(key, value)
+    this.store.set(key, valueToStore)
     ipcMain.emit('broadcast-preferences-changed', { [key]: value })
   }
 

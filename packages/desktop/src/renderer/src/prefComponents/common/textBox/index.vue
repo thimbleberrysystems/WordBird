@@ -23,6 +23,8 @@
       :placeholder="defaultValue"
       size="small"
       clearable
+      :type="type"
+      :show-password="type === 'password'"
       @input="handleInput"
     />
     <div
@@ -46,6 +48,7 @@ interface TextBoxProps extends PrefControlBaseProps {
   defaultValue?: string
   emitTime?: number
   regexValidator?: RegExp
+  type?: string
 }
 
 const props = withDefaults(defineProps<TextBoxProps>(), {
@@ -55,7 +58,8 @@ const props = withDefaults(defineProps<TextBoxProps>(), {
   disable: false,
   defaultValue: '',
   emitTime: 800,
-  regexValidator: () => /(.*?)/
+  regexValidator: () => /(.*?)/,
+  type: 'text'
 })
 
 let inputTimer: ReturnType<typeof setTimeout> | null = null

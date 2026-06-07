@@ -9,7 +9,7 @@
   "wordWrapInToc": false,
   "fileSortBy": "created",
   "fileSortOrder": "asc",
-  "startUpAction": "restoreAll",
+  "startUpAction": "openLastFolder",
   "restoreLayoutState": true,
   "defaultDirectoryToOpen": "",
   "lastOpenedFolder": "",

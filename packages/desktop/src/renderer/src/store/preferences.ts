@@ -156,7 +156,7 @@ export const usePreferencesStore = defineStore('preferences', {
     wordWrapInToc: false,
     fileSortBy: 'created',
     fileSortOrder: 'asc',
-    startUpAction: 'restoreAll',
+    startUpAction: 'openLastFolder',
     restoreLayoutState: true,
     defaultDirectoryToOpen: '',
     lastOpenedFolder: '',
@@ -301,6 +301,13 @@ export const usePreferencesStore = defineStore('preferences', {
         setLanguage(value)
       }
 
+      // Ensure aiConfigs has an entry for the new provider when switching
+      if (type === 'aiProvider' && typeof value === 'string') {
+        if (!this.aiConfigs[value]) {
+          this.aiConfigs[value] = { ...AI_DEFAULTS.configs[value as AIProvider] }
+        }
+      }
+
       // save to electron-store
       const payload = typeof value === 'object' && value !== null
         ? JSON.parse(JSON.stringify(value))
@@ -350,7 +357,8 @@ export const usePreferencesStore = defineStore('preferences', {
       // 2. Check for redundant configuration match to avoid network flicker 
       if (langGraphService.isConnected && 
           langGraphService.currentProvider === currentProvider &&
-          langGraphService.currentModel === (currentConfig.model || null)) {
+          langGraphService.currentModel === (currentConfig.model || null) &&
+          langGraphService.currentApiKey === (currentConfig.apiKey || '')) {
         this.aiIsConnected = true
         return
       }

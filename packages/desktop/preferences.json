@@ -9,7 +9,7 @@
   "wordWrapInToc": false,
   "fileSortBy": "created",
   "fileSortOrder": "asc",
-  "startUpAction": "restoreAll",
+  "startUpAction": "openLastFolder",
   "language": "en",
   "editorFontFamily": "Open Sans",
   "fontSize": 16,

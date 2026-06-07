@@ -76,8 +76,10 @@ class EditorWindow extends BaseWindow {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const accessor = this._accessor as any
     const { menu: appMenu, env, preferences, editorBufferStore } = accessor
+    // Only add a blank tab if we are NOT opening a project folder and have no files
+    // If no project is open, we want to show the "no project" view instead of a blank tab
     const addBlankTab =
-      !bufferStoreInfo && !rootDirectory && fileList.length === 0 && markdownList.length === 0
+      !bufferStoreInfo && !!rootDirectory && fileList.length === 0 && markdownList.length === 0
 
     const mainWindowState = windowStateKeeper({
       defaultWidth: 1200,

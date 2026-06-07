@@ -27,7 +27,7 @@ export interface IAIConnectionState {
 
 // Message types
 export interface ILangGraphMessage {
-  role: 'user' | 'assistant' | 'system' | 'ai' | 'error'
+  role: 'user' | 'assistant' | 'system' | 'ai' | 'error' | 'stopped'
   content: string
 }
 

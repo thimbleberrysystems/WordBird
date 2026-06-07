@@ -489,7 +489,7 @@
       "spelling": "Spelling",
       "theme": "Theme",
       "image": "Image",
-      "ai": "AI",
+      "ai": "Biscuit",
       "keybindings": "Keybindings"
     },
     "general": {
@@ -720,9 +720,9 @@
       "defaultBehavior": "The default behavior after pasting or dragging the image to MarkText"
     },
     "ai": {
-      "title": "AI Settings",
+      "title": "Biscuit Settings",
       "provider": {
-        "title": "AI Provider"
+        "title": "Biscuit Provider"
       }
     },
     "markdown": {

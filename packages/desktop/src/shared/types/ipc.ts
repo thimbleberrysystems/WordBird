@@ -99,7 +99,9 @@ export interface IpcInvokeChannels {
   'mt::ai:connect': { args: [IAIConfig]; ret: void }
   'mt::ai:disconnect': { args: []; ret: void }
   'mt::ai:send-message': { args: [ILangGraphMessage[]]; ret: ILangGraphResponse }
+  'mt::ai:abort': { args: []; ret: { success: boolean } }
   'mt::ai:fetch-models': { args: [AIProvider, string, string?]; ret: string[] }
+  'mt::ai:pull-model': { args: [string, string?]; ret: { success: boolean } }
   'mt::project:create': { args: [ProjectCreateArgs?]; ret: ProjectCreateResult }
   'mt::project:load': { args: [ProjectLoadArgs?]; ret: ProjectLoadResult }
   'mt::project:validate': { args: [path: string]; ret: boolean }
@@ -156,7 +158,7 @@ export interface IpcSendChannels {
   'mt::open-file': [filePath: string, options?: unknown]
   'mt::open-file-by-window-id': [windowId: number, filePath: string, options?: unknown]
   'mt::open-keybindings-config': []
-  'mt::open-setting-window': []
+  'mt::open-setting-window': [category?: string]
   'mt::rename': [payload: { id: string; pathname: string; newPathname: string; currentFile?: unknown }]
   'mt::request-keybindings': []
   'mt::response-export': [
@@ -246,6 +248,7 @@ export interface IpcMainEventChannels {
   'mt::UPDATE_DOWNLOADED': [info?: unknown]
   'mt::UPDATE_ERROR': [error: unknown]
   'mt::UPDATE_NOT_AVAILABLE': [info?: unknown]
+  'mt::ai:pull-progress': [progress: { percent?: number; status?: string; digest?: string }]
   'mt::about-dialog': []
   'mt::ask-for-close': []
   'mt::bootstrap-editor': [config: BootstrapEditorConfig]

@@ -256,31 +256,9 @@ class App {
     // We should NOT restore the previous buffer or open a folder if the user just wants to double click to open a file
     let isRestorePathway = false
     if (_openFilesCache.length === 0) {
-      if (startUpAction === 'restoreAll') {
-        // Restore based off the previous buffer
-        isRestorePathway = true
-        // Also open the last opened folder if available and it's a valid project
-        if (lastOpenedFolder) {
-          if (isValidProjectPath(lastOpenedFolder)) {
-            const info = normalizeMarkdownPath(lastOpenedFolder)
-            if (info) {
-              _openFilesCache.unshift(info as PathInfo)
-            }
-          } else {
-            // Project no longer exists or is invalid, clear the preference
-            this._accessor.preferences.setItem('lastOpenedFolder', '')
-          }
-        }
-      } else if (startUpAction === 'folder' && defaultDirectoryToOpen) {
-        // Only open if it's a valid project
-        if (isValidProjectPath(defaultDirectoryToOpen)) {
-          const info = normalizeMarkdownPath(defaultDirectoryToOpen)
-          if (info) {
-            _openFilesCache.unshift(info as PathInfo)
-          }
-        }
-      } else if (startUpAction === 'openLastFolder' && lastOpenedFolder) {
-        // Only open if it's a valid project
+      // Default behavior: Restore the last opened folder if available
+      isRestorePathway = true
+      if (lastOpenedFolder) {
         if (isValidProjectPath(lastOpenedFolder)) {
           const info = normalizeMarkdownPath(lastOpenedFolder)
           if (info) {
@@ -826,8 +804,8 @@ class App {
       }
     })
 
-    ipcMain.on('mt::open-setting-window', () => {
-      this._openSettingsWindow()
+    ipcMain.on('mt::open-setting-window', (_e, category?: string) => {
+      this._openSettingsWindow(category)
     })
 
     ipcMain.on('mt::make-screenshot', (e) => {

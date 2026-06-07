@@ -107,7 +107,10 @@ declare global {
       connect: (config: IAIConfig) => Promise<void>
       disconnect: () => Promise<void>
       sendMessage: (messages: ILangGraphMessage[]) => Promise<ILangGraphResponse>
+      abort: () => Promise<void>
       fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) => Promise<string[]>
+      pullModel: (model: string, baseUrl?: string) => Promise<{ success: boolean }>
+      onPullProgress: (handler: (progress: { percent?: number; status?: string; digest?: string }) => void) => () => void
     }
     windowControl: ElectronWindowControlAPI
   }

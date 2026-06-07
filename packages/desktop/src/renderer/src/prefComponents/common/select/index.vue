@@ -19,6 +19,9 @@
     <el-select
       v-model="selectValue"
       :disabled="disable"
+      :filterable="filterable"
+      :allow-create="allowCreate"
+      :placeholder="placeholder"
       @change="select"
     >
       <el-option
@@ -49,13 +52,19 @@ interface SelectProps extends PrefControlBaseProps {
   value: SelectValue
   options: ReadonlyArray<PrefSelectOption<SelectValue>>
   onChange: (value: SelectValue) => void
+  filterable?: boolean
+  allowCreate?: boolean
+  placeholder?: string
 }
 
 const props = withDefaults(defineProps<SelectProps>(), {
   description: '',
   notes: '',
   more: '',
-  disable: false
+  disable: false,
+  filterable: false,
+  allowCreate: false,
+  placeholder: ''
 })
 
 const selectValue = ref<SelectValue>(props.value)

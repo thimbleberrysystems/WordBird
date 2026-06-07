@@ -9,14 +9,17 @@
       class="resizer"
       @mousedown="startResizing"
     />
+
+    <!-- Unified Toggle Button (Collapse) -->
+    <div
+      class="toggle-biscuit-btn collapse"
+      title="Collapse Biscuit"
+      @click="togglePanel"
+    >
+      <el-icon><DArrowRight /></el-icon>
+    </div>
+
     <header class="prompt-header">
-      <div
-        class="toggle-btn"
-        title="Collapse Biscuit"
-        @click="togglePanel"
-      >
-        <el-icon><DArrowRight /></el-icon>
-      </div>
       <div class="prompt-title">
         Biscuit
       </div>
@@ -31,11 +34,6 @@
         :key="index"
         :class="['message', `message--${message.role}`]"
       >
-        <div class="message__header">
-          <span class="message__label">
-            {{ message.role === 'user' ? 'You' : (message.role === 'error' ? 'System' : 'AI') }}
-          </span>
-        </div>
         <div class="message__text">
           {{ message.content }}
         </div>
@@ -46,9 +44,6 @@
         v-if="sending"
         class="message message--assistant message--thinking"
       >
-        <div class="message__header">
-          <span class="message__label">AI</span>
-        </div>
         <div class="message__text italic">
           Analyzing the crumbs you just dropped...
         </div>
@@ -106,7 +101,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, nextTick, computed, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '../../store/preferences'
@@ -185,7 +180,6 @@ const promptBody = ref<HTMLElement | null>(null)
 const userInput = ref('')
 const sending = ref(false)
 const aiMessages = ref<ILangGraphMessage[]>([])
-const currentAbortController = ref<AbortController | null>(null)
 
 // Open settings window to AI page
 function openAiSettings (): void {
@@ -194,10 +188,13 @@ function openAiSettings (): void {
 }
 
 // Stop generation
-function stopGeneration (): void {
-  if (currentAbortController.value) {
-    currentAbortController.value.abort()
-    currentAbortController.value = null
+async function stopGeneration (): Promise<void> {
+  console.log('[RightPrompt] Stopping generation...')
+  try {
+    await langGraphService.abort()
+    console.log('[RightPrompt] Generation aborted successfully')
+  } catch (error) {
+    console.error('[RightPrompt] Error aborting generation:', error)
   }
 }
 
@@ -213,9 +210,6 @@ async function sendMessage (): Promise<void> {
   aiMessages.value.push(userMessage)
   userInput.value = ''
   sending.value = true
-
-  // Initialize AbortController for this request
-  currentAbortController.value = new AbortController()
 
   await nextTick()
   if (promptBody.value) {
@@ -241,11 +235,11 @@ async function sendMessage (): Promise<void> {
   } catch (error: any) {
     console.error('[RightPrompt] Send message error:', error)
 
-    // Check if it was aborted
-    if (error.message === 'Request aborted by user') {
+    // Handle abort/stop from proxy or network
+    if (error.message.includes('aborted') || error.message.includes('canceled') || error.message.includes('stopped')) {
       aiMessages.value.push({
-        role: 'error',
-        content: 'Generation stopped by user.'
+        role: 'stopped',
+        content: 'A pigeon flew off with the breadcrumbs. Request aborted.'
       })
     } else {
       const errorMessage = error.message || String(error)
@@ -263,7 +257,6 @@ async function sendMessage (): Promise<void> {
     }
   } finally {
     sending.value = false
-    currentAbortController.value = null
   }
 }
 </script>
@@ -304,20 +297,45 @@ async function sendMessage (): Promise<void> {
   position: relative;
 }
 
-.toggle-btn {
-  position: absolute;
-  left: 8px;
+/* Base style for toggle buttons in both SideBar (Expand) and RightPrompt (Collapse) */
+:global(.toggle-biscuit-btn) {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 60px;
+  background: var(--editorBgColor);
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.2));
+  border-right: none;
+  border-radius: 8px 0 0 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  z-index: 1000;
   color: var(--color-secondary, #909399);
-  transition: color 0.2s;
-  padding: 2px;
+  transition: all 0.2s;
 }
 
-.toggle-btn:hover {
+:global(.toggle-biscuit-btn:hover) {
+  width: 20px;
   color: var(--color-primary, #409eff);
+  background: var(--dialogBgColor, var(--editorBgColor));
+}
+
+/* Specific positioning for the collapse button inside the panel */
+.toggle-biscuit-btn.collapse {
+  position: absolute; /* Relative to .right-prompt */
+  top: 50%;
+  left: -16px; /* Stick out to the left into the editor area */
+  border-radius: 8px 0 0 8px;
+  border-right: none;
+}
+
+.toggle-biscuit-btn.collapse:hover {
+  left: -20px;
+  width: 20px;
 }
 
 .prompt-title {
@@ -347,33 +365,42 @@ async function sendMessage (): Promise<void> {
 .message {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  margin: 0 4px;
 }
 
-.message--user .message__label {
-  color: var(--color-secondary, #909399);
+.message--user {
+  align-items: flex-end;
 }
 
-.message__header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.message--assistant, .message--error {
+  align-items: flex-start;
 }
 
-.message__label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-primary, #409eff);
+.message--stopped {
+  align-items: flex-start;
 }
 
 .message__text {
   font-size: 0.85rem;
   line-height: 1.5;
   color: var(--color-text, #303133);
+  max-width: 90%;
 }
 
-.message--error .message__label {
-  color: #f56c6c;
+.message--user .message__text {
+  text-align: right;
+  color: var(--color-secondary, #909399);
+}
+
+.message--assistant .message__text {
+  text-align: left;
+  color: var(--color-primary, #409eff);
+}
+
+.message--stopped .message__text {
+  text-align: left;
+  color: var(--color-primary, #409eff);
+  font-style: italic;
 }
 
 .message--error .message__text {
