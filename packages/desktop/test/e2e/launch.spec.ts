@@ -7,7 +7,7 @@ const APP_NAME = 'WordBird'
 // Title can be just "WordBird" or "Untitled-1 - WordBird"
 const APP_TITLE_REGEX = new RegExp(`^(${APP_NAME}|Untitled-1 - ${APP_NAME})$`)
 
-test.describe('Check Launch MarkText', () => {
+test.describe('Check Launch WordBird', () => {
   let app: ElectronApplication
   let page: Page
 
@@ -21,7 +21,7 @@ test.describe('Check Launch MarkText', () => {
     await app.close()
   })
 
-  test('Empty MarkText', async() => {
+  test('Empty WordBird', async() => {
     const title = await page.title()
     expect(APP_TITLE_REGEX.test(title)).toBeTruthy()
   })

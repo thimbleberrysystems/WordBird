@@ -15,7 +15,9 @@ const AgentState = new StateSchema({
 })
 
 export class LangGraphManager {
-  private _agent: any | null = null
+  // Using unknown to avoid strict type conflicts with LangGraph's CompiledGraph
+  // The invoke method is called dynamically with the expected signature
+  private _agent: unknown | null = null
   private _currentProvider: AIProvider | null = null
   private _currentModel: string | null = null
   private _currentAbortController: AbortController | null = null
@@ -200,7 +202,9 @@ export class LangGraphManager {
       }
     })
 
-    const response = await this._agent.invoke({ messages: langchainMessages }, { signal })
+    // Cast to unknown since we defined _agent as unknown to avoid strict type conflicts
+    const agent = this._agent as { invoke: (state: unknown, options?: { signal?: AbortSignal }) => Promise<unknown> }
+    const response = await agent.invoke({ messages: langchainMessages }, { signal })
     const content = this._extractResponseContent(response)
 
     return {
@@ -247,10 +251,7 @@ export class LangGraphManager {
         return new ChatGoogleGenerativeAI({ 
           ...common, 
           apiKey,
-          // Some versions of the LangChain Google GenAI package expect googleApiKey
-          googleApiKey: apiKey,
-          model: targetModel,
-          // Google Gemini uses maxOutputTokens instead of maxTokens in some underlying SDKs
+          // Google Gemini uses maxOutputTokens instead of maxTokens
           maxOutputTokens: common.maxTokens 
         }) as unknown as BaseChatModel
 
@@ -267,7 +268,7 @@ export class LangGraphManager {
     }
   }
 
-  private _buildGraph(model: BaseChatModel) {
+  private _buildGraph(model: BaseChatModel): unknown {
     const workflow = new StateGraph(AgentState)
       .addNode('agent', async (state) => {
         const response = await model.invoke(state.messages)
@@ -279,22 +280,36 @@ export class LangGraphManager {
     return workflow.compile()
   }
 
-  private _extractResponseContent(response: any): string {
-    if (!response || !response.messages || response.messages.length === 0) {
+  private _extractResponseContent(response: unknown): string {
+    if (!response || typeof response !== 'object') {
       return ''
     }
-    const lastMessage = response.messages[response.messages.length - 1]
+
+    const resp = response as Record<string, unknown>
+    if (!resp.messages || !Array.isArray(resp.messages) || resp.messages.length === 0) {
+      return ''
+    }
+
+    const messages = resp.messages as Array<Record<string, unknown>>
+    const lastMessage = messages[messages.length - 1]
+
+    if (!lastMessage || typeof lastMessage !== 'object') {
+      return ''
+    }
+
     const content = lastMessage.content
 
     if (typeof content === 'string') {
       return content
     }
-    
+
     if (Array.isArray(content)) {
       return content
         .map(item => {
           if (typeof item === 'string') return item
-          if (item && typeof item === 'object' && 'text' in item) return item.text
+          if (item && typeof item === 'object' && 'text' in item && typeof item.text === 'string') {
+            return item.text
+          }
           return ''
         })
         .join('')
