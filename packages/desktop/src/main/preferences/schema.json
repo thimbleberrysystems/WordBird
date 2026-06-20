@@ -54,11 +54,11 @@
     "default": "asc"
   },
   "lastOpenedFolder": {
-    "description": "General--The last folder that was opened in MarkText.--internal",
+    "description": "General--The last folder that was opened in WordBird.--internal",
     "type": "string"
   },
   "startUpAction": {
-    "description": "General--The action after MarkText startup, open the last opened folder, open the specified folder or blank page",
+    "description": "General--The action after WordBird startup, open the last opened folder, open the specified folder or blank page",
     "enum": ["folder", "openLastFolder", "blank", "restoreAll"],
     "default": "restoreAll"
   },
@@ -67,7 +67,7 @@
     "type": "string"
   },
   "language": {
-    "description": "General--The language MarkText use.",
+    "description": "General--The language WordBird use.",
     "type": "string",
     "default": "en"
   },
@@ -238,7 +238,7 @@
     "default": "."
   },
   "preferHeadingStyle": {
-    "description": "Markdown--The preferred heading style in MarkText",
+    "description": "Markdown--The preferred heading style in WordBird",
     "enum": ["atx", "setext"],
     "default": "atx"
   },
@@ -283,7 +283,7 @@
     "default": "hand"
   },
   "theme": {
-    "description": "Theme--Select the theme used in MarkText",
+    "description": "Theme--Select the theme used in WordBird",
     "type": "string",
     "default": "light"
   },

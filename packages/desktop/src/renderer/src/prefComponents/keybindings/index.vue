@@ -9,15 +9,10 @@
           :title="t('preferences.keybindings.online')"
           :aria-label="t('preferences.keybindings.online')"
           @click="openKeybindingWiki"
-        ><LinkIcon
-          :size="14"
-          class="link-icon"
-        /></a>.
+          ><LinkIcon :size="14" class="link-icon" /></a
+        >.
       </div>
-      <el-table
-        :data="keybindingList"
-        style="width: 100%"
-      >
+      <el-table :data="keybindingList" style="width: 100%">
         <el-table-column
           prop="description"
           :label="t('preferences.keybindings.table.description')"
@@ -28,10 +23,7 @@
           :label="t('preferences.keybindings.table.keyCombination')"
           min-width="160"
         />
-        <el-table-column
-          :label="t('preferences.keybindings.table.options')"
-          min-width="90"
-        >
+        <el-table-column :label="t('preferences.keybindings.table.options')" min-width="90">
           <template #default="scope">
             <el-button
               type="text"
@@ -39,10 +31,7 @@
               :title="t('preferences.keybindings.table.edit')"
               @click="handleEditClick(scope.$index, scope.row)"
             >
-              <Edit
-                width="14"
-                height="14"
-              />
+              <Edit width="14" height="14" />
             </el-button>
             <el-button
               type="text"
@@ -50,10 +39,7 @@
               :title="t('preferences.keybindings.table.reset')"
               @click="handleResetClick(scope.$index, scope.row)"
             >
-              <RefreshRight
-                width="14"
-                height="14"
-              />
+              <RefreshRight width="14" height="14" />
             </el-button>
             <el-button
               type="text"
@@ -61,10 +47,7 @@
               :title="t('preferences.keybindings.table.unbind')"
               @click="handleUnbindClick(scope.$index, scope.row)"
             >
-              <Delete
-                width="14"
-                height="14"
-              />
+              <Delete width="14" height="14" />
             </el-button>
           </template>
         </el-table-column>
@@ -72,38 +55,23 @@
     </section>
     <section class="footer">
       <separator />
-      <el-button
-        size="medium"
-        @click="saveKeybindings"
-      >
+      <el-button size="medium" @click="saveKeybindings">
         {{ t('preferences.keybindings.save') }}
       </el-button>
-      <el-button
-        size="medium"
-        @click="restoreDefaults"
-      >
+      <el-button size="medium" @click="restoreDefaults">
         {{ t('preferences.keybindings.restoreDefaults') }}
       </el-button>
     </section>
-    <section
-      v-if="showDebugTools"
-      class="keyboard-debug"
-    >
+    <section v-if="showDebugTools" class="keyboard-debug">
       <separator />
       <div>
         <strong>{{ t('preferences.keybindings.debugOptions') }}:</strong>
       </div>
-      <el-button
-        size="medium"
-        @click="dumpKeyboardInformation"
-      >
+      <el-button size="medium" @click="dumpKeyboardInformation">
         {{ t('preferences.keybindings.dumpKeyboardInfo') }}
       </el-button>
     </section>
-    <key-input-dialog
-      :show-with-id="selectedShortcutId"
-      :on-commit="onKeybinding"
-    />
+    <key-input-dialog :show-with-id="selectedShortcutId" :on-commit="onKeybinding" />
   </div>
 </template>
 
@@ -159,7 +127,7 @@ onMounted(() => {
 
   // Show keyboard debugging tools which has been moved from CLI because we
   // need an active window on Windows.
-  showDebugTools.value = Boolean(window.marktext?.env?.debug)
+  showDebugTools.value = Boolean(window.wordbird?.env?.debug)
 })
 
 onUnmounted(() => {
@@ -169,7 +137,7 @@ onUnmounted(() => {
 
 const openKeybindingWiki = (): void => {
   window.electron.shell.openExternal(
-    'https://github.com/marktext/marktext/blob/develop/docs/end-user/KEYBINDINGS.md'
+    'https://github.com/Thimbleberrysystems/WordBird/blob/feat/wordbird/docs/end-user/KEYBINDINGS.md'
   )
 }
 

@@ -87,11 +87,11 @@ class KeyboardLayoutMonitor extends EventEmitter {
 export const keyboardLayoutMonitor = new KeyboardLayoutMonitor()
 
 export const registerKeyboardListeners = (): void => {
-  ipcMain.handle('mt::keybinding-get-keyboard-info', async() => {
+  ipcMain.handle('mt::keybinding-get-keyboard-info', async () => {
     return getKeyboardInfo()
   })
-  ipcMain.on('mt::keybinding-debug-dump-keyboard-info', async() => {
-    const dumpPath = path.join(os.tmpdir(), 'marktext_keyboard_info.json')
+  ipcMain.on('mt::keybinding-debug-dump-keyboard-info', async () => {
+    const dumpPath = path.join(os.tmpdir(), 'wordbird_keyboard_info.json')
     const content = JSON.stringify(getKeyboardInfo(), null, 2)
     fsPromises
       .writeFile(dumpPath, content, 'utf8')

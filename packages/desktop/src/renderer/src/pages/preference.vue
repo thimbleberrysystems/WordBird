@@ -2,14 +2,8 @@
   <div class="pref-container">
     <title-bar v-if="showCustomTitleBar" />
     <side-bar />
-    <div
-      class="pref-content"
-      :class="{ frameless: titleBarStyle === 'custom' || isOsx }"
-    >
-      <div
-        v-if="!showCustomTitleBar"
-        class="title-bar"
-      />
+    <div class="pref-content" :class="{ frameless: titleBarStyle === 'custom' || isOsx }">
+      <div v-if="!showCustomTitleBar" class="title-bar" />
       <router-view class="pref-setting" />
     </div>
   </div>
@@ -49,7 +43,7 @@ watch(theme, (newValue, oldValue) => {
 // Lifecycle
 onMounted(() => {
   nextTick(() => {
-    const state = window.marktext?.initialState ?? DEFAULT_STYLE
+    const state = window.wordbird?.initialState ?? DEFAULT_STYLE
     addThemeStyle(state.theme ?? DEFAULT_STYLE.theme)
 
     preferencesStore.ASK_FOR_USER_PREFERENCE()

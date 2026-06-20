@@ -113,7 +113,10 @@ export interface PreferencesState {
 
   // ----- AI -----
   aiProvider: string
-  aiConfigs: Record<string, { apiKey: string; baseUrl?: string; model?: string; temperature?: number; maxTokens?: number }>
+  aiConfigs: Record<
+    string,
+    { apiKey: string; baseUrl?: string; model?: string; temperature?: number; maxTokens?: number }
+  >
   aiIsConnected: boolean
 
   // ----- Edit modes (per-window, not persisted) -----
@@ -309,9 +312,8 @@ export const usePreferencesStore = defineStore('preferences', {
       }
 
       // save to electron-store
-      const payload = typeof value === 'object' && value !== null
-        ? JSON.parse(JSON.stringify(value))
-        : value
+      const payload =
+        typeof value === 'object' && value !== null ? JSON.parse(JSON.stringify(value)) : value
       window.electron.ipcRenderer.send('mt::set-user-preference', { [type as string]: payload })
 
       // Re-verify AI connection if provider changed
@@ -354,11 +356,13 @@ export const usePreferencesStore = defineStore('preferences', {
         return
       }
 
-      // 2. Check for redundant configuration match to avoid network flicker 
-      if (langGraphService.isConnected && 
-          langGraphService.currentProvider === currentProvider &&
-          langGraphService.currentModel === (currentConfig.model || null) &&
-          langGraphService.currentApiKey === (currentConfig.apiKey || '')) {
+      // 2. Check for redundant configuration match to avoid network flicker
+      if (
+        langGraphService.isConnected &&
+        langGraphService.currentProvider === currentProvider &&
+        langGraphService.currentModel === (currentConfig.model || null) &&
+        langGraphService.currentApiKey === (currentConfig.apiKey || '')
+      ) {
         this.aiIsConnected = true
         return
       }
@@ -380,9 +384,8 @@ export const usePreferencesStore = defineStore('preferences', {
     },
 
     SET_USER_DATA({ type, value }: SetUserDataPayload): void {
-      const payload = typeof value === 'object' && value !== null
-        ? JSON.parse(JSON.stringify(value))
-        : value
+      const payload =
+        typeof value === 'object' && value !== null ? JSON.parse(JSON.stringify(value)) : value
       window.electron.ipcRenderer.send('mt::set-user-data', { [type]: payload })
     },
 
@@ -416,7 +419,7 @@ export const usePreferencesStore = defineStore('preferences', {
     },
 
     DISPATCH_EDITOR_VIEW_STATE(viewState: Record<string, unknown>): void {
-      const { windowId } = window.marktext?.env ?? { windowId: -1 }
+      const { windowId } = window.wordbird?.env ?? { windowId: -1 }
       window.electron.ipcRenderer.send('mt::view-layout-changed', windowId, viewState)
     }
   }

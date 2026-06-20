@@ -24,7 +24,7 @@ import './assets/styles/printService.css'
 // -----------------------------------------------
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-;(window as any).marktext = {}
+;(window as any).wordbird = {}
 bootstrapRenderer()
 
 // -----------------------------------------------
@@ -39,7 +39,7 @@ app.use(ElementPlus, {
 })
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const envType = (window as any).marktext?.env?.type as string | undefined
+const envType = (window as any).wordbird?.env?.type as string | undefined
 
 const router = createRouter({
   history: createWebHashHistory(),

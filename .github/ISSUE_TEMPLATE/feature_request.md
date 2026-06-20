@@ -1,8 +1,8 @@
 ---
 name: Feature Request
-about: Suggest an idea or improvement for MarkText
-title: "[Feature] "
-labels: ["enhancement"]
+about: Suggest an idea or improvement for WordBird
+title: '[Feature] '
+labels: ['enhancement']
 ---
 
 <!--

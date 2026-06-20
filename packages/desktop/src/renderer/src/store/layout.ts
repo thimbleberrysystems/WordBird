@@ -70,7 +70,7 @@ export const useLayoutStore = defineStore('layout', () => {
     { scheduleBufferUpdate = true }: SetLayoutOptions = {}
   ): void {
     if (layout.showSideBar !== undefined) {
-      const { windowId } = window.marktext?.env ?? {}
+      const { windowId } = window.wordbird?.env ?? {}
       window.electron.ipcRenderer.send(
         'mt::update-sidebar-menu',
         Number(windowId),
@@ -173,15 +173,20 @@ export const useLayoutStore = defineStore('layout', () => {
     bus.on('view:toggle-layout-entry', (entryName: unknown) => {
       const name = entryName as 'showSideBar' | 'showTabBar' | 'showRightPrompt'
       TOGGLE_LAYOUT_ENTRY(name)
-      const { windowId } = window.marktext?.env ?? {}
+      const { windowId } = window.wordbird?.env ?? {}
       window.electron.ipcRenderer.send('mt::view-layout-changed', Number(windowId), {
-        [name]: name === 'showSideBar' ? showSideBar.value : name === 'showTabBar' ? showTabBar.value : showRightPrompt.value
+        [name]:
+          name === 'showSideBar'
+            ? showSideBar.value
+            : name === 'showTabBar'
+              ? showTabBar.value
+              : showRightPrompt.value
       })
     })
   }
 
   function DISPATCH_LAYOUT_MENU_ITEMS(): void {
-    const { windowId } = window.marktext?.env ?? {}
+    const { windowId } = window.wordbird?.env ?? {}
     window.electron.ipcRenderer.send('mt::view-layout-changed', Number(windowId), {
       showTabBar: showTabBar.value,
       showSideBar: showSideBar.value,

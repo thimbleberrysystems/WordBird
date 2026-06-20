@@ -13,10 +13,7 @@
         :is-saved="isSaved"
       />
 
-      <div
-        v-if="!init"
-        class="editor-placeholder"
-      />
+      <div v-if="!init" class="editor-placeholder" />
       <div v-else class="main-workspace">
         <div class="editor-area">
           <recent v-if="showRecentPrompt" />
@@ -38,6 +35,7 @@
       <export-setting-dialog />
       <rename />
       <import-modal />
+      <agent-proposal-controller />
     </div>
   </div>
 </template>
@@ -57,6 +55,7 @@ import CommandPalette from '@/components/commandPalette/index.vue'
 import ExportSettingDialog from '@/components/exportSettings/index.vue'
 import Rename from '@/components/rename/index.vue'
 import ImportModal from '@/components/import/index.vue'
+import AgentProposalController from '@/components/agent/AgentProposalController.vue'
 import bus from '@/bus'
 import { DEFAULT_STYLE } from '@/config'
 import { useLayoutStore } from '@/store/layout'
@@ -163,8 +162,8 @@ const setupDragDropHandler = (): void => {
   )
 }
 onMounted(async () => {
-  if (window.marktext?.initialState) {
-    preferencesStore.SET_USER_PREFERENCE(window.marktext.initialState)
+  if (window.wordbird?.initialState) {
+    preferencesStore.SET_USER_PREFERENCE(window.wordbird.initialState)
   }
 
   mainStore.LISTEN_WIN_STATUS()
@@ -214,7 +213,7 @@ onMounted(async () => {
     // `initialState` from bootstrap carries nullable URL params (string|null);
     // `addStyles` requires non-null `theme` / `codeFontFamily` strings.
     // Coalesce against DEFAULT_STYLE for every nullable field.
-    const init = window.marktext?.initialState
+    const init = window.wordbird?.initialState
     const style: AddStylesOptions = {
       theme: init?.theme ?? DEFAULT_STYLE.theme,
       codeFontFamily: init?.codeFontFamily ?? DEFAULT_STYLE.codeFontFamily,

@@ -1,92 +1,53 @@
-# MarkText Contributing Guide
+# WordBird Contributing Guide
 
-We are really excited that you are interested in contributing to MarkText :tada:. Before submitting your contribution, please make sure to take a moment and read through the following guidelines.
+WordBird is a fork of [MarkText](https://github.com/marktext/marktext). We welcome contributions that improve the editing experience, extend Biscuit AI features, or fix bugs.
 
-- [Code of Conduct](../packages/website/content/docs/dev/CODE_OF_CONDUCT.md)
-- [Philosophy](#philosophy)
-- [Issue reporting guidelines](#issue-reporting-guidelines)
-- [Pull request guidelines](#pull-request-guidelines)
-  - [Where should I start?](#where-should-i-start)
-- [Quick start](#quick-start)
-  - [Build instructions](#build-instructions)
-  - [Style guide](#style-guide)
-- [Developer documentation](#developer-documentation)
+## Before You Start
 
-## Philosophy
-
-🔑 Our philosophy is to keep things clean, simple and minimal. 
-MarkText is constantly changing and we want these improvements to align with our philosophy. For example, look at the side bar and tabs; these two panels provide awesome functionality *and* aren't distracting to the user. We'll continue adding more features (like plugins) that can be activated via 'settings' to improve MarkText. This will allow everyone to customize MarkText for their needs and provide a minimal default interface.
-
-## Issue Reporting Guidelines
-
-Please search for similar issues before opening an issue and always follow the [issue template](.github/ISSUE_TEMPLATE/). Please review the following Pull Request guidelines before making your own PR. 
+- Search existing [issues](https://github.com/Thimbleberrysystems/WordBird/issues) to avoid duplicates.
+- For large changes, open an issue first to discuss the approach.
 
 ## Pull Request Guidelines
 
-**In *all* Pull Requests:** provide a detailed description of the problem, as well as a demonstration with screen recordings and/or screenshots.
+Submit PRs to the **`feat/wordbird`** branch.
 
-Please make sure the following is done before submitting a PR:
+- Provide a clear description of the problem and solution.
+- Include screenshots or recordings for UI changes.
+- Ensure all tests pass: `pnpm run test`
+- Run the linter: `pnpm run lint`
+- Run the type checker: `pnpm run typecheck`
+- All PRs must pass CI before merge.
 
-- Submit PRs directly to the `develop` branch.
-- Reference the related issue in the PR comment.
-- Utilize [JSDoc](https://github.com/jsdoc/jsdoc) for better code documentation.
-- Ensure all tests pass.
-- Please lint (`pnpm run lint`) your PR.
-- All PRs need to pass the **CI** before merged. If it fails, please try to solve the issue(s) and feel free to ask for any help.
+## Bug Fixes
 
-If you add new feature:
+If resolving a specific issue, reference it in the PR title:
+`fix: #123 short description`
 
-- Open a suggestion issue first.
-- Provide your reasoning on why you want to add this feature.
-- Submit your PR.
+## New Features
 
-If you fix a bug:
+- Open a discussion or issue first.
+- Explain the motivation and describe the proposed solution.
+- Submit the PR after the approach is agreed.
 
-- If you are resolving a special issue, please add `fix: #<issue number> <short message>` in your PR title (e.g.`fix: #3899 update entities encoding/decoding`).
-- Provide a detailed description of the bug in your PR and/or link to the issue. 
+## Quick Start
 
-### Where should I start?
+```bash
+git clone git@github.com:Thimbleberrysystems/WordBird.git
+cd WordBird
+pnpm install
+pnpm run dev
+```
 
-A good way to start is to find an [issue](https://github.com/marktext/marktext/issues) labeled as `bug`, `help wanted` or `feature request`. The `good first issue` issues are good for newcomers. Please discuss the solution for larger issues first and after the final solution is approved by the MarkText members, you can submit/work on the PR. For small changes you can directly open a PR.
+See [CLAUDE.md](../CLAUDE.md) for the full developer guide including architecture, build commands, and testing instructions.
 
-Other ways to help:
+## Style Guide
 
-- Documentation
-- Translation (currently unavailable)
-- Design icons and logos
-- Improve the UI
-- Write tests for MarkText
-- Share your thoughts! We want to hear about features you think are missing, any bugs you find, and why you :heart: MarkText.
+- 2-space indentation
+- No semicolons
+- Single quotes
+- TypeScript strict mode
+- Run `pnpm run lint` before committing
 
-## Quick start
+## License
 
-1. Fork the repository.
-2. Clone your fork: `git clone git@github.com:<username>/marktext.git`
-3. Create a feature branch: `git checkout -b feature`
-4. Make your changes and push your branch.
-5. Create a PR against `develop` and describe your changes.
-
-**Rebase your PR:**
-
-If there are conflicts or you want to update your local branch, please do the following:
-
-1. `git fetch upstream`
-2. `git rebase upstream/develop`
-3. Please [resolve](https://help.github.com/articles/resolving-merge-conflicts-after-a-git-rebase/) all conflicts and force push your feature branch: `git push -f`
-
-### Build Instructions
-
-🔗 [Build Instructions](https://marktext.me/docs/dev/build)
-
-### Style Guide
-
-You can run ESLint (`pnpm run lint`) to help you to follow the style guide.
-
-- ES6 and "best practices"
-- 2 space indent
-- no semicolons
-- documentation: [JSDoc](https://github.com/jsdoc/jsdoc) 
-
-## Developer Documentation
-
-Please [click here](https://marktext.me/docs/dev/overview) for more details.
+By submitting a pull request you agree that your contribution is made under the terms of the [MIT License](../LICENSE).

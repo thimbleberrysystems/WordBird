@@ -16,6 +16,15 @@ import type {
 } from '@shared/types/ipc'
 import type { MenuTemplate, MenuPopupPosition } from '@shared/types/menu'
 import type { SerializedStat } from '@shared/types/files'
+import type {
+  IAIConfig,
+  ILangGraphMessage,
+  ILangGraphResponse,
+  IAgentToolCall,
+  IAgentToolResult,
+  IAgentApplyEditRequest,
+  IAgentEditProposal
+} from '@shared/types/langgraph'
 
 declare global {
   // ---- Build-time defines (electron-vite `define`) ----
@@ -110,7 +119,26 @@ declare global {
       abort: () => Promise<void>
       fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) => Promise<string[]>
       pullModel: (model: string, baseUrl?: string) => Promise<{ success: boolean }>
-      onPullProgress: (handler: (progress: { percent?: number; status?: string; digest?: string }) => void) => () => void
+      onPullProgress: (
+        handler: (progress: { percent?: number; status?: string; digest?: string }) => void
+      ) => () => void
+      executeTool: (call: IAgentToolCall) => Promise<IAgentToolResult>
+      applyEdit: (request: IAgentApplyEditRequest) => Promise<{ ok: boolean; error?: string }>
+      applyEditInRenderer: (request: IAgentApplyEditRequest) => Promise<{ ok: boolean; error?: string }>
+      onEditProposal: (
+        handler: (proposal: {
+          edit: IAgentEditProposal
+          oldContent: string
+          originalPath: string
+        }) => void
+      ) => () => void
+      onApplyEditInRenderer: (
+        handler: (request: {
+          edit: IAgentEditProposal
+          oldContent: string
+          originalPath: string
+        }) => void
+      ) => () => void
     }
     windowControl: ElectronWindowControlAPI
   }
@@ -207,7 +235,7 @@ declare global {
     rgPath: string
     // Set by the legacy editor store at runtime; consumed by muya internals.
     DIRNAME: string
-    marktext?: {
+    wordbird?: {
       env?: { windowId: number; [key: string]: unknown }
       initialState?: {
         codeFontFamily?: string | null

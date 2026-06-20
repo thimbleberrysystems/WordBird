@@ -120,7 +120,7 @@ const bootstrapRenderer = (): void => {
   }
   // `global` is not available in a sandboxed renderer — attach to window.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ;(window as any).marktext = marktext
+  ;(window as any).wordbird = marktext
 
   configureLogger()
 }

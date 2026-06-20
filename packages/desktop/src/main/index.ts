@@ -53,7 +53,7 @@ initializeLogger(appEnvironment)
 // Handles native level crashes
 crashReporter.start({
   companyName: '',
-  productName: 'marktext',
+  productName: 'WordBird',
   uploadToServer: false, // collect locally
   compress: true
 })
@@ -83,7 +83,7 @@ if (!process.mas && process.env.NODE_ENV !== 'development') {
 registerSandboxIpcHandlers()
 
 // Windows-specific AppUserModelID
-electronApp.setAppUserModelId('com.electron.marktext')
+electronApp.setAppUserModelId('com.thimbleberrysystems.wordbird')
 
 // Dev shortcuts and reload suppression
 app.on('browser-window-created', (_, window) => {
@@ -111,6 +111,11 @@ try {
   }
   process.exit(1)
 }
+
+// Inject accessor into LangGraphManager for project root resolution
+import { langGraphManager } from './services/ai/LangGraphManager'
+langGraphManager.setAccessor(accessor)
+
 const appController = new App(accessor, args as unknown as { _: string[] })
 appController.init()
 
