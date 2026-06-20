@@ -263,6 +263,8 @@ const aiAPI = {
   },
   executeTool: (call: IAgentToolCall) => invoke('mt::ai:execute-tool', call),
   applyEdit: (request: IAgentApplyEditRequest) => invoke('mt::ai:apply-edit', request),
+  writeFile: (pathname: string, content: string): Promise<{ ok: boolean; error?: string }> =>
+    invoke('mt::ai:write-file', pathname, content),
   applyEditInRenderer: (request: IAgentApplyEditRequest) =>
     invoke('mt::ai:apply-edit-in-renderer', request),
   onEditProposal: (

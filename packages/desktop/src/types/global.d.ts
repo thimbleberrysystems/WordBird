@@ -124,6 +124,7 @@ declare global {
       ) => () => void
       executeTool: (call: IAgentToolCall) => Promise<IAgentToolResult>
       applyEdit: (request: IAgentApplyEditRequest) => Promise<{ ok: boolean; error?: string }>
+      writeFile: (pathname: string, content: string) => Promise<{ ok: boolean; error?: string }>
       applyEditInRenderer: (request: IAgentApplyEditRequest) => Promise<{ ok: boolean; error?: string }>
       onEditProposal: (
         handler: (proposal: {

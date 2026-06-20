@@ -1,5 +1,7 @@
 import { ipcMain } from 'electron'
+import log from 'electron-log'
 import { langGraphManager } from '../services/ai/LangGraphManager'
+import { writeMarkdownFileWithDefaults } from '../filesystem/markdown'
 import type {
   AIProvider,
   IAIConfig,
@@ -79,4 +81,21 @@ export const registerAIHandlers = (): void => {
   ipcMain.handle('mt::ai:apply-edit', async(_e, request: IAgentApplyEditRequest) => {
     return await langGraphManager.applyEdit(request)
   })
+
+  // Write an AI edit straight to disk — used by the global "Apply All" for
+  // files that are not open in the editor.
+  ipcMain.handle(
+    'mt::ai:write-file',
+    async(_e, pathname: string, content: string): Promise<{ ok: boolean; error?: string }> => {
+      try {
+        if (!pathname) throw new Error('No file path provided')
+        await writeMarkdownFileWithDefaults(pathname, content)
+        return { ok: true }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to write file'
+        log.error('[AI] write-file failed:', message)
+        return { ok: false, error: message }
+      }
+    }
+  )
 }

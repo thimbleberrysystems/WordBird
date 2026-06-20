@@ -110,6 +110,7 @@ export interface IpcInvokeChannels {
   'mt::ai:send-message': { args: [ILangGraphMessage[]]; ret: ILangGraphResponse }
   'mt::ai:execute-tool': { args: [IAgentToolCall]; ret: IAgentToolResult }
   'mt::ai:apply-edit': { args: [IAgentApplyEditRequest]; ret: { ok: boolean; error?: string } }
+  'mt::ai:write-file': { args: [string, string]; ret: { ok: boolean; error?: string } }
   'mt::ai:apply-edit-in-renderer': { args: [IAgentApplyEditRequest]; ret: { ok: boolean; error?: string } }
   'mt::ai:abort': { args: []; ret: { success: boolean } }
   'mt::ai:fetch-models': { args: [AIProvider, string, string?]; ret: string[] }

@@ -126,6 +126,8 @@ import { useI18n } from 'vue-i18n'
 import 'muya/themes/default.css'
 import '@/assets/themes/codemirror/one-dark.css'
 import { Close as CloseIcon } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { applyAllPendingEdits } from '@/services/agentMultiFileApply'
 
 const { t } = useI18n()
 const STANDAR_Y = 320
@@ -349,20 +351,34 @@ function hideInlineDiff (): void {
 // Global Apply All / Discard All (bar above the Biscuit prompt). When a diff is
 // being reviewed in the editor, route through the same hunk logic; otherwise
 // just clear the store so the bar dismisses.
-function handleAgentApplyAll (): void {
-  if (inlineDiffHandle) {
-    void acceptAllHunks()
-  } else {
-    agentStore.clearPendingEdits()
+async function handleAgentApplyAll (): Promise<void> {
+  // The open file's edit goes through the editor (in-memory + save); every
+  // other pending edit is written straight to disk. Routing is verified in
+  // agent-multifile-apply.spec.ts.
+  const currentPath = currentFile.value?.pathname || currentFile.value?.filename || null
+  const result = await applyAllPendingEdits(agentStore.pendingEdits, currentPath, {
+    applyCurrent: (edit) => {
+      applyContentToFile(edit.newContent)
+      hideInlineDiff()
+    },
+    writeToDisk: (pathname, content) => window.electron.ai.writeFile(pathname, content),
+    markApplied: (id) => agentStore.updateEditStatus(id, 'applied')
+  })
+
+  if (result.failed.length > 0) {
+    const names = result.failed.map(f => f.path.split('/').pop() || f.path || 'unknown').join(', ')
+    ElMessage.error(`${result.failed.length} file(s) could not be applied: ${names}`)
   }
+
+  if (!inlineDiffHandle) hideInlineDiff()
+  agentStore.clearPendingEdits()
 }
 
 function handleAgentDiscardAll (): void {
   if (inlineDiffHandle) {
     void discardAllHunks()
-  } else {
-    agentStore.clearPendingEdits()
   }
+  agentStore.clearPendingEdits()
 }
 
 class SimpleImageViewer {

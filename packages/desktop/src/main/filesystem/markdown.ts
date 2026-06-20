@@ -89,6 +89,22 @@ export const normalizeMarkdownPath = (
 }
 
 /**
+ * Write content to a markdown file using sensible defaults (UTF-8, LF). Used
+ * to apply AI edits to files that are not open in the editor, so we have no
+ * per-document options to draw from.
+ */
+export const writeMarkdownFileWithDefaults = (
+  pathname: string,
+  content: string
+): Promise<void> => {
+  return writeMarkdownFile(pathname, content, {
+    adjustLineEndingOnSave: false,
+    lineEnding: 'lf',
+    encoding: { encoding: 'utf8', isBom: false }
+  })
+}
+
+/**
  * Write the content into a file.
  */
 export const writeMarkdownFile = (
@@ -113,7 +129,7 @@ export const writeMarkdownFile = (
 /**
  * Reads the contents of a markdown file.
  */
-export const loadMarkdownFile = async (
+export const loadMarkdownFile = async(
   pathname: string,
   preferredEol: LineEnding,
   autoGuessEncoding: boolean = true,
