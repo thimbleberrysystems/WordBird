@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { IAgentEditProposal, IBlockDiffState } from '@shared/types/langgraph'
 import { generateUnifiedDiff } from '../services/agentDiff'
 
@@ -20,6 +20,12 @@ export const useAgentStore = defineStore('agent', () => {
   const pendingEdits = ref<AgentEditReview[]>([])
   const isApplying = ref(false)
   const diffState = ref<IBlockDiffState[]>([])
+
+  // Number of edits still awaiting review across all files. Drives the global
+  // Apply All / Discard All bar above the Biscuit prompt.
+  const pendingCount = computed(
+    () => pendingEdits.value.filter((edit) => edit.status === 'pending').length
+  )
 
   function addPendingEdit(
     proposal: IAgentEditProposal,
@@ -62,6 +68,7 @@ export const useAgentStore = defineStore('agent', () => {
 
   return {
     pendingEdits,
+    pendingCount,
     isApplying,
     diffState,
     addPendingEdit,

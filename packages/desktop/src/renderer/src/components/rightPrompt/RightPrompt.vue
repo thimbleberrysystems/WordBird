@@ -51,6 +51,7 @@
     </section>
 
     <footer class="prompt-footer">
+      <GlobalAgentReview />
       <div class="prompt-input-outer">
         <div class="prompt-input-wrapper">
           <textarea
@@ -108,6 +109,7 @@ import { usePreferencesStore } from '../../store/preferences'
 import { useLayoutStore } from '../../store/layout'
 import { langGraphService } from '../../services/langgraph'
 import { DArrowRight } from '@element-plus/icons-vue'
+import GlobalAgentReview from '../agent/GlobalAgentReview.vue'
 import {
   type ILangGraphMessage
 } from '@shared/types/langgraph'

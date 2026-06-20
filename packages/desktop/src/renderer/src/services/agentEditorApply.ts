@@ -6,6 +6,8 @@ import type { IFileState } from '@shared/types/files'
 interface AgentApplyTarget {
   currentFile: IFileState | null
   setMarkdown: (markdown: string) => void
+  /** Persist the edited file to disk. Called after the buffer is updated. */
+  save?: () => void
 }
 
 export function applyAgentEditToCurrentFile(
@@ -39,6 +41,9 @@ export function applyAgentEditToCurrentFile(
   })
 
   bus.emit('file-saved', { id: currentFile.id, saved: false })
+
+  // Persist to disk so accepting an AI edit writes the file (like VSCode).
+  target.save?.()
   return true
 }
 

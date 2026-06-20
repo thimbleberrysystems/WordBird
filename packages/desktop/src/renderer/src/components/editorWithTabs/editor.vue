@@ -104,8 +104,8 @@ import EditorSearch from '../search/index.vue'
 import bus from '@/bus'
 import { clearDiffStateInMuya } from '@/services/agentEditorApply'
 import { injectInlineDiff, type InlineDiffHandle } from '@/services/agentDiffDom'
+import { acceptHunk, discardHunk } from '@/services/agentDiffHunks'
 import { useAgentStore } from '@/store/agent'
-import { applyAgentEdit, rejectAgentEdit } from '@/services/agentEdit'
 import { DEFAULT_EDITOR_FONT_FAMILY } from '@/config'
 import notice from '@/services/notification'
 import Printer from '@/services/printService'
@@ -229,6 +229,14 @@ let unsubscribeEditProposal: (() => void) | null = null
 // verified by agent-diff-dom.spec.ts). null when no diff is shown.
 let inlineDiffHandle: InlineDiffHandle | null = null
 
+// Inline-diff review state for the current file. `base` is what is currently in
+// the file; `target` is the proposed content. The diff between them is the set
+// of pending hunks. Per-hunk accept/discard advance base/target (see
+// agentDiffHunks acceptHunk/discardHunk, verified in agent-diff-hunks.spec.ts).
+let diffBase = ''
+let diffTarget = ''
+let diffEditId: string | null = null
+
 const agentStore = useAgentStore()
 
 interface DiffWidgetData {
@@ -239,42 +247,122 @@ interface DiffWidgetData {
 }
 
 async function showInlineDiff (data: DiffWidgetData): Promise<void> {
+  diffBase = data.oldContent
+  diffTarget = data.newContent
+  diffEditId = agentStore.pendingEdits.find(e => e.status === 'pending')?.id ?? null
+  await renderInlineDiff(data.reason)
+}
+
+async function renderInlineDiff (reason?: string): Promise<void> {
   await nextTick()
-  hideInlineDiff()
+  inlineDiffHandle?.remove()
+  inlineDiffHandle = null
 
   const container = editor.value?.container as HTMLElement | undefined
   if (!container) return
 
-  inlineDiffHandle = injectInlineDiff(container, data.oldContent, data.newContent, {
-    reason: data.reason,
-    onAccept: () => { applyAllDiff() },
-    onDiscard: () => { rejectAllDiff() }
+  if (diffBase === diffTarget) {
+    finishInlineDiff()
+    return
+  }
+
+  inlineDiffHandle = injectInlineDiff(container, diffBase, diffTarget, {
+    reason,
+    onAcceptFile: () => { void acceptAllHunks() },
+    onDiscardFile: () => { void discardAllHunks() },
+    onAcceptHunk: (i) => { void acceptOneHunk(i, reason) },
+    onDiscardHunk: (i) => { void discardOneHunk(i, reason) }
   })
+}
+
+// Write content into the current file's buffer and persist it to disk.
+function applyContentToFile (content: string): void {
+  if (!editor.value || !currentFile.value) return
+  applyAgentEditToCurrentFile(
+    {
+      edit: {
+        id: diffEditId || 'inline-diff',
+        filePath: currentFile.value.pathname || currentFile.value.filename || '',
+        newContent: content,
+        reason: undefined
+      },
+      oldContent: diffBase,
+      originalPath: currentFile.value.pathname || ''
+    },
+    {
+      currentFile: currentFile.value,
+      setMarkdown: (markdown: string) => { editor.value?.setMarkdown(markdown) },
+      save: () => { editorStore.FILE_SAVE() }
+    }
+  )
+}
+
+async function acceptOneHunk (hunkIndex: number, reason?: string): Promise<void> {
+  const next = acceptHunk(diffBase, diffTarget, hunkIndex)
+  diffBase = next.base
+  diffTarget = next.target
+  applyContentToFile(diffBase)
+  await renderInlineDiff(reason)
+}
+
+async function discardOneHunk (hunkIndex: number, reason?: string): Promise<void> {
+  const next = discardHunk(diffBase, diffTarget, hunkIndex)
+  diffBase = next.base
+  diffTarget = next.target
+  // Discard does not touch the file; just re-render the remaining hunks.
+  await renderInlineDiff(reason)
+}
+
+async function acceptAllHunks (): Promise<void> {
+  diffBase = diffTarget
+  applyContentToFile(diffBase)
+  await renderInlineDiff()
+}
+
+async function discardAllHunks (): Promise<void> {
+  diffTarget = diffBase
+  await renderInlineDiff()
+}
+
+function finishInlineDiff (): void {
+  inlineDiffHandle?.remove()
+  inlineDiffHandle = null
+  if (diffEditId) {
+    // The file already reflects accepted hunks; mark the proposal resolved.
+    agentStore.updateEditStatus(diffEditId, 'applied')
+  }
+  agentStore.clearPendingEdits()
+  if (editor.value) clearDiffStateInMuya(editor.value)
+  diffBase = ''
+  diffTarget = ''
+  diffEditId = null
 }
 
 function hideInlineDiff (): void {
   inlineDiffHandle?.remove()
   inlineDiffHandle = null
+  diffBase = ''
+  diffTarget = ''
+  diffEditId = null
 }
 
-async function applyAllDiff (): Promise<void> {
-  hideInlineDiff()
-  const pending = agentStore.pendingEdits.filter(e => e.status === 'pending')
-  for (const edit of [...pending].reverse()) {
-    await applyAgentEdit(edit)
+// Global Apply All / Discard All (bar above the Biscuit prompt). When a diff is
+// being reviewed in the editor, route through the same hunk logic; otherwise
+// just clear the store so the bar dismisses.
+function handleAgentApplyAll (): void {
+  if (inlineDiffHandle) {
+    void acceptAllHunks()
+  } else {
+    agentStore.clearPendingEdits()
   }
-  agentStore.clearPendingEdits()
-  if (editor.value) clearDiffStateInMuya(editor.value)
 }
 
-async function rejectAllDiff (): Promise<void> {
-  hideInlineDiff()
-  const pending = agentStore.pendingEdits.filter(e => e.status === 'pending')
-  for (const edit of [...pending].reverse()) {
-    await rejectAgentEdit(edit.id)
+function handleAgentDiscardAll (): void {
+  if (inlineDiffHandle) {
+    void discardAllHunks()
+  } else {
+    agentStore.clearPendingEdits()
   }
-  agentStore.clearPendingEdits()
-  if (editor.value) clearDiffStateInMuya(editor.value)
 }
 
 class SimpleImageViewer {
@@ -1191,6 +1279,9 @@ const handleApplyAgentEdit = (request: {
     currentFile: currentFile.value,
     setMarkdown: (markdown: string) => {
       editor.value?.setMarkdown(markdown)
+    },
+    save: () => {
+      editorStore.FILE_SAVE()
     }
   })
 
@@ -1335,6 +1426,9 @@ onMounted(() => {
   bus.on('replace-misspelling', replaceMisspelling)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   bus.on('apply-agent-edit', handleApplyAgentEdit as any)
+  // Global Apply All / Discard All from the bar above the Biscuit prompt
+  bus.on('agent-apply-all', handleAgentApplyAll)
+  bus.on('agent-discard-all', handleAgentDiscardAll)
 
   // Listen for AI edit proposals from main process
   unsubscribeEditProposal = window.electron.ai.onEditProposal((proposal) => {
@@ -1481,6 +1575,8 @@ onBeforeUnmount(() => {
   bus.off('replace-misspelling', replaceMisspelling)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   bus.off('apply-agent-edit', handleApplyAgentEdit as any)
+  bus.off('agent-apply-all', handleAgentApplyAll)
+  bus.off('agent-discard-all', handleAgentDiscardAll)
   bus.off('language-changed', handleLanguageChanged)
 
   // Remove AI edit proposal listener
@@ -1632,7 +1728,8 @@ onBeforeUnmount(() => {
   margin-left: auto;
 }
 
-.wb-diff-codelens__btn {
+/* Shared text-style buttons for both the file-level header and per-hunk header */
+.wb-diff-btn {
   padding: 0;
   border: none;
   background: transparent;
@@ -1644,16 +1741,16 @@ onBeforeUnmount(() => {
   line-height: 1.5;
 }
 
-.wb-diff-codelens__btn:hover { opacity: 0.7; }
+.wb-diff-btn:hover { opacity: 0.7; }
 
-.wb-diff-codelens__btn--discard {
+.wb-diff-btn--discard {
   color: var(--editorColor, #888);
 }
 
 /* Unified diff hunk — replaces the hidden original blocks. Renders the change
    line-by-line: red − for removed, green + for added, muted for context. */
 .wb-diff-hunk {
-  margin: 2px 0;
+  margin: 4px 0;
   user-select: none;
   font-family: var(--editorFontFamily, inherit);
   font-size: inherit;
@@ -1661,6 +1758,31 @@ onBeforeUnmount(() => {
   border: 1px solid var(--lineColor, rgba(0, 0, 0, 0.1));
   border-radius: 4px;
   overflow: hidden;
+}
+
+/* Per-hunk header — the "Change N" label and its own Accept / Discard */
+.wb-diff-hunk__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 8px;
+  background: var(--floatHoverColor, rgba(0, 0, 0, 0.04));
+  border-bottom: 1px solid var(--lineColor, rgba(0, 0, 0, 0.08));
+}
+
+.wb-diff-hunk__tag {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.55;
+  color: var(--editorColor, #666);
+}
+
+.wb-diff-hunk__actions {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
 }
 
 /* The original Muya blocks being replaced are hidden while the diff is shown */

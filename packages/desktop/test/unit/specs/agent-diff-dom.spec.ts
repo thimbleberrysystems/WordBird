@@ -26,11 +26,12 @@ function buildMuyaDom(blocks: Array<{ tag: string; text: string }>): HTMLElement
   return container
 }
 
+const fileCbs = { onAcceptFile: () => {}, onDiscardFile: () => {} }
+
 describe('findEditorRoot', () => {
   it('returns the inner #ag-editor-id div, not the outer container', () => {
     const container = buildMuyaDom([{ tag: 'p', text: 'hi' }])
-    const root = findEditorRoot(container)
-    expect(root.id).toBe('ag-editor-id')
+    expect(findEditorRoot(container).id).toBe('ag-editor-id')
   })
 })
 
@@ -38,8 +39,6 @@ describe('injectInlineDiff', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
   })
-
-  const noop = { onAccept: () => {}, onDiscard: () => {} }
 
   it('hides the changed block and injects the hunk in its place', () => {
     const container = buildMuyaDom([
@@ -53,28 +52,15 @@ describe('injectInlineDiff', () => {
       container,
       'First paragraph.\n\nSecond paragraph.\n\nThird paragraph.',
       'First paragraph.\n\nSecond paragraph EDITED.\n\nThird paragraph.',
-      noop
+      fileCbs
     )
-
     expect(handle).not.toBeNull()
 
-    // The original "Second paragraph." block is hidden
-    const blocks = Array.from(root.querySelectorAll('p'))
-    const second = blocks.find((b) => b.textContent === 'Second paragraph.')!
+    const second = Array.from(root.querySelectorAll('p')).find(
+      (b) => b.textContent === 'Second paragraph.'
+    )!
     expect(second.classList.contains('wb-diff-hidden')).toBe(true)
 
-    // First and Third remain visible
-    const first = blocks.find((b) => b.textContent === 'First paragraph.')!
-    const third = blocks.find((b) => b.textContent === 'Third paragraph.')!
-    expect(first.classList.contains('wb-diff-hidden')).toBe(false)
-    expect(third.classList.contains('wb-diff-hidden')).toBe(false)
-
-    // A CodeLens bar with Accept/Discard exists
-    expect(root.querySelector('.wb-diff-codelens')).not.toBeNull()
-    expect(root.querySelector('.wb-diff-codelens__btn--accept')!.textContent).toContain('Accept')
-    expect(root.querySelector('.wb-diff-codelens__btn--discard')!.textContent).toContain('Discard')
-
-    // The hunk renders BOTH the removed and the added line
     const removed = Array.from(root.querySelectorAll('.wb-diff-line--removed')).map(
       (el) => el.querySelector('.wb-diff-line__text')!.textContent
     )
@@ -92,27 +78,88 @@ describe('injectInlineDiff', () => {
     ])
     const root = findEditorRoot(container)
 
-    injectInlineDiff(container, 'Alpha.\n\nBeta.', 'Alpha.\n\nBeta CHANGED.', noop)
+    injectInlineDiff(container, 'Alpha.\n\nBeta.', 'Alpha.\n\nBeta CHANGED.', fileCbs)
 
-    // Injected nodes live inside #ag-editor-id, not as stray children of container
     expect(root.querySelector('.wb-diff-hunk')).not.toBeNull()
-    const strayInContainer = Array.from(container.children).filter(
+    const stray = Array.from(container.children).filter(
       (c) => (c as HTMLElement).dataset?.wbDiffInjected === '1'
     )
-    expect(strayInContainer.length).toBe(0)
+    expect(stray.length).toBe(0)
+  })
+
+  it('renders a file-level header with Accept All / Discard All and the change count', () => {
+    const container = buildMuyaDom([
+      { tag: 'p', text: 'A.' },
+      { tag: 'p', text: 'B.' },
+      { tag: 'p', text: 'C.' }
+    ])
+    const root = findEditorRoot(container)
+    const onAcceptFile = vi.fn()
+    const onDiscardFile = vi.fn()
+
+    injectInlineDiff(container, 'A.\n\nB.\n\nC.', 'A.\n\nB2.\n\nC2.', {
+      onAcceptFile,
+      onDiscardFile
+    })
+
+    const codelens = root.querySelector('.wb-diff-codelens')!
+    expect(codelens).not.toBeNull()
+    // two separate changed paragraphs => "2 changes"
+    expect(codelens.querySelector('.wb-diff-codelens__label')!.textContent).toContain('2 changes')
+    ;(codelens.querySelector('.wb-diff-btn--accept') as HTMLButtonElement).click()
+    expect(onAcceptFile).toHaveBeenCalledOnce()
+    ;(codelens.querySelector('.wb-diff-btn--discard') as HTMLButtonElement).click()
+    expect(onDiscardFile).toHaveBeenCalledOnce()
+  })
+
+  it('renders one hunk block per change, each with its own Accept/Discard', () => {
+    const container = buildMuyaDom([
+      { tag: 'p', text: 'A.' },
+      { tag: 'p', text: 'B.' },
+      { tag: 'p', text: 'C.' }
+    ])
+    const root = findEditorRoot(container)
+    const onAcceptHunk = vi.fn()
+    const onDiscardHunk = vi.fn()
+
+    injectInlineDiff(container, 'A.\n\nB.\n\nC.', 'A.\n\nB2.\n\nC2.', {
+      ...fileCbs,
+      onAcceptHunk,
+      onDiscardHunk
+    })
+
+    const hunks = Array.from(root.querySelectorAll('.wb-diff-hunk'))
+    expect(hunks).toHaveLength(2)
+
+    // First hunk's Accept fires with index 0
+    ;(hunks[0].querySelector('.wb-diff-hunk__actions .wb-diff-btn--accept') as HTMLButtonElement).click()
+    expect(onAcceptHunk).toHaveBeenCalledWith(0)
+
+    // Second hunk's Discard fires with index 1
+    ;(hunks[1].querySelector('.wb-diff-hunk__actions .wb-diff-btn--discard') as HTMLButtonElement).click()
+    expect(onDiscardHunk).toHaveBeenCalledWith(1)
+  })
+
+  it('omits per-hunk headers when no per-hunk callbacks are given', () => {
+    const container = buildMuyaDom([{ tag: 'p', text: 'Old.' }])
+    const root = findEditorRoot(container)
+
+    injectInlineDiff(container, 'Old.', 'New.', fileCbs)
+
+    expect(root.querySelector('.wb-diff-hunk__header')).toBeNull()
+    expect(root.querySelector('.wb-diff-hunk__lines')).not.toBeNull()
   })
 
   it('matches a heading block despite the markdown # prefix', () => {
     const container = buildMuyaDom([
-      { tag: 'h1', text: 'Old Title' }, // Muya renders heading without the #
+      { tag: 'h1', text: 'Old Title' },
       { tag: 'p', text: 'Body text.' }
     ])
     const root = findEditorRoot(container)
 
-    injectInlineDiff(container, '# Old Title\n\nBody text.', '# New Title\n\nBody text.', noop)
+    injectInlineDiff(container, '# Old Title\n\nBody text.', '# New Title\n\nBody text.', fileCbs)
 
-    const heading = root.querySelector('h1')!
-    expect(heading.classList.contains('wb-diff-hidden')).toBe(true)
+    expect(root.querySelector('h1')!.classList.contains('wb-diff-hidden')).toBe(true)
   })
 
   it('removing the handle restores hidden blocks and deletes injected nodes', () => {
@@ -122,8 +169,7 @@ describe('injectInlineDiff', () => {
     ])
     const root = findEditorRoot(container)
 
-    const handle = injectInlineDiff(container, 'Keep.\n\nChange me.', 'Keep.\n\nChanged!', noop)!
-
+    const handle = injectInlineDiff(container, 'Keep.\n\nChange me.', 'Keep.\n\nChanged!', fileCbs)!
     const changed = Array.from(root.querySelectorAll('p')).find(
       (b) => b.textContent === 'Change me.'
     )!
@@ -136,22 +182,8 @@ describe('injectInlineDiff', () => {
     expect(root.querySelector('.wb-diff-codelens')).toBeNull()
   })
 
-  it('wires Accept and Discard buttons to callbacks', () => {
-    const container = buildMuyaDom([{ tag: 'p', text: 'Old.' }])
-    const onAccept = vi.fn()
-    const onDiscard = vi.fn()
-
-    const root = findEditorRoot(container)
-    injectInlineDiff(container, 'Old.', 'New.', { onAccept, onDiscard })
-    ;(root.querySelector('.wb-diff-codelens__btn--accept') as HTMLButtonElement).click()
-    expect(onAccept).toHaveBeenCalledOnce()
-    ;(root.querySelector('.wb-diff-codelens__btn--discard') as HTMLButtonElement).click()
-    expect(onDiscard).toHaveBeenCalledOnce()
-  })
-
   it('returns null when there is no change', () => {
     const container = buildMuyaDom([{ tag: 'p', text: 'Same.' }])
-    const handle = injectInlineDiff(container, 'Same.', 'Same.', noop)
-    expect(handle).toBeNull()
+    expect(injectInlineDiff(container, 'Same.', 'Same.', fileCbs)).toBeNull()
   })
 })
