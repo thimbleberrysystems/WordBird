@@ -452,12 +452,8 @@ export class LangGraphManager {
     const projectRoot = getActiveAgentProjectRoot()
     const result = await this._agentToolService.execute(call, { projectRoot })
 
-    log.debug('[LangGraphMain] executeTool IPC result:', result)
-
     if (result.ok && this._agentToolService.isEditProposalPayload(result.data)) {
       const proposal = result.data
-      log.debug('[LangGraphMain] Sending edit proposal to renderer:', proposal)
-
       this._editProposed = true
 
       const mainWindow = this._getMainWindow()
@@ -473,10 +469,8 @@ export class LangGraphManager {
 
   async applyEdit(request: IAgentApplyEditRequest): Promise<{ ok: boolean; error?: string }> {
     try {
-      log.debug('[LangGraphMain] applyEdit called:', request)
       const mainWindow = this._getMainWindow()
       if (mainWindow) {
-        log.debug('[LangGraphMain] Sending apply-edit-in-renderer:', request)
         mainWindow.webContents.send('mt::ai:apply-edit-in-renderer', request)
       } else {
         log.warn('[LangGraphMain] No main window available for apply edit')

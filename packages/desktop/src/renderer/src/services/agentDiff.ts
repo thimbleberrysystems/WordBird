@@ -7,8 +7,6 @@ export interface DiffLine {
   value: string
 }
 
-export type DiffToken = DiffLine
-
 export const MAX_INLINE_DIFF_LINES = 200
 
 export function generateUnifiedDiff(oldContent: string, newContent: string): string {
@@ -25,7 +23,7 @@ export function generateUnifiedDiff(oldContent: string, newContent: string): str
     .join('\n')
 }
 
-export function generateInlineDiffTokens(oldContent: string, newContent: string): DiffToken[] {
+export function generateInlineDiffTokens(oldContent: string, newContent: string): DiffLine[] {
   const diff = Diff.diffChars(oldContent, newContent)
   return diff.map((part) => ({
     type: part.added ? 'added' : part.removed ? 'removed' : 'equal',
