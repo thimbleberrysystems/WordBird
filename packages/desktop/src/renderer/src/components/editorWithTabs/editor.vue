@@ -272,11 +272,23 @@ function makeDiffLineEl (line: DiffLine): HTMLDivElement {
   return lineEl
 }
 
+// Walk up from a (possibly nested leaf) element to the direct child of
+// `container` that contains it. Muya applies .ag-diff-* to leaf spans, which
+// are nested inside top-level block elements; insertBefore/after need the
+// top-level sibling, not the leaf.
+function topLevelBlockOf (el: HTMLElement, container: HTMLElement): HTMLElement | null {
+  let cur: HTMLElement | null = el
+  while (cur && cur.parentElement && cur.parentElement !== container) {
+    cur = cur.parentElement
+  }
+  return cur && cur.parentElement === container ? cur : null
+}
+
 async function showInlineDiff (data: DiffWidgetData): Promise<void> {
   await nextTick()
   hideInlineDiff()
 
-  const container = editor.value?.container
+  const container = editor.value?.container as HTMLElement | undefined
   if (!container) return
 
   const changedEls = Array.from(
@@ -284,8 +296,9 @@ async function showInlineDiff (data: DiffWidgetData): Promise<void> {
   ) as HTMLElement[]
   if (changedEls.length === 0) return
 
-  const firstEl = changedEls[0]
-  const lastEl = changedEls[changedEls.length - 1]
+  const firstTop = topLevelBlockOf(changedEls[0], container)
+  const lastTop = topLevelBlockOf(changedEls[changedEls.length - 1], container)
+  if (!firstTop || !lastTop) return
 
   const allLines = generateDiffLines(data.oldContent, data.newContent)
   const addedLines = allLines.filter(l => l.type === 'added')
@@ -323,7 +336,7 @@ async function showInlineDiff (data: DiffWidgetData): Promise<void> {
   actionsEl.appendChild(acceptBtn)
   actionsEl.appendChild(discardBtn)
   diffCodeLensEl.appendChild(actionsEl)
-  container.insertBefore(diffCodeLensEl, firstEl)
+  container.insertBefore(diffCodeLensEl, firstTop)
 
   // ── Added (green) lines ───────────────────────────────────────────────────
   // Inserted as contenteditable=false AFTER the last red block so both old
@@ -338,12 +351,7 @@ async function showInlineDiff (data: DiffWidgetData): Promise<void> {
       diffAddedLinesEl.appendChild(makeDiffLineEl(line))
     }
 
-    const nextSib = lastEl.nextSibling
-    if (nextSib) {
-      container.insertBefore(diffAddedLinesEl, nextSib)
-    } else {
-      container.appendChild(diffAddedLinesEl)
-    }
+    container.insertBefore(diffAddedLinesEl, lastTop.nextSibling)
   }
 }
 
