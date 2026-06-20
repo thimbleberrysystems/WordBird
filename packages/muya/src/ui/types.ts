@@ -1,7 +1,7 @@
-import type { OffsetOptions, Placement } from '@floating-ui/dom';
+import type { OffsetOptions, Placement } from '@floating-ui/dom'
 
 export interface IBaseOptions {
-    placement: Placement;
-    offsetOptions: OffsetOptions;
-    showArrow: boolean;
+  placement: Placement
+  offsetOptions: OffsetOptions
+  showArrow: boolean
 }

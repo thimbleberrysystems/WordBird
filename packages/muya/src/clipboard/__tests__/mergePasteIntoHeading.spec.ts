@@ -1,18 +1,18 @@
-import type Content from '../../block/base/content';
-import type Parent from '../../block/base/parent';
-import type { TState } from '../../state/types';
-import { describe, expect, it } from 'vitest';
-import { mergePasteIntoHeading } from '../mergePasteIntoHeading';
+import type Content from '../../block/base/content'
+import type Parent from '../../block/base/parent'
+import type { TState } from '../../state/types'
+import { describe, expect, it } from 'vitest'
+import { mergePasteIntoHeading } from '../mergePasteIntoHeading'
 
 // Narrow casts shared by every test below. The helper under test only
 // touches `text` / `update()` on the anchor and `blockName` on the wrapper,
 // so the fake objects intentionally don't satisfy the full Content / Parent
 // surface — `as unknown as Content` (etc.) makes the assertion explicit.
 function asContent(block: FakeContent): Content {
-    return block as unknown as Content;
+  return block as unknown as Content
 }
 function asParentWithBlockName(blockName: string): Parent {
-    return { blockName } as unknown as Parent;
+  return { blockName } as unknown as Parent
 }
 
 // Regression for marktext commit 1c42555a (#671):
@@ -29,127 +29,127 @@ function asParentWithBlockName(blockName: string): Parent {
 // and, if so, mutates the heading's text and returns the remaining states.
 
 interface FakeContent {
-    text: string;
-    updated: boolean;
-    update: () => void;
+  text: string
+  updated: boolean
+  update: () => void
 }
 
 function content(text: string): FakeContent {
-    const block: FakeContent = {
-        text,
-        updated: false,
-        update() {
-            this.updated = true;
-        },
-    };
-    return block;
+  const block: FakeContent = {
+    text,
+    updated: false,
+    update() {
+      this.updated = true
+    }
+  }
+  return block
 }
 
 describe('mergePasteIntoHeading', () => {
-    it('merges first paragraph state into an atx heading and returns the rest', () => {
-        const heading = content('Title');
-        const states = [
-            { name: 'paragraph', text: 'Hello' },
-            { name: 'paragraph', text: 'World' },
-        ];
+  it('merges first paragraph state into an atx heading and returns the rest', () => {
+    const heading = content('Title')
+    const states = [
+      { name: 'paragraph', text: 'Hello' },
+      { name: 'paragraph', text: 'World' }
+    ]
 
-        const remaining = mergePasteIntoHeading(
-            asContent(heading),
-            asParentWithBlockName('atx-heading'),
-            states as TState[],
-            { startOffset: 5, endOffset: 5 },
-        );
+    const remaining = mergePasteIntoHeading(
+      asContent(heading),
+      asParentWithBlockName('atx-heading'),
+      states as TState[],
+      { startOffset: 5, endOffset: 5 }
+    )
 
-        expect(heading.text).toBe('TitleHello');
-        expect(heading.updated).toBe(true);
-        expect(remaining).toEqual([{ name: 'paragraph', text: 'World' }]);
-    });
+    expect(heading.text).toBe('TitleHello')
+    expect(heading.updated).toBe(true)
+    expect(remaining).toEqual([{ name: 'paragraph', text: 'World' }])
+  })
 
-    it('also merges into setext heading', () => {
-        const heading = content('Title');
-        const states = [
-            { name: 'paragraph', text: 'Hello' },
-            { name: 'paragraph', text: 'World' },
-        ];
+  it('also merges into setext heading', () => {
+    const heading = content('Title')
+    const states = [
+      { name: 'paragraph', text: 'Hello' },
+      { name: 'paragraph', text: 'World' }
+    ]
 
-        const remaining = mergePasteIntoHeading(
-            asContent(heading),
-            asParentWithBlockName('setext-heading'),
-            states as TState[],
-            { startOffset: 5, endOffset: 5 },
-        );
+    const remaining = mergePasteIntoHeading(
+      asContent(heading),
+      asParentWithBlockName('setext-heading'),
+      states as TState[],
+      { startOffset: 5, endOffset: 5 }
+    )
 
-        expect(heading.text).toBe('TitleHello');
-        expect(remaining).toEqual([{ name: 'paragraph', text: 'World' }]);
-    });
+    expect(heading.text).toBe('TitleHello')
+    expect(remaining).toEqual([{ name: 'paragraph', text: 'World' }])
+  })
 
-    it('honours an existing selection on the heading by collapsing the selected range first', () => {
-        const heading = content('Title XXX'); // user selected "XXX" before pasting
-        const states = [
-            { name: 'paragraph', text: 'Hello' },
-            { name: 'paragraph', text: 'World' },
-        ];
+  it('honours an existing selection on the heading by collapsing the selected range first', () => {
+    const heading = content('Title XXX') // user selected "XXX" before pasting
+    const states = [
+      { name: 'paragraph', text: 'Hello' },
+      { name: 'paragraph', text: 'World' }
+    ]
 
-        const remaining = mergePasteIntoHeading(
-            asContent(heading),
-            asParentWithBlockName('atx-heading'),
-            states as TState[],
-            { startOffset: 6, endOffset: 9 },
-        );
+    const remaining = mergePasteIntoHeading(
+      asContent(heading),
+      asParentWithBlockName('atx-heading'),
+      states as TState[],
+      { startOffset: 6, endOffset: 9 }
+    )
 
-        expect(heading.text).toBe('Title Hello');
-        expect(remaining).toEqual([{ name: 'paragraph', text: 'World' }]);
-    });
+    expect(heading.text).toBe('Title Hello')
+    expect(remaining).toEqual([{ name: 'paragraph', text: 'World' }])
+  })
 
-    it('returns the original states unchanged when wrapper is not a heading', () => {
-        const para = content('Foo');
-        const states = [
-            { name: 'paragraph', text: 'A' },
-            { name: 'paragraph', text: 'B' },
-        ];
+  it('returns the original states unchanged when wrapper is not a heading', () => {
+    const para = content('Foo')
+    const states = [
+      { name: 'paragraph', text: 'A' },
+      { name: 'paragraph', text: 'B' }
+    ]
 
-        const remaining = mergePasteIntoHeading(
-            asContent(para),
-            asParentWithBlockName('paragraph'),
-            states as TState[],
-            { startOffset: 3, endOffset: 3 },
-        );
+    const remaining = mergePasteIntoHeading(
+      asContent(para),
+      asParentWithBlockName('paragraph'),
+      states as TState[],
+      { startOffset: 3, endOffset: 3 }
+    )
 
-        expect(para.text).toBe('Foo');
-        expect(para.updated).toBe(false);
-        expect(remaining).toBe(states);
-    });
+    expect(para.text).toBe('Foo')
+    expect(para.updated).toBe(false)
+    expect(remaining).toBe(states)
+  })
 
-    it('returns the original states when first state is not a paragraph', () => {
-        const heading = content('Title');
-        const states = [
-            { name: 'code-block', text: 'console.log()' },
-            { name: 'paragraph', text: 'after' },
-        ];
+  it('returns the original states when first state is not a paragraph', () => {
+    const heading = content('Title')
+    const states = [
+      { name: 'code-block', text: 'console.log()' },
+      { name: 'paragraph', text: 'after' }
+    ]
 
-        const remaining = mergePasteIntoHeading(
-            asContent(heading),
-            asParentWithBlockName('atx-heading'),
-            states as TState[],
-            { startOffset: 5, endOffset: 5 },
-        );
+    const remaining = mergePasteIntoHeading(
+      asContent(heading),
+      asParentWithBlockName('atx-heading'),
+      states as TState[],
+      { startOffset: 5, endOffset: 5 }
+    )
 
-        expect(heading.text).toBe('Title');
-        expect(heading.updated).toBe(false);
-        expect(remaining).toBe(states);
-    });
+    expect(heading.text).toBe('Title')
+    expect(heading.updated).toBe(false)
+    expect(remaining).toBe(states)
+  })
 
-    it('returns an empty array when states is empty (no-op)', () => {
-        const heading = content('Title');
+  it('returns an empty array when states is empty (no-op)', () => {
+    const heading = content('Title')
 
-        const remaining = mergePasteIntoHeading(
-            asContent(heading),
-            asParentWithBlockName('atx-heading'),
-            [],
-            { startOffset: 5, endOffset: 5 },
-        );
+    const remaining = mergePasteIntoHeading(
+      asContent(heading),
+      asParentWithBlockName('atx-heading'),
+      [],
+      { startOffset: 5, endOffset: 5 }
+    )
 
-        expect(heading.text).toBe('Title');
-        expect(remaining).toEqual([]);
-    });
-});
+    expect(heading.text).toBe('Title')
+    expect(remaining).toEqual([])
+  })
+})

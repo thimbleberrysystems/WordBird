@@ -44,7 +44,7 @@ Links are displayed by default as normal text, but if you click on a link it is 
 
 ## Formatting
 
-MarkText will automatically format your markdown document according CommonMark and GitHub Flavored Markdown specification. Some settings, such as list indentation, can be controlled via preferences. 
+MarkText will automatically format your markdown document according CommonMark and GitHub Flavored Markdown specification. Some settings, such as list indentation, can be controlled via preferences.
 
 ## Editing features
 

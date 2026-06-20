@@ -13,18 +13,18 @@ test.describe('PlantUML render via pako', () => {
   let app: ElectronApplication
   let page: Page
 
-  test.beforeAll(async() => {
+  test.beforeAll(async () => {
     const launched = await launchWithMarkdown(PLANTUML_DOC)
     app = launched.app
     page = launched.page
     await focusEditor(page)
   })
 
-  test.afterAll(async() => {
+  test.afterAll(async () => {
     if (app) await app.close()
   })
 
-  test('plantuml block renders an img with a plantuml.com src', async() => {
+  test('plantuml block renders an img with a plantuml.com src', async () => {
     // Muya renders code-block diagrams lazily; wait for the img to appear.
     const img = page.locator('img[src*="plantuml.com/plantuml"]').first()
     await expect(img).toHaveCount(1, { timeout: 10000 })

@@ -1,6 +1,6 @@
-import type { IHighlight } from '../../../inlineRenderer/types';
-import { escapeHTML } from '../../../utils';
-import { getHighlightHtml, MARKER_HASH } from '../../../utils/highlightHTML';
+import type { IHighlight } from '../../../inlineRenderer/types'
+import { escapeHTML } from '../../../utils'
+import { getHighlightHtml, MARKER_HASH } from '../../../utils/highlightHTML'
 
 // Escape a code-block language identifier for direct assignment to
 // `domNode.innerHTML`. Mirrors the safe path used by `codeBlockContent`:
@@ -11,9 +11,9 @@ import { getHighlightHtml, MARKER_HASH } from '../../../utils/highlightHTML';
 // Without this, `<img/src=x/onerror=alert(1)>` typed into the language
 // input would be injected verbatim (marktext fix 0dd09cc6 / #2548, #2601).
 export function escapeLangInputInnerHtml(text: string, highlights: IHighlight[] = []) {
-    return escapeHTML(getHighlightHtml(text, highlights, true))
-        .replace(new RegExp(MARKER_HASH['<'], 'g'), '<')
-        .replace(new RegExp(MARKER_HASH['>'], 'g'), '>')
-        .replace(new RegExp(MARKER_HASH['"'], 'g'), '"')
-        .replace(new RegExp(MARKER_HASH['\''], 'g'), '\'');
+  return escapeHTML(getHighlightHtml(text, highlights, true))
+    .replace(new RegExp(MARKER_HASH['<'], 'g'), '<')
+    .replace(new RegExp(MARKER_HASH['>'], 'g'), '>')
+    .replace(new RegExp(MARKER_HASH['"'], 'g'), '"')
+    .replace(new RegExp(MARKER_HASH["'"], 'g'), "'")
 }

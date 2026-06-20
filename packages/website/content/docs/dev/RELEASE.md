@@ -24,10 +24,10 @@ Reuse the same branch for every RC of that minor version (`rc.1`, `rc.2`, …) *
 
 Edit the `version` field — it is the only file you need to change.
 
-| Stage | Version string |
-|---|---|
+| Stage             | Version string                  |
+| ----------------- | ------------------------------- |
 | Release candidate | `0.19.0-rc.1`, `0.19.0-rc.2`, … |
-| Stable | `0.19.0` |
+| Stable            | `0.19.0`                        |
 
 ## 3. Commit and push the branch
 

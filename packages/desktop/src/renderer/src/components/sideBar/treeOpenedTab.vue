@@ -5,11 +5,7 @@
     :class="[{ active: currentFile?.id === file.id, unsaved: !file.isSaved }]"
     @click="selectFile(file)"
   >
-    <el-icon
-      class="close-icon"
-      :size="10"
-      @click.stop="removeFileInTab(file)"
-    >
+    <el-icon class="close-icon" :size="10" @click.stop="removeFileInTab(file)">
       <Close />
     </el-icon>
     <span class="name">{{ file.filename }}</span>

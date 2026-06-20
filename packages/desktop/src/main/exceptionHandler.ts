@@ -38,7 +38,7 @@ const exceptionToString = (error: Error, type: ErrorType): string => {
   )
 }
 
-const handleError = async(title: string, error: Error, type: ErrorType): Promise<void> => {
+const handleError = async (title: string, error: Error, type: ErrorType): Promise<void> => {
   const { message, stack } = error
 
   // Write error into file

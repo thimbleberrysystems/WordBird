@@ -1,8 +1,5 @@
 <template>
-  <section
-    class="pref-font-input-item"
-    :class="{ 'ag-underdevelop': disable }"
-  >
+  <section class="pref-font-input-item" :class="{ 'ag-underdevelop': disable }">
     <div class="description">
       <span>{{ description }}:</span>
       <LinkIcon
@@ -22,11 +19,7 @@
       @select="handleSelect"
     >
       <template #suffix>
-        <ArrowDown
-          width="16"
-          height="16"
-          class="el-input__icon"
-        />
+        <ArrowDown width="16" height="16" class="el-input__icon" />
       </template>
       <template #default="{ item }">
         <div class="family">

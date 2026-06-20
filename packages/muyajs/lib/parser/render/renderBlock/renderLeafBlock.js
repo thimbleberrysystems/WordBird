@@ -1,7 +1,12 @@
 import katex from 'katex'
 import prism, { loadedLanguages, transformAliasToOrigin } from '../../../prism/'
 import 'katex/dist/contrib/mhchem.min.js'
-import { CLASS_OR_ID, DEVICE_MEMORY, PREVIEW_DOMPURIFY_CONFIG, HAS_TEXT_BLOCK_REG } from '../../../config'
+import {
+  CLASS_OR_ID,
+  DEVICE_MEMORY,
+  PREVIEW_DOMPURIFY_CONFIG,
+  HAS_TEXT_BLOCK_REG
+} from '../../../config'
 import { tokenizer } from '../../'
 import { snakeToCamel, sanitize, escapeHTML, getLongUniqueId, getImageInfo } from '../../../utils'
 import { h, htmlToVNode } from '../snabbdom'
@@ -27,10 +32,9 @@ const getHighlightHtml = (text, highlights, escape = false, handleLineEnding = f
     const className = active ? 'ag-highlight' : 'ag-selection'
     let highlightContent = text.substring(start, end)
     if (handleLineEnding && text.endsWith('\n') && end === text.length) {
-      highlightContent = highlightContent.substring(start, end - 1) +
-      (escape
-        ? getEscapeHTML('ag-line-end', '\n')
-        : '<span class="ag-line-end">\n</span>')
+      highlightContent =
+        highlightContent.substring(start, end - 1) +
+        (escape ? getEscapeHTML('ag-line-end', '\n') : '<span class="ag-line-end">\n</span>')
     }
     code += escape
       ? getEscapeHTML(className, highlightContent)
@@ -39,10 +43,9 @@ const getHighlightHtml = (text, highlights, escape = false, handleLineEnding = f
   }
   if (pos !== text.length) {
     if (handleLineEnding && text.endsWith('\n')) {
-      code += text.substring(pos, text.length - 1) +
-      (escape
-        ? getEscapeHTML('ag-line-end', '\n')
-        : '<span class="ag-line-end">\n</span>')
+      code +=
+        text.substring(pos, text.length - 1) +
+        (escape ? getEscapeHTML('ag-line-end', '\n') : '<span class="ag-line-end">\n</span>')
     } else {
       code += text.substring(pos)
     }
@@ -50,9 +53,9 @@ const getHighlightHtml = (text, highlights, escape = false, handleLineEnding = f
   return escapeHTML(code)
 }
 
-const hasReferenceToken = tokens => {
+const hasReferenceToken = (tokens) => {
   let result = false
-  const travel = tokens => {
+  const travel = (tokens) => {
     for (const token of tokens) {
       if (/reference_image|reference_link/.test(token.type)) {
         result = true
@@ -72,16 +75,8 @@ export default function renderLeafBlock(parent, block, activeBlocks, matches, us
   const { cursor } = this.muya.contentState
   let selector = this.getSelector(block, activeBlocks)
   // highlight search key in block
-  const highlights = matches.filter(m => m.key === block.key)
-  const {
-    text,
-    type,
-    checked,
-    key,
-    lang,
-    functionType,
-    editable
-  } = block
+  const highlights = matches.filter((m) => m.key === block.key)
+  const { text, type, checked, key, lang, functionType, editable } = block
 
   const data = {
     props: {},
@@ -114,7 +109,23 @@ export default function renderLeafBlock(parent, block, activeBlocks, matches, us
         this.tokenCache.set(text, tokens)
       }
     }
-    children = tokens.reduce((acc, token) => [...acc, ...this[snakeToCamel(token.type)](h, cursor, block, token)], [])
+    children = tokens.reduce(
+      (acc, token) => [...acc, ...this[snakeToCamel(token.type)](h, cursor, block, token)],
+      []
+    )
+  }
+
+  // Check for diff state and add CSS classes for agentic edit proposals
+  const diffStates = this.muya.contentState.diffState?.get(key) || []
+  if (diffStates.length > 0) {
+    const changeTypes = diffStates.map((d) => d.changeType)
+    if (changeTypes.includes('added')) {
+      selector += `.${CLASS_OR_ID.AG_DIFF_ADDED}`
+    } else if (changeTypes.includes('removed')) {
+      selector += `.${CLASS_OR_ID.AG_DIFF_REMOVED}`
+    } else if (changeTypes.includes('modified')) {
+      selector += `.${CLASS_OR_ID.AG_DIFF_MODIFIED}`
+    }
   }
 
   if (editable === false) {
@@ -214,7 +225,7 @@ export default function renderLeafBlock(parent, block, activeBlocks, matches, us
 
     Object.assign(data.attrs, {
       type: 'checkbox',
-      style: `top: ${(fontSize * lineHeight / 2 - 8).toFixed(2)}px`
+      style: `top: ${((fontSize * lineHeight) / 2 - 8).toFixed(2)}px`
     })
 
     selector = `${type}#${key}.${CLASS_OR_ID.AG_TASK_LIST_ITEM_CHECKBOX}`
@@ -238,7 +249,7 @@ export default function renderLeafBlock(parent, block, activeBlocks, matches, us
       const wrapper = document.createElement('div')
       wrapper.classList.add(`language-${transformedLang}`)
       wrapper.innerHTML = code
-      prism.highlightElement(wrapper, false, function() {
+      prism.highlightElement(wrapper, false, function () {
         const highlightedCode = this.innerHTML
         selector += `.language-${transformedLang}`
         children = htmlToVNode(highlightedCode)

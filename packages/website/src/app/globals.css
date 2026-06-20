@@ -40,7 +40,8 @@
   --mono: var(--font-geist-mono), 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
 
   --bg: #08080b;
-  --bg-grad: radial-gradient(1200px 700px at 50% -8%, rgba(168, 85, 247, 0.16), transparent 60%),
+  --bg-grad:
+    radial-gradient(1200px 700px at 50% -8%, rgba(168, 85, 247, 0.16), transparent 60%),
     radial-gradient(900px 600px at 85% 8%, rgba(236, 72, 153, 0.12), transparent 55%), #08080b;
   --panel: rgba(255, 255, 255, 0.025);
   --panel-2: rgba(255, 255, 255, 0.045);
@@ -58,7 +59,8 @@
 
 [data-theme='light'] {
   --bg: #fafafc;
-  --bg-grad: radial-gradient(1200px 700px at 50% -10%, rgba(168, 85, 247, 0.14), transparent 60%),
+  --bg-grad:
+    radial-gradient(1200px 700px at 50% -10%, rgba(168, 85, 247, 0.14), transparent 60%),
     radial-gradient(900px 600px at 85% 6%, rgba(236, 72, 153, 0.1), transparent 55%), #fafafc;
   --panel: rgba(10, 10, 25, 0.025);
   --panel-2: rgba(255, 255, 255, 0.7);
@@ -574,7 +576,11 @@ h1.hero-title {
   margin: 0 0 16px;
   color: var(--text-2);
   font-style: italic;
-  background: linear-gradient(90deg, color-mix(in oklch, var(--accent) 7%, transparent), transparent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--accent) 7%, transparent),
+    transparent
+  );
 }
 .doc pre {
   background: var(--code-bg);

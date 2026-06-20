@@ -18,7 +18,7 @@ foo
 
 > Use it if you're quoting a person, a song or whatever.
 
-> You can use *italic* or lists inside them also.
+> You can use _italic_ or lists inside them also.
 
 ## Failing Tests
 

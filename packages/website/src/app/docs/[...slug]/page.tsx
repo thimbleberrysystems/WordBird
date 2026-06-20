@@ -1,12 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import {
-  ALL_PAGES,
-  findPageBySlug,
-  firstPageOfTab,
-  neighborsFor
-} from '@/lib/docs-nav'
+import { ALL_PAGES, findPageBySlug, firstPageOfTab, neighborsFor } from '@/lib/docs-nav'
 import { readDoc, renderMarkdown } from '@/lib/markdown'
 import DocsSidebar from '@/components/docs/DocsSidebar'
 import DocsToc from '@/components/docs/DocsToc'
@@ -23,11 +18,7 @@ export function generateStaticParams() {
 
 type Params = { slug: string[] }
 
-export async function generateMetadata({
-  params
-}: {
-  params: Promise<Params>
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params
   const page = findPageBySlug(slug)
   if (!page) return {}
@@ -47,8 +38,7 @@ export default async function DocPage({ params }: { params: Promise<Params> }) {
   const { prev, next } = neighborsFor(page.slug)
   const fallbackTab = firstPageOfTab(page.tab)
 
-  const editHref =
-    DOWNLOAD.repo + '/edit/develop/packages/website/content/docs/' + page.file
+  const editHref = DOWNLOAD.repo + '/edit/develop/packages/website/content/docs/' + page.file
 
   return (
     <div className="docs-shell">
@@ -71,9 +61,7 @@ export default async function DocPage({ params }: { params: Promise<Params> }) {
           <div className="prose" dangerouslySetInnerHTML={{ __html: html }} />
           <Pager prev={prev} next={next} />
           <footer className="doc-footer">
-            <span>
-              Last reviewed in the develop branch · open source under the MIT license.
-            </span>
+            <span>Last reviewed in the develop branch · open source under the MIT license.</span>
             <a className="edit-link" href={editHref} target="_blank" rel="noopener noreferrer">
               <svg
                 viewBox="0 0 24 24"

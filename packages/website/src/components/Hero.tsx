@@ -55,8 +55,9 @@ export default function Hero() {
             </h1>
             <p className="doc-sub">A living document, written entirely in Markdown.</p>
             <p className="lead">
-              MarkText renders your formatting <strong>as you type</strong> — headings grow, <em>emphasis</em> leans, and{' '}
-              <code className="inline">code</code> snaps into place without ever leaving the page.
+              MarkText renders your formatting <strong>as you type</strong> — headings grow,{' '}
+              <em>emphasis</em> leans, and <code className="inline">code</code> snaps into place
+              without ever leaving the page.
             </p>
             <h2>What changed</h2>
             <ul>
@@ -64,7 +65,9 @@ export default function Hero() {
               <li>33 built-in themes plus full custom CSS</li>
               <li>Tables, math, footnotes &amp; diagrams out of the box</li>
             </ul>
-            <blockquote>“The best Markdown editors disappear. MarkText disappears beautifully.”</blockquote>
+            <blockquote>
+              “The best Markdown editors disappear. MarkText disappears beautifully.”
+            </blockquote>
             <pre>
               <span className="c">{'# export.sh'}</span>
               {'\n'}

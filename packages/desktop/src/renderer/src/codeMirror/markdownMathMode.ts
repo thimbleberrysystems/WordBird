@@ -33,7 +33,7 @@ const registerMarkdownMathMode = (CodeMirror: CodeMirrorLike): void => {
     return
   }
 
-  CodeMirror.defineMode('markdown-math', function(config: AnyObj) {
+  CodeMirror.defineMode('markdown-math', function (config: AnyObj) {
     const gfmMode = CodeMirror.getMode(config, {
       name: 'gfm',
       fencedCodeBlocks: true,

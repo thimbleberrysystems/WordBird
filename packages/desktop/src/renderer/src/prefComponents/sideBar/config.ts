@@ -119,7 +119,9 @@ export const getCategory = (): PrefCategory[] => [
 
 const errMessage = (e: unknown): string => (e instanceof Error ? e.message : String(e))
 
-const resolveGlobal = (container: VueI18nGlobalContainer | undefined): VueI18nGlobal | undefined => {
+const resolveGlobal = (
+  container: VueI18nGlobalContainer | undefined
+): VueI18nGlobal | undefined => {
   if (!container) return undefined
   return typeof container.global === 'function' ? container.global() : container.global
 }

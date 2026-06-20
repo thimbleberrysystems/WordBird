@@ -37,9 +37,15 @@ export default function FocusExport() {
             }
           >
             <div className="platforms platforms--start">
-              <div className="plat plat--compact"><b>PDF</b></div>
-              <div className="plat plat--compact"><b>HTML</b></div>
-              <div className="plat plat--compact"><b>.md</b></div>
+              <div className="plat plat--compact">
+                <b>PDF</b>
+              </div>
+              <div className="plat plat--compact">
+                <b>HTML</b>
+              </div>
+              <div className="plat plat--compact">
+                <b>.md</b>
+              </div>
             </div>
           </FeatureCard>
         </div>

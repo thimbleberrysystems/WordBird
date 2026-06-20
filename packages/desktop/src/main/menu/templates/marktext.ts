@@ -6,7 +6,7 @@ import type Keybindings from '../../keyboard/shortcutHandler'
 
 // macOS only menu.
 
-export default function(keybindings: Keybindings): MenuItemConstructorOptions {
+export default function (keybindings: Keybindings): MenuItemConstructorOptions {
   return {
     label: t('menu.marktext.title'),
     submenu: [

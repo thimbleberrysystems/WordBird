@@ -79,7 +79,14 @@ export async function renderMarkdown(source: string, ownerFile: string): Promise
       defaultLang: 'plaintext',
       keepBackground: false
     })
-    .use(() => transformTree(ownerDir, toc, (t) => (title = t), (l) => (lead = l)))
+    .use(() =>
+      transformTree(
+        ownerDir,
+        toc,
+        (t) => (title = t),
+        (l) => (lead = l)
+      )
+    )
     .use(rehypeStringify)
     .process(content)
 
@@ -106,11 +113,7 @@ function transformTree(
           depth: node.tagName === 'h2' ? 2 : 3
         })
       }
-      if (
-        node.tagName === 'code' &&
-        parent?.type === 'element' &&
-        parent.tagName !== 'pre'
-      ) {
+      if (node.tagName === 'code' && parent?.type === 'element' && parent.tagName !== 'pre') {
         addClass(node, 'inline')
       }
       if (node.tagName === 'a' && !hasClass(node, 'anchor')) {
@@ -188,7 +191,9 @@ function stripAnchor(node: Element): string {
   // from everything except that trailing anchor so the TOC label reads cleanly.
   const text = node.children
     .filter((c) => !(c.type === 'element' && hasClass(c, 'anchor')))
-    .map((c) => (c.type === 'element' || c.type === 'text' ? hastToString(c as Element | HastText) : ''))
+    .map((c) =>
+      c.type === 'element' || c.type === 'text' ? hastToString(c as Element | HastText) : ''
+    )
     .join('')
   return text.trim()
 }
@@ -294,7 +299,12 @@ function transformAlertBlockquote(node: Element): Element | null {
         tagName: 'div',
         properties: { className: ['ct-body'] },
         children: [
-          { type: 'element', tagName: 'b', properties: {}, children: [{ type: 'text', value: kind.label }] },
+          {
+            type: 'element',
+            tagName: 'b',
+            properties: {},
+            children: [{ type: 'text', value: kind.label }]
+          },
           ...node.children
         ]
       }
@@ -315,7 +325,9 @@ function calloutIcon(kind: AlertKind): Element {
       strokeLinecap: 'round',
       strokeLinejoin: 'round'
     },
-    children: [{ type: 'element', tagName: 'path', properties: { d: ALERT_ICON_PATHS[kind] }, children: [] }]
+    children: [
+      { type: 'element', tagName: 'path', properties: { d: ALERT_ICON_PATHS[kind] }, children: [] }
+    ]
   }
 }
 
@@ -338,11 +350,21 @@ function wrapCodeBlock(pre: Element): Element {
     tagName: 'div',
     properties: { className: ['code-bar'] },
     children: [
-      { type: 'element', tagName: 'span', properties: { className: ['lang'] }, children: [{ type: 'text', value: lang }] },
+      {
+        type: 'element',
+        tagName: 'span',
+        properties: { className: ['lang'] },
+        children: [{ type: 'text', value: lang }]
+      },
       {
         type: 'element',
         tagName: 'button',
-        properties: { className: ['copy-btn'], type: 'button', 'data-copy': raw, 'aria-label': 'Copy code' },
+        properties: {
+          className: ['copy-btn'],
+          type: 'button',
+          'data-copy': raw,
+          'aria-label': 'Copy code'
+        },
         children: [
           {
             type: 'element',
@@ -356,11 +378,26 @@ function wrapCodeBlock(pre: Element): Element {
               strokeLinejoin: 'round'
             },
             children: [
-              { type: 'element', tagName: 'rect', properties: { x: 9, y: 9, width: 13, height: 13, rx: 2, ry: 2 }, children: [] },
-              { type: 'element', tagName: 'path', properties: { d: 'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1' }, children: [] }
+              {
+                type: 'element',
+                tagName: 'rect',
+                properties: { x: 9, y: 9, width: 13, height: 13, rx: 2, ry: 2 },
+                children: []
+              },
+              {
+                type: 'element',
+                tagName: 'path',
+                properties: { d: 'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1' },
+                children: []
+              }
             ]
           },
-          { type: 'element', tagName: 'span', properties: { className: ['label'] }, children: [{ type: 'text', value: 'Copy' }] }
+          {
+            type: 'element',
+            tagName: 'span',
+            properties: { className: ['label'] },
+            children: [{ type: 'text', value: 'Copy' }]
+          }
         ]
       }
     ]

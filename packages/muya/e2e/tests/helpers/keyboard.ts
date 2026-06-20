@@ -1,15 +1,15 @@
-import type { Page } from '@playwright/test';
-import process from 'node:process';
-import { editor } from './selectors';
+import type { Page } from '@playwright/test'
+import process from 'node:process'
+import { editor } from './selectors'
 
 /** Cmd on macOS Playwright runs; Control elsewhere. */
 export function metaKey(): 'Meta' | 'Control' {
-    return process.platform === 'darwin' ? 'Meta' : 'Control';
+  return process.platform === 'darwin' ? 'Meta' : 'Control'
 }
 
 /** Click into the editor root so subsequent keyboard events land in muya. */
 export async function focusEditor(page: Page): Promise<void> {
-    await page.locator(editor.container).click();
+  await page.locator(editor.container).click()
 }
 
 /**
@@ -18,14 +18,14 @@ export async function focusEditor(page: Page): Promise<void> {
  * tests that don't want to assert on button wiring.)
  */
 export async function selectAll(page: Page): Promise<void> {
-    await page.keyboard.press(`${metaKey()}+a`);
+  await page.keyboard.press(`${metaKey()}+a`)
 }
 
 /** Replace all editor content with a fresh markdown string. */
 export async function loadMarkdown(page: Page, markdown: string): Promise<void> {
-    await page.evaluate((md) => {
-        window.muya!.setContent(md);
-    }, markdown);
+  await page.evaluate((md) => {
+    window.muya!.setContent(md)
+  }, markdown)
 }
 
 /**
@@ -38,5 +38,5 @@ export async function loadMarkdown(page: Page, markdown: string): Promise<void> 
  * large enough to ride out the patch cycle.
  */
 export async function slowType(page: Page, text: string, delayMs = 30): Promise<void> {
-    await page.keyboard.type(text, { delay: delayMs });
+  await page.keyboard.type(text, { delay: delayMs })
 }

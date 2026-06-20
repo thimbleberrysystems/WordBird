@@ -30,13 +30,13 @@ const BACK_HASH = {
 
 const inputCtrl = (ContentState) => {
   // Input @ to quick insert paragraph
-  ContentState.prototype.checkQuickInsert = function(block) {
+  ContentState.prototype.checkQuickInsert = function (block) {
     const { type, text, functionType } = block
     if (type !== 'span' || functionType !== 'paragraphContent') return false
     return /^@\S*$/.test(text)
   }
 
-  ContentState.prototype.checkCursorInTokenType = function(functionType, text, offset, type) {
+  ContentState.prototype.checkCursorInTokenType = function (functionType, text, offset, type) {
     if (!/atxLine|paragraphContent|cellContent/.test(functionType)) {
       return false
     }
@@ -50,7 +50,7 @@ const inputCtrl = (ContentState) => {
       .some((t) => offset >= t.range.start && offset <= t.range.end)
   }
 
-  ContentState.prototype.checkNotSameToken = function(functionType, oldText, text) {
+  ContentState.prototype.checkNotSameToken = function (functionType, oldText, text) {
     if (!/atxLine|paragraphContent|cellContent/.test(functionType)) {
       return false
     }
@@ -94,7 +94,7 @@ const inputCtrl = (ContentState) => {
     return false
   }
 
-  ContentState.prototype.inputHandler = function(event, notEqual = false) {
+  ContentState.prototype.inputHandler = function (event, notEqual = false) {
     const { start, end } = selection.getCursorRange()
     if (!start || !end) {
       return
@@ -312,7 +312,7 @@ const inputCtrl = (ContentState) => {
     const rect = paragraph.getBoundingClientRect()
     const checkQuickInsert = this.checkQuickInsert(block)
     const reference = this.getPositionReference()
-    reference.getBoundingClientRect = function() {
+    reference.getBoundingClientRect = function () {
       const { x, y, left, top, height, bottom } = rect
 
       return Object.assign(

@@ -1,6 +1,13 @@
 import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
-import { addFile, unlinkFile, addDirectory, unlinkDirectory, resortTree, updateFileMtime } from './treeCtrl'
+import {
+  addFile,
+  unlinkFile,
+  addDirectory,
+  unlinkDirectory,
+  resortTree,
+  updateFileMtime
+} from './treeCtrl'
 import { usePreferencesStore } from './preferences'
 import bus from '../bus'
 import { create, paste, rename } from '../util/fileSystem'
@@ -145,7 +152,7 @@ export const useProjectStore = defineStore('project', () => {
     currentProjectPath.value = pathname
   }
 
-  const createProject = async(): Promise<void> => {
+  const createProject = async (): Promise<void> => {
     try {
       await window.electron.project.create()
       // The main process will emit 'mt::open-directory' to trigger file loading
@@ -154,7 +161,7 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
-  const loadProject = async(): Promise<void> => {
+  const loadProject = async (): Promise<void> => {
     try {
       await window.electron.project.load()
       // The main process will emit 'mt::open-directory' to trigger file loading
@@ -198,7 +205,7 @@ export const useProjectStore = defineStore('project', () => {
     })
   }
 
-  const saveProjectAs = async(): Promise<void> => {
+  const saveProjectAs = async (): Promise<void> => {
     if (!currentProjectPath.value) return
     try {
       await window.electron.project.saveAs(currentProjectPath.value)
@@ -224,7 +231,12 @@ export const useProjectStore = defineStore('project', () => {
     switch (type) {
       case 'add': {
         const { pathname, data, isMarkdown } = change
-        addFile(projectTree.value, change, String(preferencesStore.fileSortBy), String(preferencesStore.fileSortOrder))
+        addFile(
+          projectTree.value,
+          change,
+          String(preferencesStore.fileSortBy),
+          String(preferencesStore.fileSortOrder)
+        )
         if (isMarkdown && newFileNameCache.value && pathname === newFileNameCache.value) {
           const fileState = getFileStateFromData(data)
           editorStore.UPDATE_CURRENT_FILE(fileState)
@@ -244,7 +256,12 @@ export const useProjectStore = defineStore('project', () => {
         break
       case 'change':
         if (change?.mtimeMs !== undefined) {
-          updateFileMtime(projectTree.value, change, String(preferencesStore.fileSortBy), String(preferencesStore.fileSortOrder))
+          updateFileMtime(
+            projectTree.value,
+            change,
+            String(preferencesStore.fileSortBy),
+            String(preferencesStore.fileSortOrder)
+          )
         }
         break
       default:

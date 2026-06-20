@@ -76,9 +76,3 @@ export const getExportThemeList = (): PrefSelectOption<string>[] => [
     value: 'liber'
   }
 ]
-
-// Retained for backward compatibility
-export const pageSizeList = getPageSizeList()
-export const headerFooterTypes = getHeaderFooterTypes()
-export const headerFooterStyles = getHeaderFooterStyles()
-export const exportThemeList = getExportThemeList()

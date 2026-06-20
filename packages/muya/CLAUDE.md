@@ -75,11 +75,11 @@ Each subfolder is a floating tool/menu (inline format toolbar, image tools, para
 ## Conventions enforced by tooling
 
 - **ESLint** (`eslint.config.mjs`, antfu base) adds:
-    - `complexity` ≤ 20 and `max-lines-per-function` ≤ 200 (warnings) for non-test TS.
-    - Interface names **must** start with `I[A-Z0-9]` (e.g. `IMuyaOptions`, `IPlugin`). The naming-convention rule will flag interfaces that don't.
-    - Private class members **must** be prefixed with `_` (e.g. `_uiPlugins`, `_activeContentBlock`).
-    - Style: 4-space indent, semicolons required, React rules disabled, Markdown linting disabled.
-    - Bans `value as unknown as X` double-casts outside audited boundary helpers — use type guards or named helpers instead.
+  - `complexity` ≤ 20 and `max-lines-per-function` ≤ 200 (warnings) for non-test TS.
+  - Interface names **must** start with `I[A-Z0-9]` (e.g. `IMuyaOptions`, `IPlugin`). The naming-convention rule will flag interfaces that don't.
+  - Private class members **must** be prefixed with `_` (e.g. `_uiPlugins`, `_activeContentBlock`).
+  - Style: 4-space indent, semicolons required, React rules disabled, Markdown linting disabled.
+  - Bans `value as unknown as X` double-casts outside audited boundary helpers — use type guards or named helpers instead.
 - **Madge** circular-dep check (`pnpm -C packages/muya check-circular`) runs in CI — adding a circular import will fail the build.
 - Test files (`*.test.ts`, `*.spec.ts`) and `vite.config.ts` are excluded from the strict TS lint rules above.
 

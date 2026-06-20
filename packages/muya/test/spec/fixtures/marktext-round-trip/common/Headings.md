@@ -2,20 +2,15 @@
 
 ## Setext heading
 
-This is a huge header
-===
+# This is a huge header
 
-this is a smaller header
----
+## this is a smaller header
 
-header
----
+## header
 
-This is a huge header
-==================
+# This is a huge header
 
-this is a smaller header
-------------------
+## this is a smaller header
 
 ## Atx heading
 
@@ -65,4 +60,4 @@ bar
 
 ## Horizontal Rule
 
-   - - -  - --   --- --- ----
+---

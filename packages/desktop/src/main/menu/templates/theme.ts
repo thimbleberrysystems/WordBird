@@ -3,7 +3,7 @@ import * as actions from '../actions/theme'
 import { t } from '../../i18n'
 import type Preference from '../../preferences'
 
-export default function(userPreference: Preference): MenuItemConstructorOptions {
+export default function (userPreference: Preference): MenuItemConstructorOptions {
   const preferences = userPreference.getAll() as { theme?: string; followSystemTheme?: boolean }
   const { theme, followSystemTheme } = preferences
   const isThemeSelectionEnabled = !followSystemTheme

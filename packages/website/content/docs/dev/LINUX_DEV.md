@@ -9,7 +9,7 @@
 
 ## Pre-requisites
 
-- 
+-
 - Ubuntu Packages: `git`, `build-essential` and `xorg-dev`
 
 ### 1. Install System Packages

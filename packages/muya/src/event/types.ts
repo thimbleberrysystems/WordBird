@@ -5,19 +5,19 @@
 // be its own follow-up. Keep the existing `any[]` here; future work can
 // introduce a typed event map.
 // eslint-disable-next-line ts/no-explicit-any
-export type Listener = (...args: any[]) => void;
+export type Listener = (...args: any[]) => void
 
 export interface IEvent {
-    eventId: string;
-    target: HTMLElement | Document;
-    event: string;
-    listener: EventListenerOrEventListenerObject;
-    capture?: boolean | AddEventListenerOptions;
+  eventId: string
+  target: HTMLElement | Document
+  event: string
+  listener: EventListenerOrEventListenerObject
+  capture?: boolean | AddEventListenerOptions
 }
 
 export interface IListeners {
-    [key: string]: {
-        listener: Listener;
-        once: boolean;
-    }[];
+  [key: string]: {
+    listener: Listener
+    once: boolean
+  }[]
 }

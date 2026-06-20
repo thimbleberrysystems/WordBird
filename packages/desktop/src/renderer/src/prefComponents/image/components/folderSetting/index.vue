@@ -11,16 +11,10 @@
       :on-change="(value) => modifyImageFolderPath(value)"
     />
     <div>
-      <el-button
-        size="mini"
-        @click="modifyImageFolderPath(undefined)"
-      >
+      <el-button size="mini" @click="modifyImageFolderPath(undefined)">
         {{ t('preferences.image.folderSetting.open') }}
       </el-button>
-      <el-button
-        size="mini"
-        @click="openImageFolder"
-      >
+      <el-button size="mini" @click="openImageFolder">
         {{ t('preferences.image.folderSetting.showInFolder') }}
       </el-button>
     </div>

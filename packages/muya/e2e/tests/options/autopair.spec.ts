@@ -1,8 +1,8 @@
-import type { IMuyaOptions } from '@muyajs/core';
-import type { Page } from '@playwright/test';
-import { expect, test } from '../fixtures/muya';
-import { getMarkdown } from '../helpers/api';
-import { editor } from '../helpers/selectors';
+import type { IMuyaOptions } from '@muyajs/core'
+import type { Page } from '@playwright/test'
+import { expect, test } from '../fixtures/muya'
+import { getMarkdown } from '../helpers/api'
+import { editor } from '../helpers/selectors'
 
 /**
  * Auto-pair option matrix.
@@ -39,114 +39,114 @@ import { editor } from '../helpers/selectors';
  * through muya's input handler.
  */
 async function rebuildAndFocus(page: Page, opts: Partial<IMuyaOptions>): Promise<void> {
-    await page.evaluate((o) => {
-        window.__e2e!.rebuildMuya(o);
-        window.muya!.setContent('');
-        window.muya!.focus();
-        window.muya!.domNode.focus();
-    }, opts);
-    await expect(page.locator(editor.paragraph).first()).toBeVisible();
+  await page.evaluate((o) => {
+    window.__e2e!.rebuildMuya(o)
+    window.muya!.setContent('')
+    window.muya!.focus()
+    window.muya!.domNode.focus()
+  }, opts)
+  await expect(page.locator(editor.paragraph).first()).toBeVisible()
 }
 
 async function getFirstBlockText(page: Page): Promise<string> {
-    return page.evaluate(() => {
-        const state = window.muya!.getState() as Array<{ text?: string }>;
-        return state[0]?.text ?? '';
-    });
+  return page.evaluate(() => {
+    const state = window.muya!.getState() as Array<{ text?: string }>
+    return state[0]?.text ?? ''
+  })
 }
 
 test.describe('options / auto-pair matrix', () => {
-    test('autoPairBracket: on → `(` produces `()`', async ({ page }) => {
-        await rebuildAndFocus(page, {
-            autoPairBracket: true,
-            autoPairMarkdownSyntax: false,
-            autoPairQuote: false,
-        });
-        await page.keyboard.type('(');
-        await expect(page.locator(editor.paragraph).first()).toContainText('()');
-        const md = await getMarkdown(page);
-        expect(md).toContain('()');
-    });
+  test('autoPairBracket: on → `(` produces `()`', async ({ page }) => {
+    await rebuildAndFocus(page, {
+      autoPairBracket: true,
+      autoPairMarkdownSyntax: false,
+      autoPairQuote: false
+    })
+    await page.keyboard.type('(')
+    await expect(page.locator(editor.paragraph).first()).toContainText('()')
+    const md = await getMarkdown(page)
+    expect(md).toContain('()')
+  })
 
-    test('autoPairBracket: off → `(` produces `(` only', async ({ page }) => {
-        await rebuildAndFocus(page, {
-            autoPairBracket: false,
-            autoPairMarkdownSyntax: false,
-            autoPairQuote: false,
-        });
-        await page.keyboard.type('(');
-        await expect(page.locator(editor.paragraph).first()).toContainText('(');
-        expect(await getFirstBlockText(page)).toBe('(');
-    });
+  test('autoPairBracket: off → `(` produces `(` only', async ({ page }) => {
+    await rebuildAndFocus(page, {
+      autoPairBracket: false,
+      autoPairMarkdownSyntax: false,
+      autoPairQuote: false
+    })
+    await page.keyboard.type('(')
+    await expect(page.locator(editor.paragraph).first()).toContainText('(')
+    expect(await getFirstBlockText(page)).toBe('(')
+  })
 
-    test('autoPairMarkdownSyntax: on → `*` produces `**`', async ({ page }) => {
-        await rebuildAndFocus(page, {
-            autoPairBracket: false,
-            autoPairMarkdownSyntax: true,
-            autoPairQuote: false,
-        });
-        await page.keyboard.type('*');
-        // Wait for state to reflect the paired insertion.
-        await expect.poll(() => getFirstBlockText(page)).toBe('**');
-    });
+  test('autoPairMarkdownSyntax: on → `*` produces `**`', async ({ page }) => {
+    await rebuildAndFocus(page, {
+      autoPairBracket: false,
+      autoPairMarkdownSyntax: true,
+      autoPairQuote: false
+    })
+    await page.keyboard.type('*')
+    // Wait for state to reflect the paired insertion.
+    await expect.poll(() => getFirstBlockText(page)).toBe('**')
+  })
 
-    test('autoPairMarkdownSyntax: off → `*` stays single', async ({ page }) => {
-        await rebuildAndFocus(page, {
-            autoPairBracket: false,
-            autoPairMarkdownSyntax: false,
-            autoPairQuote: false,
-        });
-        await page.keyboard.type('*');
-        await expect.poll(() => getFirstBlockText(page)).toBe('*');
-    });
+  test('autoPairMarkdownSyntax: off → `*` stays single', async ({ page }) => {
+    await rebuildAndFocus(page, {
+      autoPairBracket: false,
+      autoPairMarkdownSyntax: false,
+      autoPairQuote: false
+    })
+    await page.keyboard.type('*')
+    await expect.poll(() => getFirstBlockText(page)).toBe('*')
+  })
 
-    test('autoPairQuote: on → `"` produces `""`', async ({ page }) => {
-        await rebuildAndFocus(page, {
-            autoPairBracket: false,
-            autoPairMarkdownSyntax: false,
-            autoPairQuote: true,
-        });
-        await page.keyboard.type('"');
-        await expect.poll(() => getFirstBlockText(page)).toBe('""');
-    });
+  test('autoPairQuote: on → `"` produces `""`', async ({ page }) => {
+    await rebuildAndFocus(page, {
+      autoPairBracket: false,
+      autoPairMarkdownSyntax: false,
+      autoPairQuote: true
+    })
+    await page.keyboard.type('"')
+    await expect.poll(() => getFirstBlockText(page)).toBe('""')
+  })
 
-    test('autoPairQuote: off → `"` stays single', async ({ page }) => {
-        await rebuildAndFocus(page, {
-            autoPairBracket: false,
-            autoPairMarkdownSyntax: false,
-            autoPairQuote: false,
-        });
-        await page.keyboard.type('"');
-        await expect.poll(() => getFirstBlockText(page)).toBe('"');
-    });
+  test('autoPairQuote: off → `"` stays single', async ({ page }) => {
+    await rebuildAndFocus(page, {
+      autoPairBracket: false,
+      autoPairMarkdownSyntax: false,
+      autoPairQuote: false
+    })
+    await page.keyboard.type('"')
+    await expect.poll(() => getFirstBlockText(page)).toBe('"')
+  })
 
-    test('all-off combo: no pairing happens for any of `(`, `*`, `"`', async ({ page }) => {
-        await rebuildAndFocus(page, {
-            autoPairBracket: false,
-            autoPairMarkdownSyntax: false,
-            autoPairQuote: false,
-        });
-        await page.keyboard.type('(');
-        await expect.poll(() => getFirstBlockText(page)).toBe('(');
+  test('all-off combo: no pairing happens for any of `(`, `*`, `"`', async ({ page }) => {
+    await rebuildAndFocus(page, {
+      autoPairBracket: false,
+      autoPairMarkdownSyntax: false,
+      autoPairQuote: false
+    })
+    await page.keyboard.type('(')
+    await expect.poll(() => getFirstBlockText(page)).toBe('(')
 
-        // Reset paragraph and re-focus for the next char. Same caveat as
-        // rebuildAndFocus: drive focus via muya's API + domNode.focus()
-        // because clicking an empty paragraph doesn't establish a
-        // text-node selection in headless Chromium.
-        await page.evaluate(() => {
-            window.muya!.setContent('');
-            window.muya!.focus();
-            window.muya!.domNode.focus();
-        });
-        await page.keyboard.type('*');
-        await expect.poll(() => getFirstBlockText(page)).toBe('*');
+    // Reset paragraph and re-focus for the next char. Same caveat as
+    // rebuildAndFocus: drive focus via muya's API + domNode.focus()
+    // because clicking an empty paragraph doesn't establish a
+    // text-node selection in headless Chromium.
+    await page.evaluate(() => {
+      window.muya!.setContent('')
+      window.muya!.focus()
+      window.muya!.domNode.focus()
+    })
+    await page.keyboard.type('*')
+    await expect.poll(() => getFirstBlockText(page)).toBe('*')
 
-        await page.evaluate(() => {
-            window.muya!.setContent('');
-            window.muya!.focus();
-            window.muya!.domNode.focus();
-        });
-        await page.keyboard.type('"');
-        await expect.poll(() => getFirstBlockText(page)).toBe('"');
-    });
-});
+    await page.evaluate(() => {
+      window.muya!.setContent('')
+      window.muya!.focus()
+      window.muya!.domNode.focus()
+    })
+    await page.keyboard.type('"')
+    await expect.poll(() => getFirstBlockText(page)).toBe('"')
+  })
+})

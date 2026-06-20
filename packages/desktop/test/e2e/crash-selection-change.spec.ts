@@ -21,7 +21,7 @@ test.describe('Crash: selectionChange null cursor', () => {
   let app: ElectronApplication
   let page: Page
 
-  test.beforeEach(async() => {
+  test.beforeEach(async () => {
     const launched = await launchWithMarkdown('# Doc\n\nSome text with **bold**.\n', {
       suppressErrorDialog: true
     })
@@ -32,11 +32,11 @@ test.describe('Crash: selectionChange null cursor', () => {
     await clearRendererErrors(app)
   })
 
-  test.afterEach(async() => {
+  test.afterEach(async () => {
     if (app) await app.close()
   })
 
-  test('Blur the editor, clear DOM selection, then invoke a format menu item', async() => {
+  test('Blur the editor, clear DOM selection, then invoke a format menu item', async () => {
     // Actually blur (not just clear selection) — the bug report path is the
     // user clicking outside the editor before invoking a shortcut.
     await page.evaluate(() => {
@@ -56,7 +56,7 @@ test.describe('Crash: selectionChange null cursor', () => {
     await expectNoRendererErrors(app)
   })
 
-  test('Repeated DOM selection clear + refocus does not throw', async() => {
+  test('Repeated DOM selection clear + refocus does not throw', async () => {
     // Pure selection thrash — this verifies that the listeners hung off
     // `document.selectionchange` and the focus/blur lifecycle do not throw
     // when DOM selection is cycled out from underneath them. Menu invocation

@@ -59,8 +59,7 @@ export default function DocsToc({ entries }: Props) {
                 key={entry.id}
                 href={'#' + entry.id}
                 className={
-                  (entry.depth === 3 ? 'sub' : '') +
-                  (activeId === entry.id ? ' active' : '')
+                  (entry.depth === 3 ? 'sub' : '') + (activeId === entry.id ? ' active' : '')
                 }
               >
                 {entry.text}

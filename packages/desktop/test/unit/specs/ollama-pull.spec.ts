@@ -20,7 +20,7 @@ describe('ollama pull model functionality', () => {
     delete win.electron
   })
 
-  it('calls pullModel with correct model name', async() => {
+  it('calls pullModel with correct model name', async () => {
     const { langGraphService } = await import('../../../src/renderer/src/services/langgraph')
 
     mockElectron.ai.pullModel.mockResolvedValue({ success: true })
@@ -30,7 +30,7 @@ describe('ollama pull model functionality', () => {
     expect(mockElectron.ai.pullModel).toHaveBeenCalledWith('phi3', 'http://127.0.0.1:11434')
   })
 
-  it('handles pullModel errors gracefully', async() => {
+  it('handles pullModel errors gracefully', async () => {
     const { langGraphService } = await import('../../../src/renderer/src/services/langgraph')
 
     mockElectron.ai.pullModel.mockRejectedValue(new Error('Model not found'))
@@ -38,7 +38,7 @@ describe('ollama pull model functionality', () => {
     await expect(langGraphService.pullModel('nonexistent-model')).rejects.toThrow('Model not found')
   })
 
-  it('uses default baseUrl when not provided', async() => {
+  it('uses default baseUrl when not provided', async () => {
     const { langGraphService } = await import('../../../src/renderer/src/services/langgraph')
 
     mockElectron.ai.pullModel.mockResolvedValue({ success: true })

@@ -1,7 +1,7 @@
-import { expect, test } from '../fixtures/muya';
-import { getMarkdown } from '../helpers/api';
-import { metaKey } from '../helpers/keyboard';
-import { editor } from '../helpers/selectors';
+import { expect, test } from '../fixtures/muya'
+import { getMarkdown } from '../helpers/api'
+import { metaKey } from '../helpers/keyboard'
+import { editor } from '../helpers/selectors'
 
 /**
  * Real-HTML clipboard paste, driven via `navigator.clipboard.write()`
@@ -28,62 +28,91 @@ import { editor } from '../helpers/selectors';
  */
 
 test.describe('clipboard paste', () => {
-    test('clipboard module is wired (sanity-check via internal handle)', async ({ page }) => {
-        await page.evaluate(() => window.muya!.setContent(''));
-        const wired = await page.evaluate(() => !!window.muya!.editor.clipboard);
-        expect(wired).toBe(true);
-        await expect(page.locator(editor.container)).toBeVisible();
-    });
+  test('clipboard module is wired (sanity-check via internal handle)', async ({ page }) => {
+    await page.evaluate(() => window.muya!.setContent(''))
+    const wired = await page.evaluate(() => !!window.muya!.editor.clipboard)
+    expect(wired).toBe(true)
+    await expect(page.locator(editor.container)).toBeVisible()
+  })
 
-    test('pasting <b>foo</b> converts to **foo**', async ({ browserName, context, page }) => {
-        test.skip(browserName !== 'chromium', 'ClipboardItem text/html unreliable on Firefox/WebKit headless — BACKLOG Phase 3.');
-        await grantClipboardPermissions(context);
-        await pasteClipboard(page, '<b>foo</b>', 'foo');
-        await expect.poll(async () => getMarkdown(page), {
-            timeout: 5_000,
-            intervals: [50, 100, 250, 500],
-        }).toMatch(/\*\*foo\*\*/);
-    });
+  test('pasting <b>foo</b> converts to **foo**', async ({ browserName, context, page }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'ClipboardItem text/html unreliable on Firefox/WebKit headless — BACKLOG Phase 3.'
+    )
+    await grantClipboardPermissions(context)
+    await pasteClipboard(page, '<b>foo</b>', 'foo')
+    await expect
+      .poll(async () => getMarkdown(page), {
+        timeout: 5_000,
+        intervals: [50, 100, 250, 500]
+      })
+      .toMatch(/\*\*foo\*\*/)
+  })
 
-    test('pasting <a href> converts to markdown link', async ({ browserName, context, page }) => {
-        test.skip(browserName !== 'chromium', 'ClipboardItem text/html unreliable on Firefox/WebKit headless — BACKLOG Phase 3.');
-        await grantClipboardPermissions(context);
-        await pasteClipboard(page, '<a href="https://example.test/">click here</a>', 'click here');
-        await expect.poll(async () => getMarkdown(page), {
-            timeout: 5_000,
-            intervals: [50, 100, 250, 500],
-        }).toMatch(/\[click here\]\(https:\/\/example\.test\/?\)/);
-    });
+  test('pasting <a href> converts to markdown link', async ({ browserName, context, page }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'ClipboardItem text/html unreliable on Firefox/WebKit headless — BACKLOG Phase 3.'
+    )
+    await grantClipboardPermissions(context)
+    await pasteClipboard(page, '<a href="https://example.test/">click here</a>', 'click here')
+    await expect
+      .poll(async () => getMarkdown(page), {
+        timeout: 5_000,
+        intervals: [50, 100, 250, 500]
+      })
+      .toMatch(/\[click here\]\(https:\/\/example\.test\/?\)/)
+  })
 
-    test('pasting a basic <table> converts to a GFM table', async ({ browserName, context, page }) => {
-        test.skip(browserName !== 'chromium', 'ClipboardItem text/html unreliable on Firefox/WebKit headless — BACKLOG Phase 3.');
-        await grantClipboardPermissions(context);
-        const html = '<table><thead><tr><th>h1</th><th>h2</th></tr></thead>'
-            + '<tbody><tr><td>r1c1</td><td>r1c2</td></tr></tbody></table>';
-        await pasteClipboard(page, html, 'h1\th2\nr1c1\tr1c2');
-        await expect.poll(async () => getMarkdown(page), {
-            timeout: 5_000,
-            intervals: [50, 100, 250, 500],
-        }).toMatch(/\|\s*h1\s*\|\s*h2\s*\|/);
+  test('pasting a basic <table> converts to a GFM table', async ({
+    browserName,
+    context,
+    page
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'ClipboardItem text/html unreliable on Firefox/WebKit headless — BACKLOG Phase 3.'
+    )
+    await grantClipboardPermissions(context)
+    const html =
+      '<table><thead><tr><th>h1</th><th>h2</th></tr></thead>' +
+      '<tbody><tr><td>r1c1</td><td>r1c2</td></tr></tbody></table>'
+    await pasteClipboard(page, html, 'h1\th2\nr1c1\tr1c2')
+    await expect
+      .poll(async () => getMarkdown(page), {
+        timeout: 5_000,
+        intervals: [50, 100, 250, 500]
+      })
+      .toMatch(/\|\s*h1\s*\|\s*h2\s*\|/)
 
-        const md = await getMarkdown(page);
-        expect(md).toMatch(/\|\s*-+\s*\|\s*-+\s*\|/);
-        expect(md).toMatch(/\|\s*r1c1\s*\|\s*r1c2\s*\|/);
-    });
+    const md = await getMarkdown(page)
+    expect(md).toMatch(/\|\s*-+\s*\|\s*-+\s*\|/)
+    expect(md).toMatch(/\|\s*r1c1\s*\|\s*r1c2\s*\|/)
+  })
 
-    test('pasting plain text without HTML falls back to text insertion', async ({ browserName, context, page }) => {
-        test.skip(browserName !== 'chromium', 'ClipboardItem unreliable on Firefox/WebKit headless — BACKLOG Phase 3.');
-        await grantClipboardPermissions(context);
-        await pastePlainClipboard(page, 'just plain text');
-        await expect.poll(async () => getMarkdown(page), {
-            timeout: 5_000,
-            intervals: [50, 100, 250, 500],
-        }).toContain('just plain text');
+  test('pasting plain text without HTML falls back to text insertion', async ({
+    browserName,
+    context,
+    page
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'ClipboardItem unreliable on Firefox/WebKit headless — BACKLOG Phase 3.'
+    )
+    await grantClipboardPermissions(context)
+    await pastePlainClipboard(page, 'just plain text')
+    await expect
+      .poll(async () => getMarkdown(page), {
+        timeout: 5_000,
+        intervals: [50, 100, 250, 500]
+      })
+      .toContain('just plain text')
 
-        const md = await getMarkdown(page);
-        expect(md).not.toMatch(/[*_`|[\]]/);
-    });
-});
+    const md = await getMarkdown(page)
+    expect(md).not.toMatch(/[*_`|[\]]/)
+  })
+})
 
 /**
  * Grant clipboard read/write to the current BrowserContext.
@@ -96,9 +125,9 @@ test.describe('clipboard paste', () => {
  * skip check, the call is reached only on chromium where it works.
  */
 async function grantClipboardPermissions(
-    context: Parameters<Parameters<typeof test>[1]>[0]['context'],
+  context: Parameters<Parameters<typeof test>[1]>[0]['context']
 ): Promise<void> {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
 }
 
 /**
@@ -109,50 +138,53 @@ async function grantClipboardPermissions(
  * `clipboardData === null` on Chromium-for-Testing).
  */
 async function pasteClipboard(
-    page: Parameters<Parameters<typeof test>[1]>[0]['page'],
-    html: string,
-    text: string,
+  page: Parameters<Parameters<typeof test>[1]>[0]['page'],
+  html: string,
+  text: string
 ): Promise<void> {
-    await page.evaluate(() => window.muya!.setContent(''));
+  await page.evaluate(() => window.muya!.setContent(''))
 
-    await page.evaluate(async ({ html, text }) => {
-        await navigator.clipboard.write([
-            new ClipboardItem({
-                'text/html': new Blob([html], { type: 'text/html' }),
-                'text/plain': new Blob([text], { type: 'text/plain' }),
-            }),
-        ]);
-    }, { html, text });
+  await page.evaluate(
+    async ({ html, text }) => {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([text], { type: 'text/plain' })
+        })
+      ])
+    },
+    { html, text }
+  )
 
-    // Focus via muya's API + DOM focus, so the trusted paste keystroke
-    // lands inside the editor's contenteditable.
-    await page.evaluate(() => {
-        window.muya!.focus();
-        window.muya!.domNode.focus();
-    });
-    await page.keyboard.press(`${metaKey()}+v`);
+  // Focus via muya's API + DOM focus, so the trusted paste keystroke
+  // lands inside the editor's contenteditable.
+  await page.evaluate(() => {
+    window.muya!.focus()
+    window.muya!.domNode.focus()
+  })
+  await page.keyboard.press(`${metaKey()}+v`)
 }
 
 /**
  * Same as pasteClipboard but writes only `text/plain`.
  */
 async function pastePlainClipboard(
-    page: Parameters<Parameters<typeof test>[1]>[0]['page'],
-    text: string,
+  page: Parameters<Parameters<typeof test>[1]>[0]['page'],
+  text: string
 ): Promise<void> {
-    await page.evaluate(() => window.muya!.setContent(''));
+  await page.evaluate(() => window.muya!.setContent(''))
 
-    await page.evaluate(async (text) => {
-        await navigator.clipboard.write([
-            new ClipboardItem({
-                'text/plain': new Blob([text], { type: 'text/plain' }),
-            }),
-        ]);
-    }, text);
+  await page.evaluate(async (text) => {
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        'text/plain': new Blob([text], { type: 'text/plain' })
+      })
+    ])
+  }, text)
 
-    await page.evaluate(() => {
-        window.muya!.focus();
-        window.muya!.domNode.focus();
-    });
-    await page.keyboard.press(`${metaKey()}+v`);
+  await page.evaluate(() => {
+    window.muya!.focus()
+    window.muya!.domNode.focus()
+  })
+  await page.keyboard.press(`${metaKey()}+v`)
 }

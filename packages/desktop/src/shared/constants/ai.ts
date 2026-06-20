@@ -2,9 +2,22 @@
  * AI Provider constants and defaults shared across Main and Renderer processes.
  */
 
-export type AIProvider = 'openai' | 'anthropic' | 'google' | 'ollama' | 'ollama_bundled' | 'openrouter'
+export type AIProvider =
+  | 'openai'
+  | 'anthropic'
+  | 'google'
+  | 'ollama'
+  | 'ollama_bundled'
+  | 'openrouter'
 
-export const AI_PROVIDERS: AIProvider[] = ['openai', 'anthropic', 'google', 'ollama', 'ollama_bundled', 'openrouter']
+export const AI_PROVIDERS: AIProvider[] = [
+  'openai',
+  'anthropic',
+  'google',
+  'ollama',
+  'ollama_bundled',
+  'openrouter'
+]
 
 export const PROVIDER_LABELS: Record<AIProvider, string> = {
   openai: 'OpenAI',

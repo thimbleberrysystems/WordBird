@@ -63,7 +63,15 @@ export interface IUserPreferences {
   searchFollowSymlinks?: boolean
   // AI related
   aiProvider?: string
-  aiConfigs?: { [key: string]: { apiKey: string; baseUrl?: string; model?: string; temperature?: number; maxTokens?: number } }
+  aiConfigs?: {
+    [key: string]: {
+      apiKey: string
+      baseUrl?: string
+      model?: string
+      temperature?: number
+      maxTokens?: number
+    }
+  }
   [key: string]: unknown
 }
 

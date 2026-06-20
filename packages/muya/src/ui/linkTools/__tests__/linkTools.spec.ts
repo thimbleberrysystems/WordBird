@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
-import type Format from '../../../block/base/format';
-import type { Muya } from '../../../muya';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import EventCenter from '../../../event';
-import LinkTools from '../index';
+import type Format from '../../../block/base/format'
+import type { Muya } from '../../../muya'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import EventCenter from '../../../event'
+import LinkTools from '../index'
 
 // P3 defensive lock for marktext `1ef0d016` (link tools — unlink / jump).
 // The new linkTools subscriber + `selectItem` dispatcher is fully staged
@@ -18,113 +18,113 @@ import LinkTools from '../index';
 // the right collaborator.
 
 interface ITestSession {
-    muya: Muya;
-    tools: LinkTools;
-    domNode: HTMLElement;
+  muya: Muya
+  tools: LinkTools
+  domNode: HTMLElement
 }
 
-const sessions: ITestSession[] = [];
+const sessions: ITestSession[] = []
 
 function makeFakeMuya(): { muya: Muya; domNode: HTMLElement } {
-    const eventCenter = new EventCenter();
-    const domNode = document.createElement('div');
-    document.body.appendChild(domNode);
-    // BaseFloat.listen() attaches a scroll handler to `domNode.parentElement`,
-    // so `domNode` needs a parent — `document.body` here.
-    const muya = {
-        eventCenter,
-        domNode,
-    } as unknown as Muya;
-    return { muya, domNode };
+  const eventCenter = new EventCenter()
+  const domNode = document.createElement('div')
+  document.body.appendChild(domNode)
+  // BaseFloat.listen() attaches a scroll handler to `domNode.parentElement`,
+  // so `domNode` needs a parent — `document.body` here.
+  const muya = {
+    eventCenter,
+    domNode
+  } as unknown as Muya
+  return { muya, domNode }
 }
 
 interface ILinkToolsTestOptions {
-    jumpClick?: (linkInfo: unknown) => void;
+  jumpClick?: (linkInfo: unknown) => void
 }
 
 function bootLinkTools(options: ILinkToolsTestOptions = {}): ITestSession {
-    const { muya, domNode } = makeFakeMuya();
-    const tools = new LinkTools(muya, options);
-    const session = { muya, tools, domNode };
-    sessions.push(session);
-    return session;
+  const { muya, domNode } = makeFakeMuya()
+  const tools = new LinkTools(muya, options)
+  const session = { muya, tools, domNode }
+  sessions.push(session)
+  return session
 }
 
 function makeFakeEvent() {
-    return {
-        preventDefault: vi.fn(),
-        stopPropagation: vi.fn(),
-    } as unknown as Event;
+  return {
+    preventDefault: vi.fn(),
+    stopPropagation: vi.fn()
+  } as unknown as Event
 }
 
 afterEach(() => {
-    // Tear each session down: detach DOM listeners attached via EventCenter,
-    // destroy the floating-tool DOM (resize observers + floatBox), and
-    // unmount the host node from document.body. This prevents listener /
-    // node leakage across tests in the same worker.
-    while (sessions.length) {
-        const { muya, tools, domNode } = sessions.pop()!;
-        tools.destroy();
-        muya.eventCenter.detachAllDomEvents();
-        domNode.remove();
-    }
-});
+  // Tear each session down: detach DOM listeners attached via EventCenter,
+  // destroy the floating-tool DOM (resize observers + floatBox), and
+  // unmount the host node from document.body. This prevents listener /
+  // node leakage across tests in the same worker.
+  while (sessions.length) {
+    const { muya, tools, domNode } = sessions.pop()!
+    tools.destroy()
+    muya.eventCenter.detachAllDomEvents()
+    domNode.remove()
+  }
+})
 
 describe('linkTools.selectItem — dispatches to block.unlink / jumpClick', () => {
-    it('unlink: routes to block.unlink with { range, text } from linkInfo', () => {
-        const { tools } = bootLinkTools();
-        const blockUnlink = vi.fn();
-        // linkBlock is typed as Format | null; the fake only implements
-        // `unlink` (the only method selectItem calls).
-        tools.linkBlock = { unlink: blockUnlink } as unknown as Format;
-        tools.linkInfo = {
-            href: 'https://example.com',
-            text: 'hi',
-            raw: '[hi](https://example.com)',
-            range: { start: 5, end: 30 },
-        };
+  it('unlink: routes to block.unlink with { range, text } from linkInfo', () => {
+    const { tools } = bootLinkTools()
+    const blockUnlink = vi.fn()
+    // linkBlock is typed as Format | null; the fake only implements
+    // `unlink` (the only method selectItem calls).
+    tools.linkBlock = { unlink: blockUnlink } as unknown as Format
+    tools.linkInfo = {
+      href: 'https://example.com',
+      text: 'hi',
+      raw: '[hi](https://example.com)',
+      range: { start: 5, end: 30 }
+    }
 
-        tools.selectItem(makeFakeEvent(), { type: 'unlink', icon: '' });
+    tools.selectItem(makeFakeEvent(), { type: 'unlink', icon: '' })
 
-        expect(blockUnlink).toHaveBeenCalledTimes(1);
-        expect(blockUnlink).toHaveBeenCalledWith({
-            range: { start: 5, end: 30 },
-            text: 'hi',
-        });
-    });
+    expect(blockUnlink).toHaveBeenCalledTimes(1)
+    expect(blockUnlink).toHaveBeenCalledWith({
+      range: { start: 5, end: 30 },
+      text: 'hi'
+    })
+  })
 
-    it('unlink: no-ops when block is missing (defensive)', () => {
-        const { tools } = bootLinkTools();
-        tools.linkBlock = null;
-        tools.linkInfo = { href: 'x', text: 'y', range: { start: 0, end: 1 } };
+  it('unlink: no-ops when block is missing (defensive)', () => {
+    const { tools } = bootLinkTools()
+    tools.linkBlock = null
+    tools.linkInfo = { href: 'x', text: 'y', range: { start: 0, end: 1 } }
 
-        // Should not throw.
-        tools.selectItem(makeFakeEvent(), { type: 'unlink', icon: '' });
-    });
+    // Should not throw.
+    tools.selectItem(makeFakeEvent(), { type: 'unlink', icon: '' })
+  })
 
-    it('unlink: no-ops when linkInfo.range is missing', () => {
-        const { tools } = bootLinkTools();
-        const blockUnlink = vi.fn();
-        // linkBlock is typed as Format | null; the fake only implements
-        // `unlink` (the only method selectItem calls).
-        tools.linkBlock = { unlink: blockUnlink } as unknown as Format;
-        tools.linkInfo = { href: 'x', text: 'y', range: null };
+  it('unlink: no-ops when linkInfo.range is missing', () => {
+    const { tools } = bootLinkTools()
+    const blockUnlink = vi.fn()
+    // linkBlock is typed as Format | null; the fake only implements
+    // `unlink` (the only method selectItem calls).
+    tools.linkBlock = { unlink: blockUnlink } as unknown as Format
+    tools.linkInfo = { href: 'x', text: 'y', range: null }
 
-        tools.selectItem(makeFakeEvent(), { type: 'unlink', icon: '' });
+    tools.selectItem(makeFakeEvent(), { type: 'unlink', icon: '' })
 
-        expect(blockUnlink).not.toHaveBeenCalled();
-    });
+    expect(blockUnlink).not.toHaveBeenCalled()
+  })
 
-    it('jump: routes to options.jumpClick with the captured linkInfo', () => {
-        const jumpClick = vi.fn();
-        const { tools } = bootLinkTools({ jumpClick });
+  it('jump: routes to options.jumpClick with the captured linkInfo', () => {
+    const jumpClick = vi.fn()
+    const { tools } = bootLinkTools({ jumpClick })
 
-        const linkInfo = { href: 'https://example.com' };
-        tools.linkInfo = linkInfo;
+    const linkInfo = { href: 'https://example.com' }
+    tools.linkInfo = linkInfo
 
-        tools.selectItem(makeFakeEvent(), { type: 'jump', icon: '' });
+    tools.selectItem(makeFakeEvent(), { type: 'jump', icon: '' })
 
-        expect(jumpClick).toHaveBeenCalledTimes(1);
-        expect(jumpClick).toHaveBeenCalledWith(linkInfo);
-    });
-});
+    expect(jumpClick).toHaveBeenCalledTimes(1)
+    expect(jumpClick).toHaveBeenCalledWith(linkInfo)
+  })
+})

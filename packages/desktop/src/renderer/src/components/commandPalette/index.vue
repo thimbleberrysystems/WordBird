@@ -19,17 +19,11 @@
               :placeholder="placeholderText"
               @keydown="handleBeforeInput"
               @keyup="handleInput"
-            >
+            />
           </div>
           <loading v-if="searcherBusy" />
-          <transition
-            v-else
-            name="fade"
-          >
-            <ul
-              v-if="availableCommands.length"
-              class="commands"
-            >
+          <transition v-else name="fade">
+            <ul v-if="availableCommands.length" class="commands">
               <li
                 v-for="(item, index) of availableCommands"
                 :key="index"
@@ -41,16 +35,9 @@
                 :class="{ active: index === selectedCommandIndex }"
                 @click="search(item.id)"
               >
-                <span
-                  class="title"
-                  :title="item.title"
-                >{{ item.description }}</span>
+                <span class="title" :title="item.title">{{ item.description }}</span>
                 <span class="shortcut">
-                  <span
-                    v-for="(accelerator, idx) of item.shortcut"
-                    :key="idx"
-                    class="shortcut"
-                  >
+                  <span v-for="(accelerator, idx) of item.shortcut" :key="idx" class="shortcut">
                     <kbd>{{ accelerator }}</kbd>
                   </span>
                 </span>
@@ -262,7 +249,8 @@ const updateCommands = () => {
   // Allow to handle search result by command (e.g. quick search).
   if (cmd.search) {
     searcherBusy.value = true
-    cmd.search(queryString)
+    cmd
+      .search(queryString)
       .then((result) => {
         searcherBusy.value = false
         availableCommands.value = result || []
@@ -285,8 +273,8 @@ const updateCommands = () => {
   if (!queryString) {
     availableCommands.value = cmd.subcommands ?? []
   } else {
-    availableCommands.value = (cmd.subcommands ?? []).filter(
-      (c) => (c.description ?? '').toLowerCase().includes(queryString.toLowerCase())
+    availableCommands.value = (cmd.subcommands ?? []).filter((c) =>
+      (c.description ?? '').toLowerCase().includes(queryString.toLowerCase())
     )
   }
   selectedCommandIndex.value = availableCommands.value.length ? 0 : -1

@@ -113,7 +113,7 @@ export const writeMarkdownFile = (
 /**
  * Reads the contents of a markdown file.
  */
-export const loadMarkdownFile = async(
+export const loadMarkdownFile = async (
   pathname: string,
   preferredEol: LineEnding,
   autoGuessEncoding: boolean = true,

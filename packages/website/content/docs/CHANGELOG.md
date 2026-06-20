@@ -339,13 +339,13 @@ This update **fixes a XSS security vulnerability** when exporting a document.
 - Remove `lightColor` and `darkColor` in user preference (color change in view menu does not work any, and will remove when add custom theme.)
 - We recommend user not use block element in paragraph, please use block element in html block.
 
-*Not Recommended*
+_Not Recommended_
 
 ```md
 foo<section>bar</section>zar
 ```
 
-*Recommended*
+_Recommended_
 
 ```md
 <div>
@@ -447,7 +447,7 @@ foo<section>bar</section>zar
 - Fixed list parse error [more info](https://github.com/marktext/marktext/issues/831#issuecomment-477719256)
 - Fixed source code mode tab switching
 - Fixed source code mode to preview switching
-- MarkText didn't remove highlight when I delete the markdown symbol like * or `. (#893)
+- MarkText didn't remove highlight when I delete the markdown symbol like \* or `. (#893)
 - After delete ``` at the beginning to paragraph by backspace, then type other text foo, the color will be strange, if you type 1. bar. error happened. (#892)
 - Fix highlight error in code block (#545 #890)
 - Fix files sorting in folder (#438)
@@ -601,7 +601,7 @@ foo<section>bar</section>zar
 **:butterfly:Optimization**
 
 - ATX headings strictly follow the GFM Spec #177 - Jocs
-- no need to auto pair when * is to open a list item - Jocs
+- no need to auto pair when \* is to open a list item - Jocs
 - optimization: add sticky to block html tag - Jocs
 - Add Japanese readme (#191) - Neetshin
 - Disable update menu for snap and not supported packages (#196) - Felix Häusler
@@ -684,7 +684,7 @@ You need uninstall the old version of MarkText before install version 0.10.21, b
 
 - adjust lineHeight and fontSize in typewriter mode
 - optimization of output unstylish html @fxha
--  Use 'fuzzaldrin' to filter language when insert code block
+- Use 'fuzzaldrin' to filter language when insert code block
 - Optimization: Obey the GFM and optimization of thematic break update. - Jocs
 - Optimization: More than six # characters is not a heading So we don't need to highlight `#` - Jocs
 - Optimization: A closing sequence of # characters is optional when write ATX heading - Jocs
@@ -706,7 +706,6 @@ You need uninstall the old version of MarkText before install version 0.10.21, b
 - fix: #88 (#108) - Felix Häusler
 - Allow exiting full screen with maximize button on windows (#109) - Felix Häusler
 - Bugfix: Caret can not move right when it's at the end of math format. #101 - Jocs
-
 
 ### 0.8.12
 
@@ -738,7 +737,6 @@ You need uninstall the old version of MarkText before install version 0.10.21, b
 1. Check for updates..., and auto update when update available.(Still need signature...:cry:)
 
 2. Insert Image: ( In edit menu )
-
    - absolute path
 
    - relative path

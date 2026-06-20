@@ -193,11 +193,32 @@ class ContentState {
       isEdit: false,
       isInit: true
     }
+    // Diff state for agentic edit proposals
+    this.diffState = new Map()
   }
 
   getHistory() {
     const { stack, index, lastEditIndex } = this.history
     return { stack, index, lastEditIndex }
+  }
+
+  setDiffState(diffState) {
+    // Group diff states by blockKey
+    const newMap = new Map()
+    for (const state of diffState) {
+      const { blockKey, ...rest } = state
+      if (!newMap.has(blockKey)) {
+        newMap.set(blockKey, [])
+      }
+      newMap.get(blockKey).push(rest)
+    }
+    this.diffState = newMap
+    this.render()
+  }
+
+  clearDiffState() {
+    this.diffState.clear()
+    this.render()
   }
 
   setHistory({ stack, index, lastEditIndex }) {

@@ -6,17 +6,17 @@ test.describe('Ollama Bundled Settings', () => {
   let app: ElectronApplication
   let page: Page
 
-  test.beforeAll(async() => {
+  test.beforeAll(async () => {
     const { app: electronApp, page: firstPage } = await launchElectron()
     app = electronApp
     page = firstPage
   })
 
-  test.afterAll(async() => {
+  test.afterAll(async () => {
     await app.close()
   })
 
-  test('AI preferences panel shows Ollama (Bundled) option', async() => {
+  test('AI preferences panel shows Ollama (Bundled) option', async () => {
     // Open preferences via keyboard shortcut (Ctrl+,)
     await page.keyboard.press('Control+,')
 
@@ -35,7 +35,7 @@ test.describe('Ollama Bundled Settings', () => {
     await expect(prefPage.locator('text=Ollama (Bundled)')).toBeVisible()
   })
 
-  test('Ollama (Bundled) hides endpoint URL field', async() => {
+  test('Ollama (Bundled) hides endpoint URL field', async () => {
     // Open preferences via keyboard shortcut
     await page.keyboard.press('Control+,')
 

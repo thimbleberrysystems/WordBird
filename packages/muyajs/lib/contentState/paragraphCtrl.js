@@ -14,7 +14,7 @@ const getCurrentLevel = (type) => {
 }
 
 const paragraphCtrl = (ContentState) => {
-  ContentState.prototype.selectionChange = function(cursor) {
+  ContentState.prototype.selectionChange = function (cursor) {
     const selectionCursor = cursor || selection.getCursorRange()
     const resolvedCursor =
       selectionCursor && selectionCursor.start && selectionCursor.end
@@ -54,7 +54,7 @@ const paragraphCtrl = (ContentState) => {
     }
   }
 
-  ContentState.prototype.getCommonParent = function() {
+  ContentState.prototype.getCommonParent = function () {
     const { start, end, affiliation } = this.selectionChange()
     const parent = affiliation.length ? affiliation[0] : null
     const startBlock = this.getBlock(start.key)
@@ -75,7 +75,7 @@ const paragraphCtrl = (ContentState) => {
     return { parent, startIndex, endIndex }
   }
 
-  ContentState.prototype.handleFrontMatter = function() {
+  ContentState.prototype.handleFrontMatter = function () {
     const firstBlock = this.blocks[0]
     if (firstBlock.type === 'pre' && firstBlock.functionType === 'frontmatter') return
 
@@ -128,7 +128,7 @@ const paragraphCtrl = (ContentState) => {
 
   // TODO: New created nestled list items missing "listType" key and value.
 
-  ContentState.prototype.handleListMenu = function(paraType, insertMode) {
+  ContentState.prototype.handleListMenu = function (paraType, insertMode) {
     const { start, end, affiliation } = this.selectionChange(this.cursor)
     const { orderListDelimiter, bulletListMarker, preferLooseListItem } = this.muya.options
     const [blockType, listType] = paraType.split('-')
@@ -236,7 +236,7 @@ const paragraphCtrl = (ContentState) => {
     return true
   }
 
-  ContentState.prototype.handleLooseListItem = function() {
+  ContentState.prototype.handleLooseListItem = function () {
     const { affiliation } = this.selectionChange(this.cursor)
     let listContainer = []
     if (affiliation.length >= 1 && /ul|ol/.test(affiliation[0].type)) {
@@ -252,7 +252,7 @@ const paragraphCtrl = (ContentState) => {
     }
   }
 
-  ContentState.prototype.handleCodeBlockMenu = function() {
+  ContentState.prototype.handleCodeBlockMenu = function () {
     const { start, end, affiliation } = this.selectionChange(this.cursor)
     const startBlock = this.getBlock(start.key)
     const endBlock = this.getBlock(end.key)
@@ -382,7 +382,7 @@ const paragraphCtrl = (ContentState) => {
     }
   }
 
-  ContentState.prototype.handleQuoteMenu = function(insertMode) {
+  ContentState.prototype.handleQuoteMenu = function (insertMode) {
     const { start, end, affiliation } = this.selectionChange(this.cursor)
     let startBlock = this.getBlock(start.key)
     const isBlockQuote = affiliation.slice(0, 2).filter((b) => /blockquote/.test(b.type))
@@ -423,7 +423,7 @@ const paragraphCtrl = (ContentState) => {
     }
   }
 
-  ContentState.prototype.insertContainerBlock = function(functionType, block) {
+  ContentState.prototype.insertContainerBlock = function (functionType, block) {
     const anchor = this.getAnchor(block)
     if (!anchor) {
       console.error('Can not find the anchor paragraph to insert paragraph')
@@ -433,9 +433,9 @@ const paragraphCtrl = (ContentState) => {
     const value =
       anchor.type === 'p'
         ? anchor.children
-          .map((child) => child.text)
-          .join('\n')
-          .trim()
+            .map((child) => child.text)
+            .join('\n')
+            .trim()
         : ''
 
     const containerBlock = this.createContainerBlock(functionType, value)
@@ -454,7 +454,7 @@ const paragraphCtrl = (ContentState) => {
     }
   }
 
-  ContentState.prototype.showTablePicker = function() {
+  ContentState.prototype.showTablePicker = function () {
     const { eventCenter } = this.muya
     const reference = this.getPositionReference()
 
@@ -469,7 +469,7 @@ const paragraphCtrl = (ContentState) => {
     )
   }
 
-  ContentState.prototype.insertHtmlBlock = function(block) {
+  ContentState.prototype.insertHtmlBlock = function (block) {
     if (block.type === 'span') {
       block = this.getParent(block)
     }
@@ -486,7 +486,7 @@ const paragraphCtrl = (ContentState) => {
     }
   }
 
-  ContentState.prototype.updateParagraph = function(paraType, insertMode = false) {
+  ContentState.prototype.updateParagraph = function (paraType, insertMode = false) {
     const { start, end } = this.cursor
     const block = this.getBlock(start.key)
     const { text, type } = block
@@ -684,7 +684,7 @@ const paragraphCtrl = (ContentState) => {
     }
   }
 
-  ContentState.prototype.insertParagraph = function(location, text = '', outMost = false) {
+  ContentState.prototype.insertParagraph = function (location, text = '', outMost = false) {
     const { start, end } = this.cursor
     // if cursor is not in one line or paragraph, can not insert paragraph
     if (start.key !== end.key) return
@@ -719,7 +719,7 @@ const paragraphCtrl = (ContentState) => {
   }
 
   // make a dulication of the current block
-  ContentState.prototype.duplicate = function() {
+  ContentState.prototype.duplicate = function () {
     const { start, end } = this.cursor
     const startOutmostBlock = this.findOutMostBlock(this.getBlock(start.key))
     const endOutmostBlock = this.findOutMostBlock(this.getBlock(end.key))
@@ -745,7 +745,7 @@ const paragraphCtrl = (ContentState) => {
   }
 
   // delete current paragraph
-  ContentState.prototype.deleteParagraph = function(blockKey) {
+  ContentState.prototype.deleteParagraph = function (blockKey) {
     let startOutmostBlock
     if (blockKey) {
       const block = this.getBlock(blockKey)
@@ -785,7 +785,7 @@ const paragraphCtrl = (ContentState) => {
     return this.muya.eventCenter.dispatch('stateChange')
   }
 
-  ContentState.prototype.isSelectAll = function() {
+  ContentState.prototype.isSelectAll = function () {
     const firstTextBlock = this.getFirstBlock()
     const lastTextBlock = this.getLastBlock()
     const { start, end } = this.cursor
@@ -799,7 +799,7 @@ const paragraphCtrl = (ContentState) => {
     )
   }
 
-  ContentState.prototype.selectAllContent = function() {
+  ContentState.prototype.selectAllContent = function () {
     const firstTextBlock = this.getFirstBlock()
     const lastTextBlock = this.getLastBlock()
     this.cursor = {
@@ -817,7 +817,7 @@ const paragraphCtrl = (ContentState) => {
     return this.render()
   }
 
-  ContentState.prototype.selectAll = function() {
+  ContentState.prototype.selectAll = function () {
     const mayBeCell = this.isSingleCellSelected()
     const mayBeTable = this.isWholeTableSelected()
 
@@ -913,7 +913,7 @@ const paragraphCtrl = (ContentState) => {
   }
 
   // Test whether the paragraph transformation is valid.
-  ContentState.prototype.isAllowedTransformation = function(block, toType, isMultilineSelection) {
+  ContentState.prototype.isAllowedTransformation = function (block, toType, isMultilineSelection) {
     const fromType = this.getTypeFromBlock(block)
     if (toType === 'front-matter') {
       // Front matter block is added at the beginning.
@@ -953,7 +953,7 @@ const paragraphCtrl = (ContentState) => {
   }
 
   // Translate block type into internal name.
-  ContentState.prototype.getTypeFromBlock = function(block) {
+  ContentState.prototype.getTypeFromBlock = function (block) {
     const { type } = block
 
     let internalType = ''

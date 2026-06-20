@@ -108,7 +108,9 @@ if (!fs.existsSync(electronInstall)) {
       (plat === 'darwin' || plat === 'mas') &&
       !fs.existsSync(path.join(distDir, 'Electron.app', 'Contents', 'Frameworks'))
     ) {
-      const { version } = require(path.join(desktopRoot, 'node_modules', 'electron', 'package.json'))
+      const { version } = require(
+        path.join(desktopRoot, 'node_modules', 'electron', 'package.json')
+      )
       const arch = process.env.npm_config_arch || os.arch()
       const zipName = `electron-v${version}-darwin-${arch === 'arm64' ? 'arm64' : 'x64'}.zip`
       const cacheRoot =

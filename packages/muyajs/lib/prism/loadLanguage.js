@@ -13,9 +13,10 @@ const { languages } = components
 // Skip eager glob discovery under Vitest: the test runner resolves all matched
 // files synchronously, which causes prism component files (e.g. prism-cpp.js)
 // to load before their `require` dependencies (e.g. prism-c.js) are registered.
-const prismJsComponents = (typeof process !== 'undefined' && process.env.VITEST)
-  ? {}
-  : import.meta.glob('../../../../node_modules/prismjs/components/*.js')
+const prismJsComponents =
+  typeof process !== 'undefined' && process.env.VITEST
+    ? {}
+    : import.meta.glob('../../../../node_modules/prismjs/components/*.js')
 // Look for the origin languge by alias
 export const transformAliasToOrigin = (langs) => {
   const result = []
@@ -65,7 +66,7 @@ function initLoadLanguage(Prism) {
     // We don't need to validate the ids because `getLoader` will ignore invalid ones
     const loaded = [...loadedLanguages, ...Object.keys(Prism.languages)]
 
-    getLoader(components, langs, loaded).load(async(lang) => {
+    getLoader(components, langs, loaded).load(async (lang) => {
       const defer = getDefer()
       promises.push(defer.promise)
       if (!(lang in components.languages)) {

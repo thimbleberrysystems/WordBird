@@ -25,7 +25,11 @@ import type {
 import type {
   AIProvider,
   IAIConfig,
-  ILangGraphMessage
+  ILangGraphMessage,
+  IAgentToolCall,
+  IAgentToolResult,
+  IAgentApplyEditRequest,
+  IAgentEditProposal
 } from '@shared/types/langgraph'
 
 type RendererEventListener<K extends keyof IpcMainEventChannels> = (
@@ -244,12 +248,50 @@ const aiAPI = {
   disconnect: () => invoke('mt::ai:disconnect'),
   sendMessage: (messages: ILangGraphMessage[]) => invoke('mt::ai:send-message', messages),
   abort: () => invoke('mt::ai:abort'),
-  fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) => invoke('mt::ai:fetch-models', provider, apiKey, baseUrl),
+  fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) =>
+    invoke('mt::ai:fetch-models', provider, apiKey, baseUrl),
   pullModel: (model: string, baseUrl?: string) => invoke('mt::ai:pull-model', model, baseUrl),
-  onPullProgress: (handler: (progress: { percent?: number; status?: string; digest?: string }) => void) => {
-    const subscription = (_e: unknown, progress: { percent?: number; status?: string; digest?: string }) => handler(progress)
+  onPullProgress: (
+    handler: (progress: { percent?: number; status?: string; digest?: string }) => void
+  ) => {
+    const subscription = (
+      _e: unknown,
+      progress: { percent?: number; status?: string; digest?: string }
+    ) => handler(progress)
     ipcRenderer.on('mt::ai:pull-progress', subscription)
     return () => ipcRenderer.removeListener('mt::ai:pull-progress', subscription)
+  },
+  executeTool: (call: IAgentToolCall) => invoke('mt::ai:execute-tool', call),
+  applyEdit: (request: IAgentApplyEditRequest) => invoke('mt::ai:apply-edit', request),
+  applyEditInRenderer: (request: IAgentApplyEditRequest) =>
+    invoke('mt::ai:apply-edit-in-renderer', request),
+  onEditProposal: (
+    handler: (proposal: {
+      edit: IAgentEditProposal
+      oldContent: string
+      originalPath: string
+    }) => void
+  ) => {
+    const subscription = (
+      _e: unknown,
+      proposal: { edit: IAgentEditProposal; oldContent: string; originalPath: string }
+    ) => handler(proposal)
+    ipcRenderer.on('mt::ai:edit-proposal', subscription)
+    return () => ipcRenderer.removeListener('mt::ai:edit-proposal', subscription)
+  },
+  onApplyEditInRenderer: (
+    handler: (request: {
+      edit: IAgentEditProposal
+      oldContent: string
+      originalPath: string
+    }) => void
+  ) => {
+    const subscription = (
+      _e: unknown,
+      request: { edit: IAgentEditProposal; oldContent: string; originalPath: string }
+    ) => handler(request)
+    ipcRenderer.on('mt::ai:apply-edit-in-renderer', subscription)
+    return () => ipcRenderer.removeListener('mt::ai:apply-edit-in-renderer', subscription)
   }
 }
 

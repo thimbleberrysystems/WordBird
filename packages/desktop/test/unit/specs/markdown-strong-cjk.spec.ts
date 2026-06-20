@@ -31,11 +31,7 @@ describe('inline strong with CJK boundaries (issue #4307)', () => {
 
   // Sanity / regression cases that already work on develop. They lock in the
   // pre-existing behavior so the fix can't regress them.
-  const sanityCases = [
-    'before **"normal"** after',
-    'before**normal**after',
-    '中文**加粗**中文'
-  ]
+  const sanityCases = ['before **"normal"** after', 'before**normal**after', '中文**加粗**中文']
 
   for (const src of cjkCases) {
     it(`recognizes strong in CJK context: ${src}`, () => {

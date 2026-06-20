@@ -27,14 +27,24 @@ export default function Footer() {
           <div className="foot-col">
             <h5>Resources</h5>
             <Link href="/docs">Documentation</Link>
-            <a href={DOWNLOAD.releases} {...EXT_LINK}>Releases</a>
-            <a href={DOWNLOAD.contributing} {...EXT_LINK}>Contributing</a>
-            <a href={DOWNLOAD.issues} {...EXT_LINK}>Issues</a>
+            <a href={DOWNLOAD.releases} {...EXT_LINK}>
+              Releases
+            </a>
+            <a href={DOWNLOAD.contributing} {...EXT_LINK}>
+              Contributing
+            </a>
+            <a href={DOWNLOAD.issues} {...EXT_LINK}>
+              Issues
+            </a>
           </div>
           <div className="foot-col">
             <h5>Community</h5>
-            <a href={DOWNLOAD.repo} {...EXT_LINK}>GitHub</a>
-            <a href={DOWNLOAD.twitter} {...EXT_LINK}>Twitter / X</a>
+            <a href={DOWNLOAD.repo} {...EXT_LINK}>
+              GitHub
+            </a>
+            <a href={DOWNLOAD.twitter} {...EXT_LINK}>
+              Twitter / X
+            </a>
           </div>
         </div>
         <div className="foot-bot">

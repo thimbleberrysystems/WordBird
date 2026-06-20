@@ -6,7 +6,7 @@ import { ensureDirSync as fsExtraEnsureDirSync } from 'fs-extra'
 /**
  * Test whether or not the given path exists.
  */
-export const exists = async(p: string): Promise<boolean> => {
+export const exists = async (p: string): Promise<boolean> => {
   try {
     await access(p)
     return true

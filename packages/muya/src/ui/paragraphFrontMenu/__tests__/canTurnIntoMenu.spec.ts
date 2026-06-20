@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-import type Parent from '../../../block/base/parent';
-import { describe, expect, it } from 'vitest';
-import { canTurnIntoMenu } from '../config';
+import type Parent from '../../../block/base/parent'
+import { describe, expect, it } from 'vitest'
+import { canTurnIntoMenu } from '../config'
 
 // Regression for marktext commit 7b7a9424 "should not nest math block into
 // other math block (#1153)".
@@ -35,56 +35,56 @@ import { canTurnIntoMenu } from '../config';
 // `canTurnIntoMenu` only reads `blockName` and `firstContentInDescendant()`
 // on the passed-in block; the structural fake covers that surface.
 function fakeBlock(blockName: string, paragraphText: string = ''): Parent {
-    return {
-        blockName,
-        firstContentInDescendant() {
-            return { text: paragraphText };
-        },
-    } as unknown as Parent;
+  return {
+    blockName,
+    firstContentInDescendant() {
+      return { text: paragraphText }
+    }
+  } as unknown as Parent
 }
 
 describe('canTurnIntoMenu — no nesting math/code/html/diagram inside themselves (marktext 7b7a9424)', () => {
-    it('returns [] for a math-block (front menu shows no turn-into list)', () => {
-        expect(canTurnIntoMenu(fakeBlock('math-block'))).toEqual([]);
-    });
+  it('returns [] for a math-block (front menu shows no turn-into list)', () => {
+    expect(canTurnIntoMenu(fakeBlock('math-block'))).toEqual([])
+  })
 
-    it('returns [] for an html-block', () => {
-        expect(canTurnIntoMenu(fakeBlock('html-block'))).toEqual([]);
-    });
+  it('returns [] for an html-block', () => {
+    expect(canTurnIntoMenu(fakeBlock('html-block'))).toEqual([])
+  })
 
-    it('returns [] for a code-block', () => {
-        expect(canTurnIntoMenu(fakeBlock('code-block'))).toEqual([]);
-    });
+  it('returns [] for a code-block', () => {
+    expect(canTurnIntoMenu(fakeBlock('code-block'))).toEqual([])
+  })
 
-    it('returns [] for a diagram block', () => {
-        expect(canTurnIntoMenu(fakeBlock('diagram'))).toEqual([]);
-    });
+  it('returns [] for a diagram block', () => {
+    expect(canTurnIntoMenu(fakeBlock('diagram'))).toEqual([])
+  })
 
-    it('returns [] for a table block (turning a table into math would also crash)', () => {
-        expect(canTurnIntoMenu(fakeBlock('table'))).toEqual([]);
-    });
+  it('returns [] for a table block (turning a table into math would also crash)', () => {
+    expect(canTurnIntoMenu(fakeBlock('table'))).toEqual([])
+  })
 
-    it('still offers conversion for a paragraph (sanity — gate is selective)', () => {
-        const items = canTurnIntoMenu(fakeBlock('paragraph', ''));
-        // Empty paragraph: all menu items except frontmatter; non-empty
-        // paragraph: only paragraph/heading/quote/list. Both must be > 0.
-        expect(items.length).toBeGreaterThan(0);
-        // Both an empty paragraph and a typed paragraph must keep
-        // math-block reachable via SOME paragraph path (the
-        // `paragraphIsEmpty` branch returns ALL except frontmatter,
-        // including math-block).
-        const emptyItems = canTurnIntoMenu(fakeBlock('paragraph', ''));
-        expect(emptyItems.some((i: { label: string }) => i.label === 'math-block')).toBe(true);
-    });
+  it('still offers conversion for a paragraph (sanity — gate is selective)', () => {
+    const items = canTurnIntoMenu(fakeBlock('paragraph', ''))
+    // Empty paragraph: all menu items except frontmatter; non-empty
+    // paragraph: only paragraph/heading/quote/list. Both must be > 0.
+    expect(items.length).toBeGreaterThan(0)
+    // Both an empty paragraph and a typed paragraph must keep
+    // math-block reachable via SOME paragraph path (the
+    // `paragraphIsEmpty` branch returns ALL except frontmatter,
+    // including math-block).
+    const emptyItems = canTurnIntoMenu(fakeBlock('paragraph', ''))
+    expect(emptyItems.some((i: { label: string }) => i.label === 'math-block')).toBe(true)
+  })
 
-    it('non-empty paragraph offers no math-block turn-into (only inline/list types)', () => {
-        // The non-empty branch filters down to paragraph/atx-heading/
-        // block-quote/list — math-block is intentionally excluded so a
-        // half-typed paragraph can't auto-jump into a math container.
-        const items = canTurnIntoMenu(fakeBlock('paragraph', 'hello world'));
-        expect(items.some((i: { label: string }) => i.label === 'math-block')).toBe(false);
-    });
-});
+  it('non-empty paragraph offers no math-block turn-into (only inline/list types)', () => {
+    // The non-empty branch filters down to paragraph/atx-heading/
+    // block-quote/list — math-block is intentionally excluded so a
+    // half-typed paragraph can't auto-jump into a math container.
+    const items = canTurnIntoMenu(fakeBlock('paragraph', 'hello world'))
+    expect(items.some((i: { label: string }) => i.label === 'math-block')).toBe(false)
+  })
+})
 
 // Regression for marktext commit f00da152 (#812 — "insert table into `table`,
 // `html`, `code`, `math` block will cause wrong markdown syntax"). The bug:
@@ -103,33 +103,33 @@ describe('canTurnIntoMenu — no nesting math/code/html/diagram inside themselve
 // off the UI.
 
 describe('canTurnIntoMenu — no inserting tables inside non-paragraph containers (marktext f00da152)', () => {
-    it('returns [] for math-block (cannot offer turn-into-table)', () => {
-        const items = canTurnIntoMenu(fakeBlock('math-block'));
-        expect(items.some((i: { label: string }) => i.label === 'table')).toBe(false);
-    });
+  it('returns [] for math-block (cannot offer turn-into-table)', () => {
+    const items = canTurnIntoMenu(fakeBlock('math-block'))
+    expect(items.some((i: { label: string }) => i.label === 'table')).toBe(false)
+  })
 
-    it('returns [] for html-block (cannot offer turn-into-table)', () => {
-        const items = canTurnIntoMenu(fakeBlock('html-block'));
-        expect(items.some((i: { label: string }) => i.label === 'table')).toBe(false);
-    });
+  it('returns [] for html-block (cannot offer turn-into-table)', () => {
+    const items = canTurnIntoMenu(fakeBlock('html-block'))
+    expect(items.some((i: { label: string }) => i.label === 'table')).toBe(false)
+  })
 
-    it('returns [] for code-block (cannot offer turn-into-table)', () => {
-        const items = canTurnIntoMenu(fakeBlock('code-block'));
-        expect(items.some((i: { label: string }) => i.label === 'table')).toBe(false);
-    });
+  it('returns [] for code-block (cannot offer turn-into-table)', () => {
+    const items = canTurnIntoMenu(fakeBlock('code-block'))
+    expect(items.some((i: { label: string }) => i.label === 'table')).toBe(false)
+  })
 
-    it('returns [] for table (cannot offer turn-into-table on a table)', () => {
-        const items = canTurnIntoMenu(fakeBlock('table'));
-        expect(items.some((i: { label: string }) => i.label === 'table')).toBe(false);
-    });
+  it('returns [] for table (cannot offer turn-into-table on a table)', () => {
+    const items = canTurnIntoMenu(fakeBlock('table'))
+    expect(items.some((i: { label: string }) => i.label === 'table')).toBe(false)
+  })
 
-    it('empty paragraph DOES include table — sanity that the gate is positive elsewhere', () => {
-        const items = canTurnIntoMenu(fakeBlock('paragraph', ''));
-        expect(items.some((i: { label: string }) => i.label === 'table')).toBe(true);
-    });
+  it('empty paragraph DOES include table — sanity that the gate is positive elsewhere', () => {
+    const items = canTurnIntoMenu(fakeBlock('paragraph', ''))
+    expect(items.some((i: { label: string }) => i.label === 'table')).toBe(true)
+  })
 
-    it('non-empty paragraph excludes table from the turn-into list', () => {
-        const items = canTurnIntoMenu(fakeBlock('paragraph', 'typed text'));
-        expect(items.some((i: { label: string }) => i.label === 'table')).toBe(false);
-    });
-});
+  it('non-empty paragraph excludes table from the turn-into list', () => {
+    const items = canTurnIntoMenu(fakeBlock('paragraph', 'typed text'))
+    expect(items.some((i: { label: string }) => i.label === 'table')).toBe(false)
+  })
+})

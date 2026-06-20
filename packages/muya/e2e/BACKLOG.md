@@ -1,11 +1,11 @@
 # muya-e2e BACKLOG (4-phase Roadmap)
 
-| Phase | Theme | Tests | CI delta | Status |
-| --- | --- | --- | --- | --- |
-| 1 | P0 smoke + key interaction skeleton (infra) | 28 (1 fixme) | ~3-4 min | ✅ landed |
-| 2 | Cross-browser matrix + drag/IME | 180 (11 skipped) | +4-6 min | ✅ landed |
-| 3 | Render depth + remaining blocks + security | +23 → 78 (1 fixme) | +2-3 min | ✅ landed |
-| 4 | Stability / performance / a11y guardrails | +28 → 106 | +3-5 min | ✅ landed |
+| Phase | Theme                                       | Tests              | CI delta | Status    |
+| ----- | ------------------------------------------- | ------------------ | -------- | --------- |
+| 1     | P0 smoke + key interaction skeleton (infra) | 28 (1 fixme)       | ~3-4 min | ✅ landed |
+| 2     | Cross-browser matrix + drag/IME             | 180 (11 skipped)   | +4-6 min | ✅ landed |
+| 3     | Render depth + remaining blocks + security  | +23 → 78 (1 fixme) | +2-3 min | ✅ landed |
+| 4     | Stability / performance / a11y guardrails   | +28 → 106          | +3-5 min | ✅ landed |
 
 Phase 1 baseline (PR landing snapshot):
 
@@ -49,7 +49,7 @@ Unlocks Firefox + WebKit, and the input/drag flows that don't survive cross-engi
 
 ### Drag and drop
 
-- [x] **TableDragBar column reorder.** Hover just below a header cell → bar appears (asserted via the wrapper's opacity:1 transition) → mousedown + 300 ms hold + mousemove past next column + mouseup → assert `getMarkdown()` returns the columns in swapped order. NOTE: the bar is a *reorder* tool, not a *resize* tool — cells don't carry a width meta, so the original BACKLOG framing ("assert column meta width changed") was based on a misreading.
+- [x] **TableDragBar column reorder.** Hover just below a header cell → bar appears (asserted via the wrapper's opacity:1 transition) → mousedown + 300 ms hold + mousemove past next column + mouseup → assert `getMarkdown()` returns the columns in swapped order. NOTE: the bar is a _reorder_ tool, not a _resize_ tool — cells don't carry a width meta, so the original BACKLOG framing ("assert column meta width changed") was based on a misreading.
 - [x] **ParagraphFrontButton block reorder.** Drag the front handle from paragraph A to position below paragraph B → assert `getMarkdown` order swapped.
 - [x] **ImageResizeBar.** Click block-aligned image (data URI to avoid network) → drag the right handle → assert `<img width="…">` lands in the final markdown.
 

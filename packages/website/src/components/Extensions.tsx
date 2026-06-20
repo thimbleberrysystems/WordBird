@@ -1,14 +1,7 @@
 import type { ReactNode } from 'react'
 import { SECTIONS, type RevealDelay } from '@/lib/sections'
 import FeatureCard from './FeatureCard'
-import {
-  CodeIcon,
-  DiagramIcon,
-  FootnoteIcon,
-  FrontmatterIcon,
-  MathIcon,
-  TableIcon
-} from './Icons'
+import { CodeIcon, DiagramIcon, FootnoteIcon, FrontmatterIcon, MathIcon, TableIcon } from './Icons'
 
 type Card = {
   icon: ReactNode

@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
-import TableCellContent from '../index';
+import { describe, expect, it, vi } from 'vitest'
+import TableCellContent from '../index'
 
 // Regression for marktext 5fb130d9 "enable shift+tab for table
 // navigation" (issue #2330, PR #2331). Previously
@@ -15,75 +15,75 @@ import TableCellContent from '../index';
 // Structural neighbour shape — the table-cell tab handler only calls
 // `setCursor` on whatever `prev`/`next` resolves to.
 interface IFakeNeighbour {
-    setCursor: ReturnType<typeof vi.fn>;
+  setCursor: ReturnType<typeof vi.fn>
 }
 
 function makeFakeCell(prev: IFakeNeighbour | null, next: IFakeNeighbour | null) {
-    return {
-        nextContentInContext: vi.fn(() => next),
-        previousContentInContext: vi.fn(() => prev),
-    };
+  return {
+    nextContentInContext: vi.fn(() => next),
+    previousContentInContext: vi.fn(() => prev)
+  }
 }
 
 function makeFakeNeighbour() {
-    return {
-        setCursor: vi.fn(),
-    };
+  return {
+    setCursor: vi.fn()
+  }
 }
 
 function makeKeyEvent(shiftKey: boolean) {
-    return {
-        shiftKey,
-        preventDefault: vi.fn(),
-        stopPropagation: vi.fn(),
-    } as unknown as Event;
+  return {
+    shiftKey,
+    preventDefault: vi.fn(),
+    stopPropagation: vi.fn()
+  } as unknown as Event
 }
 
 describe('tableCellContent.tabHandler — 5fb130d9 shift+tab backward navigation', () => {
-    it('moves to next cell on plain Tab', () => {
-        const prev = makeFakeNeighbour();
-        const next = makeFakeNeighbour();
-        const fakeThis = makeFakeCell(prev, next);
+  it('moves to next cell on plain Tab', () => {
+    const prev = makeFakeNeighbour()
+    const next = makeFakeNeighbour()
+    const fakeThis = makeFakeCell(prev, next)
 
-        TableCellContent.prototype.tabHandler.call(
-            fakeThis as unknown as TableCellContent,
-            makeKeyEvent(false),
-        );
+    TableCellContent.prototype.tabHandler.call(
+      fakeThis as unknown as TableCellContent,
+      makeKeyEvent(false)
+    )
 
-        expect(next.setCursor).toHaveBeenCalledWith(0, 0, true);
-        expect(prev.setCursor).not.toHaveBeenCalled();
-        expect(fakeThis.nextContentInContext).toHaveBeenCalledTimes(1);
-        expect(fakeThis.previousContentInContext).not.toHaveBeenCalled();
-    });
+    expect(next.setCursor).toHaveBeenCalledWith(0, 0, true)
+    expect(prev.setCursor).not.toHaveBeenCalled()
+    expect(fakeThis.nextContentInContext).toHaveBeenCalledTimes(1)
+    expect(fakeThis.previousContentInContext).not.toHaveBeenCalled()
+  })
 
-    it('moves to previous cell on Shift+Tab', () => {
-        const prev = makeFakeNeighbour();
-        const next = makeFakeNeighbour();
-        const fakeThis = makeFakeCell(prev, next);
+  it('moves to previous cell on Shift+Tab', () => {
+    const prev = makeFakeNeighbour()
+    const next = makeFakeNeighbour()
+    const fakeThis = makeFakeCell(prev, next)
 
-        TableCellContent.prototype.tabHandler.call(
-            fakeThis as unknown as TableCellContent,
-            makeKeyEvent(true),
-        );
+    TableCellContent.prototype.tabHandler.call(
+      fakeThis as unknown as TableCellContent,
+      makeKeyEvent(true)
+    )
 
-        expect(prev.setCursor).toHaveBeenCalledWith(0, 0, true);
-        expect(next.setCursor).not.toHaveBeenCalled();
-        expect(fakeThis.previousContentInContext).toHaveBeenCalledTimes(1);
-        expect(fakeThis.nextContentInContext).not.toHaveBeenCalled();
-    });
+    expect(prev.setCursor).toHaveBeenCalledWith(0, 0, true)
+    expect(next.setCursor).not.toHaveBeenCalled()
+    expect(fakeThis.previousContentInContext).toHaveBeenCalledTimes(1)
+    expect(fakeThis.nextContentInContext).not.toHaveBeenCalled()
+  })
 
-    it('no-ops on Shift+Tab when there is no previous content', () => {
-        const next = makeFakeNeighbour();
-        const fakeThis = makeFakeCell(null, next);
+  it('no-ops on Shift+Tab when there is no previous content', () => {
+    const next = makeFakeNeighbour()
+    const fakeThis = makeFakeCell(null, next)
 
-        // Should not throw — first cell of header row has no previous.
-        expect(() => {
-            TableCellContent.prototype.tabHandler.call(
-                fakeThis as unknown as TableCellContent,
-                makeKeyEvent(true),
-            );
-        }).not.toThrow();
+    // Should not throw — first cell of header row has no previous.
+    expect(() => {
+      TableCellContent.prototype.tabHandler.call(
+        fakeThis as unknown as TableCellContent,
+        makeKeyEvent(true)
+      )
+    }).not.toThrow()
 
-        expect(next.setCursor).not.toHaveBeenCalled();
-    });
-});
+    expect(next.setCursor).not.toHaveBeenCalled()
+  })
+})

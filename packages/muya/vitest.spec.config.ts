@@ -12,14 +12,14 @@
 //   pnpm --filter @muyajs/core test:spec:commonmark    (runs only CommonMark)
 //   pnpm --filter @muyajs/core test:spec:gfm           (runs only GFM)
 
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
-    test: {
-        include: ['test/spec/**/*.{spec,test}.ts'],
-        environment: 'happy-dom',
-        // The spec suites use it.each(670+) — keep a generous timeout so CI
-        // tail latency on slow Windows runners doesn't false-positive.
-        testTimeout: 30000,
-    },
-});
+  test: {
+    include: ['test/spec/**/*.{spec,test}.ts'],
+    environment: 'happy-dom',
+    // The spec suites use it.each(670+) — keep a generous timeout so CI
+    // tail latency on slow Windows runners doesn't false-positive.
+    testTimeout: 30000
+  }
+})

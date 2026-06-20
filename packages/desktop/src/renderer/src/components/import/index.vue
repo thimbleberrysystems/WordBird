@@ -17,10 +17,7 @@
           @drop.prevent="dropHandler"
         >
           <div class="img-wrapper">
-            <img
-              :src="`${importIcon.url}`"
-              alt="import file"
-            >
+            <img :src="`${importIcon.url}`" alt="import file" />
           </div>
           <div>{{ t('import.title') }}</div>
           <p>{{ t('import.description') }}</p>

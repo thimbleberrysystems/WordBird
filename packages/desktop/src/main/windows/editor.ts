@@ -191,7 +191,7 @@ class EditorWindow extends BaseWindow {
       )
     })
 
-    win.webContents.once('render-process-gone', async(_event, { reason }) => {
+    win.webContents.once('render-process-gone', async (_event, { reason }) => {
       if (reason === 'clean-exit') {
         return
       }
@@ -479,8 +479,7 @@ class EditorWindow extends BaseWindow {
       this.lifecycle = WindowLifecycle.READY
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { preferences } = this._accessor as any
-      const { sideBarVisibility, tabBarVisibility, sourceCodeModeEnabled } =
-        preferences.getAll()
+      const { sideBarVisibility, tabBarVisibility, sourceCodeModeEnabled } = preferences.getAll()
       const resolvedSideBarVisibility = !!sideBarVisibility
       const lineEnding = preferences.getPreferredEol()
       browserWindow!.webContents.send('mt::bootstrap-editor', {

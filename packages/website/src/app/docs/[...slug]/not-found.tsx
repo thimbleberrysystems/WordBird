@@ -9,8 +9,8 @@ export default function NotFound() {
         <div className="doc-eyebrow">404</div>
         <h1 className="art-title">Page not found</h1>
         <p className="art-lead">
-          The page you&apos;re looking for has moved or never existed. Try the documentation
-          home, or press <code className="inline">⌘K</code> to search.
+          The page you&apos;re looking for has moved or never existed. Try the documentation home,
+          or press <code className="inline">⌘K</code> to search.
         </p>
         <p>
           <Link className="doc-cta" href={first.href}>

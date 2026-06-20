@@ -397,7 +397,7 @@ class AppMenu {
       recentUsedDocuments = this.getRecentlyUsedDocuments()
     }
 
-    const menuTemplate = configureMenu(this._keybindings, this._preferences, recentUsedDocuments)
+    const menuTemplate = configureMenu(this._keybindings, this._preferences)
     const menu = Menu.buildFromTemplate(menuTemplate)
     return { menu, type: MenuType.EDITOR }
   }
@@ -490,7 +490,7 @@ class AppMenu {
     })
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ipcMain.on('broadcast-preferences-changed', async(prefs: any) => {
+    ipcMain.on('broadcast-preferences-changed', async (prefs: any) => {
       if (prefs.theme !== undefined || prefs.followSystemTheme !== undefined) {
         this.updateAppMenu()
       }

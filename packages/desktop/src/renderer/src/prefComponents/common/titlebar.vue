@@ -1,14 +1,8 @@
 <template>
   <div class="title-bar">
-    <div
-      class="frameless-titlebar-button frameless-titlebar-close"
-      @click.stop="handleCloseClick"
-    >
+    <div class="frameless-titlebar-button frameless-titlebar-close" @click.stop="handleCloseClick">
       <div>
-        <svg
-          width="10"
-          height="10"
-        >
+        <svg width="10" height="10">
           <path :d="windowIconClose" />
         </svg>
       </div>

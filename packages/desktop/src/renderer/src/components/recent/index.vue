@@ -4,20 +4,10 @@
       <div class="project-prompt">
         <p class="prompt-text">{{ t('recent.noProjectOpen') }}</p>
         <div class="centered-group">
-          <el-button
-            text
-            bg
-            type="primary"
-            @click="createProject"
-          >
+          <el-button text bg type="primary" @click="createProject">
             {{ t('recent.createProject') }}
           </el-button>
-          <el-button
-            text
-            bg
-            type="primary"
-            @click="loadProject"
-          >
+          <el-button text bg type="primary" @click="loadProject">
             {{ t('recent.loadProject') }}
           </el-button>
         </div>

@@ -7,7 +7,7 @@ interface FontListShape {
 }
 
 export const registerFontsHandlers = (): void => {
-  ipcMain.handle('mt::fonts::list', async() => {
+  ipcMain.handle('mt::fonts::list', async () => {
     try {
       const fontList = (await import('font-list')) as FontListShape
       const getFonts = fontList.getFonts || fontList.default?.getFonts

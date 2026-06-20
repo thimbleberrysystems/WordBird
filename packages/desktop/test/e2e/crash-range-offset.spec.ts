@@ -30,7 +30,7 @@ test.describe('Crash: setStart Range offset', () => {
   let app: ElectronApplication
   let page: Page
 
-  test.beforeEach(async() => {
+  test.beforeEach(async () => {
     const launched = await launchWithMarkdown('# Repro\n\nSeed.\n', { suppressErrorDialog: true })
     app = launched.app
     page = launched.page
@@ -38,12 +38,12 @@ test.describe('Crash: setStart Range offset', () => {
     await clearRendererErrors(app)
   })
 
-  test.afterEach(async() => {
+  test.afterEach(async () => {
     if (app) await app.close()
   })
 
   // Recipe from #2526.
-  test('Issue #2526: typing escaped <pre>...</pre> then re-selecting does not crash', async() => {
+  test('Issue #2526: typing escaped <pre>...</pre> then re-selecting does not crash', async () => {
     // Type literal `\<pre\>some text\</pre\>` as the user described.
     await typeIntoEditor(page, '\\<pre\\>some text\\</pre\\>')
     await page.waitForTimeout(200)
@@ -65,7 +65,7 @@ test.describe('Crash: setStart Range offset', () => {
   })
 
   // Recipe from #3737 — backspace at the start of a code block.
-  test('Issue #3737: backspace at start of a code block does not crash', async() => {
+  test('Issue #3737: backspace at start of a code block does not crash', async () => {
     // Build a code block via the markdown source-mode round-trip.
     // (Code blocks are rendered as CodeMirror instances inside Muya; the
     // crash from #3737 happens when the user backspaces from the first
@@ -77,7 +77,9 @@ test.describe('Crash: setStart Range offset', () => {
 
     // Click into the code block.
     await page.evaluate(() => {
-      const block = document.querySelector('.editor-component .CodeMirror, .editor-component pre.ag-active')
+      const block = document.querySelector(
+        '.editor-component .CodeMirror, .editor-component pre.ag-active'
+      )
       if (block) (block as HTMLElement).click()
     })
     await page.waitForTimeout(150)
@@ -96,7 +98,7 @@ test.describe('Crash: setStart Range offset', () => {
   // General "mixed-inline" stressor — selection across a paragraph that holds
   // bold/italic/inline-code/math, the most common substrate for setCursorRange
   // miscalculations.
-  test('Repeated cursor moves through bold+code+math do not crash', async() => {
+  test('Repeated cursor moves through bold+code+math do not crash', async () => {
     const md = '# Header\n\nThis has **bold**, *italic*, `code`, and $a+b$ math, ~~strike~~ end.\n'
     const { setSourceMarkdown } = await import('./helpers')
     await setSourceMarkdown(page, app, md)
@@ -126,7 +128,7 @@ test.describe('Crash: setStart Range offset', () => {
   // Recipe drawn from closed issues #2874, #3782, #3754: the offset 4294967292
   // crashes all originated in `enterHandler`. Try Enter at end of paragraph
   // with mixed inline content, then inside a list with formatting.
-  test('Enter at end of mixed-inline paragraph does not crash', async() => {
+  test('Enter at end of mixed-inline paragraph does not crash', async () => {
     const md = '# H\n\nAlpha **bold** *italic* `code` $a+b$ end\n'
     const { setSourceMarkdown } = await import('./helpers')
     await setSourceMarkdown(page, app, md)
@@ -144,7 +146,7 @@ test.describe('Crash: setStart Range offset', () => {
     await expectNoRendererErrors(app)
   })
 
-  test('Enter inside list item with inline formatting does not crash', async() => {
+  test('Enter inside list item with inline formatting does not crash', async () => {
     const md = '- item with **bold** and `code`\n- second\n- third\n'
     const { setSourceMarkdown } = await import('./helpers')
     await setSourceMarkdown(page, app, md)
@@ -154,7 +156,9 @@ test.describe('Crash: setStart Range offset', () => {
 
     // Click into the first list item and press Enter several times
     await page.evaluate(() => {
-      const first = document.querySelector('.editor-component ul li span.ag-paragraph') as HTMLElement | null
+      const first = document.querySelector(
+        '.editor-component ul li span.ag-paragraph'
+      ) as HTMLElement | null
       if (!first) return
       const range = document.createRange()
       range.selectNodeContents(first)
@@ -176,7 +180,7 @@ test.describe('Crash: setStart Range offset', () => {
   // Stress: select-all delete inside a paragraph with inline math, which has
   // historically thrown the largest "offset N" values (#4035, #2627 — offset
   // 4294967292 = -4 >>> 0).
-  test('Select-all delete in math-rich paragraph does not crash', async() => {
+  test('Select-all delete in math-rich paragraph does not crash', async () => {
     const md = '# H\n\nstart $\\int_0^1 x$ middle $\\frac{a}{b}$ end\n'
     const { setSourceMarkdown } = await import('./helpers')
     await setSourceMarkdown(page, app, md)
@@ -202,19 +206,21 @@ test.describe('Crash: paste-induced setCursorRange', () => {
   let app: ElectronApplication
   let page: Page
 
-  test.beforeEach(async() => {
-    const launched = await launchWithMarkdown('# Doc\n\nEdit here.\n', { suppressErrorDialog: true })
+  test.beforeEach(async () => {
+    const launched = await launchWithMarkdown('# Doc\n\nEdit here.\n', {
+      suppressErrorDialog: true
+    })
     app = launched.app
     page = launched.page
     await placeCaretInEditor(page)
     await clearRendererErrors(app)
   })
 
-  test.afterEach(async() => {
+  test.afterEach(async () => {
     if (app) await app.close()
   })
 
-  test('Paste rich HTML into mid-paragraph does not crash', async() => {
+  test('Paste rich HTML into mid-paragraph does not crash', async () => {
     // Place caret in the middle of "Edit here." then dispatch a paste event
     // with rich HTML (bold + lists + table + math fragment) — the worst case
     // for the DOM-walking selection logic.
@@ -224,7 +230,9 @@ test.describe('Crash: paste-induced setCursorRange', () => {
       '<table><tbody><tr><td>a</td><td>b</td></tr></tbody></table>' +
       '<p>And inline math: <span class="math">a+b</span></p>'
     await page.evaluate((h) => {
-      const target = document.querySelector('.editor-component span.ag-paragraph') as HTMLElement | null
+      const target = document.querySelector(
+        '.editor-component span.ag-paragraph'
+      ) as HTMLElement | null
       if (!target) return
       const range = document.createRange()
       range.selectNodeContents(target)
@@ -243,10 +251,12 @@ test.describe('Crash: paste-induced setCursorRange', () => {
     await expectNoRendererErrors(app)
   })
 
-  test('Paste then immediate cursor-shuffle does not crash', async() => {
+  test('Paste then immediate cursor-shuffle does not crash', async () => {
     const html = '<p>x<b>y</b>z <em>e</em><code>c</code></p>'.repeat(20)
     await page.evaluate((h) => {
-      const target = document.querySelector('.editor-component span.ag-paragraph') as HTMLElement | null
+      const target = document.querySelector(
+        '.editor-component span.ag-paragraph'
+      ) as HTMLElement | null
       if (!target) return
       const range = document.createRange()
       range.selectNodeContents(target)
@@ -276,7 +286,7 @@ test.describe('Crash: paste-induced setCursorRange', () => {
 // be captured by our helper). Guards against silent test failure where the
 // helper would always pass.
 test.describe('Crash counter sanity', () => {
-  test('Forced throw in renderer is captured by getRendererErrors', async() => {
+  test('Forced throw in renderer is captured by getRendererErrors', async () => {
     const { app, page } = await launchWithMarkdown('# Sanity\n', { suppressErrorDialog: true })
     try {
       await page.evaluate(() => {

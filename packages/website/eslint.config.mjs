@@ -7,13 +7,7 @@ const compat = new FlatCompat({ baseDirectory: __dirname })
 
 const config = [
   {
-    ignores: [
-      '.next/**',
-      '.open-next/**',
-      '.wrangler/**',
-      'out/**',
-      'node_modules/**'
-    ]
+    ignores: ['.next/**', '.open-next/**', '.wrangler/**', 'out/**', 'node_modules/**']
   },
   ...compat.extends('next/core-web-vitals'),
   {

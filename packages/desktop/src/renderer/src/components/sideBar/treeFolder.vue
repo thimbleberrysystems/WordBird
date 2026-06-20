@@ -8,11 +8,7 @@
       :title="folder.pathname"
       @click="folderNameClick"
     >
-      <el-icon
-        class="icon-arrow"
-        :class="{ fold: isCollapsed }"
-        :size="12"
-      >
+      <el-icon class="icon-arrow" :class="{ fold: isCollapsed }" :size="12">
         <ArrowRight />
       </el-icon>
       <input
@@ -23,16 +19,10 @@
         class="rename"
         @click.stop="noop"
         @keypress.enter="rename"
-      >
-      <span
-        v-else
-        class="text-overflow"
-      >{{ folder.name }}</span>
+      />
+      <span v-else class="text-overflow">{{ folder.name }}</span>
     </div>
-    <div
-      v-if="!isCollapsed"
-      class="folder-contents"
-    >
+    <div v-if="!isCollapsed" class="folder-contents">
       <tree-folder
         v-for="childFolder of folder.folders"
         :key="childFolder.id"
@@ -47,13 +37,8 @@
         class="new-input"
         :style="{ 'margin-left': `${depth * 5 + 15}px` }"
         @keypress.enter="handleInputEnter"
-      >
-      <File
-        v-for="file of folder.files"
-        :key="file.id"
-        :file="file"
-        :depth="depth + 1"
       />
+      <File v-for="file of folder.files" :key="file.id" :file="file" :depth="depth + 1" />
     </div>
   </div>
 </template>

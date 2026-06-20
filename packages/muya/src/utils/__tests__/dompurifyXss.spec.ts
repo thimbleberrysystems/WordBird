@@ -1,14 +1,14 @@
 // @vitest-environment happy-dom
 
-import type { Config } from '../dompurify';
-import { describe, expect, it } from 'vitest';
-import { EXPORT_DOMPURIFY_CONFIG } from '../../config';
-import sanitize, { isValidAttribute } from '../dompurify';
+import type { Config } from '../dompurify'
+import { describe, expect, it } from 'vitest'
+import { EXPORT_DOMPURIFY_CONFIG } from '../../config'
+import sanitize, { isValidAttribute } from '../dompurify'
 
 // Lock the DOMPurify config to the typed contract so a regression in shape
 // (e.g. ADD_ATTR being dropped or renamed) breaks at compile time, not just
 // at runtime.
-const EXPORT_CONFIG: Config = EXPORT_DOMPURIFY_CONFIG;
+const EXPORT_CONFIG: Config = EXPORT_DOMPURIFY_CONFIG
 
 // Regression for marktext 0baf2e9e / 7de33f11 — "Fix #1390 prevent XSS attack".
 //
@@ -32,66 +32,62 @@ const EXPORT_CONFIG: Config = EXPORT_DOMPURIFY_CONFIG;
 // `data-align` from block state, not from DOM attributes.
 
 describe('marktext 0baf2e9e/7de33f11 — inline html tag XSS defenses', () => {
-    describe('sanitize() downgrades dangerous tags to empty (drives the htmlTag span fallback)', () => {
-        // These tables intentionally use BARE opening tags (no attrs / no close
-        // tag) — that's the exact call shape `htmlTag.ts` uses:
-        //   `!sanitize('<' + tag + '>')`. Adding attribute-bearing variants
-        // here would assert against DOMPurify behaviour the renderer never
-        // exercises and could create false failures.
-        it.each([
-            ['<embed>'],
-            ['<object>'],
-            ['<iframe>'],
-        ])('strips %s', (tag) => {
-            // The htmlTag renderer treats an empty result from
-            // `sanitize('<' + tag + '>')` as the trigger to downgrade to `<span>`.
-            expect(sanitize(tag)).toBe('');
-        });
+  describe('sanitize() downgrades dangerous tags to empty (drives the htmlTag span fallback)', () => {
+    // These tables intentionally use BARE opening tags (no attrs / no close
+    // tag) — that's the exact call shape `htmlTag.ts` uses:
+    //   `!sanitize('<' + tag + '>')`. Adding attribute-bearing variants
+    // here would assert against DOMPurify behaviour the renderer never
+    // exercises and could create false failures.
+    it.each([['<embed>'], ['<object>'], ['<iframe>']])('strips %s', (tag) => {
+      // The htmlTag renderer treats an empty result from
+      // `sanitize('<' + tag + '>')` as the trigger to downgrade to `<span>`.
+      expect(sanitize(tag)).toBe('')
+    })
 
-        it('preserves safe inline tags so they render with their real tag', () => {
-            // `<span>` and similar safe tags must NOT trigger the downgrade
-            // path; sanitize must return a non-empty string for them.
-            expect(sanitize('<span>')).not.toBe('');
-            expect(sanitize('<code>')).not.toBe('');
-            expect(sanitize('<mark>')).not.toBe('');
-        });
-    });
+    it('preserves safe inline tags so they render with their real tag', () => {
+      // `<span>` and similar safe tags must NOT trigger the downgrade
+      // path; sanitize must return a non-empty string for them.
+      expect(sanitize('<span>')).not.toBe('')
+      expect(sanitize('<code>')).not.toBe('')
+      expect(sanitize('<mark>')).not.toBe('')
+    })
+  })
 
-    describe('isValidAttribute() blocks attribute-level XSS vectors (htmlTag attr loop)', () => {
-        it.each([
-            ['a', 'onclick', 'alert(1)'],
-            ['a', 'onmouseover', 'alert(1)'],
-            ['img', 'onerror', 'alert(1)'],
-            ['a', 'href', 'javascript:alert(1)'],
-            ['a', 'href', 'vbscript:alert(1)'],
-        ])('rejects <%s %s="%s">', (tag, attr, val) => {
-            expect(isValidAttribute(tag, attr, val)).toBe(false);
-        });
+  describe('isValidAttribute() blocks attribute-level XSS vectors (htmlTag attr loop)', () => {
+    it.each([
+      ['a', 'onclick', 'alert(1)'],
+      ['a', 'onmouseover', 'alert(1)'],
+      ['img', 'onerror', 'alert(1)'],
+      ['a', 'href', 'javascript:alert(1)'],
+      ['a', 'href', 'vbscript:alert(1)']
+    ])('rejects <%s %s="%s">', (tag, attr, val) => {
+      expect(isValidAttribute(tag, attr, val)).toBe(false)
+    })
 
-        it.each([
-            ['a', 'href', 'https://example.com'],
-            ['a', 'href', '/relative/path'],
-            ['a', 'title', 'tooltip text'],
-            ['img', 'src', 'https://example.com/a.png'],
-            ['img', 'alt', 'alt text'],
-        ])('keeps <%s %s="%s">', (tag, attr, val) => {
-            expect(isValidAttribute(tag, attr, val)).toBe(true);
-        });
-    });
+    it.each([
+      ['a', 'href', 'https://example.com'],
+      ['a', 'href', '/relative/path'],
+      ['a', 'title', 'tooltip text'],
+      ['img', 'src', 'https://example.com/a.png'],
+      ['img', 'alt', 'alt text']
+    ])('keeps <%s %s="%s">', (tag, attr, val) => {
+      expect(isValidAttribute(tag, attr, val)).toBe(true)
+    })
+  })
 
-    describe('data-align attribute whitelist (config side of the fix)', () => {
-        it('exposes data-align via ADD_ATTR on EXPORT_DOMPURIFY_CONFIG', () => {
-            // marktext added `data-align` to WHITELIST_ATTRIBUTES in the
-            // same commit pair; the new repo carries that intent via
-            // ADD_ATTR on EXPORT_DOMPURIFY_CONFIG so saved/exported markdown
-            // image alignment metadata survives sanitization.
-            expect(EXPORT_CONFIG.ADD_ATTR).toContain('data-align');
-        });
+  describe('data-align attribute whitelist (config side of the fix)', () => {
+    it('exposes data-align via ADD_ATTR on EXPORT_DOMPURIFY_CONFIG', () => {
+      // marktext added `data-align` to WHITELIST_ATTRIBUTES in the
+      // same commit pair; the new repo carries that intent via
+      // ADD_ATTR on EXPORT_DOMPURIFY_CONFIG so saved/exported markdown
+      // image alignment metadata survives sanitization.
+      expect(EXPORT_CONFIG.ADD_ATTR).toContain('data-align')
+    })
 
-        it('export sanitisation preserves data-align on <img>', () => {
-            const html = '<img src="x.png" data-align="center" alt="x" />';
-            const cleaned = sanitize(html, EXPORT_CONFIG) as unknown as string;
-            expect(cleaned).toContain('data-align="center"');
-        });
-    });
-});
+    it('export sanitisation preserves data-align on <img>', () => {
+      const html = '<img src="x.png" data-align="center" alt="x" />'
+      const cleaned = sanitize(html, EXPORT_CONFIG) as unknown as string
+      expect(cleaned).toContain('data-align="center"')
+    })
+  })
+})

@@ -1,5 +1,5 @@
-import { expect, test } from '../fixtures/muya';
-import { editor } from '../helpers/selectors';
+import { expect, test } from '../fixtures/muya'
+import { editor } from '../helpers/selectors'
 
 /**
  * `focusMode: true` constructor option.
@@ -21,33 +21,33 @@ import { editor } from '../helpers/selectors';
  * spec should be tightened to assert it.
  */
 test.describe('options / focus-mode', () => {
-    test('focusMode: true — rebuild boots, option reflected, editor usable', async ({ page }) => {
-        await page.evaluate(() => {
-            window.__e2e!.rebuildMuya({ focusMode: true });
-            window.muya!.setContent('# heading\n\nparagraph A\n\nparagraph B\n');
-        });
-        const focusModeOption = await page.evaluate(() => window.muya!.options.focusMode);
-        expect(focusModeOption).toBe(true);
+  test('focusMode: true — rebuild boots, option reflected, editor usable', async ({ page }) => {
+    await page.evaluate(() => {
+      window.__e2e!.rebuildMuya({ focusMode: true })
+      window.muya!.setContent('# heading\n\nparagraph A\n\nparagraph B\n')
+    })
+    const focusModeOption = await page.evaluate(() => window.muya!.options.focusMode)
+    expect(focusModeOption).toBe(true)
 
-        // Sanity: editor renders multiple blocks and can be focused.
-        await expect(page.locator(editor.atxHeading).first()).toBeVisible();
-        await expect(page.locator(editor.paragraph).nth(0)).toContainText('paragraph A');
-        await expect(page.locator(editor.paragraph).nth(1)).toContainText('paragraph B');
+    // Sanity: editor renders multiple blocks and can be focused.
+    await expect(page.locator(editor.atxHeading).first()).toBeVisible()
+    await expect(page.locator(editor.paragraph).nth(0)).toContainText('paragraph A')
+    await expect(page.locator(editor.paragraph).nth(1)).toContainText('paragraph B')
 
-        // Click into paragraph B; the editor should remain alive.
-        await page.locator(editor.paragraph).nth(1).click();
-        const focused = await page.evaluate(() => {
-            const active = window.muya!.editor.activeContentBlock;
-            return active != null;
-        });
-        expect(focused).toBe(true);
-    });
+    // Click into paragraph B; the editor should remain alive.
+    await page.locator(editor.paragraph).nth(1).click()
+    const focused = await page.evaluate(() => {
+      const active = window.muya!.editor.activeContentBlock
+      return active != null
+    })
+    expect(focused).toBe(true)
+  })
 
-    test('focusMode: false (default) — option reflected as false', async ({ page }) => {
-        await page.evaluate(() => {
-            window.__e2e!.rebuildMuya({ focusMode: false });
-        });
-        const value = await page.evaluate(() => window.muya!.options.focusMode);
-        expect(value).toBe(false);
-    });
-});
+  test('focusMode: false (default) — option reflected as false', async ({ page }) => {
+    await page.evaluate(() => {
+      window.__e2e!.rebuildMuya({ focusMode: false })
+    })
+    const value = await page.evaluate(() => window.muya!.options.focusMode)
+    expect(value).toBe(false)
+  })
+})

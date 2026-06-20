@@ -3,7 +3,7 @@
 Inline `code snippet` example.
 
 ```js
-function hello (name) {
+function hello(name) {
   return `Hello, ${name}!`
 }
 ```

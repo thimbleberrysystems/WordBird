@@ -24,7 +24,9 @@ export default function CommandPalette({ open, onClose }: Props) {
 
   useEffect(() => {
     if (!open) return
-    loadIndex().then(setIndex).catch((err) => setError((err as Error).message))
+    loadIndex()
+      .then(setIndex)
+      .catch((err) => setError((err as Error).message))
     setQuery('')
     setSelected(0)
     queueMicrotask(() => inputRef.current?.focus())

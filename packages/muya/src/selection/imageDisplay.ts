@@ -1,4 +1,4 @@
-import type { ImageToken } from '../inlineRenderer/types';
+import type { ImageToken } from '../inlineRenderer/types'
 
 // Decide whether an image should display in-line with surrounding text
 // (no resize handles) or as a block (centered, with resize handles).
@@ -14,9 +14,11 @@ import type { ImageToken } from '../inlineRenderer/types';
 //   - `'left' | 'center' | 'right'` → block alignment, show resize bar.
 //   - absent → default block-style (centered), show resize bar.
 export function isInlineImage(token: { attrs: Record<string, string | null> }): boolean {
-    return token.attrs['data-align'] === 'inline';
+  return token.attrs['data-align'] === 'inline'
 }
 
-export function shouldShowImageResizeBar(token: ImageToken | { attrs: Record<string, string | null> }): boolean {
-    return !isInlineImage(token);
+export function shouldShowImageResizeBar(
+  token: ImageToken | { attrs: Record<string, string | null> }
+): boolean {
+  return !isInlineImage(token)
 }

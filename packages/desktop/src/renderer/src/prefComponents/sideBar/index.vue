@@ -13,10 +13,7 @@
         @select="handleSelect"
       >
         <template #suffix>
-          <Search
-            width="16"
-            height="16"
-          />
+          <Search width="16" height="16" />
         </template>
         <template #default="{ item }">
           <div class="name">
@@ -124,8 +121,7 @@ const handleCategoryItemClick = (item: CategoryItem): void => {
 const onIpcCategoryChange = (_event: unknown, category: unknown): void => {
   const categoryName = typeof category === 'string' ? category : ''
   const validRoute =
-    categoryName &&
-    router.getRoutes().findIndex((r) => r.path.endsWith(`/${categoryName}`)) !== -1
+    categoryName && router.getRoutes().findIndex((r) => r.path.endsWith(`/${categoryName}`)) !== -1
   if (validRoute) {
     router.push({
       path: `/preference/${categoryName}`

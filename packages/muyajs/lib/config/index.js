@@ -295,7 +295,10 @@ export const CLASS_OR_ID = Object.freeze(
     'AG_TIGHT_LIST_ITEM',
     'AG_TOOL_BAR',
     'AG_VEGA_LITE',
-    'AG_WARN'
+    'AG_WARN',
+    'AG_DIFF_ADDED',
+    'AG_DIFF_REMOVED',
+    'AG_DIFF_MODIFIED'
   ])
 )
 

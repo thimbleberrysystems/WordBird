@@ -32,7 +32,7 @@ export const useCommandCenterStore = defineStore('commandCenter', () => {
     SORT_COMMANDS()
 
     // Listen for language changes and update command descriptions.
-    bus.on('language-changed', async() => {
+    bus.on('language-changed', async () => {
       rootCommand.value.subcommands = await getCommandsWithDescriptions()
       SORT_COMMANDS()
     })

@@ -18,7 +18,16 @@
  */
 
 import type { IKeyboardLayoutInfo, IKeyboardMapping } from 'native-keymap'
-import type { AIProvider, IAIConfig, ILangGraphMessage, ILangGraphResponse } from './langgraph'
+import type {
+  AIProvider,
+  IAIConfig,
+  ILangGraphMessage,
+  ILangGraphResponse,
+  IAgentToolCall,
+  IAgentToolResult,
+  IAgentApplyEditRequest,
+  IAgentEditProposal
+} from './langgraph'
 import type {
   MarkdownDocument,
   TabOptions,
@@ -99,6 +108,9 @@ export interface IpcInvokeChannels {
   'mt::ai:connect': { args: [IAIConfig]; ret: void }
   'mt::ai:disconnect': { args: []; ret: void }
   'mt::ai:send-message': { args: [ILangGraphMessage[]]; ret: ILangGraphResponse }
+  'mt::ai:execute-tool': { args: [IAgentToolCall]; ret: IAgentToolResult }
+  'mt::ai:apply-edit': { args: [IAgentApplyEditRequest]; ret: { ok: boolean; error?: string } }
+  'mt::ai:apply-edit-in-renderer': { args: [IAgentApplyEditRequest]; ret: { ok: boolean; error?: string } }
   'mt::ai:abort': { args: []; ret: { success: boolean } }
   'mt::ai:fetch-models': { args: [AIProvider, string, string?]; ret: string[] }
   'mt::ai:pull-model': { args: [string, string?]; ret: { success: boolean } }
@@ -159,7 +171,9 @@ export interface IpcSendChannels {
   'mt::open-file-by-window-id': [windowId: number, filePath: string, options?: unknown]
   'mt::open-keybindings-config': []
   'mt::open-setting-window': [category?: string]
-  'mt::rename': [payload: { id: string; pathname: string; newPathname: string; currentFile?: unknown }]
+  'mt::rename': [
+    payload: { id: string; pathname: string; newPathname: string; currentFile?: unknown }
+  ]
   'mt::request-keybindings': []
   'mt::response-export': [
     payload: {
@@ -249,6 +263,9 @@ export interface IpcMainEventChannels {
   'mt::UPDATE_ERROR': [error: unknown]
   'mt::UPDATE_NOT_AVAILABLE': [info?: unknown]
   'mt::ai:pull-progress': [progress: { percent?: number; status?: string; digest?: string }]
+  'mt::ai:edit-proposal': [
+    proposal: { edit: IAgentEditProposal; oldContent: string; originalPath: string }
+  ]
   'mt::about-dialog': []
   'mt::ask-for-close': []
   'mt::bootstrap-editor': [config: BootstrapEditorConfig]
@@ -293,7 +310,9 @@ export interface IpcMainEventChannels {
   'mt::rg::progress': [payload: unknown]
   'mt::screenshot-captured': []
   'mt::set-line-ending': [lineEnding: LineEnding]
-  'mt::set-pathname': [payload: { id: string; pathname: string; filename: string; mtimeMs?: number }]
+  'mt::set-pathname': [
+    payload: { id: string; pathname: string; filename: string; mtimeMs?: number }
+  ]
   'mt::set-view-layout': [layout: unknown]
   'mt::show-command-palette': []
   'mt::show-export-dialog': [type: ExportType]

@@ -45,12 +45,12 @@ Relevant settings (`tsconfig.base.json`):
 Defined in both `tsconfig.base.json` and `electron.vite.config.ts` (the
 two must stay in sync):
 
-| Alias       | Maps to                |
-|-------------|------------------------|
-| `@/*`       | `src/renderer/src/*`   |
-| `common/*`  | `src/common/*`         |
-| `muya/*`    | `src/muya/*` (legacy)  |
-| `@shared/*` | `src/shared/*`         |
+| Alias       | Maps to               |
+| ----------- | --------------------- |
+| `@/*`       | `src/renderer/src/*`  |
+| `common/*`  | `src/common/*`        |
+| `muya/*`    | `src/muya/*` (legacy) |
+| `@shared/*` | `src/shared/*`        |
 
 `vitest.config.ts` carries the same aliases plus `main_renderer` →
 `src/main` for the few unit specs that reach into main-process code.
@@ -83,8 +83,7 @@ const ipcWrapper = {
   invoke: <K extends keyof IpcInvokeChannels>(
     channel: K,
     ...args: IpcInvokeChannels[K]['args']
-  ): Promise<IpcInvokeChannels[K]['ret']> =>
-    ipcRenderer.invoke(channel, ...args),
+  ): Promise<IpcInvokeChannels[K]['ret']> => ipcRenderer.invoke(channel, ...args)
   // ...
 }
 ```
@@ -94,6 +93,7 @@ call is type-checked: wrong channel name, wrong arg arity, wrong arg
 types, all surface at compile time.
 
 To add a new channel:
+
 1. Add an entry to the appropriate interface in `src/shared/types/ipc.ts`.
 2. Wire the handler in `src/main/ipc/*.ts` via `ipcMain.handle`/`ipcMain.on`.
 3. Use it from the renderer via `window.electron.ipcRenderer.{invoke,send,…}`.

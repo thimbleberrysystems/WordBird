@@ -11,7 +11,8 @@ const inline = {
   escape: /^\\([!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~])/,
   autolink: /^<(scheme:[^\s\x00-\x1f<>]*|email)>/, // eslint-disable-line no-control-regex
   url: noop,
-  tag: '^comment' +
+  tag:
+    '^comment' +
     '|^</[a-zA-Z][\\w:-]*\\s*>' + // self-closing tag
     '|^<[a-zA-Z][\\w-]*(?:attribute)*?\\s*/?>' + // open tag
     '|^<\\?[\\s\\S]*?\\?>' + // processing instruction, e.g. <?php ?>
@@ -20,7 +21,8 @@ const inline = {
   link: /^!?\[(label)\]\(\s*(href)(?:\s+(title))?\s*\)/,
   reflink: /^!?\[(label)\]\[(?!\s*\])((?:\\[\[\]]?|[^\[\]\\])+)\]/,
   nolink: /^!?\[(?!\s*\])((?:\[[^\[\]]*\]|\\[\[\]]|[^\[\]])*)\](?:\[\])?/,
-  strong: /^__([^\s_])__(?!_)|^\*\*([^\s*])\*\*(?!\*)|^__([^\s][\s\S]*?[^\s])__(?!_)|^\*\*([^\s][\s\S]*?[^\s])\*\*(?!\*)/,
+  strong:
+    /^__([^\s_])__(?!_)|^\*\*([^\s*])\*\*(?!\*)|^__([^\s][\s\S]*?[^\s])__(?!_)|^\*\*([^\s][\s\S]*?[^\s])\*\*(?!\*)/,
   em: /^_([^\s_])_(?!_)|^\*([^\s*<\[])\*(?!\*)|^_([^\s<][\s\S]*?[^\s_])_(?!_|[^\spunctuation])|^_([^\s_<][\s\S]*?[^\s])_(?!_|[^\spunctuation])|^\*([^\s<"][\s\S]*?[^\s\*])\*(?!\*|[^\spunctuation])|^\*([^\s*"<\[][\s\S]*?[^\s])\*(?!\*)/,
   code: /^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)/,
   br: /^( {2,}|\\)\n(?!\s*$)/,
@@ -52,12 +54,15 @@ inline._punctuation = '!"#$%&\'()+\\-.,/:;<=>?@\\[\\]`^{|}~'
 
 inline._comment = edit(block._comment).replace('(?:-->|$)', '-->').getRegex()
 
-inline.em = edit(inline.em).replace(/punctuation/g, inline._punctuation).getRegex()
+inline.em = edit(inline.em)
+  .replace(/punctuation/g, inline._punctuation)
+  .getRegex()
 
 inline._escapes = /\\([!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~])/g
 
 inline._scheme = /[a-zA-Z][a-zA-Z0-9+.-]{1,31}/
-inline._email = /[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+(@)[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+(?![-_])/
+inline._email =
+  /[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+(@)[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+(?![-_])/
 inline.autolink = edit(inline.autolink)
   .replace('scheme', inline._scheme)
   .replace('email', inline._email)
@@ -80,9 +85,7 @@ inline.link = edit(inline.link)
   .replace('title', inline._title)
   .getRegex()
 
-inline.reflink = edit(inline.reflink)
-  .replace('label', inline._label)
-  .getRegex()
+inline.reflink = edit(inline.reflink).replace('label', inline._label).getRegex()
 
 /**
  * Normal Inline Grammar
@@ -128,9 +131,7 @@ export const gfm = Object.assign({}, normal, {
   emoji: /^(:)([a-z_\d+-]+?)\1/ // not real GFM but put it in here
 })
 
-gfm.url = edit(gfm.url, 'i')
-  .replace('email', gfm._extended_email)
-  .getRegex()
+gfm.url = edit(gfm.url, 'i').replace('email', gfm._extended_email).getRegex()
 
 /**
  * GFM + Line Breaks Inline Grammar

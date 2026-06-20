@@ -98,7 +98,9 @@ async function main() {
   await fs.mkdir(path.dirname(OUT_PATH), { recursive: true })
   await fs.writeFile(OUT_PATH, JSON.stringify(pages))
   const sizeKb = ((await fs.stat(OUT_PATH)).size / 1024).toFixed(1)
-  console.log(`[docs-index] wrote ${pages.length} pages → ${path.relative(ROOT, OUT_PATH)} (${sizeKb} KB)`)
+  console.log(
+    `[docs-index] wrote ${pages.length} pages → ${path.relative(ROOT, OUT_PATH)} (${sizeKb} KB)`
+  )
 }
 
 main().catch((err) => {

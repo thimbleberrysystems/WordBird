@@ -3,6 +3,9 @@
 // permissive map keyed by string with `unknown[]` payloads so we can
 // retrofit per-event types incrementally.
 
+import type { IAgentApplyEditRequest } from '@shared/types/langgraph'
+
 export interface BusEvents {
   [key: string]: unknown[]
+  'apply-agent-edit': [request: IAgentApplyEditRequest]
 }

@@ -5,6 +5,7 @@
   >
     <tabs v-show="showTabBar" />
     <div class="container">
+      <!-- Inline diff highlighting is applied directly to Muya blocks via CSS classes -->
       <editor
         :markdown="markdown"
         :cursor="cursor"
@@ -59,6 +60,7 @@ const { effectiveSideBarWidth } = storeToRefs(useLayoutStore())
   & > .container {
     flex: 1;
     overflow: hidden;
+    position: relative;
   }
 }
 </style>

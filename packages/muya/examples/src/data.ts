@@ -4,124 +4,132 @@
 // runtime; kept as a quick lookup for plugin authors who need to
 // construct JSON state directly instead of going through markdown.
 export const DEFAULT_STATE = [
-    {
-        name: 'frontmatter',
-        text: 'title: muya',
-        meta: {
-            lang: 'yaml', // yaml | toml | json
-            style: '-', // `-` for yaml | `+` for toml | `;;;` and `{}` for json
-        },
+  {
+    name: 'frontmatter',
+    text: 'title: muya',
+    meta: {
+      lang: 'yaml', // yaml | toml | json
+      style: '-' // `-` for yaml | `+` for toml | `;;;` and `{}` for json
+    }
+  },
+  {
+    name: 'atx-heading',
+    meta: {
+      level: 1 // 1 ~ 6
     },
-    {
-        name: 'atx-heading',
-        meta: {
-            level: 1, // 1 ~ 6
-        },
-        text: '# Inline Format', // can not contain `\n`!
+    text: '# Inline Format' // can not contain `\n`!
+  },
+  {
+    name: 'paragraph',
+    text: '**strong** *emphasis* `inline code` &gt; <u>underline</u> <mark>highlight</mark> <ruby>北京<rt>Beijing</rt></ruby> [Baidu](http://www.baidu.com) H0~2~ X^5^'
+  },
+  {
+    name: 'setext-heading',
+    meta: {
+      level: 1,
+      underline: '===' // === or ---
     },
-    {
-        name: 'paragraph',
-        text: '**strong** *emphasis* `inline code` &gt; <u>underline</u> <mark>highlight</mark> <ruby>北京<rt>Beijing</rt></ruby> [Baidu](http://www.baidu.com) H0~2~ X^5^',
-    },
-    {
-        name: 'setext-heading',
-        meta: {
-            level: 1,
-            underline: '===', // === or ---
-        },
-        text: 'GitHub and Extra\nInline format',
-    },
-    {
-        name: 'paragraph',
-        text: ':man:  ~~del~~ http://google.com $a \\ne b$',
-    },
-    {
-        name: 'diagram',
-        text: `mermaid TD
+    text: 'GitHub and Extra\nInline format'
+  },
+  {
+    name: 'paragraph',
+    text: ':man:  ~~del~~ http://google.com $a \\ne b$'
+  },
+  {
+    name: 'diagram',
+    text: `mermaid TD
     A[Hard] -->|Text| B(Round)
     B --> C{Decision}
     C -->|One| D[Result 1]
     C -->|Two| E[Result 2]`,
-        meta: {
-            lang: 'yaml',
-            type: 'mermaid',
-        },
+    meta: {
+      lang: 'yaml',
+      type: 'mermaid'
+    }
+  },
+  {
+    name: 'code-block',
+    meta: {
+      type: 'indented',
+      lang: 'javascript'
     },
-    {
-        name: 'code-block',
-        meta: {
-            type: 'indented',
-            lang: 'javascript',
-        },
-        text: 'const foo = `bar`',
-    },
-    {
-        name: 'math-block',
-        text: 'a \\ne b',
-        meta: {
-            mathStyle: '',
-        },
-    },
-    {
-        name: 'html-block',
-        text: '<div>\nfoo bar\n</div>',
-    },
-    {
-        name: 'table',
+    text: 'const foo = `bar`'
+  },
+  {
+    name: 'math-block',
+    text: 'a \\ne b',
+    meta: {
+      mathStyle: ''
+    }
+  },
+  {
+    name: 'html-block',
+    text: '<div>\nfoo bar\n</div>'
+  },
+  {
+    name: 'table',
+    children: [
+      {
+        name: 'table.row',
         children: [
-            {
-                name: 'table.row',
-                children: [
-                    { name: 'table.cell', meta: { align: 'right' }, text: 'foo' },
-                    { name: 'table.cell', meta: { align: 'none' }, text: 'bar' },
-                ],
-            },
-            {
-                name: 'table.row',
-                children: [
-                    { name: 'table.cell', meta: { align: 'right' }, text: 'zar' },
-                    { name: 'table.cell', meta: { align: 'none' }, text: 'foo bar' },
-                ],
-            },
-        ],
-    },
-    {
-        name: 'order-list',
-        meta: { start: 0, loose: true, delimiter: '.' },
+          { name: 'table.cell', meta: { align: 'right' }, text: 'foo' },
+          { name: 'table.cell', meta: { align: 'none' }, text: 'bar' }
+        ]
+      },
+      {
+        name: 'table.row',
         children: [
-            {
-                name: 'list-item',
-                children: [{ name: 'paragraph', text: 'foo\nbar' }],
-            },
-        ],
-    },
-    {
-        name: 'bullet-list',
-        meta: { marker: '-', loose: false },
+          { name: 'table.cell', meta: { align: 'right' }, text: 'zar' },
+          { name: 'table.cell', meta: { align: 'none' }, text: 'foo bar' }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'order-list',
+    meta: { start: 0, loose: true, delimiter: '.' },
+    children: [
+      {
+        name: 'list-item',
+        children: [{ name: 'paragraph', text: 'foo\nbar' }]
+      }
+    ]
+  },
+  {
+    name: 'bullet-list',
+    meta: { marker: '-', loose: false },
+    children: [
+      {
+        name: 'list-item',
         children: [
-            {
-                name: 'list-item',
-                children: [
-                    { name: 'paragraph', text: 'foo bar1' },
-                    { name: 'paragraph', text: 'foo bar2' },
-                ],
-            },
-        ],
-    },
-    {
-        name: 'task-list',
-        meta: { marker: '-' },
-        children: [
-            { name: 'task-list-item', meta: { checked: false }, children: [{ name: 'paragraph', text: 'a' }] },
-            { name: 'task-list-item', meta: { checked: true }, children: [{ name: 'paragraph', text: 'b' }] },
-        ],
-    },
-    { name: 'thematic-break', text: '---' },
-    {
-        name: 'block-quote',
-        children: [{ name: 'paragraph', text: 'foo\nbar' }],
-    },
-];
+          { name: 'paragraph', text: 'foo bar1' },
+          { name: 'paragraph', text: 'foo bar2' }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'task-list',
+    meta: { marker: '-' },
+    children: [
+      {
+        name: 'task-list-item',
+        meta: { checked: false },
+        children: [{ name: 'paragraph', text: 'a' }]
+      },
+      {
+        name: 'task-list-item',
+        meta: { checked: true },
+        children: [{ name: 'paragraph', text: 'b' }]
+      }
+    ]
+  },
+  { name: 'thematic-break', text: '---' },
+  {
+    name: 'block-quote',
+    children: [{ name: 'paragraph', text: 'foo\nbar' }]
+  }
+]
 
 // Playground markdown. Organized into ATX chapters so `muya.getTOC()` (in the
 // sidebar "Show TOC" button) doubles as a feature-coverage checklist. Each
@@ -432,4 +440,4 @@ Footnotes require \`footnote: true\` in the Muya options. A paragraph can refere
 # 16. Interaction Hints
 
 Most editing tools are triggered by mouse or keyboard inside the editor. See the **UI plugin hints** section in the left sidebar for the full list (paragraph menu, format toolbar, quick insert, emoji picker, table tools, image tools, code language picker, link tools, footnote tool, preview toolbar).
-`;
+`

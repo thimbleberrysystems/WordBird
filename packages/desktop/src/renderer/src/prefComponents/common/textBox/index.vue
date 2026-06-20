@@ -1,20 +1,8 @@
 <template>
-  <section
-    class="pref-text-box-item"
-    :class="{ 'ag-underdevelop': disable }"
-  >
-    <div
-      v-if="description"
-      class="description"
-      style="display: flex; align-items: center"
-    >
+  <section class="pref-text-box-item" :class="{ 'ag-underdevelop': disable }">
+    <div v-if="description" class="description" style="display: flex; align-items: center">
       <span>{{ description }}:</span>
-      <LinkIcon
-        v-if="more"
-        :size="14"
-        class="link-icon"
-        @click="handleMoreClick"
-      />
+      <LinkIcon v-if="more" :size="14" class="link-icon" @click="handleMoreClick" />
     </div>
     <el-input
       v-model="inputText"
@@ -27,10 +15,7 @@
       :show-password="type === 'password'"
       @input="handleInput"
     />
-    <div
-      v-if="notes"
-      class="notes"
-    >
+    <div v-if="notes" class="notes">
       {{ notes }}
     </div>
   </section>

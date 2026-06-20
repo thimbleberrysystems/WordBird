@@ -6,10 +6,7 @@
     <div class="pref-compound-body">
       <slot name="children" />
     </div>
-    <div
-      v-if="notes"
-      class="notes"
-    >
+    <div v-if="notes" class="notes">
       {{ notes }}
     </div>
   </section>

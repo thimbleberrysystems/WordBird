@@ -75,18 +75,18 @@ pnpm dev
 
 Run from the repo root — Turbo fans tasks out across packages.
 
-| Command | What it does |
-| --- | --- |
-| `pnpm dev` | Boot the examples Vite dev server (`turbo dev:demo`). |
-| `pnpm build` | `tsc && vite build` in `packages/core`. Emits `lib/{es,umd,cjs}` and `lib/types`. |
-| `pnpm test` | Vitest unit tests (`--passWithNoTests`). |
-| `pnpm coverage` | Vitest with Istanbul coverage (`@vitest/coverage-istanbul`). |
-| `pnpm lint` / `pnpm lint:fix` | ESLint (antfu base) over `packages/`. |
-| `pnpm lint:types` | `tsc --noEmit` per package. |
-| `pnpm lint:css` | Stylelint over all CSS. |
-| `pnpm check-circular` | `madge --circular packages/core/src/index.ts` — CI enforces this. |
-| `pnpm e2e` | Playwright suite (Chromium, port 5174). See `e2e/README.md`. |
-| `pnpm e2e:ui` | Playwright UI mode for interactive debugging. |
+| Command                       | What it does                                                                      |
+| ----------------------------- | --------------------------------------------------------------------------------- |
+| `pnpm dev`                    | Boot the examples Vite dev server (`turbo dev:demo`).                             |
+| `pnpm build`                  | `tsc && vite build` in `packages/core`. Emits `lib/{es,umd,cjs}` and `lib/types`. |
+| `pnpm test`                   | Vitest unit tests (`--passWithNoTests`).                                          |
+| `pnpm coverage`               | Vitest with Istanbul coverage (`@vitest/coverage-istanbul`).                      |
+| `pnpm lint` / `pnpm lint:fix` | ESLint (antfu base) over `packages/`.                                             |
+| `pnpm lint:types`             | `tsc --noEmit` per package.                                                       |
+| `pnpm lint:css`               | Stylelint over all CSS.                                                           |
+| `pnpm check-circular`         | `madge --circular packages/core/src/index.ts` — CI enforces this.                 |
+| `pnpm e2e`                    | Playwright suite (Chromium, port 5174). See `e2e/README.md`.                      |
+| `pnpm e2e:ui`                 | Playwright UI mode for interactive debugging.                                     |
 
 Scoped runs:
 

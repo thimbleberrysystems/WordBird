@@ -1,16 +1,16 @@
 ## Basic Text Formatting
 
-**Strong** text __Also Strong__
+**Strong** text **Also Strong**
 
 ~~strike~~ and `inline code`
 
 <u>under line</u> and 4<sup>3</sup> H<sub>2</sub>O
 
-*this is in italic*  and _so is this_
+_this is in italic_ and _so is this_
 
-**this is in bold**  and __so is this__
+**this is in bold** and **so is this**
 
-***this is bold and italic***  and ___so is this___
+**_this is bold and italic_** and **_so is this_**
 
 <b>this will be bold</b>
 
@@ -18,9 +18,9 @@
 
 <s>this is strike through text</s>
 
-So _a_ single _word_ followed _b_y _a_nother
+So _a_ single _word_ followed \_b_y \_a_nother
 
-So __a__ single __word__ followed __b__y __a__nother
+So **a** single **word** followed **b**y **a**nother
 
 ## Some markdown extensions
 

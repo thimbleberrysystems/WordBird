@@ -225,8 +225,6 @@ class App {
 
     // Initialize language settings
     const {
-      startUpAction,
-      defaultDirectoryToOpen,
       followSystemTheme,
       lastOpenedFolder,
       lightModeTheme,
@@ -396,9 +394,8 @@ class App {
           return
         }
 
-        const restoredRoot = (_openFilesCache.length > 0 && _openFilesCache[0].isDir)
-          ? _openFilesCache[0].path
-          : null
+        const restoredRoot =
+          _openFilesCache.length > 0 && _openFilesCache[0].isDir ? _openFilesCache[0].path : null
 
         bufferStoreList.forEach((bufferStoreInfo) => {
           // Read the buffer store file and pass the content
@@ -676,11 +673,11 @@ class App {
     })
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ipcMain.on('screen-capture', async(win: any) => {
+    ipcMain.on('screen-capture', async (win: any) => {
       if (isOsx) {
         // Use macOs `screencapture` command line when in macOs system.
         const screenshotFileName = await this.getScreenshotFileName()
-        exec('screencapture -i -c', async(err) => {
+        exec('screencapture -i -c', async (err) => {
           if (err) {
             log.error(err)
             return
@@ -789,7 +786,7 @@ class App {
       }
     })
 
-    ipcMain.on('mt::select-default-directory-to-open', async(e) => {
+    ipcMain.on('mt::select-default-directory-to-open', async (e) => {
       const { preferences } = this._accessor
       const { defaultDirectoryToOpen } = preferences.getAll()
       const win = BrowserWindow.fromWebContents(e.sender)
@@ -833,12 +830,12 @@ class App {
       return { defaultKeybindings, userKeybindings }
     })
 
-    ipcMain.handle('mt::keybinding-save-user-keybindings', async(_event, userKeybindings) => {
+    ipcMain.handle('mt::keybinding-save-user-keybindings', async (_event, userKeybindings) => {
       const { keybindings } = this._accessor
       return keybindings.setUserKeybindings(userKeybindings)
     })
 
-    ipcMain.handle('mt::fs-trash-item', async(_event, fullPath: string) => {
+    ipcMain.handle('mt::fs-trash-item', async (_event, fullPath: string) => {
       return shell.trashItem(fullPath)
     })
   }

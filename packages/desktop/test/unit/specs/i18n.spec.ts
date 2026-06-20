@@ -27,7 +27,7 @@ describe('renderer i18n language loading', () => {
     delete win.i18nUtils
   })
 
-  it('does not reload the default English locale', async() => {
+  it('does not reload the default English locale', async () => {
     const { setLanguage, getCurrentLanguage } = await import('../../../src/renderer/src/i18n')
 
     setLanguage('en')
@@ -36,7 +36,7 @@ describe('renderer i18n language loading', () => {
     expect(getCurrentLanguage()).to.equal('en')
   })
 
-  it('loads an unavailable locale only once', async() => {
+  it('loads an unavailable locale only once', async () => {
     const { setLanguage } = await import('../../../src/renderer/src/i18n')
 
     setLanguage('zh-CN')

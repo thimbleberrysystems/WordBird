@@ -1,31 +1,29 @@
 # Lists
 
-* an asterisk starts an unordered list
-* and this is another item in the list
-* and this is another item in the list
+- an asterisk starts an unordered list
+- and this is another item in the list
+- and this is another item in the list
 
 To start an ordered list, write this:
 
 <!-- Strange indentation -->
 
-1. this starts a list *with* numbers
+1. this starts a list _with_ numbers
 
 2. this will show as number "2"
 
 3. this will show as number "3."
 
-4. any number, +, -, or * will keep the list going.
-   
-   * just indent by 4 spaces (or tab) to make a sub-list
+4. any number, +, -, or \* will keep the list going.
+   - just indent by 4 spaces (or tab) to make a sub-list
      1. keep indenting for more sub lists
-   
-   * here i'm back to the second level
+   - here i'm back to the second level
 
 ---
 
-1) this starts a list *with* numbers
-2) this will show as number "2"
-3) this will show as number "3"
+1. this starts a list _with_ numbers
+2. this will show as number "2"
+3. this will show as number "3"
 
 ---
 
@@ -49,7 +47,7 @@ To start an ordered list, write this:
 ---
 
 - foo
-- 
+-
 - bar
 
 ---
@@ -74,33 +72,31 @@ To start an ordered list, write this:
 
 - foo
 - bar
-+ baz
-* foobar
-* qux
+
+* baz
+
+- foobar
+- qux
 
 ---
 
 1. foo
 2. bar
+
 4) baz
 
 ---
 
 1. foo
 2. bar
+
 1) baz
 
 ---
 
 - foo
 - bar
-+ foobar
-+ baz
 
----
-
-- foo
-- bar
 * foobar
 * baz
 
@@ -108,15 +104,26 @@ To start an ordered list, write this:
 
 - foo
 - bar
+
 * foobar
 * baz
-+ qux
-+ quux
 
 ---
 
 - foo
 - bar
+
+* foobar
+* baz
+
+- qux
+- quux
+
+---
+
+- foo
+- bar
+
 1. foobar
 2. baz
 
@@ -124,6 +131,7 @@ To start an ordered list, write this:
 
 1. foo
 2. bar
+
 - foobar
 - baz
 
@@ -131,13 +139,14 @@ To start an ordered list, write this:
 
 1. foo
 2. bar
+
 1) foobar
 2) baz
 
 ---
 
 - foo
-- 
+-
 - bar
 
 ## Failing Tests

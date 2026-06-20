@@ -12,6 +12,7 @@ git clone https://github.com/marktext/marktext.git
 
 The easiest way to build Marktext on Linux is from inside a container.
 Here are the steps for doing so:
+
 ```sh
 # cd to marktext repository
 
@@ -91,9 +92,10 @@ $ pnpm run <script>
 
 For more scripts please see `package.json`.
 
->[!TIP]
->To improve efficiency during development:
+> [!TIP]
+> To improve efficiency during development:
+>
 > 1. Use `pnpm run dev` for development mode. This will automatically reload the window when source code is modified.
 > 2. Use `Ctrl+R` to manually reload the application in development mode if needed.
-> 
+>
 > This approach bypasses unnecessary rebuilds and optimizes the developer workflow. However, for CI or release builds, a full rebuild may still be necessary.

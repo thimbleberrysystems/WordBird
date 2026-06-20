@@ -24,14 +24,14 @@ test.describe('Ripgrep IPC streaming', () => {
   let page: Page
   let fixtureDir: string | null = null
 
-  test.beforeAll(async() => {
+  test.beforeAll(async () => {
     fixtureDir = writeFixtureTree()
     const launched = await launchElectron()
     app = launched.app
     page = launched.page
   })
 
-  test.afterAll(async() => {
+  test.afterAll(async () => {
     if (app) await app.close().catch(() => {})
     if (fixtureDir) {
       try {
@@ -40,7 +40,7 @@ test.describe('Ripgrep IPC streaming', () => {
     }
   })
 
-  test('text search streams matches and resolves', async() => {
+  test('text search streams matches and resolves', async () => {
     interface RgMatch {
       filePath: string
     }
@@ -87,7 +87,7 @@ test.describe('Ripgrep IPC streaming', () => {
     expect(paths.some((p) => p.endsWith('three.md'))).toBe(true)
   })
 
-  test('file search (--files) streams paths', async() => {
+  test('file search (--files) streams paths', async () => {
     const files = await page.evaluate<string[], string>((directory) => {
       return new Promise<string[]>((resolve, reject) => {
         const searchId = 'fs-test-' + Math.random().toString(36).slice(2, 8)

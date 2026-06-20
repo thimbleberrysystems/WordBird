@@ -47,7 +47,7 @@ class LineEndingCommand {
     this._editorState = editorState
   }
 
-  run = async(): Promise<void> => {
+  run = async (): Promise<void> => {
     const { lineEnding } = this._editorState.currentFile
     if (lineEnding === 'crlf') {
       this.subcommandSelectedIndex = 0
@@ -60,13 +60,13 @@ class LineEndingCommand {
     }
   }
 
-  execute = async(): Promise<void> => {
+  execute = async (): Promise<void> => {
     // Timeout to hide the command palette and then show again to prevent issues.
     await delay(100)
     bus.emit('show-command-palette', this)
   }
 
-  executeSubcommand = async(_: string, value: 'crlf' | 'lf'): Promise<void> => {
+  executeSubcommand = async (_: string, value: 'crlf' | 'lf'): Promise<void> => {
     bus.emit('mt::set-line-ending', value)
   }
 

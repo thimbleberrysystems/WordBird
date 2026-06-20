@@ -27,16 +27,19 @@ Compatibility
 - [ ] Edge.**(P0)**
 
 Documents
+
 - [ ] Website(docs, demo)**(P0)**
 - [ ] Documents.**(P0)**
 - [ ] Comments
 
 CI and CD
+
 - [x] Optimization of build process，replace webpack with vite and build using rollup
 - [x] Speed up the development process and replace webpack with vite
 - [ ] Add and publish Github Action, modify the version number of the package.json, automatically tag and publish the new version to npm after merging or push to master
 
 Test
+
 - [ ] Unit test(P1)
 - [ ] e2e test(Optional)
 

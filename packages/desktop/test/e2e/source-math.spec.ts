@@ -23,7 +23,7 @@ interface CMInstance {
   getTokenAt(pos: { line: number; ch: number }, precise?: boolean): unknown
 }
 
-const readSourceState = async(page: Page) => {
+const readSourceState = async (page: Page) => {
   await page.waitForFunction(
     () => {
       const root = document.querySelector('.source-code .CodeMirror') as
@@ -53,18 +53,18 @@ test.describe('Source view: math tokenization (#4121)', () => {
   let app: ElectronApplication
   let page: Page
 
-  test.beforeAll(async() => {
+  test.beforeAll(async () => {
     const launched = await launchWithMarkdown(FIXTURE)
     app = launched.app
     page = launched.page
     await enterSourceMode(page, app)
   })
 
-  test.afterAll(async() => {
+  test.afterAll(async () => {
     if (app) await app.close()
   })
 
-  test('underscores inside $...$ are not styled as Markdown emphasis', async() => {
+  test('underscores inside $...$ are not styled as Markdown emphasis', async () => {
     const { emTexts, mathInline } = await readSourceState(page)
     // There is no Markdown emphasis (`_word_` or `*word*`) outside math in the
     // fixture, so any `.cm-em` span proves the bug.
@@ -73,12 +73,12 @@ test.describe('Source view: math tokenization (#4121)', () => {
     expect(mathInline).toBeGreaterThan(0)
   })
 
-  test('underscores inside $$...$$ block math are not styled as emphasis', async() => {
+  test('underscores inside $$...$$ block math are not styled as emphasis', async () => {
     const { mathBlock } = await readSourceState(page)
     expect(mathBlock).toBeGreaterThan(0)
   })
 
-  test('a lone $ followed by no closing $ does not enter math mode', async() => {
+  test('a lone $ followed by no closing $ does not enter math mode', async () => {
     // The fixture's last paragraph has `$5 ... $10 only.` (no third $),
     // so any `$` after the second one must not start an unbounded math span.
     const lastLineHasMath = await page.evaluate(() => {

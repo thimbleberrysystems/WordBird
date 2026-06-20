@@ -1,4 +1,4 @@
-import type { Muya } from '../muya';
+import type { Muya } from '../muya'
 
 // Block constructor signature stored in `ScrollPage.registeredBlocks` and
 // returned from `ScrollPage.loadBlock`. The registry holds heterogeneous
@@ -12,10 +12,10 @@ import type { Muya } from '../muya';
 // the args (contravariant) so it accepts any concrete subclass signature
 // like `new (muya: Muya, state: IAtxHeadingState)`.
 export interface IConstructor<T> {
-    blockName: string;
-    // eslint-disable-next-line ts/no-explicit-any
-    create: (muya: Muya, state: any) => any;
-    new (...args: never[]): T;
+  blockName: string
+  // eslint-disable-next-line ts/no-explicit-any
+  create: (muya: Muya, state: any) => any
+  new (...args: never[]): T
 }
 
-export type TBlockPath = (string | number)[];
+export type TBlockPath = (string | number)[]

@@ -9,46 +9,46 @@ example NOT listed must continue to pass. Net result: compliance can only
 go up.
 
 Spec runners call `renderToStaticHTML(..., { sanitize: false })` — they
-measure the *parser*'s spec compliance, not the DOMPurify sanitiser
+measure the _parser_'s spec compliance, not the DOMPurify sanitiser
 (which is correctly aggressive and would strip raw-HTML allowance examples).
 
 ## Headline
 
-| Suite | Passed | Total | Pass rate |
-|---|---|---|---|
-| CommonMark 0.31 | 572 | 652 | 87.7% |
-| GFM 0.29-gfm | 580 | 672 | 86.3% |
+| Suite           | Passed | Total | Pass rate |
+| --------------- | ------ | ----- | --------- |
+| CommonMark 0.31 | 572    | 652   | 87.7%     |
+| GFM 0.29-gfm    | 580    | 672   | 86.3%     |
 
 ## CommonMark 0.31 — pass rate by section
 
-| Section | Passed | Total | Pass rate |
-|---|---|---|---|
-| ATX headings | 17 | 18 | 94.4% |
-| Autolinks | 14 | 19 | 73.7% |
-| Backslash escapes | 12 | 13 | 92.3% |
-| Blank lines | 1 | 1 | 100.0% |
-| Block quotes | 23 | 25 | 92.0% |
-| Code spans | 22 | 22 | 100.0% |
-| Emphasis and strong emphasis | 132 | 132 | 100.0% |
-| Entity and numeric character references | 5 | 17 | 29.4% |
-| Fenced code blocks | 28 | 29 | 96.6% |
-| Hard line breaks | 14 | 15 | 93.3% |
-| HTML blocks | 41 | 44 | 93.2% |
-| Images | 21 | 22 | 95.5% |
-| Indented code blocks | 11 | 12 | 91.7% |
-| Inlines | 1 | 1 | 100.0% |
-| Link reference definitions | 26 | 27 | 96.3% |
-| Links | 75 | 90 | 83.3% |
-| List items | 42 | 48 | 87.5% |
-| Lists | 20 | 26 | 76.9% |
-| Paragraphs | 4 | 8 | 50.0% |
-| Precedence | 1 | 1 | 100.0% |
-| Raw HTML | 18 | 20 | 90.0% |
-| Setext headings | 22 | 27 | 81.5% |
-| Soft line breaks | 1 | 2 | 50.0% |
-| Tabs | 1 | 11 | 9.1% |
-| Textual content | 2 | 3 | 66.7% |
-| Thematic breaks | 18 | 19 | 94.7% |
+| Section                                 | Passed | Total | Pass rate |
+| --------------------------------------- | ------ | ----- | --------- |
+| ATX headings                            | 17     | 18    | 94.4%     |
+| Autolinks                               | 14     | 19    | 73.7%     |
+| Backslash escapes                       | 12     | 13    | 92.3%     |
+| Blank lines                             | 1      | 1     | 100.0%    |
+| Block quotes                            | 23     | 25    | 92.0%     |
+| Code spans                              | 22     | 22    | 100.0%    |
+| Emphasis and strong emphasis            | 132    | 132   | 100.0%    |
+| Entity and numeric character references | 5      | 17    | 29.4%     |
+| Fenced code blocks                      | 28     | 29    | 96.6%     |
+| Hard line breaks                        | 14     | 15    | 93.3%     |
+| HTML blocks                             | 41     | 44    | 93.2%     |
+| Images                                  | 21     | 22    | 95.5%     |
+| Indented code blocks                    | 11     | 12    | 91.7%     |
+| Inlines                                 | 1      | 1     | 100.0%    |
+| Link reference definitions              | 26     | 27    | 96.3%     |
+| Links                                   | 75     | 90    | 83.3%     |
+| List items                              | 42     | 48    | 87.5%     |
+| Lists                                   | 20     | 26    | 76.9%     |
+| Paragraphs                              | 4      | 8     | 50.0%     |
+| Precedence                              | 1      | 1     | 100.0%    |
+| Raw HTML                                | 18     | 20    | 90.0%     |
+| Setext headings                         | 22     | 27    | 81.5%     |
+| Soft line breaks                        | 1      | 2     | 50.0%     |
+| Tabs                                    | 1      | 11    | 9.1%      |
+| Textual content                         | 2      | 3     | 66.7%     |
+| Thematic breaks                         | 18     | 19    | 94.7%     |
 
 ### Failing examples (CommonMark 0.31)
 
@@ -58,39 +58,39 @@ measure the *parser*'s spec compliance, not the DOMPurify sanitiser
 
 ## GFM 0.29-gfm — pass rate by section
 
-| Section | Passed | Total | Pass rate |
-|---|---|---|---|
-| ATX headings | 17 | 18 | 94.4% |
-| Autolinks | 14 | 19 | 73.7% |
-| Autolinks (extension) | 9 | 11 | 81.8% |
-| Backslash escapes | 12 | 13 | 92.3% |
-| Blank lines | 1 | 1 | 100.0% |
-| Block quotes | 23 | 25 | 92.0% |
-| Code spans | 22 | 22 | 100.0% |
-| Disallowed Raw HTML (extension) | 0 | 1 | 0.0% |
-| Emphasis and strong emphasis | 122 | 131 | 93.1% |
-| Entity and numeric character references | 5 | 17 | 29.4% |
-| Fenced code blocks | 28 | 29 | 96.6% |
-| Hard line breaks | 14 | 15 | 93.3% |
-| HTML blocks | 40 | 43 | 93.0% |
-| Images | 21 | 22 | 95.5% |
-| Indented code blocks | 11 | 12 | 91.7% |
-| Inlines | 1 | 1 | 100.0% |
-| Link reference definitions | 27 | 28 | 96.4% |
-| Links | 73 | 87 | 83.9% |
-| List items | 42 | 48 | 87.5% |
-| Lists | 20 | 26 | 76.9% |
-| Paragraphs | 4 | 8 | 50.0% |
-| Precedence | 1 | 1 | 100.0% |
-| Raw HTML | 18 | 20 | 90.0% |
-| Setext headings | 22 | 27 | 81.5% |
-| Soft line breaks | 1 | 2 | 50.0% |
-| Strikethrough (extension) | 2 | 2 | 100.0% |
-| Tables (extension) | 8 | 8 | 100.0% |
-| Tabs | 1 | 11 | 9.1% |
-| Task list items (extension) | 1 | 2 | 50.0% |
-| Textual content | 2 | 3 | 66.7% |
-| Thematic breaks | 18 | 19 | 94.7% |
+| Section                                 | Passed | Total | Pass rate |
+| --------------------------------------- | ------ | ----- | --------- |
+| ATX headings                            | 17     | 18    | 94.4%     |
+| Autolinks                               | 14     | 19    | 73.7%     |
+| Autolinks (extension)                   | 9      | 11    | 81.8%     |
+| Backslash escapes                       | 12     | 13    | 92.3%     |
+| Blank lines                             | 1      | 1     | 100.0%    |
+| Block quotes                            | 23     | 25    | 92.0%     |
+| Code spans                              | 22     | 22    | 100.0%    |
+| Disallowed Raw HTML (extension)         | 0      | 1     | 0.0%      |
+| Emphasis and strong emphasis            | 122    | 131   | 93.1%     |
+| Entity and numeric character references | 5      | 17    | 29.4%     |
+| Fenced code blocks                      | 28     | 29    | 96.6%     |
+| Hard line breaks                        | 14     | 15    | 93.3%     |
+| HTML blocks                             | 40     | 43    | 93.0%     |
+| Images                                  | 21     | 22    | 95.5%     |
+| Indented code blocks                    | 11     | 12    | 91.7%     |
+| Inlines                                 | 1      | 1     | 100.0%    |
+| Link reference definitions              | 27     | 28    | 96.4%     |
+| Links                                   | 73     | 87    | 83.9%     |
+| List items                              | 42     | 48    | 87.5%     |
+| Lists                                   | 20     | 26    | 76.9%     |
+| Paragraphs                              | 4      | 8     | 50.0%     |
+| Precedence                              | 1      | 1     | 100.0%    |
+| Raw HTML                                | 18     | 20    | 90.0%     |
+| Setext headings                         | 22     | 27    | 81.5%     |
+| Soft line breaks                        | 1      | 2     | 50.0%     |
+| Strikethrough (extension)               | 2      | 2     | 100.0%    |
+| Tables (extension)                      | 8      | 8     | 100.0%    |
+| Tabs                                    | 1      | 11    | 9.1%      |
+| Task list items (extension)             | 1      | 2     | 50.0%     |
+| Textual content                         | 2      | 3     | 66.7%     |
+| Thematic breaks                         | 18     | 19    | 94.7%     |
 
 ### Failing examples (GFM 0.29-gfm)
 

@@ -9,7 +9,7 @@ const runFixture = (name: string, relativePath: string, assertion: FixtureAssert
     let app: ElectronApplication | null = null
     let page: Page
 
-    test.beforeAll(async() => {
+    test.beforeAll(async () => {
       const launched = await launchWithDoc(relativePath)
       app = launched.app
       page = launched.page
@@ -17,55 +17,55 @@ const runFixture = (name: string, relativePath: string, assertion: FixtureAssert
       await page.waitForTimeout(800)
     })
 
-    test.afterAll(async() => {
+    test.afterAll(async () => {
       if (app) await app.close()
     })
 
-    test(`${name} renders expected DOM`, async() => {
+    test(`${name} renders expected DOM`, async () => {
       await assertion({ page })
     })
   })
 }
 
-runFixture('table', 'test/e2e/data/table.md', async({ page }) => {
+runFixture('table', 'test/e2e/data/table.md', async ({ page }) => {
   await page.waitForSelector('.editor-component table', { state: 'attached', timeout: 10000 })
   const cellCount = await page.locator('.editor-component table tbody td').count()
   expect(cellCount).toBeGreaterThanOrEqual(6)
 })
 
-runFixture('lists', 'test/e2e/data/lists.md', async({ page }) => {
+runFixture('lists', 'test/e2e/data/lists.md', async ({ page }) => {
   await page.waitForSelector('.editor-component ul li', { state: 'attached', timeout: 10000 })
   await page.waitForSelector('.editor-component ol li', { state: 'attached', timeout: 10000 })
   const checkboxes = await page.locator('.editor-component input[type="checkbox"]').count()
   expect(checkboxes).toBeGreaterThanOrEqual(2)
 })
 
-runFixture('code', 'test/e2e/data/code.md', async({ page }) => {
+runFixture('code', 'test/e2e/data/code.md', async ({ page }) => {
   const codeBlocks = await page
     .locator('.editor-component pre, .editor-component .ag-code-block, .editor-component code')
     .count()
   expect(codeBlocks).toBeGreaterThan(0)
 })
 
-runFixture('blockquote', 'test/e2e/data/blockquote.md', async({ page }) => {
+runFixture('blockquote', 'test/e2e/data/blockquote.md', async ({ page }) => {
   await page.waitForSelector('.editor-component blockquote', { state: 'attached', timeout: 10000 })
   const count = await page.locator('.editor-component blockquote').count()
   expect(count).toBeGreaterThanOrEqual(1)
 })
 
-runFixture('link-image', 'test/e2e/data/link-image.md', async({ page }) => {
+runFixture('link-image', 'test/e2e/data/link-image.md', async ({ page }) => {
   await page.waitForSelector('.editor-component a[href]', { state: 'attached', timeout: 10000 })
   const linkCount = await page.locator('.editor-component a[href]').count()
   expect(linkCount).toBeGreaterThanOrEqual(1)
 })
 
-runFixture('gfm', 'test/e2e/data/gfm.md', async({ page }) => {
+runFixture('gfm', 'test/e2e/data/gfm.md', async ({ page }) => {
   const strike = await page.locator('.editor-component del, .editor-component s').count()
   const checkboxes = await page.locator('.editor-component input[type="checkbox"]').count()
   expect(strike + checkboxes).toBeGreaterThan(0)
 })
 
-runFixture('frontmatter', 'test/e2e/data/frontmatter.md', async({ page }) => {
+runFixture('frontmatter', 'test/e2e/data/frontmatter.md', async ({ page }) => {
   const hasFront = await page
     .locator(
       '.editor-component .ag-front-matter, .editor-component pre[data-role="FRONT_MATTER"], .editor-component pre.ag-front-matter'
@@ -78,7 +78,7 @@ runFixture('frontmatter', 'test/e2e/data/frontmatter.md', async({ page }) => {
   expect(hasFront || h1 > 0).toBe(true)
 })
 
-runFixture('math', 'test/e2e/data/math.md', async({ page }) => {
+runFixture('math', 'test/e2e/data/math.md', async ({ page }) => {
   // KaTeX renders to .katex; fall back to muya math container if KaTeX has not run yet.
   const ok = await page
     .locator(
@@ -91,7 +91,7 @@ runFixture('math', 'test/e2e/data/math.md', async({ page }) => {
   expect(ok).toBe(true)
 })
 
-runFixture('formatted', 'test/e2e/data/formatted.md', async({ page }) => {
+runFixture('formatted', 'test/e2e/data/formatted.md', async ({ page }) => {
   const strong = await page.locator('.editor-component strong').count()
   const em = await page.locator('.editor-component em').count()
   const code = await page.locator('.editor-component code').count()
@@ -102,7 +102,7 @@ runFixture('formatted', 'test/e2e/data/formatted.md', async({ page }) => {
 
 // Regression coverage for marktext#4341 — a ul nested inside an ol li (and
 // vice versa) was rewritten into a paragraph by the legacy muya lexer.
-runFixture('nested-mixed-lists', 'test/e2e/data/nested-mixed-lists.md', async({ page }) => {
+runFixture('nested-mixed-lists', 'test/e2e/data/nested-mixed-lists.md', async ({ page }) => {
   await page.waitForSelector('.editor-component ol li ul li', { state: 'attached', timeout: 10000 })
   await page.waitForSelector('.editor-component ul li ol li', { state: 'attached', timeout: 10000 })
   const ulInOl = await page.locator('.editor-component ol > li ul > li').count()

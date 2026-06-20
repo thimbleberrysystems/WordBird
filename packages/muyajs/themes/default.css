@@ -205,12 +205,24 @@ kbd {
     color: var(--headingColor);
   }
 
-  h1 { color: var(--h1Color); }
-  h2 { color: var(--h2Color); }
-  h3 { color: var(--h3Color); }
-  h4 { color: var(--h4Color); }
-  h5 { color: var(--h5Color); }
-  h6 { color: var(--h6Color); }
+  h1 {
+    color: var(--h1Color);
+  }
+  h2 {
+    color: var(--h2Color);
+  }
+  h3 {
+    color: var(--h3Color);
+  }
+  h4 {
+    color: var(--h4Color);
+  }
+  h5 {
+    color: var(--h5Color);
+  }
+  h6 {
+    color: var(--h6Color);
+  }
 
   h1:hover a.anchor,
   h2:hover a.anchor,
@@ -671,6 +683,22 @@ kbd {
     border-left-color: transparent;
     border-right-color: transparent;
   }
+
+  /* Agentic edit diff highlighting */
+  .ag-diff-added {
+    background-color: var(--editorColor05);
+    border-left: 3px solid var(--successColor, #28a745);
+  }
+
+  .ag-diff-removed {
+    background-color: var(--editorColor08);
+    border-left: 3px solid var(--dangerColor, #dc3545);
+  }
+
+  .ag-diff-modified {
+    background-color: var(--editorColor05);
+    border-left: 3px solid var(--successColor, #28a745);
+  }
 } /* end not print */
 
 @media print {
@@ -717,4 +745,74 @@ figure[data-role] svg use[fill='black'] {
 
 figure[data-role] svg use[fill='#000000'] {
   fill: var(--editorColor);
+}
+
+/* Agentic diff highlighting for inline edit proposals */
+.ag-diff-added {
+  background-color: rgba(46, 160, 67, 0.14);
+  border-left: 3px solid rgba(46, 160, 67, 0.6);
+}
+
+.ag-diff-removed {
+  background-color: rgba(218, 54, 51, 0.14);
+  border-left: 3px solid rgba(218, 54, 51, 0.6);
+}
+
+.ag-diff-modified {
+  background-color: rgba(46, 160, 67, 0.14);
+  border-left: 3px solid rgba(46, 160, 67, 0.6);
+}
+
+/* Inline diff toolbar — injected by editor.vue directly into Muya's scroll container */
+.muya-diff-inline-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 6px;
+  margin: 0 0 2px 0;
+  background: transparent;
+  border-left: 3px solid rgba(46, 160, 67, 0.6);
+  user-select: none;
+  font-size: 12px;
+  line-height: 1;
+  contenteditable: false;
+}
+
+.muya-diff-inline-toolbar__label {
+  color: rgba(46, 160, 67, 0.9);
+  font-weight: 500;
+  flex: 1;
+}
+
+.muya-diff-inline-toolbar__btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  background: transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.muya-diff-inline-toolbar__accept {
+  color: rgba(46, 160, 67, 1);
+  border-color: rgba(46, 160, 67, 0.4);
+}
+
+.muya-diff-inline-toolbar__accept:hover {
+  background: rgba(46, 160, 67, 0.12);
+  border-color: rgba(46, 160, 67, 0.7);
+}
+
+.muya-diff-inline-toolbar__reject {
+  color: rgba(218, 54, 51, 1);
+  border-color: rgba(218, 54, 51, 0.4);
+}
+
+.muya-diff-inline-toolbar__reject:hover {
+  background: rgba(218, 54, 51, 0.1);
+  border-color: rgba(218, 54, 51, 0.7);
 }

@@ -23,12 +23,12 @@ always use `mt::`.
 
 `src/shared/types/ipc.ts` defines four interfaces:
 
-| Interface              | Direction          | Semantics                                  |
-| ---------------------- | ------------------ | ------------------------------------------ |
-| `IpcInvokeChannels`    | renderer → main    | `Promise<T>` round-trip (`ipcMain.handle`) |
-| `IpcSendChannels`      | renderer → main    | fire-and-forget (`ipcMain.on`)             |
-| `IpcSyncChannels`      | renderer → main    | synchronous reply (`event.returnValue`)    |
-| `IpcMainEventChannels` | main → renderer    | push event (`webContents.send` / on)       |
+| Interface              | Direction       | Semantics                                  |
+| ---------------------- | --------------- | ------------------------------------------ |
+| `IpcInvokeChannels`    | renderer → main | `Promise<T>` round-trip (`ipcMain.handle`) |
+| `IpcSendChannels`      | renderer → main | fire-and-forget (`ipcMain.on`)             |
+| `IpcSyncChannels`      | renderer → main | synchronous reply (`event.returnValue`)    |
+| `IpcMainEventChannels` | main → renderer | push event (`webContents.send` / on)       |
 
 Each entry tells you the args tuple and (for invoke/sync) the return
 type:

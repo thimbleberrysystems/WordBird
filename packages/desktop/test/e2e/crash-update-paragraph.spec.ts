@@ -29,9 +29,7 @@ import {
 // being exercised (the #2099 report describes "fresh file", whereas the
 // menu-driven tests need a paragraph to mutate). Keeping launch inside the
 // test also makes failures easier to attribute to the right recipe.
-const launchAndReady = async(
-  seed: string
-): Promise<{ app: ElectronApplication; page: Page }> => {
+const launchAndReady = async (seed: string): Promise<{ app: ElectronApplication; page: Page }> => {
   const launched = await launchWithMarkdown(seed, { suppressErrorDialog: true })
   await waitForMenuReady(launched.app)
   await placeCaretInEditor(launched.page)
@@ -40,7 +38,7 @@ const launchAndReady = async(
 }
 
 test.describe('Crash: updateParagraph null block', () => {
-  test('Issue #2099: type @ in fresh file then select Header 1', async() => {
+  test('Issue #2099: type @ in fresh file then select Header 1', async () => {
     // Fresh file = empty markdown. The #2099 report specifically says "opened
     // a new file" — seeding with anything else changes the recipe.
     const { app, page } = await launchAndReady('')
@@ -68,7 +66,7 @@ test.describe('Crash: updateParagraph null block', () => {
     }
   })
 
-  test('Delete a paragraph then invoke Heading 1 menu immediately', async() => {
+  test('Delete a paragraph then invoke Heading 1 menu immediately', async () => {
     const { app, page } = await launchAndReady('# Doc\n\nFirst para.\n\nSecond para.\n')
     try {
       // Position at end of "Second para." and select the line backwards.
@@ -106,7 +104,7 @@ test.describe('Crash: updateParagraph null block', () => {
     }
   })
 
-  test('Rapid alternation between Paragraph/Heading menu items', async() => {
+  test('Rapid alternation between Paragraph/Heading menu items', async () => {
     const { app, page } = await launchAndReady('# Doc\n\nFirst para.\n\nSecond para.\n')
     try {
       for (let i = 0; i < 6; i++) {

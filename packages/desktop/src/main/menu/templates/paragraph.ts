@@ -3,7 +3,7 @@ import * as actions from '../actions/paragraph'
 import { t } from '../../i18n'
 import type Keybindings from '../../keyboard/shortcutHandler'
 
-export default function(keybindings: Keybindings): MenuItemConstructorOptions {
+export default function (keybindings: Keybindings): MenuItemConstructorOptions {
   return {
     id: 'paragraphMenuEntry',
     label: t('menu.paragraph.title'),

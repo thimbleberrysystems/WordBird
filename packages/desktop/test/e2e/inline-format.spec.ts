@@ -26,18 +26,18 @@ test.describe('Inline format menu wiring', () => {
   let app: ElectronApplication
   let page: Page
 
-  test.beforeAll(async() => {
+  test.beforeAll(async () => {
     const launched = await launchWithMarkdown('format wiring target\n')
     app = launched.app
     page = launched.page
   })
 
-  test.afterAll(async() => {
+  test.afterAll(async () => {
     if (app) await app.close()
   })
 
   for (const id of formatMenuIds) {
-    test(`Menu ${id} invokes without crash`, async() => {
+    test(`Menu ${id} invokes without crash`, async () => {
       await clickMenuById(app, id)
       const crashed = await app.evaluate(({ BrowserWindow }) =>
         BrowserWindow.getAllWindows()[0].webContents.isCrashed()
