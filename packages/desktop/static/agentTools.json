@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "enabled": true,
+  "tools": [
+    {
+      "id": "read_project_file",
+      "name": "read_project_file",
+      "displayName": "Read file",
+      "description": "Read text from a project-scoped file or line range. Use this to inspect existing content before proposing edits.",
+      "handler": "read_project_file",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "fname": {
+            "type": "string",
+            "description": "Project-relative path or absolute path within the active WordBird project."
+          },
+          "start": {
+            "type": "integer",
+            "description": "Optional inclusive 1-based start line."
+          },
+          "end": {
+            "type": "integer",
+            "description": "Optional inclusive 1-based end line."
+          }
+        },
+        "required": ["fname"]
+      }
+    },
+    {
+      "id": "propose_project_file_edit",
+      "name": "propose_project_file_edit",
+      "displayName": "Propose file edit",
+      "description": "Propose a project-scoped file replacement or line-range edit. This tool must not write directly; it returns an edit proposal for renderer/user review.",
+      "handler": "propose_project_file_edit",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "renderer",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "fname": {
+            "type": "string",
+            "description": "Project-relative path or absolute path within the active WordBird project."
+          },
+          "newdata": {
+            "type": "string",
+            "description": "Replacement content for the whole file or selected range."
+          },
+          "start": {
+            "type": "integer",
+            "description": "Optional inclusive 1-based start line for range replacement."
+          },
+          "end": {
+            "type": "integer",
+            "description": "Optional inclusive 1-based end line for range replacement."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Optional human-readable explanation for the proposed edit."
+          }
+        },
+        "required": ["fname", "newdata"]
+      }
+    }
+  ]
+}

@@ -1,26 +1,59 @@
+import path from 'path'
+import { BrowserWindow } from 'electron'
+import log from 'electron-log'
 import { ChatOpenAI } from '@langchain/openai'
 import { ChatAnthropic } from '@langchain/anthropic'
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
 import { ChatOllama } from '@langchain/ollama'
-import { BaseChatModel } from '@langchain/core/language_models/chat_models'
+import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
+import type { Runnable } from '@langchain/core/runnables'
 import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages'
-import { StateGraph, StateSchema, MessagesValue } from '@langchain/langgraph'
-import type { AIProvider, IAIConfig, ILangGraphMessage, ILangGraphResponse } from '../../../shared/types/langgraph'
+import { StateGraph, MessagesAnnotation } from '@langchain/langgraph'
+import { ToolNode, toolsCondition } from '@langchain/langgraph/prebuilt'
+import type {
+  IAIConfig,
+  ILangGraphMessage,
+  ILangGraphResponse,
+  IAgentToolCall,
+  IAgentToolResult,
+  IAgentApplyEditRequest
+} from '../../../shared/types/langgraph'
+import type { AIProvider } from '../../../shared/constants/ai'
 import { PROVIDER_BASE_URLS, PROVIDER_DEFAULT_MODELS } from '../../../shared/constants/ai'
 import axios from 'axios'
+import { AgentToolService, AgentToolPackLoader } from './AgentToolService'
+import { registerBuiltInAgentToolHandlers } from './AgentToolHandlers'
+import { getActiveAgentProjectRoot, setAgentToolAccessor } from './AgentProjectRootResolver'
+import type Accessor from '../../app/accessor'
 
-// Define the shape of our graph state
-const AgentState = new StateSchema({
-  messages: MessagesValue
-})
+type CompiledAgent = {
+  invoke: (
+    state: { messages: unknown[] },
+    opts?: { signal?: AbortSignal; recursionLimit?: number }
+  ) => Promise<unknown>
+}
+
+const buildBiscuitSystemPrompt = (toolDescriptions: string): string =>
+  'You are Biscuit, an AI assistant integrated into WordBird markdown editor. ' +
+  'You have access to these tools:\n\n' +
+  toolDescriptions +
+  '\n\nCRITICAL INSTRUCTIONS:\n' +
+  '1. When the user asks you to write or modify a file, use the propose_project_file_edit tool.\n' +
+  '2. ALWAYS use read_project_file first to check existing content before proposing changes.\n' +
+  '3. After you propose an edit, IMMEDIATELY STOP calling tools and provide a natural language response.\n' +
+  '4. NEVER call tools again after proposing an edit - the user will see the diff and can apply it.\n' +
+  '5. If you already proposed an edit, just respond with a summary - do NOT call any more tools.\n\n' +
+  'Example response after proposing an edit:\n' +
+  '"I\'ve shortened the README.md file. The changes have been proposed and are ready for your review. Click Apply to accept them."'
 
 export class LangGraphManager {
-  // Using unknown to avoid strict type conflicts with LangGraph's CompiledGraph
-  // The invoke method is called dynamically with the expected signature
-  private _agent: unknown | null = null
+  private _agent: CompiledAgent | null = null
   private _currentProvider: AIProvider | null = null
   private _currentModel: string | null = null
   private _currentAbortController: AbortController | null = null
+  private _agentToolService: AgentToolService = new AgentToolService()
+  private _systemPromptAdded: boolean = false
+  private _editProposed: boolean = false
 
   public get isConnected(): boolean {
     return !!this._agent
@@ -49,31 +82,78 @@ export class LangGraphManager {
     }
   }
 
+  setAccessor(accessor: Accessor): void {
+    setAgentToolAccessor(accessor)
+  }
+
+  private _getMainWindow(): BrowserWindow | null {
+    return BrowserWindow.getAllWindows()[0] ?? null
+  }
+
+  private async _loadToolPacks(): Promise<void> {
+    registerBuiltInAgentToolHandlers(this._agentToolService)
+
+    const loader = new AgentToolPackLoader(this._agentToolService.getKnownHandlerIds())
+
+    const bundledPackPath = path.join(global.__static, 'agentTools.json')
+    log.info('[LangGraphMain] Loading bundled tool pack from:', bundledPackPath)
+    try {
+      const bundledPack = await loader.loadPackIfPresent(bundledPackPath)
+      if (bundledPack) {
+        log.info('[LangGraphMain] Bundled tool pack loaded, enabled:', bundledPack.enabled, 'tools:', bundledPack.tools.length)
+        this._agentToolService.loadToolPack(bundledPack)
+      } else {
+        log.warn('[LangGraphMain] Bundled tool pack not found or not present')
+      }
+    } catch (err) {
+      log.warn('[LangGraphMain] Failed to load bundled agent tools:', err)
+    }
+
+    const projectRoot = getActiveAgentProjectRoot()
+    if (projectRoot) {
+      const projectPackPath = path.join(projectRoot, '.wordbird', 'agent-tools.json')
+      try {
+        const projectPack = await loader.loadPackIfPresent(projectPackPath)
+        if (projectPack) {
+          this._agentToolService.loadToolPack(projectPack)
+        }
+      } catch (err) {
+        log.warn('[LangGraphMain] Failed to load project agent tools:', err)
+      }
+    }
+
+    this._agentToolService.setProjectRoot(projectRoot)
+  }
+
   async connect(config: IAIConfig): Promise<void> {
     const { provider, apiKey, baseUrl } = config
     this._currentProvider = provider
     this._currentModel = config.model || null
 
     try {
-      // 1. Test connectivity and credentials FIRST
-      const models = await this.fetchModels(provider, apiKey, baseUrl)
-      
-      if (models && models.length > 0) {
-        // Models found
-      } else {
-        // For Ollama providers, models list may be empty but we can still proceed
-        // For other providers, we'll still try to connect - the model client will validate
-      }
+      await this.fetchModels(provider, apiKey, baseUrl)
 
-      // 2. Only build the model client and graph AFTER validation succeeds
-      this._agent = null 
-      
+      await this._loadToolPacks()
+      this._agentToolService.setEditProposalEmitter(async(proposal) => {
+        log.debug('[LangGraphMain] ToolNode edit proposal emitter received:', proposal)
+        const mainWindow = this._getMainWindow()
+        if (mainWindow) {
+          mainWindow.webContents.send('mt::ai:edit-proposal', proposal)
+        } else {
+          log.warn('[LangGraphMain] No main window available for ToolNode edit proposal')
+        }
+      })
+
+      this._agent = null
+
       const modelClient = this._createChatModel(config)
-      
-      this._agent = this._buildGraph(modelClient)
+      const tools = this._agentToolService.getLangChainTools()
+      const modelWithTools =
+        tools.length && modelClient.bindTools ? modelClient.bindTools(tools) : modelClient
 
+      this._agent = this._buildGraph(modelWithTools as Runnable, tools)
     } catch (error) {
-      console.error('[LangGraphMain] Connect error details:', error)
+      log.error('[LangGraphMain] Connect error details:', error)
       this.disconnect()
       const errorMessage = error instanceof Error ? error.message : String(error)
       throw new Error(`Failed to connect to ${provider}: ${errorMessage}`)
@@ -84,33 +164,51 @@ export class LangGraphManager {
     this._agent = null
     this._currentProvider = null
     this._currentModel = null
+    this._systemPromptAdded = false
+    this._editProposed = false
   }
 
   async fetchModels(provider: AIProvider, apiKey: string, baseUrl?: string): Promise<string[]> {
     const actualBaseUrl = baseUrl || PROVIDER_BASE_URLS[provider]
-    
+
     try {
-      if (provider === 'openai' || provider === 'ollama' || provider === 'ollama_bundled' || provider === 'openrouter') {
-        const url = (provider === 'ollama' || provider === 'ollama_bundled') ? `${actualBaseUrl}/api/tags` : `${actualBaseUrl}/models`
-        const headers = (provider === 'openai' || provider === 'openrouter') ? { Authorization: `Bearer ${apiKey}` } : {}
-        
+      if (
+        provider === 'openai' ||
+        provider === 'ollama' ||
+        provider === 'ollama_bundled' ||
+        provider === 'openrouter'
+      ) {
+        const url =
+          provider === 'ollama' || provider === 'ollama_bundled'
+            ? `${actualBaseUrl}/api/tags`
+            : `${actualBaseUrl}/models`
+        const headers =
+          provider === 'openai' || provider === 'openrouter'
+            ? { Authorization: `Bearer ${apiKey}` }
+            : {}
+
         const response = await axios.get(url, { headers })
-        
+
         if (provider === 'openai' || provider === 'openrouter') {
-          // OpenRouter and OpenAI share the same /models structure
           return response.data.data
-            .map((m: any) => m.id)
+            .map((m: Record<string, unknown>) => String(m.id))
             .filter((id: string) => {
               if (provider === 'openai') {
                 return id.startsWith('gpt') || id.startsWith('o1')
               }
-              return true // OpenRouter models vary wildy
+              return true
             })
         } else {
-          return response.data.models.map((m: any) => m.name)
+          return response.data.models.map((m: Record<string, unknown>) => String(m.name))
         }
       } else if (provider === 'anthropic') {
-        if (!apiKey) return ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229']
+        if (!apiKey) {
+          return [
+            'claude-3-5-sonnet-20241022',
+            'claude-3-5-haiku-20241022',
+            'claude-3-opus-20240229'
+          ]
+        }
         const url = `${actualBaseUrl}/models`
         const response = await axios.get(url, {
           headers: {
@@ -118,56 +216,52 @@ export class LangGraphManager {
             'anthropic-version': '2023-06-01'
           }
         })
-        return response.data.data?.map((m: any) => m.id) || []
+        return response.data.data?.map((m: Record<string, unknown>) => String(m.id)) || []
       } else if (provider === 'google') {
         if (!apiKey) {
           throw new Error('API Key is required for Google Gemini')
         }
-        // Google Generative AI doesn't have a simple REST endpoint for models that is easily accessible without the SDK
-        // but we can use the hardcoded list while ensuring the key exists, 
-        // OR better, we just return the hardcoded list if the key is present.
-        // For a more robust check, we'd need to hit a discovery endpoint:
-        // https://generativelanguage.googleapis.com/v1beta/models?key=API_KEY
         try {
-          const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
-          await axios.get(url)
-          return ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-2.0-flash-exp']
+          await axios.get(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`)
+          return [
+            'gemini-1.5-pro',
+            'gemini-1.5-flash',
+            'gemini-1.5-flash-8b',
+            'gemini-2.0-flash-exp'
+          ]
         } catch (error) {
-          console.error('[LangGraphMain] Google model verification failed:', error)
+          log.error('[LangGraphMain] Google model verification failed:', error)
           throw new Error('Invalid Google API Key or connection issue')
         }
       }
       return []
     } catch (error) {
-      console.error(`[LangGraphMain] Error fetching models for ${provider}:`, error)
+      log.error(`[LangGraphMain] Error fetching models for ${provider}:`, error)
       return []
     }
   }
 
-  /**
-   * Pull an Ollama model via the REST API with streaming progress.
-   * Used when a user enters a model name that does not exist locally.
-   * Emits progress events via IPC to the renderer.
-   */
   public async pullModel(model: string, baseUrl?: string): Promise<void> {
     const actualBaseUrl = baseUrl || PROVIDER_BASE_URLS.ollama
     const url = `${actualBaseUrl}/api/pull`
-    console.log(`[LangGraphMain] Pulling model ${model} from ${actualBaseUrl}`)
-    
+    log.info(`[LangGraphMain] Pulling model ${model} from ${actualBaseUrl}`)
+
     try {
-      const response = await axios.post(url, { name: model, stream: true }, {
-        responseType: 'stream'
-      })
-      
-      // Process the streaming response
+      const response = await axios.post(
+        url,
+        { name: model, stream: true },
+        { responseType: 'stream' }
+      )
+
       for await (const chunk of response.data) {
-        const lines = chunk.toString().split('\n').filter((l: string) => l.trim())
+        const lines = chunk
+          .toString()
+          .split('\n')
+          .filter((l: string) => l.trim())
         for (const line of lines) {
           try {
             const data = JSON.parse(line)
-            // Emit progress to renderer
-            const { BrowserWindow } = await import('electron')
-            const mainWindow = BrowserWindow.getAllWindows()[0]
+            const mainWindow = this._getMainWindow()
             if (mainWindow) {
               mainWindow.webContents.send('mt::ai:pull-progress', {
                 percent: data.percent,
@@ -175,36 +269,64 @@ export class LangGraphManager {
                 digest: data.digest
               })
             }
-          } catch (e) {
+          } catch {
             // Skip malformed JSON lines
           }
         }
       }
-      console.log(`[LangGraphMain] Model ${model} pulled successfully`)
-    } catch (error: any) {
-      console.error(`[LangGraphMain] Failed to pull model ${model}:`, error)
-      throw new Error(error.response?.data?.error || error.message || 'Failed to pull model')
+      log.info(`[LangGraphMain] Model ${model} pulled successfully`)
+    } catch (error: unknown) {
+      log.error(`[LangGraphMain] Failed to pull model ${model}:`, error)
+      if (axios.isAxiosError(error)) {
+        throw new Error(String(error.response?.data?.error || error.message || 'Failed to pull model'))
+      }
+      throw new Error(error instanceof Error ? error.message : 'Failed to pull model')
     }
   }
 
-  async sendMessage(messages: ILangGraphMessage[], signal?: AbortSignal): Promise<ILangGraphResponse> {
+  async sendMessage(
+    messages: ILangGraphMessage[],
+    signal?: AbortSignal
+  ): Promise<ILangGraphResponse> {
     if (!this._agent) {
       throw new Error('Not connected to any AI provider')
     }
 
-    const langchainMessages = messages.map(msg => {
+    const langchainMessages = messages.map((msg) => {
       switch (msg.role) {
-        case 'system': return new SystemMessage(msg.content)
-        case 'user': return new HumanMessage(msg.content)
+        case 'system':
+          return new SystemMessage(msg.content)
+        case 'user':
+          return new HumanMessage(msg.content)
         case 'assistant':
-        case 'ai': return new AIMessage(msg.content)
-        default: return new HumanMessage(msg.content)
+        case 'ai':
+          return new AIMessage(msg.content)
+        default:
+          return new HumanMessage(msg.content)
       }
     })
 
-    // Cast to unknown since we defined _agent as unknown to avoid strict type conflicts
-    const agent = this._agent as { invoke: (state: unknown, options?: { signal?: AbortSignal }) => Promise<unknown> }
-    const response = await agent.invoke({ messages: langchainMessages }, { signal })
+    const hasSystemMessage = langchainMessages.some((m) => m instanceof SystemMessage)
+    if (!hasSystemMessage && !this._systemPromptAdded) {
+      const toolDefinitions = this._agentToolService.getDefinitions()
+      const toolDescriptions = toolDefinitions
+        .map((t) => `${t.name}: ${t.description}`)
+        .join('\n')
+      langchainMessages.unshift(new SystemMessage(buildBiscuitSystemPrompt(toolDescriptions)))
+      this._systemPromptAdded = true
+    }
+
+    if (this._editProposed) {
+      langchainMessages.unshift(new SystemMessage(
+        'IMPORTANT: An edit has already been proposed. Do NOT call any tools. ' +
+        'Just provide a natural language summary of what was done.'
+      ))
+    }
+
+    const response = await this._agent.invoke(
+      { messages: langchainMessages },
+      { signal, recursionLimit: 10 }
+    )
     const content = this._extractResponseContent(response)
 
     return {
@@ -216,51 +338,50 @@ export class LangGraphManager {
   private _createChatModel(config: IAIConfig): BaseChatModel {
     const { provider, apiKey, baseUrl, model, temperature, maxTokens } = config
     const targetModel = model || PROVIDER_DEFAULT_MODELS[provider]
-    
+
     const common = {
       temperature: temperature ?? 0.7,
-      maxTokens: maxTokens ?? 2048,
+      maxTokens: maxTokens ?? 2048
     }
 
     switch (provider) {
       case 'openai':
-        return new ChatOpenAI({ 
-          ...common, 
+        return new ChatOpenAI({
+          ...common,
           apiKey,
           model: targetModel,
-          configuration: { baseURL: baseUrl || PROVIDER_BASE_URLS.openai } 
+          configuration: { baseURL: baseUrl || PROVIDER_BASE_URLS.openai }
         }) as unknown as BaseChatModel
-      
+
       case 'openrouter':
-        return new ChatOpenAI({ 
-          ...common, 
+        return new ChatOpenAI({
+          ...common,
           apiKey,
           model: targetModel,
-          configuration: { baseURL: baseUrl || PROVIDER_BASE_URLS.openrouter } 
+          configuration: { baseURL: baseUrl || PROVIDER_BASE_URLS.openrouter }
         }) as unknown as BaseChatModel
 
       case 'anthropic':
-        return new ChatAnthropic({ 
-          ...common, 
+        return new ChatAnthropic({
+          ...common,
           apiKey,
-          anthropicApiKey: apiKey, // Some versions use this
-          model: targetModel 
+          anthropicApiKey: apiKey,
+          model: targetModel
         }) as unknown as BaseChatModel
 
       case 'google':
-        return new ChatGoogleGenerativeAI({ 
-          ...common, 
+        return new ChatGoogleGenerativeAI({
+          ...common,
           apiKey,
-          // Google Gemini uses maxOutputTokens instead of maxTokens
-          maxOutputTokens: common.maxTokens 
+          maxOutputTokens: common.maxTokens
         }) as unknown as BaseChatModel
 
       case 'ollama':
       case 'ollama_bundled':
-        return new ChatOllama({ 
+        return new ChatOllama({
           ...common,
           model: targetModel,
-          baseUrl: baseUrl || PROVIDER_BASE_URLS.ollama 
+          baseUrl: baseUrl || PROVIDER_BASE_URLS.ollama
         }) as unknown as BaseChatModel
 
       default:
@@ -268,16 +389,25 @@ export class LangGraphManager {
     }
   }
 
-  private _buildGraph(model: BaseChatModel): unknown {
-    const workflow = new StateGraph(AgentState)
-      .addNode('agent', async (state) => {
+  private _buildGraph(model: Runnable, tools: unknown[]): CompiledAgent {
+    const toolNode = new ToolNode(tools as never)
+
+    log.debug(`[LangGraphMain] Building graph with ${tools.length} tools`)
+
+    const workflow = new StateGraph(MessagesAnnotation)
+      .addNode('agent', async(state) => {
         const response = await model.invoke(state.messages)
         return { messages: [response] }
       })
+      .addNode('tools', toolNode)
       .addEdge('__start__', 'agent')
-      .addEdge('agent', '__end__')
+      .addConditionalEdges('agent', toolsCondition, {
+        tools: 'tools',
+        __end__: '__end__'
+      })
+      .addEdge('tools', 'agent')
 
-    return workflow.compile()
+    return workflow.compile() as unknown as CompiledAgent
   }
 
   private _extractResponseContent(response: unknown): string {
@@ -305,10 +435,15 @@ export class LangGraphManager {
 
     if (Array.isArray(content)) {
       return content
-        .map(item => {
+        .map((item) => {
           if (typeof item === 'string') return item
-          if (item && typeof item === 'object' && 'text' in item && typeof item.text === 'string') {
-            return item.text
+          if (item && typeof item === 'object') {
+            if ('type' in item && item.type === 'tool_call') {
+              return ''
+            }
+            if ('text' in item && typeof item.text === 'string') {
+              return item.text
+            }
           }
           return ''
         })
@@ -316,6 +451,61 @@ export class LangGraphManager {
     }
 
     return String(content || '')
+  }
+
+  async executeTool(call: IAgentToolCall): Promise<IAgentToolResult> {
+    const projectRoot = getActiveAgentProjectRoot()
+    const result = await this._agentToolService.execute(call, { projectRoot })
+
+    log.debug('[LangGraphMain] executeTool IPC result:', result)
+
+    if (result.ok && this._agentToolService.isEditProposalPayload(result.data)) {
+      const proposal = result.data
+      log.debug('[LangGraphMain] Sending edit proposal to renderer:', proposal)
+
+      this._editProposed = true
+
+      const mainWindow = this._getMainWindow()
+      if (mainWindow) {
+        mainWindow.webContents.send('mt::ai:edit-proposal', proposal)
+      } else {
+        log.warn('[LangGraphMain] No main window available for edit proposal')
+      }
+    }
+
+    return result
+  }
+
+  async applyEdit(request: IAgentApplyEditRequest): Promise<{ ok: boolean; error?: string }> {
+    const { edit, originalPath } = request
+
+    try {
+      log.debug('[LangGraphMain] applyEdit called:', request)
+      const mainWindow = this._getMainWindow()
+      if (mainWindow) {
+        const payload = {
+          edit: {
+            id: edit.id,
+            filePath: edit.filePath,
+            start: edit.start,
+            end: edit.end,
+            newContent: edit.newContent,
+            reason: edit.reason
+          },
+          oldContent: request.oldContent,
+          originalPath
+        }
+        log.debug('[LangGraphMain] Sending apply-edit-in-renderer:', payload)
+        mainWindow.webContents.send('mt::ai:apply-edit-in-renderer', payload)
+      } else {
+        log.warn('[LangGraphMain] No main window available for apply edit')
+      }
+
+      return { ok: true }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      return { ok: false, error: message }
+    }
   }
 }
 

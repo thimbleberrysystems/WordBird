@@ -1,22 +1,17 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { BrowserWindow, dialog, ipcMain } from 'electron'
+import log from 'electron-log'
 import path from 'path'
 import fs from 'fs'
+import fsExtra from 'fs-extra'
 import * as git from 'isomorphic-git'
 import { isDirectory2 } from 'common/filesystem'
 import { isValidProjectPath } from '../filesystem/markdown'
 import type {
   ProjectCreateArgs,
-  ProjectCreateResult,
-  ProjectLoadArgs,
-  ProjectLoadResult
+  ProjectLoadArgs
 } from '@shared/types/ipc'
 
 const normalizePath = (pathname: string): string => path.resolve(pathname)
-
-// Allow any valid directory path - users should be able to create projects anywhere
-const isAllowedProjectPath = (pathname: string): boolean => {
-  return !!pathname
-}
 
 const chooseDirectory = async(win: BrowserWindow | null): Promise<string | null> => {
   if (!win) {
@@ -37,7 +32,7 @@ const chooseDirectory = async(win: BrowserWindow | null): Promise<string | null>
 const DEFAULT_PROJECT_TEMPLATE = {
   folders: ['src', 'docs'],
   files: {
-    'README.md': '# {{name}}\n\nA new project created with MarkText.',
+    'README.md': '# {{name}}\n\nA new project created with WordBird.',
     'src/index.md': '<!-- Main content file -->\n\n# Welcome to {{name}}'
   }
 }
@@ -47,16 +42,16 @@ const loadProjectTemplate = (): { folders?: string[]; files?: Record<string, str
   // In development: packages/desktop/static/projectTemplate.json
   // __dirname in compiled code is out/main/, so we need to go up 2 levels to reach packages/desktop/
   const templatePath = path.join(__dirname, '..', '..', 'static', 'projectTemplate.json')
-  
+
   try {
     if (fs.existsSync(templatePath)) {
       const templateContent = fs.readFileSync(templatePath, 'utf8')
       return JSON.parse(templateContent)
     }
   } catch (err) {
-    console.warn('Failed to load project template from file, using default:', err)
+    log.warn('Failed to load project template from file, using default:', err)
   }
-  
+
   // Fallback to embedded template
   return DEFAULT_PROJECT_TEMPLATE
 }
@@ -74,7 +69,7 @@ export const registerProjectHandlers = (): void => {
   ipcMain.handle('mt::project:create', async(e, args: ProjectCreateArgs = {}) => {
     const win = BrowserWindow.fromWebContents(e.sender)
     const location = args.location ? normalizePath(args.location) : await chooseDirectory(win)
-    if (!location || !isAllowedProjectPath(location)) {
+    if (!location) {
       return { projectPath: null }
     }
 
@@ -82,7 +77,7 @@ export const registerProjectHandlers = (): void => {
     try {
       const template = loadProjectTemplate()
       if (!template) {
-        console.error('Failed to load project template')
+        log.error('Failed to load project template')
         return { projectPath: null }
       }
 
@@ -116,7 +111,7 @@ export const registerProjectHandlers = (): void => {
       try {
         await git.init({ fs, dir: location })
       } catch (gitErr) {
-        console.warn('Git initialization failed:', gitErr)
+        log.warn('Git initialization failed:', gitErr)
       }
 
       // Update lastOpenedFolder preference
@@ -130,7 +125,7 @@ export const registerProjectHandlers = (): void => {
 
       return { projectPath: location }
     } catch (err) {
-      console.error('Project creation failed:', err)
+      log.error('Project creation failed:', err)
       return { projectPath: null }
     }
   })
@@ -138,7 +133,7 @@ export const registerProjectHandlers = (): void => {
   ipcMain.handle('mt::project:load', async(e, args: ProjectLoadArgs = {}) => {
     const win = BrowserWindow.fromWebContents(e.sender)
     const loadPath = args.path ? normalizePath(args.path) : await chooseDirectory(win)
-    if (!loadPath || !isAllowedProjectPath(loadPath) || !isDirectory2(loadPath)) {
+    if (!loadPath || !isDirectory2(loadPath)) {
       return { projectPath: null, valid: false }
     }
 
@@ -172,7 +167,6 @@ export const registerProjectHandlers = (): void => {
     }
 
     try {
-      const fsExtra = require('fs-extra')
       await fsExtra.copy(currentPath, destPath, {
         overwrite: true,
         errorOnExist: false
@@ -187,7 +181,7 @@ export const registerProjectHandlers = (): void => {
 
       return { success: true, projectPath: destPath }
     } catch (err) {
-      console.error('Project save-as failed:', err)
+      log.error('Project save-as failed:', err)
       return { success: false }
     }
   })

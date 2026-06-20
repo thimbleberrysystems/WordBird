@@ -1,6 +1,13 @@
 import { ipcMain } from 'electron'
 import { langGraphManager } from '../services/ai/LangGraphManager'
-import type { AIProvider, IAIConfig, ILangGraphMessage } from '../../shared/types/langgraph'
+import type {
+  AIProvider,
+  IAIConfig,
+  ILangGraphMessage,
+  IAgentToolCall,
+  IAgentToolResult,
+  IAgentApplyEditRequest
+} from '../../shared/types/langgraph'
 
 export const registerAIHandlers = (): void => {
   ipcMain.handle('mt::ai:connect', async(_e, config: IAIConfig) => {
@@ -27,7 +34,7 @@ export const registerAIHandlers = (): void => {
       return await langGraphManager.sendMessage(messages, controller.signal)
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('A pigeon flew off with the breadcrumbs. Request aborted.')
+        throw new Error('Request aborted')
       }
       throw new Error(error instanceof Error ? error.message : 'Failed to send message')
     } finally {
@@ -55,5 +62,21 @@ export const registerAIHandlers = (): void => {
     } catch (error: unknown) {
       throw new Error(error instanceof Error ? error.message : 'Failed to pull model')
     }
+  })
+
+  ipcMain.handle('mt::ai:execute-tool', async(_e, call: IAgentToolCall): Promise<IAgentToolResult> => {
+    try {
+      return await langGraphManager.executeTool(call)
+    } catch (error: unknown) {
+      return {
+        id: call.id,
+        ok: false,
+        error: error instanceof Error ? error.message : 'Tool execution failed'
+      }
+    }
+  })
+
+  ipcMain.handle('mt::ai:apply-edit', async(_e, request: IAgentApplyEditRequest) => {
+    return await langGraphManager.applyEdit(request)
   })
 }

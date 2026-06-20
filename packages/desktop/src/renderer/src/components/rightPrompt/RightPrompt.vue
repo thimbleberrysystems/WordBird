@@ -183,18 +183,15 @@ const aiMessages = ref<ILangGraphMessage[]>([])
 
 // Open settings window to AI page
 function openAiSettings (): void {
-  console.log('[RightPrompt] Opening AI settings...')
   window.electron.ipcRenderer.send('mt::open-setting-window', 'ai')
 }
 
 // Stop generation
 async function stopGeneration (): Promise<void> {
-  console.log('[RightPrompt] Stopping generation...')
   try {
     await langGraphService.abort()
-    console.log('[RightPrompt] Generation aborted successfully')
-  } catch (error) {
-    console.error('[RightPrompt] Error aborting generation:', error)
+  } catch {
+    // ignore abort errors
   }
 }
 
@@ -232,18 +229,15 @@ async function sendMessage (): Promise<void> {
     if (promptBody.value) {
       promptBody.value.scrollTop = promptBody.value.scrollHeight
     }
-  } catch (error: any) {
-    console.error('[RightPrompt] Send message error:', error)
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
 
-    // Handle abort/stop from proxy or network
-    if (error.message.includes('aborted') || error.message.includes('canceled') || error.message.includes('stopped')) {
+    if (errorMessage.includes('aborted') || errorMessage.includes('canceled') || errorMessage.includes('stopped')) {
       aiMessages.value.push({
         role: 'stopped',
-        content: 'A pigeon flew off with the breadcrumbs. Request aborted.'
+        content: 'Request aborted.'
       })
     } else {
-      const errorMessage = error.message || String(error)
-      // Add error to chat history so user can see the hint
       aiMessages.value.push({
         role: 'error',
         content: `Error: ${errorMessage}`

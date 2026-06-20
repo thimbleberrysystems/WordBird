@@ -1,4 +1,14 @@
-import type { AIProvider, IAIConfig, ILangGraphMessage, ILangGraphResponse } from '@shared/types/langgraph'
+import type {
+  AIProvider,
+  IAIConfig,
+  ILangGraphMessage,
+  ILangGraphResponse,
+  IAgentToolCall,
+  IAgentToolResult,
+  IAgentApplyEditRequest
+} from '@shared/types/langgraph'
+
+const toIpc = <T>(v: T): T => JSON.parse(JSON.stringify(v))
 
 class LangGraphService {
   private _isConnected: boolean = false
@@ -24,8 +34,7 @@ class LangGraphService {
 
   async connect(config: IAIConfig): Promise<void> {
     try {
-      // Ensure config is POJO
-      const cleanConfig = JSON.parse(JSON.stringify(config))
+      const cleanConfig = toIpc(config)
       await window.electron.ai.connect(cleanConfig)
       this._isConnected = true
       this._currentProvider = config.provider
@@ -50,9 +59,19 @@ class LangGraphService {
   }
 
   async sendMessage(messages: ILangGraphMessage[]): Promise<ILangGraphResponse> {
-    // Ensure data is POJO before sending over IPC to avoid "An object could not be cloned"
-    const cleanMessages = JSON.parse(JSON.stringify(messages))
-    return await window.electron.ai.sendMessage(cleanMessages)
+    return await window.electron.ai.sendMessage(toIpc(messages))
+  }
+
+  async executeTool(call: IAgentToolCall): Promise<IAgentToolResult> {
+    return await window.electron.ai.executeTool(toIpc(call))
+  }
+
+  async applyEdit(request: IAgentApplyEditRequest): Promise<{ ok: boolean; error?: string }> {
+    return await window.electron.ai.applyEdit(toIpc(request))
+  }
+
+  async applyEditInRenderer(request: IAgentApplyEditRequest): Promise<{ ok: boolean; error?: string }> {
+    return await window.electron.ai.applyEditInRenderer(toIpc(request))
   }
 
   async abort(): Promise<void> {

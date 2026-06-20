@@ -1,7 +1,7 @@
 <template>
   <div class="pref-ai">
     <h4>{{ t('preferences.ai.title') || 'AI Settings' }}</h4>
-    
+
     <compound>
       <template #children>
         <cur-select
@@ -41,18 +41,24 @@
           >
             Connect Provider
           </el-button>
-          <span v-if="connectionStatus" :class="['status-msg', connectionStatus.type]">
+          <span
+            v-if="connectionStatus"
+            :class="['status-msg', connectionStatus.type]"
+          >
             {{ connectionStatus.message }}
           </span>
         </div>
 
-        <div v-if="connectionStatus?.type === 'success'" class="model-select-container">
+        <div
+          v-if="connectionStatus?.type === 'success'"
+          class="model-select-container"
+        >
           <div class="dynamic-model-select">
             <div class="description-row space-between">
               <span class="description">Select model</span>
-              <el-button 
-                link 
-                type="primary" 
+              <el-button
+                link
+                type="primary"
                 size="small"
                 :loading="loadingModels"
                 @click="fetchDynamicModels"
@@ -60,7 +66,7 @@
                 Refresh Models
               </el-button>
             </div>
-            
+
             <cur-select
               :value="currentConfig.model || ''"
               :options="modelOptions"
@@ -69,7 +75,7 @@
               placeholder="Select a model"
               :on-change="(val: string | number | boolean) => updateConfig({ model: String(val) })"
             />
-            
+
             <div class="action-group">
               <el-button
                 type="primary"
@@ -81,19 +87,28 @@
               >
                 Connect Model
               </el-button>
-              <span v-if="modelConnectionStatus" :class="['status-msg', modelConnectionStatus.type]">
+              <span
+                v-if="modelConnectionStatus"
+                :class="['status-msg', modelConnectionStatus.type]"
+              >
                 {{ modelConnectionStatus.message }}
               </span>
             </div>
 
-            <div v-if="pullProgress" class="pull-progress">
+            <div
+              v-if="pullProgress"
+              class="pull-progress"
+            >
               <span class="status-msg success">
                 {{ pullProgress.status || 'Pulling...' }}
                 <span v-if="pullProgress.percent !== undefined">({{ pullProgress.percent }}%)</span>
               </span>
             </div>
 
-            <div v-if="modelError" class="status-msg error">
+            <div
+              v-if="modelError"
+              class="status-msg error"
+            >
               {{ modelError }}
             </div>
           </div>
@@ -139,9 +154,6 @@ const requiresBaseUrl = computed(() =>
 // For ollama_bundled, we don't need to show the endpoint URL field
 const showEndpointField = computed(() => aiProvider.value !== 'ollama_bundled')
 
-// Also expose aiIsConnected for the right prompt
-const { aiIsConnected } = storeToRefs(preferencesStore)
-
 const modelOptions = computed(() => dynamicModels.value.map(m => ({ label: m, value: m })))
 
 // State
@@ -176,22 +188,23 @@ const updateConfig = (config: Partial<IAIProviderConfig>) => {
   preferencesStore.SET_AI_CONFIG(aiProvider.value, config)
 }
 
-const getErrorMessage = (err: unknown): string => {
-  return err instanceof Error ? err.message : String(err)
-}
+const getErrorMessage = (err: unknown): string =>
+  err instanceof Error ? err.message : String(err)
+
+const getFullConfig = (): IAIConfig => ({ provider: aiProvider.value as AIProvider, ...currentConfig.value })
 
 const fetchDynamicModels = async () => {
   loadingModels.value = true
   modelError.value = ''
-  
+
   try {
     const config = currentConfig.value
     const models = await langGraphService.fetchModels(
-      aiProvider.value as AIProvider, 
-      config.apiKey, 
+      aiProvider.value as AIProvider,
+      config.apiKey,
       config.baseUrl
     )
-    
+
     if (models.length === 0) {
       modelError.value = 'No models found. Please check your credentials.'
     } else {
@@ -209,18 +222,14 @@ const testConnection = async () => {
   connectionStatus.value = null
   modelConnectionStatus.value = null
   modelError.value = ''
-  
+
   try {
-    const fullConfig: IAIConfig = {
-      provider: aiProvider.value as AIProvider,
-      ...currentConfig.value
-    }
-    await langGraphService.connect(fullConfig)
+    await langGraphService.connect(getFullConfig())
     connectionStatus.value = { type: 'success', message: 'Provider Connected' }
-    
+
     // Update the store's connection status
     preferencesStore.aiIsConnected = true
-    
+
     // Fetch models immediately after connection success
     await fetchDynamicModels()
   } catch (err) {
@@ -233,11 +242,11 @@ const testConnection = async () => {
 
 const testModelConnection = async () => {
   if (!currentConfig.value?.model) return
-  
+
   modelConnecting.value = true
   modelConnectionStatus.value = null
   pullProgress.value = null
-  
+
   // Set up pull progress listener
   const unsubscribe = langGraphService.onPullProgress((progress) => {
     pullProgress.value = {
@@ -245,14 +254,11 @@ const testModelConnection = async () => {
       status: progress.status
     }
   })
-  
+
   try {
-    const config = currentConfig.value
-    const fullConfig: IAIConfig = {
-      provider: aiProvider.value as AIProvider,
-      ...config
-    }
-    
+    const fullConfig = getFullConfig()
+    const config = fullConfig
+
     if (aiProvider.value === 'ollama' || aiProvider.value === 'ollama_bundled') {
       const url = (config.baseUrl || PROVIDER_BASE_URLS.ollama).replace(/\/$/, '')
       const modelName = config.model || ''
@@ -261,7 +267,7 @@ const testModelConnection = async () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: modelName })
       })
-      
+
       if (!response.ok) {
         // Model not found - try to pull it
         modelConnectionStatus.value = { type: 'success', message: 'Pulling model...' }
@@ -282,13 +288,13 @@ const testModelConnection = async () => {
       // For other providers, probe via connect logic
       await langGraphService.connect(fullConfig)
     }
-    
+
     modelConnectionStatus.value = { type: 'success', message: 'Model Connection Successful' }
     preferencesStore.aiIsConnected = true
   } catch (err) {
-    modelConnectionStatus.value = { 
-      type: 'error', 
-      message: `Model Connection Failed: ${getErrorMessage(err)}` 
+    modelConnectionStatus.value = {
+      type: 'error',
+      message: `Model Connection Failed: ${getErrorMessage(err)}`
     }
     preferencesStore.aiIsConnected = false
   } finally {
