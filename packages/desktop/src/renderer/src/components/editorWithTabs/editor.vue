@@ -102,6 +102,11 @@ import TableBarTools from 'muya/lib/ui/tableTools'
 import FrontMenu from 'muya/lib/ui/frontMenu'
 import EditorSearch from '../search/index.vue'
 import bus from '@/bus'
+import type { IBlockDiffState } from '@shared/types/langgraph'
+import { applyDiffStateToMuya, clearDiffStateInMuya } from '@/services/agentEditorApply'
+import { generateDiffLines, getChangedLineRange, type DiffLine } from '@/services/agentDiff'
+import { useAgentStore } from '@/store/agent'
+import { applyAgentEdit, rejectAgentEdit } from '@/services/agentEdit'
 import { DEFAULT_EDITOR_FONT_FAMILY } from '@/config'
 import notice from '@/services/notification'
 import Printer from '@/services/printService'
@@ -115,6 +120,7 @@ import { addCommonStyle, setEditorWidth, setWrapCodeBlocks } from '@/util/theme'
 import { usePreferencesStore } from '@/store/preferences'
 import { useEditorStore } from '@/store/editor'
 import { useProjectStore } from '@/store/project'
+import { applyAgentEditToCurrentFile } from '@/services/agentEditorApply'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
@@ -218,6 +224,184 @@ let printer: any = null
 let spellchecker: any = null
 let switchLanguageCommand: any = null
 let imageViewer: SimpleImageViewer | null = null
+let unsubscribeEditProposal: (() => void) | null = null
+
+// Inline diff widget — injected directly into Muya's scroll container
+let diffWidgetEl: HTMLDivElement | null = null
+
+/**
+ * Muya block tree: top-level blocks are containers (p, h1, …) whose text lives
+ * on their leaf children (span nodes). renderLeafBlock uses the LEAF key to look
+ * up diffState, so we must collect leaf keys — not container keys.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function collectLeafBlocks (blocks: any[]): any[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const leaves: any[] = []
+  for (const block of blocks) {
+    if (Array.isArray(block.children) && block.children.length > 0) {
+      leaves.push(...collectLeafBlocks(block.children))
+    } else {
+      leaves.push(block)
+    }
+  }
+  return leaves
+}
+
+const agentStore = useAgentStore()
+
+const DIFF_CONTEXT_LINES = 3
+const MAX_WIDGET_LINES = 120
+
+function buildDiffWidgetLines (lines: DiffLine[]): Array<DiffLine | null> {
+  const keep = new Set<number>()
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].type !== 'equal') {
+      for (let j = Math.max(0, i - DIFF_CONTEXT_LINES); j <= Math.min(lines.length - 1, i + DIFF_CONTEXT_LINES); j++) {
+        keep.add(j)
+      }
+    }
+  }
+  if (keep.size === 0) return []
+
+  const result: Array<DiffLine | null> = []
+  let prevIdx = -1
+  for (const i of [...keep].sort((a, b) => a - b)) {
+    if (prevIdx >= 0 && i > prevIdx + 1) result.push(null)
+    result.push(lines[i])
+    prevIdx = i
+    if (result.filter(Boolean).length >= MAX_WIDGET_LINES) break
+  }
+  return result
+}
+
+interface DiffWidgetData {
+  oldContent: string
+  newContent: string
+  reason?: string
+  filePath: string
+}
+
+async function showDiffWidget (data: DiffWidgetData): Promise<void> {
+  await nextTick()
+  hideDiffWidget()
+
+  const container = editor.value?.container
+  if (!container) return
+
+  const hasDiffBlock = container.querySelector('.ag-diff-added, .ag-diff-modified, .ag-diff-removed')
+  if (!hasDiffBlock) return
+
+  // Insert outside the contenteditable so button clicks work reliably
+  const editorParent = container.parentElement
+  if (!editorParent) return
+
+  const filename = data.filePath.split('/').pop() || data.filePath
+  const allLines = generateDiffLines(data.oldContent, data.newContent)
+  const filteredLines = buildDiffWidgetLines(allLines)
+
+  diffWidgetEl = document.createElement('div')
+  diffWidgetEl.className = 'wb-diff-widget'
+  diffWidgetEl.contentEditable = 'false'
+
+  // Header
+  const header = document.createElement('div')
+  header.className = 'wb-diff-widget__header'
+
+  const titleEl = document.createElement('span')
+  titleEl.className = 'wb-diff-widget__title'
+  titleEl.textContent = 'AI Edit'
+
+  const fileEl = document.createElement('span')
+  fileEl.className = 'wb-diff-widget__file'
+  fileEl.textContent = filename
+
+  header.appendChild(titleEl)
+  header.appendChild(fileEl)
+
+  if (data.reason) {
+    const reasonEl = document.createElement('span')
+    reasonEl.className = 'wb-diff-widget__reason'
+    reasonEl.textContent = data.reason
+    header.appendChild(reasonEl)
+  }
+
+  const actions = document.createElement('div')
+  actions.className = 'wb-diff-widget__actions'
+
+  const acceptBtn = document.createElement('button')
+  acceptBtn.className = 'wb-diff-widget__btn wb-diff-widget__btn--accept'
+  acceptBtn.textContent = '✓ Accept'
+  acceptBtn.addEventListener('click', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    applyAllDiff()
+  })
+
+  const rejectBtn = document.createElement('button')
+  rejectBtn.className = 'wb-diff-widget__btn wb-diff-widget__btn--reject'
+  rejectBtn.textContent = '✕ Reject'
+  rejectBtn.addEventListener('click', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    rejectAllDiff()
+  })
+
+  actions.appendChild(acceptBtn)
+  actions.appendChild(rejectBtn)
+  header.appendChild(actions)
+  diffWidgetEl.appendChild(header)
+
+  // Diff lines
+  if (filteredLines.length > 0) {
+    const linesEl = document.createElement('div')
+    linesEl.className = 'wb-diff-widget__lines'
+
+    for (const line of filteredLines) {
+      const lineEl = document.createElement('div')
+      if (line === null) {
+        lineEl.className = 'wb-diff-line wb-diff-line--collapsed'
+        lineEl.textContent = '···'
+      } else {
+        const prefix = line.type === 'added' ? '+' : line.type === 'removed' ? '−' : ' '
+        lineEl.className = `wb-diff-line wb-diff-line--${line.type}`
+        lineEl.textContent = `${prefix} ${line.value}`
+      }
+      linesEl.appendChild(lineEl)
+    }
+
+    diffWidgetEl.appendChild(linesEl)
+  }
+
+  editorParent.insertBefore(diffWidgetEl, container)
+}
+
+function hideDiffWidget (): void {
+  if (diffWidgetEl) {
+    diffWidgetEl.remove()
+    diffWidgetEl = null
+  }
+}
+
+async function applyAllDiff (): Promise<void> {
+  const pending = agentStore.pendingEdits.filter(e => e.status === 'pending')
+  for (const edit of [...pending].reverse()) {
+    await applyAgentEdit(edit)
+  }
+  agentStore.clearPendingEdits()
+  if (editor.value) clearDiffStateInMuya(editor.value)
+  hideDiffWidget()
+}
+
+async function rejectAllDiff (): Promise<void> {
+  const pending = agentStore.pendingEdits.filter(e => e.status === 'pending')
+  for (const edit of [...pending].reverse()) {
+    await rejectAgentEdit(edit.id)
+  }
+  agentStore.clearPendingEdits()
+  if (editor.value) clearDiffStateInMuya(editor.value)
+  hideDiffWidget()
+}
 
 class SimpleImageViewer {
   container: HTMLElement
@@ -1114,6 +1298,34 @@ const handleScreenShot = () => {
   }
 }
 
+// Handle agent edit application through Muya
+const handleApplyAgentEdit = (request: {
+  edit: {
+    id: string
+    filePath: string
+    start?: number
+    end?: number
+    newContent: string
+    reason?: string
+  }
+  oldContent: string
+  originalPath: string
+}) => {
+  if (!editor.value || !currentFile.value) return
+
+  const applied = applyAgentEditToCurrentFile(request, {
+    currentFile: currentFile.value,
+    setMarkdown: (markdown: string) => {
+      editor.value?.setMarkdown(markdown)
+    }
+  })
+
+  if (!applied) return
+
+  clearDiffStateInMuya(editor.value)
+  hideDiffWidget()
+}
+
 const handleResetPaddingBottom = () => {
   const { container } = editor.value
   const firstChild = container.firstElementChild as HTMLElement | null
@@ -1247,6 +1459,66 @@ onMounted(() => {
   bus.on('switch-spellchecker-language', switchSpellcheckLanguage)
   bus.on('open-command-spellchecker-switch-language', openSpellcheckerLanguageCommand)
   bus.on('replace-misspelling', replaceMisspelling)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  bus.on('apply-agent-edit', handleApplyAgentEdit as any)
+
+  // Listen for AI edit proposals from main process
+  unsubscribeEditProposal = window.electron.ai.onEditProposal((proposal) => {
+    if (!editor.value || !currentFile.value) return
+
+    agentStore.addPendingEdit(proposal.edit, proposal.oldContent, proposal.originalPath)
+
+    const { edit } = proposal
+    const { id: editId, start, end } = edit
+
+    const proposalPath = proposal.edit.filePath || ''
+    const currentPath = currentFile.value.filename || currentFile.value.pathname || ''
+
+    const pathsMatch =
+      proposalPath === currentPath ||
+      proposalPath.endsWith('/' + currentPath) ||
+      currentPath.endsWith('/' + proposalPath) ||
+      proposalPath.split('/').pop() === currentPath.split('/').pop()
+
+    if (!pathsMatch) return
+
+    // Determine which line range to highlight.
+    // If the AI edit carries explicit bounds, use them; otherwise compute from the diff.
+    const { start: rangeStart, end: rangeEnd } =
+      start != null && end != null
+        ? { start, end }
+        : getChangedLineRange(proposal.oldContent, proposal.edit.newContent)
+
+    // Top-level blocks are containers; their text lives on leaf children.
+    // renderLeafBlock checks the LEAF key in diffState, so we must push leaf keys.
+    const diffStates: IBlockDiffState[] = []
+    const topBlocks = editor.value.contentState?.blocks || []
+
+    let currentLine = 1
+    for (const topBlock of topBlocks) {
+      const blockEndLine = currentLine
+
+      if (blockEndLine >= rangeStart && currentLine <= rangeEnd) {
+        for (const leaf of collectLeafBlocks([topBlock])) {
+          diffStates.push({
+            blockKey: leaf.key,
+            editId,
+            changeType: 'removed'
+          })
+        }
+      }
+
+      currentLine = blockEndLine + 1
+    }
+
+    applyDiffStateToMuya(editor.value, diffStates)
+    showDiffWidget({
+      oldContent: proposal.oldContent,
+      newContent: proposal.edit.newContent,
+      reason: proposal.edit.reason,
+      filePath: proposal.edit.filePath
+    })
+  })
 
   editor.value.on('change', (changes: MuyaChange) => {
     // There is a chance that this event is fired AFTER the tab is switched. If we purely rely on this.currentFile later on
@@ -1364,7 +1636,16 @@ onBeforeUnmount(() => {
   bus.off('switch-spellchecker-language', switchSpellcheckLanguage)
   bus.off('open-command-spellchecker-switch-language', openSpellcheckerLanguageCommand)
   bus.off('replace-misspelling', replaceMisspelling)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  bus.off('apply-agent-edit', handleApplyAgentEdit as any)
   bus.off('language-changed', handleLanguageChanged)
+
+  // Remove AI edit proposal listener
+  if (unsubscribeEditProposal) {
+    unsubscribeEditProposal()
+    unsubscribeEditProposal = null
+  }
+  hideDiffWidget()
 
   document.removeEventListener('keyup', keyup)
   if (editor.value) {
@@ -1473,5 +1754,128 @@ onBeforeUnmount(() => {
   justify-content: center;
   cursor: grab;
   overflow: hidden;
+}
+
+/* VSCode Copilot-style inline diff widget */
+.wb-diff-widget {
+  margin: 6px 0 12px;
+  border: 1px solid var(--lineColor, #e0e0e0);
+  border-radius: 6px;
+  overflow: hidden;
+  font-family: var(--codeFontFamily, 'Cascadia Code', 'Fira Code', monospace);
+  font-size: 12.5px;
+  line-height: 1.5;
+  user-select: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.wb-diff-widget__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--menuBgColor, #f5f5f5);
+  border-bottom: 1px solid var(--lineColor, #e0e0e0);
+  flex-wrap: wrap;
+}
+
+.wb-diff-widget__title {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--editorColor, #333);
+  font-family: var(--editorFontFamily, inherit);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+.wb-diff-widget__file {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--editorColor, #333);
+  font-family: var(--codeFontFamily, monospace);
+}
+
+.wb-diff-widget__reason {
+  font-size: 12px;
+  color: var(--editorColor, #555);
+  opacity: 0.65;
+  font-family: var(--editorFontFamily, inherit);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-diff-widget__actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.wb-diff-widget__btn {
+  padding: 2px 10px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  line-height: 1.6;
+}
+
+.wb-diff-widget__btn:hover {
+  opacity: 0.85;
+}
+
+.wb-diff-widget__btn--accept {
+  background: #2ea043;
+  color: #fff;
+  border-color: #2ea043;
+}
+
+.wb-diff-widget__btn--reject {
+  background: transparent;
+  color: var(--editorColor, #333);
+  border-color: var(--lineColor, #ccc);
+}
+
+.wb-diff-widget__lines {
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--editorBgColor, #fff);
+}
+
+.wb-diff-line {
+  padding: 0 10px;
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: inherit;
+}
+
+.wb-diff-line--added {
+  background: rgba(46, 160, 67, 0.15);
+  color: #1a7f37;
+}
+
+.wb-diff-line--removed {
+  background: rgba(248, 81, 73, 0.15);
+  color: #b91c1c;
+}
+
+.wb-diff-line--equal {
+  color: var(--editorColor, #555);
+  opacity: 0.55;
+}
+
+.wb-diff-line--collapsed {
+  color: var(--editorColor, #888);
+  opacity: 0.45;
+  text-align: center;
+  letter-spacing: 0.1em;
+  padding: 0 10px;
 }
 </style>
