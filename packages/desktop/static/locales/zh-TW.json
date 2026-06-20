@@ -290,6 +290,7 @@
       "files": "檔案",
       "search": "搜尋",
       "toc": "目錄",
+      "biscuit": "Biscuit",
       "settings": "設定"
     }
   },
@@ -720,6 +721,12 @@
         "neverSuccessful": "從未成功"
       },
       "defaultBehavior": "貼上或拖曳圖片到 WordBird 後的預設行為"
+    },
+    "ai": {
+      "title": "Biscuit 設定",
+      "provider": {
+        "title": "Biscuit 提供商"
+      }
     },
     "markdown": {
       "title": "PicGo 設定",

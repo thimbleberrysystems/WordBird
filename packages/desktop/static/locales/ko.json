@@ -290,6 +290,7 @@
       "files": "파일",
       "search": "검색",
       "toc": "목차",
+      "biscuit": "Biscuit",
       "settings": "설정"
     }
   },
@@ -720,6 +721,12 @@
         "neverSuccessful": "성공한 적 없음"
       },
       "defaultBehavior": "이미지를 WordBird에 붙여넣거나 드래그한 후의 기본 동작"
+    },
+    "ai": {
+      "title": "Biscuit 설정",
+      "provider": {
+        "title": "Biscuit 제공자"
+      }
     },
     "markdown": {
       "title": "마크다운",

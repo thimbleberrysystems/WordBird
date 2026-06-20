@@ -289,6 +289,7 @@
       "files": "Archivos",
       "search": "Buscar",
       "toc": "Tabla de Contenidos",
+      "biscuit": "Biscuit",
       "settings": "Configuración"
     }
   },
@@ -718,6 +719,12 @@
         "neverSuccessful": "Nunca exitoso"
       },
       "defaultBehavior": "El comportamiento predeterminado después de pegar o arrastrar la imagen a WordBird"
+    },
+    "ai": {
+      "title": "Configuración de Biscuit",
+      "provider": {
+        "title": "Proveedor de Biscuit"
+      }
     },
     "markdown": {
       "title": "Markdown",

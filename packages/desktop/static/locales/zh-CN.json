@@ -290,6 +290,7 @@
       "files": "文件",
       "search": "搜索",
       "toc": "目录",
+      "biscuit": "Biscuit",
       "settings": "设置"
     }
   },
@@ -719,6 +720,12 @@
         "scriptPath": "脚本路径"
       },
       "defaultBehavior": "粘贴或拖拽图片到 WordBird 后的默认行为"
+    },
+    "ai": {
+      "title": "Biscuit 设置",
+      "provider": {
+        "title": "Biscuit 提供商"
+      }
     },
     "markdown": {
       "title": "Markdown",

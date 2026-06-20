@@ -290,6 +290,7 @@
       "files": "ファイル",
       "search": "検索",
       "toc": "目次",
+      "biscuit": "Biscuit",
       "settings": "設定"
     }
   },
@@ -720,6 +721,12 @@
         "neverSuccessful": "成功したことがない"
       },
       "defaultBehavior": "WordBirdに画像を貼り付けまたはドラッグした後のデフォルト動作"
+    },
+    "ai": {
+      "title": "Biscuit 設定",
+      "provider": {
+        "title": "Biscuit プロバイダー"
+      }
     },
     "markdown": {
       "title": "Markdown",

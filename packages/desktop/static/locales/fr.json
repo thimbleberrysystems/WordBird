@@ -290,6 +290,7 @@
       "files": "Fichiers",
       "search": "Rechercher",
       "toc": "Table des matières",
+      "biscuit": "Biscuit",
       "settings": "Paramètres"
     }
   },
@@ -720,6 +721,12 @@
         "neverSuccessful": "Jamais réussi"
       },
       "defaultBehavior": "Comportement par défaut après avoir collé ou glissé une image dans WordBird"
+    },
+    "ai": {
+      "title": "Paramètres Biscuit",
+      "provider": {
+        "title": "Fournisseur Biscuit"
+      }
     },
     "markdown": {
       "title": "Markdown",
