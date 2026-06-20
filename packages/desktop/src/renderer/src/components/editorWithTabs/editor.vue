@@ -103,7 +103,7 @@ import FrontMenu from 'muya/lib/ui/frontMenu'
 import EditorSearch from '../search/index.vue'
 import bus from '@/bus'
 import { clearDiffStateInMuya } from '@/services/agentEditorApply'
-import { generateDiffLines, type DiffLine } from '@/services/agentDiff'
+import { injectInlineDiff, type InlineDiffHandle } from '@/services/agentDiffDom'
 import { useAgentStore } from '@/store/agent'
 import { applyAgentEdit, rejectAgentEdit } from '@/services/agentEdit'
 import { DEFAULT_EDITOR_FONT_FAMILY } from '@/config'
@@ -225,11 +225,9 @@ let switchLanguageCommand: any = null
 let imageViewer: SimpleImageViewer | null = null
 let unsubscribeEditProposal: (() => void) | null = null
 
-// Diff elements injected into Muya's contenteditable as void (contenteditable=false) nodes
-let diffCodeLensEl: HTMLDivElement | null = null
-let diffHunkEl: HTMLDivElement | null = null
-// Original Muya blocks hidden while the diff is shown (restored on accept/discard)
-let hiddenBlockEls: HTMLElement[] = []
+// Handle for the injected inline-diff nodes (see services/agentDiffDom.ts,
+// verified by agent-diff-dom.spec.ts). null when no diff is shown.
+let inlineDiffHandle: InlineDiffHandle | null = null
 
 const agentStore = useAgentStore()
 
@@ -240,86 +238,6 @@ interface DiffWidgetData {
   filePath: string
 }
 
-const DIFF_CONTEXT_LINES = 3
-
-// Reduce a full line diff to git-style hunks: every changed line plus
-// DIFF_CONTEXT_LINES of surrounding context, with `null` marking a gap
-// (collapsed "···" separator) between non-adjacent hunks.
-function buildHunkLines (lines: DiffLine[]): Array<DiffLine | null> {
-  const keep = new Set<number>()
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].type !== 'equal') {
-      const lo = Math.max(0, i - DIFF_CONTEXT_LINES)
-      const hi = Math.min(lines.length - 1, i + DIFF_CONTEXT_LINES)
-      for (let j = lo; j <= hi; j++) keep.add(j)
-    }
-  }
-  if (keep.size === 0) return []
-
-  const result: Array<DiffLine | null> = []
-  let prev = -1
-  for (const i of [...keep].sort((a, b) => a - b)) {
-    if (prev >= 0 && i > prev + 1) result.push(null)
-    result.push(lines[i])
-    prev = i
-  }
-  return result
-}
-
-function makeDiffLineEl (line: DiffLine | null): HTMLDivElement {
-  const lineEl = document.createElement('div')
-  if (line === null) {
-    lineEl.className = 'wb-diff-line wb-diff-line--collapsed'
-    lineEl.textContent = '⋯'
-    return lineEl
-  }
-  lineEl.className = `wb-diff-line wb-diff-line--${line.type}`
-  const gutterEl = document.createElement('span')
-  gutterEl.className = 'wb-diff-line__gutter'
-  gutterEl.textContent = line.type === 'added' ? '+' : line.type === 'removed' ? '−' : ' '
-  const textEl = document.createElement('span')
-  textEl.className = 'wb-diff-line__text'
-  // Preserve blank lines with a non-breaking space so the row keeps its height
-  textEl.textContent = line.value.length ? line.value : ' '
-  lineEl.appendChild(gutterEl)
-  lineEl.appendChild(textEl)
-  return lineEl
-}
-
-function buildCodeLens (reason?: string): HTMLDivElement {
-  const el = document.createElement('div')
-  el.contentEditable = 'false'
-  el.className = 'wb-diff-codelens'
-  el.dataset.wbDiffInjected = '1'
-
-  if (reason) {
-    const labelEl = document.createElement('span')
-    labelEl.className = 'wb-diff-codelens__label'
-    labelEl.textContent = reason
-    el.appendChild(labelEl)
-  }
-
-  const actionsEl = document.createElement('div')
-  actionsEl.className = 'wb-diff-codelens__actions'
-
-  const acceptBtn = document.createElement('button')
-  acceptBtn.className = 'wb-diff-codelens__btn wb-diff-codelens__btn--accept'
-  acceptBtn.textContent = '✓ Accept'
-  acceptBtn.addEventListener('mousedown', e => e.preventDefault())
-  acceptBtn.addEventListener('click', (e) => { e.stopPropagation(); applyAllDiff() })
-
-  const discardBtn = document.createElement('button')
-  discardBtn.className = 'wb-diff-codelens__btn wb-diff-codelens__btn--discard'
-  discardBtn.textContent = '✗ Discard'
-  discardBtn.addEventListener('mousedown', e => e.preventDefault())
-  discardBtn.addEventListener('click', (e) => { e.stopPropagation(); rejectAllDiff() })
-
-  actionsEl.appendChild(acceptBtn)
-  actionsEl.appendChild(discardBtn)
-  el.appendChild(actionsEl)
-  return el
-}
-
 async function showInlineDiff (data: DiffWidgetData): Promise<void> {
   await nextTick()
   hideInlineDiff()
@@ -327,59 +245,16 @@ async function showInlineDiff (data: DiffWidgetData): Promise<void> {
   const container = editor.value?.container as HTMLElement | undefined
   if (!container) return
 
-  const allLines = generateDiffLines(data.oldContent, data.newContent)
-  const hunkLines = buildHunkLines(allLines)
-  if (hunkLines.length === 0) return
-
-  // Match by content (robust to markdown blank-line offsets): any top-level
-  // block whose text equals a removed line is the old content being replaced.
-  const removedSet = new Set(
-    allLines.filter(l => l.type === 'removed').map(l => l.value.trim()).filter(Boolean)
-  )
-
-  const topEls = (Array.from(container.children) as HTMLElement[])
-    .filter(el => !el.dataset.wbDiffInjected)
-
-  hiddenBlockEls = topEls.filter((el) => {
-    const text = (el.textContent || '').trim()
-    return text.length > 0 && removedSet.has(text)
+  inlineDiffHandle = injectInlineDiff(container, data.oldContent, data.newContent, {
+    reason: data.reason,
+    onAccept: () => { applyAllDiff() },
+    onDiscard: () => { rejectAllDiff() }
   })
-
-  // Anchor: first hidden block, else the block after the last unchanged line
-  // preceding the first change (pure additions), else the top of the document.
-  let anchor: HTMLElement | null = hiddenBlockEls[0] || null
-  if (!anchor) {
-    const firstChangeIdx = allLines.findIndex(l => l.type !== 'equal')
-    for (let i = firstChangeIdx - 1; i >= 0; i--) {
-      const ctx = allLines[i].value.trim()
-      if (!ctx) continue
-      const match = topEls.find(el => (el.textContent || '').trim() === ctx)
-      if (match) { anchor = match.nextElementSibling as HTMLElement | null; break }
-    }
-  }
-
-  // Hide the old blocks — the hunk renders their content as red − lines.
-  for (const el of hiddenBlockEls) el.classList.add('wb-diff-hidden')
-
-  diffCodeLensEl = buildCodeLens(data.reason)
-
-  diffHunkEl = document.createElement('div')
-  diffHunkEl.contentEditable = 'false'
-  diffHunkEl.className = 'wb-diff-hunk'
-  diffHunkEl.dataset.wbDiffInjected = '1'
-  for (const line of hunkLines) diffHunkEl.appendChild(makeDiffLineEl(line))
-
-  container.insertBefore(diffCodeLensEl, anchor)
-  container.insertBefore(diffHunkEl, anchor)
 }
 
 function hideInlineDiff (): void {
-  diffCodeLensEl?.remove()
-  diffCodeLensEl = null
-  diffHunkEl?.remove()
-  diffHunkEl = null
-  for (const el of hiddenBlockEls) el.classList.remove('wb-diff-hidden')
-  hiddenBlockEls = []
+  inlineDiffHandle?.remove()
+  inlineDiffHandle = null
 }
 
 async function applyAllDiff (): Promise<void> {

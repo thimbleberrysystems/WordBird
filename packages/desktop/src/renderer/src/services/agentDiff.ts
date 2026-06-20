@@ -9,6 +9,114 @@ export interface DiffLine {
 
 export const MAX_INLINE_DIFF_LINES = 200
 
+export const DIFF_CONTEXT_LINES = 3
+
+/**
+ * Reduce a full line diff to git-style hunks: every changed line plus
+ * `context` lines around it. `null` entries mark a collapsed gap ("⋯")
+ * between two non-adjacent hunks.
+ */
+export function buildHunkLines(
+  lines: DiffLine[],
+  context = DIFF_CONTEXT_LINES
+): Array<DiffLine | null> {
+  const keep = new Set<number>()
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].type !== 'equal') {
+      const lo = Math.max(0, i - context)
+      const hi = Math.min(lines.length - 1, i + context)
+      for (let j = lo; j <= hi; j++) keep.add(j)
+    }
+  }
+  if (keep.size === 0) return []
+
+  const result: Array<DiffLine | null> = []
+  let prev = -1
+  for (const i of [...keep].sort((a, b) => a - b)) {
+    if (prev >= 0 && i > prev + 1) result.push(null)
+    result.push(lines[i])
+    prev = i
+  }
+  return result
+}
+
+/**
+ * Normalize a line of markdown (or rendered block text) to a comparable plain
+ * string so a raw-markdown diff line can be matched against the text content
+ * of a rendered Muya block. Strips block prefixes (heading #, blockquote >,
+ * list markers) and inline emphasis/code markers, then collapses whitespace.
+ */
+export function normalizeForMatch(text: string): string {
+  return text
+    .replace(/^\s*#{1,6}\s+/, '') // ATX heading
+    .replace(/^\s*>\s?/, '') // blockquote
+    .replace(/^\s*(?:[-*+]|\d+[.)])\s+/, '') // list marker
+    .replace(/^\s*(?:- )?\[[ xX]\]\s+/, '') // task list checkbox
+    .replace(/\*\*|__|~~|`/g, '') // bold / strike / code fences
+    .replace(/(^|[^\\])[*_]/g, '$1') // single emphasis (not escaped)
+    .replace(/\\([*_`~#>[\]])/g, '$1') // unescape
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+export interface InlineDiffPlan {
+  /** Hunk lines to render (with `null` gaps). */
+  hunk: Array<DiffLine | null>
+  /** Indices into `blockTexts` of blocks to hide (the old content). */
+  hiddenBlockIndices: number[]
+  /**
+   * Index into `blockTexts` to insert the hunk *before*. `null` means append
+   * after the last block (used for pure additions with no locatable anchor).
+   */
+  anchorIndex: number | null
+}
+
+/**
+ * Decide how to present an inline diff against a list of rendered top-level
+ * block texts. Pure and DOM-free so it can be unit-tested: the component maps
+ * the returned indices back to real elements.
+ */
+export function planInlineDiff(
+  oldContent: string,
+  newContent: string,
+  blockTexts: string[]
+): InlineDiffPlan {
+  const allLines = generateDiffLines(oldContent, newContent)
+  const hunk = buildHunkLines(allLines)
+
+  const normalizedBlocks = blockTexts.map(normalizeForMatch)
+  const removedSet = new Set(
+    allLines
+      .filter((l) => l.type === 'removed')
+      .map((l) => normalizeForMatch(l.value))
+      .filter(Boolean)
+  )
+
+  const hiddenBlockIndices: number[] = []
+  normalizedBlocks.forEach((text, i) => {
+    if (text && removedSet.has(text)) hiddenBlockIndices.push(i)
+  })
+
+  let anchorIndex: number | null = hiddenBlockIndices.length ? hiddenBlockIndices[0] : null
+
+  if (anchorIndex === null) {
+    // Pure addition: anchor after the nearest unchanged context line that maps
+    // to a real block, so new content lands where it belongs.
+    const firstChangeIdx = allLines.findIndex((l) => l.type !== 'equal')
+    for (let i = firstChangeIdx - 1; i >= 0; i--) {
+      const ctx = normalizeForMatch(allLines[i].value)
+      if (!ctx) continue
+      const idx = normalizedBlocks.indexOf(ctx)
+      if (idx >= 0) {
+        anchorIndex = idx + 1
+        break
+      }
+    }
+  }
+
+  return { hunk, hiddenBlockIndices, anchorIndex }
+}
+
 export function generateUnifiedDiff(oldContent: string, newContent: string): string {
   const diff = Diff.diffLines(oldContent, newContent)
   return diff
