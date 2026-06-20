@@ -102,9 +102,8 @@ import TableBarTools from 'muya/lib/ui/tableTools'
 import FrontMenu from 'muya/lib/ui/frontMenu'
 import EditorSearch from '../search/index.vue'
 import bus from '@/bus'
-import type { IBlockDiffState } from '@shared/types/langgraph'
-import { applyDiffStateToMuya, clearDiffStateInMuya } from '@/services/agentEditorApply'
-import { generateDiffLines, getChangedLineRange, type DiffLine } from '@/services/agentDiff'
+import { clearDiffStateInMuya } from '@/services/agentEditorApply'
+import { generateDiffLines, type DiffLine } from '@/services/agentDiff'
 import { useAgentStore } from '@/store/agent'
 import { applyAgentEdit, rejectAgentEdit } from '@/services/agentEdit'
 import { DEFAULT_EDITOR_FONT_FAMILY } from '@/config'
@@ -228,26 +227,9 @@ let unsubscribeEditProposal: (() => void) | null = null
 
 // Diff elements injected into Muya's contenteditable as void (contenteditable=false) nodes
 let diffCodeLensEl: HTMLDivElement | null = null
-let diffAddedLinesEl: HTMLDivElement | null = null
-
-/**
- * Muya block tree: top-level blocks are containers (p, h1, …) whose text lives
- * on their leaf children (span nodes). renderLeafBlock uses the LEAF key to look
- * up diffState, so we must collect leaf keys — not container keys.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function collectLeafBlocks (blocks: any[]): any[] {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const leaves: any[] = []
-  for (const block of blocks) {
-    if (Array.isArray(block.children) && block.children.length > 0) {
-      leaves.push(...collectLeafBlocks(block.children))
-    } else {
-      leaves.push(block)
-    }
-  }
-  return leaves
-}
+let diffHunkEl: HTMLDivElement | null = null
+// Original Muya blocks hidden while the diff is shown (restored on accept/discard)
+let hiddenBlockEls: HTMLElement[] = []
 
 const agentStore = useAgentStore()
 
@@ -258,64 +240,63 @@ interface DiffWidgetData {
   filePath: string
 }
 
-function makeDiffLineEl (line: DiffLine): HTMLDivElement {
+const DIFF_CONTEXT_LINES = 3
+
+// Reduce a full line diff to git-style hunks: every changed line plus
+// DIFF_CONTEXT_LINES of surrounding context, with `null` marking a gap
+// (collapsed "···" separator) between non-adjacent hunks.
+function buildHunkLines (lines: DiffLine[]): Array<DiffLine | null> {
+  const keep = new Set<number>()
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].type !== 'equal') {
+      const lo = Math.max(0, i - DIFF_CONTEXT_LINES)
+      const hi = Math.min(lines.length - 1, i + DIFF_CONTEXT_LINES)
+      for (let j = lo; j <= hi; j++) keep.add(j)
+    }
+  }
+  if (keep.size === 0) return []
+
+  const result: Array<DiffLine | null> = []
+  let prev = -1
+  for (const i of [...keep].sort((a, b) => a - b)) {
+    if (prev >= 0 && i > prev + 1) result.push(null)
+    result.push(lines[i])
+    prev = i
+  }
+  return result
+}
+
+function makeDiffLineEl (line: DiffLine | null): HTMLDivElement {
   const lineEl = document.createElement('div')
+  if (line === null) {
+    lineEl.className = 'wb-diff-line wb-diff-line--collapsed'
+    lineEl.textContent = '⋯'
+    return lineEl
+  }
   lineEl.className = `wb-diff-line wb-diff-line--${line.type}`
   const gutterEl = document.createElement('span')
   gutterEl.className = 'wb-diff-line__gutter'
   gutterEl.textContent = line.type === 'added' ? '+' : line.type === 'removed' ? '−' : ' '
   const textEl = document.createElement('span')
   textEl.className = 'wb-diff-line__text'
-  textEl.textContent = line.value
+  // Preserve blank lines with a non-breaking space so the row keeps its height
+  textEl.textContent = line.value.length ? line.value : ' '
   lineEl.appendChild(gutterEl)
   lineEl.appendChild(textEl)
   return lineEl
 }
 
-// Walk up from a (possibly nested leaf) element to the direct child of
-// `container` that contains it. Muya applies .ag-diff-* to leaf spans, which
-// are nested inside top-level block elements; insertBefore/after need the
-// top-level sibling, not the leaf.
-function topLevelBlockOf (el: HTMLElement, container: HTMLElement): HTMLElement | null {
-  let cur: HTMLElement | null = el
-  while (cur && cur.parentElement && cur.parentElement !== container) {
-    cur = cur.parentElement
-  }
-  return cur && cur.parentElement === container ? cur : null
-}
+function buildCodeLens (reason?: string): HTMLDivElement {
+  const el = document.createElement('div')
+  el.contentEditable = 'false'
+  el.className = 'wb-diff-codelens'
+  el.dataset.wbDiffInjected = '1'
 
-async function showInlineDiff (data: DiffWidgetData): Promise<void> {
-  await nextTick()
-  hideInlineDiff()
-
-  const container = editor.value?.container as HTMLElement | undefined
-  if (!container) return
-
-  const changedEls = Array.from(
-    container.querySelectorAll('.ag-diff-removed, .ag-diff-modified, .ag-diff-added')
-  ) as HTMLElement[]
-  if (changedEls.length === 0) return
-
-  const firstTop = topLevelBlockOf(changedEls[0], container)
-  const lastTop = topLevelBlockOf(changedEls[changedEls.length - 1], container)
-  if (!firstTop || !lastTop) return
-
-  const allLines = generateDiffLines(data.oldContent, data.newContent)
-  const addedLines = allLines.filter(l => l.type === 'added')
-
-  // ── CodeLens bar ─────────────────────────────────────────────────────────
-  // Inserted as contenteditable=false BEFORE the first red block so it
-  // appears inline in the document flow, not above the whole editor.
-  diffCodeLensEl = document.createElement('div')
-  diffCodeLensEl.contentEditable = 'false'
-  diffCodeLensEl.className = 'wb-diff-codelens'
-  diffCodeLensEl.dataset.wbDiffInjected = '1'
-
-  if (data.reason) {
+  if (reason) {
     const labelEl = document.createElement('span')
     labelEl.className = 'wb-diff-codelens__label'
-    labelEl.textContent = data.reason
-    diffCodeLensEl.appendChild(labelEl)
+    labelEl.textContent = reason
+    el.appendChild(labelEl)
   }
 
   const actionsEl = document.createElement('div')
@@ -335,31 +316,70 @@ async function showInlineDiff (data: DiffWidgetData): Promise<void> {
 
   actionsEl.appendChild(acceptBtn)
   actionsEl.appendChild(discardBtn)
-  diffCodeLensEl.appendChild(actionsEl)
-  container.insertBefore(diffCodeLensEl, firstTop)
+  el.appendChild(actionsEl)
+  return el
+}
 
-  // ── Added (green) lines ───────────────────────────────────────────────────
-  // Inserted as contenteditable=false AFTER the last red block so both old
-  // (red Muya blocks) and new (green injected lines) are visible together.
-  if (addedLines.length > 0) {
-    diffAddedLinesEl = document.createElement('div')
-    diffAddedLinesEl.contentEditable = 'false'
-    diffAddedLinesEl.className = 'wb-diff-added-block'
-    diffAddedLinesEl.dataset.wbDiffInjected = '1'
+async function showInlineDiff (data: DiffWidgetData): Promise<void> {
+  await nextTick()
+  hideInlineDiff()
 
-    for (const line of addedLines) {
-      diffAddedLinesEl.appendChild(makeDiffLineEl(line))
+  const container = editor.value?.container as HTMLElement | undefined
+  if (!container) return
+
+  const allLines = generateDiffLines(data.oldContent, data.newContent)
+  const hunkLines = buildHunkLines(allLines)
+  if (hunkLines.length === 0) return
+
+  // Match by content (robust to markdown blank-line offsets): any top-level
+  // block whose text equals a removed line is the old content being replaced.
+  const removedSet = new Set(
+    allLines.filter(l => l.type === 'removed').map(l => l.value.trim()).filter(Boolean)
+  )
+
+  const topEls = (Array.from(container.children) as HTMLElement[])
+    .filter(el => !el.dataset.wbDiffInjected)
+
+  hiddenBlockEls = topEls.filter((el) => {
+    const text = (el.textContent || '').trim()
+    return text.length > 0 && removedSet.has(text)
+  })
+
+  // Anchor: first hidden block, else the block after the last unchanged line
+  // preceding the first change (pure additions), else the top of the document.
+  let anchor: HTMLElement | null = hiddenBlockEls[0] || null
+  if (!anchor) {
+    const firstChangeIdx = allLines.findIndex(l => l.type !== 'equal')
+    for (let i = firstChangeIdx - 1; i >= 0; i--) {
+      const ctx = allLines[i].value.trim()
+      if (!ctx) continue
+      const match = topEls.find(el => (el.textContent || '').trim() === ctx)
+      if (match) { anchor = match.nextElementSibling as HTMLElement | null; break }
     }
-
-    container.insertBefore(diffAddedLinesEl, lastTop.nextSibling)
   }
+
+  // Hide the old blocks — the hunk renders their content as red − lines.
+  for (const el of hiddenBlockEls) el.classList.add('wb-diff-hidden')
+
+  diffCodeLensEl = buildCodeLens(data.reason)
+
+  diffHunkEl = document.createElement('div')
+  diffHunkEl.contentEditable = 'false'
+  diffHunkEl.className = 'wb-diff-hunk'
+  diffHunkEl.dataset.wbDiffInjected = '1'
+  for (const line of hunkLines) diffHunkEl.appendChild(makeDiffLineEl(line))
+
+  container.insertBefore(diffCodeLensEl, anchor)
+  container.insertBefore(diffHunkEl, anchor)
 }
 
 function hideInlineDiff (): void {
   diffCodeLensEl?.remove()
   diffCodeLensEl = null
-  diffAddedLinesEl?.remove()
-  diffAddedLinesEl = null
+  diffHunkEl?.remove()
+  diffHunkEl = null
+  for (const el of hiddenBlockEls) el.classList.remove('wb-diff-hidden')
+  hiddenBlockEls = []
 }
 
 async function applyAllDiff (): Promise<void> {
@@ -1447,9 +1467,6 @@ onMounted(() => {
 
     agentStore.addPendingEdit(proposal.edit, proposal.oldContent, proposal.originalPath)
 
-    const { edit } = proposal
-    const { id: editId, start, end } = edit
-
     const proposalPath = proposal.edit.filePath || ''
     const currentPath = currentFile.value.filename || currentFile.value.pathname || ''
 
@@ -1461,36 +1478,8 @@ onMounted(() => {
 
     if (!pathsMatch) return
 
-    // Determine which line range to highlight.
-    // If the AI edit carries explicit bounds, use them; otherwise compute from the diff.
-    const { start: rangeStart, end: rangeEnd } =
-      start != null && end != null
-        ? { start, end }
-        : getChangedLineRange(proposal.oldContent, proposal.edit.newContent)
-
-    // Top-level blocks are containers; their text lives on leaf children.
-    // renderLeafBlock checks the LEAF key in diffState, so we must push leaf keys.
-    const diffStates: IBlockDiffState[] = []
-    const topBlocks = editor.value.contentState?.blocks || []
-
-    let currentLine = 1
-    for (const topBlock of topBlocks) {
-      const blockEndLine = currentLine
-
-      if (blockEndLine >= rangeStart && currentLine <= rangeEnd) {
-        for (const leaf of collectLeafBlocks([topBlock])) {
-          diffStates.push({
-            blockKey: leaf.key,
-            editId,
-            changeType: 'removed'
-          })
-        }
-      }
-
-      currentLine = blockEndLine + 1
-    }
-
-    applyDiffStateToMuya(editor.value, diffStates)
+    // The inline diff is fully self-contained: it hides the changed blocks and
+    // renders a line-level unified hunk in their place. No Muya block coloring.
     showInlineDiff({
       oldContent: proposal.oldContent,
       newContent: proposal.edit.newContent,
@@ -1736,10 +1725,10 @@ onBeforeUnmount(() => {
 }
 
 /* ── Inline diff injected into Muya's contenteditable as void nodes ─────────
-   .wb-diff-codelens and .wb-diff-added-block use contentEditable="false"
-   so Muya treats them as opaque blocks and leaves them unedited.           */
+   .wb-diff-codelens and .wb-diff-hunk use contentEditable="false" so Muya
+   treats them as opaque blocks and leaves them unedited.                    */
 
-/* CodeLens bar — sits in document flow just BEFORE the red (removed) blocks */
+/* CodeLens bar — sits in document flow just above the diff hunk */
 .wb-diff-codelens {
   display: flex;
   align-items: center;
@@ -1786,16 +1775,25 @@ onBeforeUnmount(() => {
   color: var(--editorColor, #888);
 }
 
-/* Added (green) lines — sits AFTER the red (removed) blocks */
-.wb-diff-added-block {
-  margin-top: 2px;
+/* Unified diff hunk — replaces the hidden original blocks. Renders the change
+   line-by-line: red − for removed, green + for added, muted for context. */
+.wb-diff-hunk {
+  margin: 2px 0;
   user-select: none;
   font-family: var(--editorFontFamily, inherit);
   font-size: inherit;
   line-height: inherit;
+  border: 1px solid var(--lineColor, rgba(0, 0, 0, 0.1));
+  border-radius: 4px;
+  overflow: hidden;
 }
 
-/* Diff line rows used inside .wb-diff-added-block */
+/* The original Muya blocks being replaced are hidden while the diff is shown */
+.wb-diff-hidden {
+  display: none !important;
+}
+
+/* Individual diff line rows */
 .wb-diff-line {
   display: flex;
   align-items: baseline;
@@ -1805,23 +1803,47 @@ onBeforeUnmount(() => {
 }
 
 .wb-diff-line__gutter {
-  width: 18px;
-  min-width: 18px;
+  width: 22px;
+  min-width: 22px;
   text-align: center;
   flex-shrink: 0;
   font-weight: 700;
   user-select: none;
+  opacity: 0.8;
 }
 
 .wb-diff-line__text {
   flex: 1;
+  padding-right: 8px;
+}
+
+.wb-diff-line--removed {
+  background: rgba(229, 83, 75, 0.14);
+}
+.wb-diff-line--removed .wb-diff-line__gutter { color: #e0544c; }
+.wb-diff-line--removed .wb-diff-line__text {
+  color: var(--editorColor, #333);
+  text-decoration: line-through;
+  text-decoration-color: rgba(229, 83, 75, 0.5);
 }
 
 .wb-diff-line--added {
-  background: rgba(40, 167, 69, 0.12);
-  border-left: 3px solid rgba(40, 167, 69, 0.5);
-  padding-left: 2px;
+  background: rgba(40, 167, 69, 0.14);
 }
 .wb-diff-line--added .wb-diff-line__gutter { color: #28a745; }
 .wb-diff-line--added .wb-diff-line__text   { color: var(--editorColor, #222); }
+
+.wb-diff-line--equal {
+  opacity: 0.5;
+}
+.wb-diff-line--equal .wb-diff-line__text { color: var(--editorColor, #555); }
+
+.wb-diff-line--collapsed {
+  justify-content: center;
+  color: var(--editorColor, #999);
+  opacity: 0.5;
+  font-size: 11px;
+  letter-spacing: 2px;
+  min-height: 1.2em;
+}
 </style>
