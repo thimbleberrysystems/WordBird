@@ -226,8 +226,9 @@ let switchLanguageCommand: any = null
 let imageViewer: SimpleImageViewer | null = null
 let unsubscribeEditProposal: (() => void) | null = null
 
-// Inline diff widget — injected directly into Muya's scroll container
-let diffWidgetEl: HTMLDivElement | null = null
+// Diff elements injected into Muya's contenteditable as void (contenteditable=false) nodes
+let diffCodeLensEl: HTMLDivElement | null = null
+let diffAddedLinesEl: HTMLDivElement | null = null
 
 /**
  * Muya block tree: top-level blocks are containers (p, h1, …) whose text lives
@@ -250,31 +251,6 @@ function collectLeafBlocks (blocks: any[]): any[] {
 
 const agentStore = useAgentStore()
 
-const DIFF_CONTEXT_LINES = 3
-const MAX_WIDGET_LINES = 120
-
-function buildDiffWidgetLines (lines: DiffLine[]): Array<DiffLine | null> {
-  const keep = new Set<number>()
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].type !== 'equal') {
-      for (let j = Math.max(0, i - DIFF_CONTEXT_LINES); j <= Math.min(lines.length - 1, i + DIFF_CONTEXT_LINES); j++) {
-        keep.add(j)
-      }
-    }
-  }
-  if (keep.size === 0) return []
-
-  const result: Array<DiffLine | null> = []
-  let prevIdx = -1
-  for (const i of [...keep].sort((a, b) => a - b)) {
-    if (prevIdx >= 0 && i > prevIdx + 1) result.push(null)
-    result.push(lines[i])
-    prevIdx = i
-    if (result.filter(Boolean).length >= MAX_WIDGET_LINES) break
-  }
-  return result
-}
-
 interface DiffWidgetData {
   oldContent: string
   newContent: string
@@ -282,136 +258,120 @@ interface DiffWidgetData {
   filePath: string
 }
 
-async function showDiffWidget (data: DiffWidgetData): Promise<void> {
+function makeDiffLineEl (line: DiffLine): HTMLDivElement {
+  const lineEl = document.createElement('div')
+  lineEl.className = `wb-diff-line wb-diff-line--${line.type}`
+  const gutterEl = document.createElement('span')
+  gutterEl.className = 'wb-diff-line__gutter'
+  gutterEl.textContent = line.type === 'added' ? '+' : line.type === 'removed' ? '−' : ' '
+  const textEl = document.createElement('span')
+  textEl.className = 'wb-diff-line__text'
+  textEl.textContent = line.value
+  lineEl.appendChild(gutterEl)
+  lineEl.appendChild(textEl)
+  return lineEl
+}
+
+async function showInlineDiff (data: DiffWidgetData): Promise<void> {
   await nextTick()
-  hideDiffWidget()
+  hideInlineDiff()
 
   const container = editor.value?.container
   if (!container) return
 
-  const firstChangedEl = container.querySelector(
-    '.ag-diff-removed, .ag-diff-modified, .ag-diff-added'
-  ) as HTMLElement | null
-  if (!firstChangedEl) return
+  const changedEls = Array.from(
+    container.querySelectorAll('.ag-diff-removed, .ag-diff-modified, .ag-diff-added')
+  ) as HTMLElement[]
+  if (changedEls.length === 0) return
 
-  const editorParent = container.parentElement
-  if (!editorParent) return
+  const firstEl = changedEls[0]
+  const lastEl = changedEls[changedEls.length - 1]
 
   const allLines = generateDiffLines(data.oldContent, data.newContent)
-  const filteredLines = buildDiffWidgetLines(allLines)
-  if (filteredLines.length === 0) return
+  const addedLines = allLines.filter(l => l.type === 'added')
 
-  // Walk offsetParent chain to get the top of firstChangedEl relative to editorParent
-  function getOffsetTopRelativeTo (el: HTMLElement, ancestor: HTMLElement): number {
-    let top = 0
-    let cur: HTMLElement | null = el
-    while (cur && cur !== ancestor) {
-      top += cur.offsetTop
-      cur = cur.offsetParent as HTMLElement | null
-    }
-    return top
-  }
-  const offsetTop = getOffsetTopRelativeTo(firstChangedEl, editorParent)
-
-  diffWidgetEl = document.createElement('div')
-  diffWidgetEl.className = 'wb-diff-inline'
-  diffWidgetEl.dataset.wbDiffWidget = '1'
-
-  // CodeLens-style bar: compact text links above the diff lines
-  const codeLens = document.createElement('div')
-  codeLens.className = 'wb-diff-inline__codelens'
+  // ── CodeLens bar ─────────────────────────────────────────────────────────
+  // Inserted as contenteditable=false BEFORE the first red block so it
+  // appears inline in the document flow, not above the whole editor.
+  diffCodeLensEl = document.createElement('div')
+  diffCodeLensEl.contentEditable = 'false'
+  diffCodeLensEl.className = 'wb-diff-codelens'
+  diffCodeLensEl.dataset.wbDiffInjected = '1'
 
   if (data.reason) {
     const labelEl = document.createElement('span')
-    labelEl.className = 'wb-diff-inline__label'
+    labelEl.className = 'wb-diff-codelens__label'
     labelEl.textContent = data.reason
-    codeLens.appendChild(labelEl)
+    diffCodeLensEl.appendChild(labelEl)
   }
 
   const actionsEl = document.createElement('div')
-  actionsEl.className = 'wb-diff-inline__actions'
+  actionsEl.className = 'wb-diff-codelens__actions'
 
   const acceptBtn = document.createElement('button')
-  acceptBtn.className = 'wb-diff-inline__btn wb-diff-inline__btn--accept'
-  acceptBtn.textContent = 'Accept'
-  acceptBtn.addEventListener('click', (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    applyAllDiff()
-  })
+  acceptBtn.className = 'wb-diff-codelens__btn wb-diff-codelens__btn--accept'
+  acceptBtn.textContent = '✓ Accept'
+  acceptBtn.addEventListener('mousedown', e => e.preventDefault())
+  acceptBtn.addEventListener('click', (e) => { e.stopPropagation(); applyAllDiff() })
 
   const discardBtn = document.createElement('button')
-  discardBtn.className = 'wb-diff-inline__btn wb-diff-inline__btn--reject'
-  discardBtn.textContent = 'Discard'
-  discardBtn.addEventListener('click', (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    rejectAllDiff()
-  })
+  discardBtn.className = 'wb-diff-codelens__btn wb-diff-codelens__btn--discard'
+  discardBtn.textContent = '✗ Discard'
+  discardBtn.addEventListener('mousedown', e => e.preventDefault())
+  discardBtn.addEventListener('click', (e) => { e.stopPropagation(); rejectAllDiff() })
 
   actionsEl.appendChild(acceptBtn)
   actionsEl.appendChild(discardBtn)
-  codeLens.appendChild(actionsEl)
-  diffWidgetEl.appendChild(codeLens)
+  diffCodeLensEl.appendChild(actionsEl)
+  container.insertBefore(diffCodeLensEl, firstEl)
 
-  // Diff lines
-  const linesEl = document.createElement('div')
-  linesEl.className = 'wb-diff-inline__lines'
+  // ── Added (green) lines ───────────────────────────────────────────────────
+  // Inserted as contenteditable=false AFTER the last red block so both old
+  // (red Muya blocks) and new (green injected lines) are visible together.
+  if (addedLines.length > 0) {
+    diffAddedLinesEl = document.createElement('div')
+    diffAddedLinesEl.contentEditable = 'false'
+    diffAddedLinesEl.className = 'wb-diff-added-block'
+    diffAddedLinesEl.dataset.wbDiffInjected = '1'
 
-  for (const line of filteredLines) {
-    const lineEl = document.createElement('div')
-    if (line === null) {
-      lineEl.className = 'wb-diff-line wb-diff-line--collapsed'
-      lineEl.textContent = '···'
-    } else {
-      lineEl.className = `wb-diff-line wb-diff-line--${line.type}`
-      const gutterEl = document.createElement('span')
-      gutterEl.className = 'wb-diff-line__gutter'
-      gutterEl.textContent = line.type === 'added' ? '+' : line.type === 'removed' ? '−' : ' '
-      const textEl = document.createElement('span')
-      textEl.className = 'wb-diff-line__text'
-      textEl.textContent = line.value
-      lineEl.appendChild(gutterEl)
-      lineEl.appendChild(textEl)
+    for (const line of addedLines) {
+      diffAddedLinesEl.appendChild(makeDiffLineEl(line))
     }
-    linesEl.appendChild(lineEl)
-  }
 
-  diffWidgetEl.appendChild(linesEl)
-
-  // Anchor the overlay at the first changed block inside editorParent
-  if (getComputedStyle(editorParent).position === 'static') {
-    editorParent.style.position = 'relative'
+    const nextSib = lastEl.nextSibling
+    if (nextSib) {
+      container.insertBefore(diffAddedLinesEl, nextSib)
+    } else {
+      container.appendChild(diffAddedLinesEl)
+    }
   }
-  diffWidgetEl.style.top = `${offsetTop}px`
-  editorParent.appendChild(diffWidgetEl)
 }
 
-function hideDiffWidget (): void {
-  if (diffWidgetEl) {
-    diffWidgetEl.remove()
-    diffWidgetEl = null
-  }
+function hideInlineDiff (): void {
+  diffCodeLensEl?.remove()
+  diffCodeLensEl = null
+  diffAddedLinesEl?.remove()
+  diffAddedLinesEl = null
 }
 
 async function applyAllDiff (): Promise<void> {
+  hideInlineDiff()
   const pending = agentStore.pendingEdits.filter(e => e.status === 'pending')
   for (const edit of [...pending].reverse()) {
     await applyAgentEdit(edit)
   }
   agentStore.clearPendingEdits()
   if (editor.value) clearDiffStateInMuya(editor.value)
-  hideDiffWidget()
 }
 
 async function rejectAllDiff (): Promise<void> {
+  hideInlineDiff()
   const pending = agentStore.pendingEdits.filter(e => e.status === 'pending')
   for (const edit of [...pending].reverse()) {
     await rejectAgentEdit(edit.id)
   }
   agentStore.clearPendingEdits()
   if (editor.value) clearDiffStateInMuya(editor.value)
-  hideDiffWidget()
 }
 
 class SimpleImageViewer {
@@ -1334,7 +1294,7 @@ const handleApplyAgentEdit = (request: {
   if (!applied) return
 
   clearDiffStateInMuya(editor.value)
-  hideDiffWidget()
+  hideInlineDiff()
 }
 
 const handleResetPaddingBottom = () => {
@@ -1523,7 +1483,7 @@ onMounted(() => {
     }
 
     applyDiffStateToMuya(editor.value, diffStates)
-    showDiffWidget({
+    showInlineDiff({
       oldContent: proposal.oldContent,
       newContent: proposal.edit.newContent,
       reason: proposal.edit.reason,
@@ -1656,7 +1616,7 @@ onBeforeUnmount(() => {
     unsubscribeEditProposal()
     unsubscribeEditProposal = null
   }
-  hideDiffWidget()
+  hideInlineDiff()
 
   document.removeEventListener('keyup', keyup)
   if (editor.value) {
@@ -1767,46 +1727,40 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-/* VSCode Copilot–style inline diff — anchored at the changed block position */
-.wb-diff-inline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  z-index: 10;
-  pointer-events: none;
-  font-family: var(--codeFontFamily, 'Cascadia Code', 'Fira Code', monospace);
-  font-size: 13px;
-  line-height: 1.6;
-}
+/* ── Inline diff injected into Muya's contenteditable as void nodes ─────────
+   .wb-diff-codelens and .wb-diff-added-block use contentEditable="false"
+   so Muya treats them as opaque blocks and leaves them unedited.           */
 
-/* CodeLens bar — mirrors the compact Accept / Discard links VSCode shows */
-.wb-diff-inline__codelens {
+/* CodeLens bar — sits in document flow just BEFORE the red (removed) blocks */
+.wb-diff-codelens {
   display: flex;
   align-items: center;
-  padding: 1px 12px;
-  gap: 8px;
-  pointer-events: all;
+  gap: 10px;
+  padding: 2px 0 4px;
+  user-select: none;
+  border-bottom: 1px solid var(--lineColor, rgba(0, 0, 0, 0.08));
+  margin-bottom: 2px;
 }
 
-.wb-diff-inline__label {
+.wb-diff-codelens__label {
   font-family: var(--editorFontFamily, inherit);
   font-size: 12px;
   font-style: italic;
-  color: var(--editorColor, #555);
-  opacity: 0.6;
+  color: var(--editorColor, #666);
+  opacity: 0.65;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.wb-diff-inline__actions {
+.wb-diff-codelens__actions {
   display: flex;
-  gap: 12px;
+  gap: 14px;
   margin-left: auto;
 }
 
-.wb-diff-inline__btn {
+.wb-diff-codelens__btn {
   padding: 0;
   border: none;
   background: transparent;
@@ -1814,71 +1768,52 @@ onBeforeUnmount(() => {
   font-weight: 500;
   font-family: var(--editorFontFamily, inherit);
   cursor: pointer;
-  pointer-events: all;
   color: var(--themeColor, #0078d4);
+  line-height: 1.5;
 }
 
-.wb-diff-inline__btn:hover {
-  opacity: 0.7;
-}
+.wb-diff-codelens__btn:hover { opacity: 0.7; }
 
-.wb-diff-inline__btn--reject {
+.wb-diff-codelens__btn--discard {
   color: var(--editorColor, #888);
 }
 
-/* Diff lines */
-.wb-diff-inline__lines {
-  background: var(--editorBgColor, #fff);
-  border-top: 1px solid var(--lineColor, #e0e0e0);
-  border-bottom: 1px solid var(--lineColor, #e0e0e0);
+/* Added (green) lines — sits AFTER the red (removed) blocks */
+.wb-diff-added-block {
+  margin-top: 2px;
+  user-select: none;
+  font-family: var(--editorFontFamily, inherit);
+  font-size: inherit;
+  line-height: inherit;
 }
 
+/* Diff line rows used inside .wb-diff-added-block */
 .wb-diff-line {
   display: flex;
   align-items: baseline;
-  white-space: pre;
-  tab-size: 4;
-  min-height: 1.6em;
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 1.5em;
 }
 
 .wb-diff-line__gutter {
-  width: 20px;
-  min-width: 20px;
+  width: 18px;
+  min-width: 18px;
   text-align: center;
   flex-shrink: 0;
+  font-weight: 700;
   user-select: none;
-  font-weight: bold;
 }
 
 .wb-diff-line__text {
   flex: 1;
-  padding-right: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-
-.wb-diff-line--removed {
-  background: rgba(255, 40, 40, 0.1);
-}
-.wb-diff-line--removed .wb-diff-line__gutter { color: #e05252; }
-.wb-diff-line--removed .wb-diff-line__text { color: var(--editorColor, #333); }
 
 .wb-diff-line--added {
-  background: rgba(40, 180, 40, 0.1);
+  background: rgba(40, 167, 69, 0.12);
+  border-left: 3px solid rgba(40, 167, 69, 0.5);
+  padding-left: 2px;
 }
-.wb-diff-line--added .wb-diff-line__gutter { color: #2ea043; }
-.wb-diff-line--added .wb-diff-line__text { color: var(--editorColor, #333); }
-
-.wb-diff-line--equal {
-  opacity: 0.5;
-}
-.wb-diff-line--equal .wb-diff-line__gutter { color: var(--editorColor, #888); }
-.wb-diff-line--equal .wb-diff-line__text { color: var(--editorColor, #555); }
-
-.wb-diff-line--collapsed {
-  opacity: 0.35;
-  justify-content: center;
-  font-size: 11px;
-  color: var(--editorColor, #888);
-}
+.wb-diff-line--added .wb-diff-line__gutter { color: #28a745; }
+.wb-diff-line--added .wb-diff-line__text   { color: var(--editorColor, #222); }
 </style>
