@@ -49,7 +49,6 @@ export const useAgentStore = defineStore('agent', () => {
     if (edit) {
       edit.status = status
     }
-    // Remove from diff state when applied or rejected
     diffState.value = diffState.value.filter((d) => d.editId !== id)
   }
 

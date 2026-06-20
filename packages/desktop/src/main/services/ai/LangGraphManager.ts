@@ -221,18 +221,13 @@ export class LangGraphManager {
         if (!apiKey) {
           throw new Error('API Key is required for Google Gemini')
         }
-        try {
-          await axios.get(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`)
-          return [
-            'gemini-1.5-pro',
-            'gemini-1.5-flash',
-            'gemini-1.5-flash-8b',
-            'gemini-2.0-flash-exp'
-          ]
-        } catch (error) {
-          log.error('[LangGraphMain] Google model verification failed:', error)
-          throw new Error('Invalid Google API Key or connection issue')
-        }
+        await axios.get(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`)
+        return [
+          'gemini-1.5-pro',
+          'gemini-1.5-flash',
+          'gemini-1.5-flash-8b',
+          'gemini-2.0-flash-exp'
+        ]
       }
       return []
     } catch (error) {
@@ -253,6 +248,7 @@ export class LangGraphManager {
         { responseType: 'stream' }
       )
 
+      const mainWindow = this._getMainWindow()
       for await (const chunk of response.data) {
         const lines = chunk
           .toString()
@@ -261,7 +257,6 @@ export class LangGraphManager {
         for (const line of lines) {
           try {
             const data = JSON.parse(line)
-            const mainWindow = this._getMainWindow()
             if (mainWindow) {
               mainWindow.webContents.send('mt::ai:pull-progress', {
                 percent: data.percent,
@@ -477,26 +472,12 @@ export class LangGraphManager {
   }
 
   async applyEdit(request: IAgentApplyEditRequest): Promise<{ ok: boolean; error?: string }> {
-    const { edit, originalPath } = request
-
     try {
       log.debug('[LangGraphMain] applyEdit called:', request)
       const mainWindow = this._getMainWindow()
       if (mainWindow) {
-        const payload = {
-          edit: {
-            id: edit.id,
-            filePath: edit.filePath,
-            start: edit.start,
-            end: edit.end,
-            newContent: edit.newContent,
-            reason: edit.reason
-          },
-          oldContent: request.oldContent,
-          originalPath
-        }
-        log.debug('[LangGraphMain] Sending apply-edit-in-renderer:', payload)
-        mainWindow.webContents.send('mt::ai:apply-edit-in-renderer', payload)
+        log.debug('[LangGraphMain] Sending apply-edit-in-renderer:', request)
+        mainWindow.webContents.send('mt::ai:apply-edit-in-renderer', request)
       } else {
         log.warn('[LangGraphMain] No main window available for apply edit')
       }

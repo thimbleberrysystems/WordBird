@@ -2,15 +2,12 @@ import * as Diff from 'diff'
 
 export type DiffTokenType = 'equal' | 'added' | 'removed'
 
-export interface DiffToken {
-  type: DiffTokenType
-  value: string
-}
-
 export interface DiffLine {
   type: DiffTokenType
   value: string
 }
+
+export type DiffToken = DiffLine
 
 export const MAX_INLINE_DIFF_LINES = 200
 
@@ -75,10 +72,6 @@ export interface IBlockRange {
   endLine: number
 }
 
-/**
- * Maps a line range to Muya block keys.
- * This is used to apply diff highlighting to specific blocks in the editor.
- */
 export function mapLinesToBlocks(
   blocks: Array<{ key: string; text?: string; functionType?: string }>,
   startLine: number,
@@ -92,7 +85,6 @@ export function mapLinesToBlocks(
     const blockStart = currentLine
     const blockEnd = currentLine + blockLines - 1
 
-    // Check if this block overlaps with the target range
     if (blockEnd >= startLine && blockStart <= endLine) {
       result.push({
         blockKey: block.key,

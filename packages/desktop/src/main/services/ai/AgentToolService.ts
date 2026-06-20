@@ -75,7 +75,11 @@ const AgentToolPackSchema = z
   )
 
 export class AgentToolPackLoader {
-  constructor(private readonly _knownHandlers: Iterable<string>) {}
+  private readonly _knownHandlerSet: Set<string>
+
+  constructor(knownHandlers: Iterable<string>) {
+    this._knownHandlerSet = new Set(knownHandlers)
+  }
 
   async loadPack(filePath: string): Promise<IAgentToolPack> {
     const raw = await fsPromises.readFile(filePath, 'utf8')
@@ -110,10 +114,7 @@ export class AgentToolPackLoader {
   }
 
   private _hasHandler(handler: string): boolean {
-    for (const knownHandler of this._knownHandlers) {
-      if (knownHandler === handler) return true
-    }
-    return false
+    return this._knownHandlerSet.has(handler)
   }
 }
 
@@ -140,11 +141,9 @@ export class AgentToolService {
   }
 
   loadToolPack(pack: IAgentToolPack): void {
-    log.debug(`[AgentToolService] Loading tool pack, enabled: ${pack.enabled}, tools count: ${pack.tools.length}`)
     if (pack.enabled === false) return
 
     for (const definition of pack.tools) {
-      log.debug(`[AgentToolService] Processing tool: ${definition.id}, enabled: ${definition.enabled}`)
       if (definition.enabled === false) continue
 
       const handler = this._handlers.get(definition.handler)
@@ -155,14 +154,9 @@ export class AgentToolService {
       }
 
       const langChainTool = this._toLangChainTool(definition, handler)
-      this._tools.set(definition.id, {
-        definition,
-        handler,
-        langChainTool
-      })
-      log.debug(`[AgentToolService] Tool registered: ${definition.id}`)
+      this._tools.set(definition.id, { definition, handler, langChainTool })
     }
-    log.debug(`[AgentToolService] Total tools loaded: ${this._tools.size}`)
+    log.info(`[AgentToolService] Loaded ${this._tools.size} tools from pack`)
   }
 
   getDefinitions(): IAgentToolDefinition[] {
@@ -212,28 +206,19 @@ export class AgentToolService {
 
     return tool(
       async(args: Record<string, unknown>, config?: RunnableConfig) => {
-        log.debug(`[AgentToolService] Tool '${definition.name}' called with args:`, args)
         const context: AgentToolContext = {
           projectRoot: this._currentProjectRoot,
           signal: config?.signal
         }
-        // Call the handler directly
         const result = await handler(args, context)
-        log.debug(`[AgentToolService] Tool '${definition.name}' returned:`, result)
 
-        // If this is an edit proposal, emit it to renderer
         if (this._editProposalEmitter && isEditProposalPayload(result)) {
-          log.debug(`[AgentToolService] Emitting edit proposal from tool '${definition.name}':`, result)
           await this._editProposalEmitter(result)
-          // Return simple string to prevent recursion
           return `Edit proposal created with ID: ${result.edit.id}`
         }
 
-        // For all other results, return a simple string representation
         if (result && typeof result === 'object') {
-          const resultStr = JSON.stringify(result)
-          log.debug(`[AgentToolService] Returning string result for tool '${definition.name}'`)
-          return resultStr
+          return JSON.stringify(result)
         }
 
         return result
