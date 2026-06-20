@@ -289,91 +289,102 @@ async function showDiffWidget (data: DiffWidgetData): Promise<void> {
   const container = editor.value?.container
   if (!container) return
 
-  const hasDiffBlock = container.querySelector('.ag-diff-added, .ag-diff-modified, .ag-diff-removed')
-  if (!hasDiffBlock) return
+  const firstChangedEl = container.querySelector(
+    '.ag-diff-removed, .ag-diff-modified, .ag-diff-added'
+  ) as HTMLElement | null
+  if (!firstChangedEl) return
 
-  // Insert outside the contenteditable so button clicks work reliably
   const editorParent = container.parentElement
   if (!editorParent) return
 
-  const filename = data.filePath.split('/').pop() || data.filePath
   const allLines = generateDiffLines(data.oldContent, data.newContent)
   const filteredLines = buildDiffWidgetLines(allLines)
+  if (filteredLines.length === 0) return
+
+  // Walk offsetParent chain to get the top of firstChangedEl relative to editorParent
+  function getOffsetTopRelativeTo (el: HTMLElement, ancestor: HTMLElement): number {
+    let top = 0
+    let cur: HTMLElement | null = el
+    while (cur && cur !== ancestor) {
+      top += cur.offsetTop
+      cur = cur.offsetParent as HTMLElement | null
+    }
+    return top
+  }
+  const offsetTop = getOffsetTopRelativeTo(firstChangedEl, editorParent)
 
   diffWidgetEl = document.createElement('div')
-  diffWidgetEl.className = 'wb-diff-widget'
-  diffWidgetEl.contentEditable = 'false'
+  diffWidgetEl.className = 'wb-diff-inline'
+  diffWidgetEl.dataset.wbDiffWidget = '1'
 
-  // Header
-  const header = document.createElement('div')
-  header.className = 'wb-diff-widget__header'
-
-  const titleEl = document.createElement('span')
-  titleEl.className = 'wb-diff-widget__title'
-  titleEl.textContent = 'AI Edit'
-
-  const fileEl = document.createElement('span')
-  fileEl.className = 'wb-diff-widget__file'
-  fileEl.textContent = filename
-
-  header.appendChild(titleEl)
-  header.appendChild(fileEl)
+  // CodeLens-style bar: compact text links above the diff lines
+  const codeLens = document.createElement('div')
+  codeLens.className = 'wb-diff-inline__codelens'
 
   if (data.reason) {
-    const reasonEl = document.createElement('span')
-    reasonEl.className = 'wb-diff-widget__reason'
-    reasonEl.textContent = data.reason
-    header.appendChild(reasonEl)
+    const labelEl = document.createElement('span')
+    labelEl.className = 'wb-diff-inline__label'
+    labelEl.textContent = data.reason
+    codeLens.appendChild(labelEl)
   }
 
-  const actions = document.createElement('div')
-  actions.className = 'wb-diff-widget__actions'
+  const actionsEl = document.createElement('div')
+  actionsEl.className = 'wb-diff-inline__actions'
 
   const acceptBtn = document.createElement('button')
-  acceptBtn.className = 'wb-diff-widget__btn wb-diff-widget__btn--accept'
-  acceptBtn.textContent = '✓ Accept'
+  acceptBtn.className = 'wb-diff-inline__btn wb-diff-inline__btn--accept'
+  acceptBtn.textContent = 'Accept'
   acceptBtn.addEventListener('click', (e) => {
     e.preventDefault()
     e.stopPropagation()
     applyAllDiff()
   })
 
-  const rejectBtn = document.createElement('button')
-  rejectBtn.className = 'wb-diff-widget__btn wb-diff-widget__btn--reject'
-  rejectBtn.textContent = '✕ Reject'
-  rejectBtn.addEventListener('click', (e) => {
+  const discardBtn = document.createElement('button')
+  discardBtn.className = 'wb-diff-inline__btn wb-diff-inline__btn--reject'
+  discardBtn.textContent = 'Discard'
+  discardBtn.addEventListener('click', (e) => {
     e.preventDefault()
     e.stopPropagation()
     rejectAllDiff()
   })
 
-  actions.appendChild(acceptBtn)
-  actions.appendChild(rejectBtn)
-  header.appendChild(actions)
-  diffWidgetEl.appendChild(header)
+  actionsEl.appendChild(acceptBtn)
+  actionsEl.appendChild(discardBtn)
+  codeLens.appendChild(actionsEl)
+  diffWidgetEl.appendChild(codeLens)
 
   // Diff lines
-  if (filteredLines.length > 0) {
-    const linesEl = document.createElement('div')
-    linesEl.className = 'wb-diff-widget__lines'
+  const linesEl = document.createElement('div')
+  linesEl.className = 'wb-diff-inline__lines'
 
-    for (const line of filteredLines) {
-      const lineEl = document.createElement('div')
-      if (line === null) {
-        lineEl.className = 'wb-diff-line wb-diff-line--collapsed'
-        lineEl.textContent = '···'
-      } else {
-        const prefix = line.type === 'added' ? '+' : line.type === 'removed' ? '−' : ' '
-        lineEl.className = `wb-diff-line wb-diff-line--${line.type}`
-        lineEl.textContent = `${prefix} ${line.value}`
-      }
-      linesEl.appendChild(lineEl)
+  for (const line of filteredLines) {
+    const lineEl = document.createElement('div')
+    if (line === null) {
+      lineEl.className = 'wb-diff-line wb-diff-line--collapsed'
+      lineEl.textContent = '···'
+    } else {
+      lineEl.className = `wb-diff-line wb-diff-line--${line.type}`
+      const gutterEl = document.createElement('span')
+      gutterEl.className = 'wb-diff-line__gutter'
+      gutterEl.textContent = line.type === 'added' ? '+' : line.type === 'removed' ? '−' : ' '
+      const textEl = document.createElement('span')
+      textEl.className = 'wb-diff-line__text'
+      textEl.textContent = line.value
+      lineEl.appendChild(gutterEl)
+      lineEl.appendChild(textEl)
     }
-
-    diffWidgetEl.appendChild(linesEl)
+    linesEl.appendChild(lineEl)
   }
 
-  editorParent.insertBefore(diffWidgetEl, container)
+  diffWidgetEl.appendChild(linesEl)
+
+  // Anchor the overlay at the first changed block inside editorParent
+  if (getComputedStyle(editorParent).position === 'static') {
+    editorParent.style.position = 'relative'
+  }
+  diffWidgetEl.style.top = `${offsetTop}px`
+  editorParent.appendChild(diffWidgetEl)
 }
 
 function hideDiffWidget (): void {
@@ -1756,126 +1767,118 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-/* VSCode Copilot-style inline diff widget */
-.wb-diff-widget {
-  margin: 6px 0 12px;
-  border: 1px solid var(--lineColor, #e0e0e0);
-  border-radius: 6px;
-  overflow: hidden;
+/* VSCode Copilot–style inline diff — anchored at the changed block position */
+.wb-diff-inline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  pointer-events: none;
   font-family: var(--codeFontFamily, 'Cascadia Code', 'Fira Code', monospace);
-  font-size: 12.5px;
-  line-height: 1.5;
-  user-select: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
-.wb-diff-widget__header {
+/* CodeLens bar — mirrors the compact Accept / Discard links VSCode shows */
+.wb-diff-inline__codelens {
   display: flex;
   align-items: center;
+  padding: 1px 12px;
   gap: 8px;
-  padding: 6px 10px;
-  background: var(--menuBgColor, #f5f5f5);
-  border-bottom: 1px solid var(--lineColor, #e0e0e0);
-  flex-wrap: wrap;
+  pointer-events: all;
 }
 
-.wb-diff-widget__title {
-  font-weight: 600;
-  font-size: 12px;
-  color: var(--editorColor, #333);
+.wb-diff-inline__label {
   font-family: var(--editorFontFamily, inherit);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  opacity: 0.7;
-}
-
-.wb-diff-widget__file {
-  font-weight: 600;
   font-size: 12px;
-  color: var(--editorColor, #333);
-  font-family: var(--codeFontFamily, monospace);
-}
-
-.wb-diff-widget__reason {
-  font-size: 12px;
+  font-style: italic;
   color: var(--editorColor, #555);
-  opacity: 0.65;
-  font-family: var(--editorFontFamily, inherit);
+  opacity: 0.6;
   flex: 1;
-  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.wb-diff-widget__actions {
+.wb-diff-inline__actions {
   display: flex;
-  gap: 6px;
+  gap: 12px;
   margin-left: auto;
-  flex-shrink: 0;
 }
 
-.wb-diff-widget__btn {
-  padding: 2px 10px;
-  border: 1px solid transparent;
-  border-radius: 4px;
+.wb-diff-inline__btn {
+  padding: 0;
+  border: none;
+  background: transparent;
   font-size: 12px;
   font-weight: 500;
+  font-family: var(--editorFontFamily, inherit);
   cursor: pointer;
-  transition: opacity 0.15s;
-  line-height: 1.6;
+  pointer-events: all;
+  color: var(--themeColor, #0078d4);
 }
 
-.wb-diff-widget__btn:hover {
-  opacity: 0.85;
+.wb-diff-inline__btn:hover {
+  opacity: 0.7;
 }
 
-.wb-diff-widget__btn--accept {
-  background: #2ea043;
-  color: #fff;
-  border-color: #2ea043;
+.wb-diff-inline__btn--reject {
+  color: var(--editorColor, #888);
 }
 
-.wb-diff-widget__btn--reject {
-  background: transparent;
-  color: var(--editorColor, #333);
-  border-color: var(--lineColor, #ccc);
-}
-
-.wb-diff-widget__lines {
-  max-height: 320px;
-  overflow-y: auto;
+/* Diff lines */
+.wb-diff-inline__lines {
   background: var(--editorBgColor, #fff);
+  border-top: 1px solid var(--lineColor, #e0e0e0);
+  border-bottom: 1px solid var(--lineColor, #e0e0e0);
 }
 
 .wb-diff-line {
-  padding: 0 10px;
+  display: flex;
+  align-items: baseline;
   white-space: pre;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: inherit;
+  tab-size: 4;
+  min-height: 1.6em;
 }
 
-.wb-diff-line--added {
-  background: rgba(46, 160, 67, 0.15);
-  color: #1a7f37;
+.wb-diff-line__gutter {
+  width: 20px;
+  min-width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+  user-select: none;
+  font-weight: bold;
+}
+
+.wb-diff-line__text {
+  flex: 1;
+  padding-right: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .wb-diff-line--removed {
-  background: rgba(248, 81, 73, 0.15);
-  color: #b91c1c;
+  background: rgba(255, 40, 40, 0.1);
 }
+.wb-diff-line--removed .wb-diff-line__gutter { color: #e05252; }
+.wb-diff-line--removed .wb-diff-line__text { color: var(--editorColor, #333); }
+
+.wb-diff-line--added {
+  background: rgba(40, 180, 40, 0.1);
+}
+.wb-diff-line--added .wb-diff-line__gutter { color: #2ea043; }
+.wb-diff-line--added .wb-diff-line__text { color: var(--editorColor, #333); }
 
 .wb-diff-line--equal {
-  color: var(--editorColor, #555);
-  opacity: 0.55;
+  opacity: 0.5;
 }
+.wb-diff-line--equal .wb-diff-line__gutter { color: var(--editorColor, #888); }
+.wb-diff-line--equal .wb-diff-line__text { color: var(--editorColor, #555); }
 
 .wb-diff-line--collapsed {
+  opacity: 0.35;
+  justify-content: center;
+  font-size: 11px;
   color: var(--editorColor, #888);
-  opacity: 0.45;
-  text-align: center;
-  letter-spacing: 0.1em;
-  padding: 0 10px;
 }
 </style>
