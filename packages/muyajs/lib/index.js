@@ -485,7 +485,7 @@ class Muya {
    * Replace the current selected word with the given replacement.
    *
    * NOTE: Unsafe method because exacly one word have to be selected. This
-   * is currently used to replace a misspelled word in MarkText that was selected
+   * is currently used to replace a misspelled word in WordBird that was selected
    * by Chromium.
    *
    * @param {string} word The old word that should be replaced. The whole word must be selected.
@@ -532,7 +532,7 @@ function getContainer(originContainer, options) {
   container.setAttribute('autocorrect', false)
   container.setAttribute('autocomplete', 'off')
   // NOTE: The browser is not able to correct misspelled words words without
-  // a custom implementation like in MarkText.
+  // a custom implementation like in WordBird.
   container.setAttribute('spellcheck', !!spellcheckEnabled)
   container.appendChild(rootDom)
   originContainer.replaceWith(container)

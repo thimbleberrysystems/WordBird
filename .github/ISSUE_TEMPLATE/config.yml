@@ -2,7 +2,7 @@ blank_issues_enabled: false
 contact_links:
   - name: Ask a Question
     url: https://github.com/marktext/marktext/discussions
-    about: Use GitHub Discussions for questions, help, and general conversation about MarkText.
+    about: Use GitHub Discussions for questions, help, and general conversation about WordBird.
   - name: Documentation
     url: https://github.com/marktext/marktext/tree/develop/docs
     about: Check the docs before asking — your answer may already be there.

@@ -1,5 +1,5 @@
 name: Bug Report
-description: Create a bug report to help us improve MarkText
+description: Create a bug report to help us improve WordBird
 title: '[Bug] '
 labels: ['bug', 'triage']
 body:
@@ -67,7 +67,7 @@ body:
   - type: input
     id: marktext-version
     attributes:
-      label: MarkText Version
+      label: WordBird Version
       placeholder: 'e.g. 0.17.1'
     validations:
       required: true

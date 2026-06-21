@@ -1,4 +1,4 @@
-name: Release MarkText
+name: Release WordBird
 
 on:
   push:
@@ -191,7 +191,7 @@ jobs:
               echo ""
             fi
             echo "## ⚠️ Note for macOS users"
-            echo "Builds are unsigned (no Apple Developer ID). After dragging MarkText into Applications, clear the quarantine flag once:"
+            echo "Builds are unsigned (no Apple Developer ID). After dragging WordBird into Applications, clear the quarantine flag once:"
             echo '```'
             echo 'xattr -cr /Applications/marktext.app'
             echo '```'

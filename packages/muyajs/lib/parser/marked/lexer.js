@@ -409,7 +409,7 @@ Lexer.prototype.token = function (
             (isOrdered && newIsOrdered && bull.slice(-1) !== newBull.slice(-1)) ||
             isOrdered !== newIsOrdered ||
             // Changing to/from task list item from/to bullet, starts a new list(work for marktext issue #870)
-            // Because we distinguish between task list and bullet list in MarkText,
+            // Because we distinguish between task list and bullet list in WordBird,
             // the parsing here is somewhat different from the commonmark Spec,
             // and the task list needs to be a separate list.
             isTaskList !== newIsTaskListItem)

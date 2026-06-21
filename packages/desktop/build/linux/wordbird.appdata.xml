@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>com.thimbleberrysystems.wordbird</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>WordBird</name>
+  <summary>Distraction-free novel-writing editor with an AI writing companion</summary>
+  <description>
+    <p>
+      WordBird is a focused writing app for novelists and long-form storytellers. It pairs a clean, distraction-free WYSIWYG Markdown editor with Biscuit, an integrated AI writing companion that helps you draft chapters, rewrite passages, and refine prose without leaving your manuscript.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Realtime preview (WYSIWYG) for a distraction-free writing experience</li>
+      <li>Biscuit AI companion with line-level inline diff review (Accept / Discard)</li>
+      <li>CommonMark and GitHub Flavored Markdown support</li>
+      <li>Math expressions (KaTeX), front matter, Mermaid diagrams, and PlantUML</li>
+      <li>Focus mode, Typewriter mode, and Source Code mode</li>
+      <li>Multiple themes, customisable fonts, and HTML/PDF export</li>
+    </ul>
+  </description>
+  <url type="homepage">https://github.com/Thimbleberrysystems/WordBird</url>
+  <url type="bugtracker">https://github.com/Thimbleberrysystems/WordBird/issues</url>
+  <categories>
+    <category>Utility</category>
+    <category>TextEditor</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+</component>

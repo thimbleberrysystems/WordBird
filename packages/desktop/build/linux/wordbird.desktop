@@ -1,0 +1,17 @@
+[Desktop Entry]
+Name=WordBird
+Comment=Distraction-free novel-writing editor with the Biscuit AI companion
+Exec=wordbird %F
+Terminal=false
+Type=Application
+Icon=wordbird
+Categories=Office;TextEditor;Utility;
+MimeType=text/markdown;
+Keywords=wordbird;markdown;writing;novel;
+StartupWMClass=wordbird
+Actions=NewWindow;
+
+[Desktop Action NewWindow]
+Name=New Window
+Exec=wordbird --new-window %F
+Icon=wordbird

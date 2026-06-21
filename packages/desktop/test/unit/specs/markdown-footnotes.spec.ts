@@ -549,7 +549,7 @@ Sed diam nonumy eirmod tempor.`
     expect(convertTokens(tokens)).to.deep.equal(expected)
   })
 
-  // NOTE: Missing footnotes should be ignored according specification, but MarkText have to
+  // NOTE: Missing footnotes should be ignored according specification, but WordBird have to
   //       display even incomplete footnotes. The user should be able to edit and use these.
   it('Footnotes should be always reported', () => {
     const expected = [
