@@ -2,7 +2,7 @@
 
 ## Use Visual Studio Code
 
-The most simplest way is to debug using the `Debug MarkText` configuration. You can set breakpoints and use the `debugger` statement.
+The most simplest way is to debug using the `Debug WordBird` configuration. You can set breakpoints and use the `debugger` statement.
 
 **Prerequisites:**
 
@@ -22,7 +22,7 @@ $ marktext --inspect=5858 --remote-debugging-port=8315
 
 ## Debug slow startup performance
 
-Regardless of whether you are using the built or development version, you can use the [node-profiler](https://github.com/fxha/node-profiler) to analysis startup issues. Please follow the tool description for setup. Afterwards, launch the following commands in parallel (e.g. use three terminal windows and launch MarkText last).
+Regardless of whether you are using the built or development version, you can use the [node-profiler](https://github.com/fxha/node-profiler) to analysis startup issues. Please follow the tool description for setup. Afterwards, launch the following commands in parallel (e.g. use three terminal windows and launch WordBird last).
 
 ```shell
 $ node-profiler main
@@ -30,4 +30,4 @@ $ node-profiler renderer
 $ marktext --inspect=5858 --remote-debugging-port=8315
 ```
 
-After the successful launch of MarkText, press `Ctrl+C` on both `node-profiler` instances. The tools created two files named `main.cpuprofile` and `renderer.cpuprofile`. You can now analyse these files via _Chrome Developer Tools_ or _Visual Studio Code_.
+After the successful launch of WordBird, press `Ctrl+C` on both `node-profiler` instances. The tools created two files named `main.cpuprofile` and `renderer.cpuprofile`. You can now analyse these files via _Chrome Developer Tools_ or _Visual Studio Code_.

@@ -64,7 +64,7 @@ export const DOC_TABS: DocTab[] = [
             slug: ['markdown-syntax'],
             title: 'Markdown syntax',
             file: 'end-user/MARKDOWN_SYNTAX.md',
-            hint: 'Every element MarkText renders'
+            hint: 'Every element WordBird renders'
           }
         ]
       },
@@ -87,7 +87,7 @@ export const DOC_TABS: DocTab[] = [
             slug: ['application-data-directory'],
             title: 'Application data directory',
             file: 'end-user/APPLICATION_DATA_DIRECTORY.md',
-            hint: 'Where MarkText stores user data'
+            hint: 'Where WordBird stores user data'
           },
           {
             slug: ['environment-variables'],
@@ -139,7 +139,7 @@ export const DOC_TABS: DocTab[] = [
             slug: ['portable'],
             title: 'Portable mode',
             file: 'end-user/PORTABLE.md',
-            hint: 'Run MarkText from a USB stick'
+            hint: 'Run WordBird from a USB stick'
           },
           {
             slug: ['faq'],
@@ -168,7 +168,7 @@ export const DOC_TABS: DocTab[] = [
             slug: ['dev', 'build'],
             title: 'Build instructions',
             file: 'dev/BUILD.md',
-            hint: 'Build MarkText from source'
+            hint: 'Build WordBird from source'
           },
           {
             slug: ['dev', 'linux-dev'],

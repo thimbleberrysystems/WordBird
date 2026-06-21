@@ -5,7 +5,7 @@
 //       We'll should try bind no keys to `Alt` "modifiers" because there are only a few key bindings available.
 
 const keybindings: Map<string, string> = new Map([
-  // MarkText menu on macOS only
+  // WordBird menu on macOS only
   ['mt.hide', ''],
   ['mt.hide-others', ''],
 

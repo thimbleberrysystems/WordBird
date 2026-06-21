@@ -7,11 +7,11 @@ const pinia = createPinia()
 export const useMainStore = defineStore('main', () => {
   // Platform of system: 'darwin' | 'win32' | 'linux'
   const platform = ref<NodeJS.Platform>(window.electron.process.platform)
-  // MarkText version string
+  // WordBird version string
   const appVersion = ref<string>(window.electron.process.env.MARKTEXT_VERSION_STRING ?? '')
   // Whether current window is active or focused
   const windowActive = ref(true)
-  // Whether MarkText is initialized
+  // Whether WordBird is initialized
   const init = ref(false)
 
   function SET_WIN_STATUS(status: boolean): void {

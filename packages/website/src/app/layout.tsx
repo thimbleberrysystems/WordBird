@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 })
 
 const SITE_URL = 'https://marktext.me'
-const TITLE = 'MarkText — The Markdown editor that gets out of your way'
+const TITLE = 'WordBird — The Markdown editor that gets out of your way'
 const DESCRIPTION =
   'A free, open-source, real-time preview Markdown editor for macOS, Windows and Linux. Beautiful typography, 33 built-in themes, math, diagrams, footnotes — all rendered live.'
 
@@ -24,10 +24,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: TITLE,
-    template: '%s | MarkText'
+    template: '%s | WordBird'
   },
   description: DESCRIPTION,
-  applicationName: 'MarkText',
+  applicationName: 'WordBird',
   keywords: [
     'markdown editor',
     'WYSIWYG markdown',
@@ -50,10 +50,10 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: SITE_URL,
-    siteName: 'MarkText',
+    siteName: 'WordBird',
     title: TITLE,
     description: DESCRIPTION,
-    images: [{ url: '/favicon.png', width: 512, height: 512, alt: 'MarkText logo' }]
+    images: [{ url: '/favicon.png', width: 512, height: 512, alt: 'WordBird logo' }]
   },
   twitter: {
     card: 'summary_large_image',
@@ -73,7 +73,7 @@ export const viewport: Viewport = {
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
-  name: 'MarkText',
+  name: 'WordBird',
   applicationCategory: 'DeveloperApplication',
   operatingSystem: 'macOS, Windows, Linux',
   description: DESCRIPTION,

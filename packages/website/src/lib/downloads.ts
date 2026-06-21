@@ -8,6 +8,6 @@ export const DOWNLOAD = {
   issues: 'https://github.com/marktext/marktext/issues',
   sponsor: 'https://github.com/sponsors/marktext',
   twitter:
-    'https://twitter.com/intent/tweet?via=marktextme&url=https://github.com/marktext/marktext/&text=What%20do%20you%20want%20to%20say%20to%20app?&hashtags=happyMarkText',
+    'https://twitter.com/intent/tweet?via=marktextme&url=https://github.com/marktext/marktext/&text=What%20do%20you%20want%20to%20say%20to%20app?&hashtags=happyWordBird',
   serpapi: 'https://serpapi.com/?utm_source=marktext'
 }

@@ -168,7 +168,7 @@ export const loadMarkdownFile = async(
 
   if (isMixedLineEndings || isUnknownEnding || lineEnding !== 'lf') {
     markdown = convertLineEndings(markdown, 'lf')
-    // MarkText always uses LF internally. If the user did not request LF line
+    // WordBird always uses LF internally. If the user did not request LF line
     // endings, we need to adjust on save.
     adjustLineEndingOnSave = !autoNormalizeLineEndings && lineEnding !== 'lf'
   }

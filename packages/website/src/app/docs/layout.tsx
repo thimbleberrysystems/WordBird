@@ -5,10 +5,10 @@ import './docs.css'
 export const metadata: Metadata = {
   title: {
     default: 'Documentation',
-    template: '%s · MarkText Docs'
+    template: '%s · WordBird Docs'
   },
   description:
-    'Guides, reference and developer documentation for MarkText — the WYSIWYG markdown editor.'
+    'Guides, reference and developer documentation for WordBird — the WYSIWYG markdown editor.'
 }
 
 export default function DocsLayout({ children }: { children: React.ReactNode }) {

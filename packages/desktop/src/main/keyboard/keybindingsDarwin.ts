@@ -4,10 +4,10 @@
 //       Our current key manager will forbid the usage of these key combinations too.
 
 const keybindings: Map<string, string> = new Map([
-  // MarkText menu
+  // WordBird menu
   ['mt.hide', 'Command+H'],
   ['mt.hide-others', 'Command+Option+H'],
-  ['file.preferences', 'Command+,'], // located under MarkText menu in macOS only
+  ['file.preferences', 'Command+,'], // located under WordBird menu in macOS only
 
   // File menu
   ['file.new-window', 'Command+N'],

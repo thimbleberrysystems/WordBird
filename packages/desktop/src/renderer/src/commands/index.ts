@@ -636,7 +636,7 @@ const commands: CommandDescriptor[] = [
   },
 
   // --------------------------------------------------------------------------
-  // MarkText
+  // WordBird
 
   {
     id: 'file.preferences',

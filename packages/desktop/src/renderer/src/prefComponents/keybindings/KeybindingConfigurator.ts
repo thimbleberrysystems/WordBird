@@ -43,7 +43,7 @@ export default class KeybindingConfigurator {
     const uiKeybindings: UiKeybinding[] = []
     for (const [id] of defaultKeybindings) {
       if (!isOsx && id.startsWith('mt.')) {
-        // Skip MarkText menu that is only available on macOS.
+        // Skip WordBird menu that is only available on macOS.
         continue
       }
       uiKeybindings.push(this._toUiKeybinding(id, defaultKeybindings, userKeybindings))

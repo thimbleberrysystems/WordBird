@@ -43,7 +43,7 @@ ${licenseText}
   const output = `# Third Party Notices
 -------------------------------------------------
 
-This file contains all third-party packages that are bundled and shipped with MarkText.
+This file contains all third-party packages that are bundled and shipped with WordBird.
 
 -------------------------------------------------
 # Summary

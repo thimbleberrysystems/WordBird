@@ -1,4 +1,4 @@
-## MarkText Preferences
+## WordBird Preferences
 
 Preferences can be controlled and modified in the settings window or via the `preferences.json` file in the [application data directory](APPLICATION_DATA_DIRECTORY.md). The authoritative list of keys, defaults, and accepted values lives in `src/main/preferences/schema.json` — the tables below mirror that schema.
 
@@ -16,9 +16,9 @@ Preferences can be controlled and modified in the settings window or via the `pr
 | wordWrapInToc          | Boolean | `false`      | Whether to enable word wrap in the table of contents.                                                  |
 | fileSortBy             | String  | `modified`   | Sort files in the opened folder. Optional values: `created`, `modified`, `title`.                      |
 | fileSortOrder          | String  | `asc`        | Sort order for files in opened folders: `asc` (ascending) or `desc` (descending).                      |
-| startUpAction          | String  | `restoreAll` | The action when MarkText launches. Optional values: `folder`, `openLastFolder`, `blank`, `restoreAll`. |
+| startUpAction          | String  | `restoreAll` | The action when WordBird launches. Optional values: `folder`, `openLastFolder`, `blank`, `restoreAll`. |
 | defaultDirectoryToOpen | String  | `""`         | The path that should be opened when `startUpAction=folder`.                                            |
-| language               | String  | `en`         | The display language MarkText uses.                                                                    |
+| language               | String  | `en`         | The display language WordBird uses.                                                                    |
 | restoreLayoutState     | Boolean | `true`       | Restore the previous editor state (open tabs, layout) on startup.                                      |
 | openedFilesInSidebar   | Boolean | `true`       | Whether to show the _Opened Files_ subsection inside the sidebar file tree.                            |
 
@@ -107,7 +107,7 @@ These entries are marked `--internal` in the schema. They have no UI control and
 
 | Key              | Type   | Default | Description                                                    |
 | ---------------- | ------ | ------- | -------------------------------------------------------------- |
-| lastOpenedFolder | String | `""`    | The last folder opened in MarkText (used for session restore). |
+| lastOpenedFolder | String | `""`    | The last folder opened in WordBird (used for session restore). |
 
 ##### Custom CSS
 

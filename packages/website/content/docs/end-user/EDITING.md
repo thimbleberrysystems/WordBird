@@ -4,7 +4,7 @@ Let us take a look at the realtime editor and editing features.
 
 ## Text manipulation
 
-MarkText shows you formatted text in realtime, where you can simply write and edit text, as well as use markdown syntax. To improve your writing efficiency there are a lot of key bindings for better text manipulation. In the preferences you can control the editor settings such as font settings, autocompletion and line width.
+WordBird shows you formatted text in realtime, where you can simply write and edit text, as well as use markdown syntax. To improve your writing efficiency there are a lot of key bindings for better text manipulation. In the preferences you can control the editor settings such as font settings, autocompletion and line width.
 
 ## Selections
 
@@ -34,7 +34,7 @@ Do you want to delete headings, lists or tables? Just select the area and press 
 
 ## Brackets and quotes autocompletion
 
-You can configure MarkText to autocomplete markdown syntax, brackets and quotes. By default `()`, `[]`, `{}`, `**`, `__`, `$$`, `""` and `''` are completed when the first character is typed.
+You can configure WordBird to autocomplete markdown syntax, brackets and quotes. By default `()`, `[]`, `{}`, `**`, `__`, `$$`, `""` and `''` are completed when the first character is typed.
 
 ## Links
 
@@ -44,7 +44,7 @@ Links are displayed by default as normal text, but if you click on a link it is 
 
 ## Formatting
 
-MarkText will automatically format your markdown document according CommonMark and GitHub Flavored Markdown specification. Some settings, such as list indentation, can be controlled via preferences.
+WordBird will automatically format your markdown document according CommonMark and GitHub Flavored Markdown specification. Some settings, such as list indentation, can be controlled via preferences.
 
 ## Editing features
 
@@ -62,7 +62,7 @@ You can transform a line into another type by clicking on the highlighted icon i
 
 #### Table tools
 
-It's sometimes hard to write and manage tables in markdown. In MarkText you can press <kbd>CmdOrCtrl</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd> to get a table dialog and create a table with variable row and column count. Both row and column count can be changed via the table tools (first icon above the table) later if necessary. You can use all inline styles in a table cell and align the text via table tools at the top of the table.
+It's sometimes hard to write and manage tables in markdown. In WordBird you can press <kbd>CmdOrCtrl</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd> to get a table dialog and create a table with variable row and column count. Both row and column count can be changed via the table tools (first icon above the table) later if necessary. You can use all inline styles in a table cell and align the text via table tools at the top of the table.
 
 **Insert and delete rows and columns:**
 
@@ -80,7 +80,7 @@ You can simply move a row or column by clicking on the cell menu (like above) an
 
 ![](../assets/marktext-image-viewer.png)
 
-MarkText provides an image viewer and a pop-up to select and label images. You can resize any image using your mouse cursor; changes are applied in realtime. By clicking on an image or writing `![]()` a pop-up automatically appears that allows you to select an image from disk, or paste a path or URL. Images can be automatically uploaded to cloud, or moved to a relative or absolute path on your local disk. Even pasting images that are not located on disk is supported and these images are stored in the background. In addition, you can control the image alignment whether inline, left, centered or right.
+WordBird provides an image viewer and a pop-up to select and label images. You can resize any image using your mouse cursor; changes are applied in realtime. By clicking on an image or writing `![]()` a pop-up automatically appears that allows you to select an image from disk, or paste a path or URL. Images can be automatically uploaded to cloud, or moved to a relative or absolute path on your local disk. Even pasting images that are not located on disk is supported and these images are stored in the background. In addition, you can control the image alignment whether inline, left, centered or right.
 
 ![](../assets/marktext-image-popup.png)
 
@@ -102,11 +102,11 @@ In typewriter mode, the cursor is always keep in the middle of the editor.
 
 ## File encoding
 
-MarkText tries to automatically detect the encoding and byte-order mark (BOM) of a file upon opening it. The default encoding is UTF-8 that should support all needed characters but can be changed in settings. You can disable automatic encoding detection; however, the application will then assume that all files are UTF-8 encoded. The currently used encoding can be shown and changed via command palette.
+WordBird tries to automatically detect the encoding and byte-order mark (BOM) of a file upon opening it. The default encoding is UTF-8 that should support all needed characters but can be changed in settings. You can disable automatic encoding detection; however, the application will then assume that all files are UTF-8 encoded. The currently used encoding can be shown and changed via command palette.
 
 ## Line endings
 
-MarkText automatically analyzes each file and detects the used line ending and can be changed via command palette too.
+WordBird automatically analyzes each file and detects the used line ending and can be changed via command palette too.
 
 ## Find and replace
 
@@ -116,4 +116,4 @@ To quickly find a keyword in your document press <kbd>CmdOrCtrl</kbd>+<kbd>F</kb
 
 **Search in opened folder:**
 
-MarkText provides a built-in filesystem explorer (tree view) with a fast file searcher. Type a keyword in the search bar and select the needed options like regex or case-insensitive search. That's all! MarkText will then search all markdown files in the opened root directory.
+WordBird provides a built-in filesystem explorer (tree view) with a fast file searcher. Type a keyword in the search bar and select the needed options like regex or case-insensitive search. That's all! WordBird will then search all markdown files in the opened root directory.

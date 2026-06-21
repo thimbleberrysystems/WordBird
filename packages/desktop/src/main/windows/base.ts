@@ -3,7 +3,7 @@ import type { BrowserWindow } from 'electron'
 import { TypedEmitter } from '@shared/types/typedEmitter'
 
 /**
- * A MarkText window.
+ * A WordBird window.
  * @property id Identifier (= browserWindow.id) or null during initialization.
  * @property browserWindow The browser window.
  * @property lifecycle The window lifecycle state.

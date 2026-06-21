@@ -1,6 +1,6 @@
 # Installation
 
-MarkText is a free, open-source Markdown editor for **Linux**, **macOS** and **Windows**. Pre-built binaries are published with every release on [GitHub releases](https://github.com/marktext/marktext/releases/latest). Pick the one that matches your platform.
+WordBird is a free, open-source Markdown editor for **Linux**, **macOS** and **Windows**. Pre-built binaries are published with every release on [GitHub releases](https://github.com/marktext/marktext/releases/latest). Pick the one that matches your platform.
 
 ## Windows
 
@@ -9,7 +9,7 @@ MarkText is a free, open-source Markdown editor for **Linux**, **macOS** and **W
 | `marktext-win-x64-<version>-setup.exe` | Recommended. NSIS installer; per-user install, lets you pick the install directory, creates Start Menu and Desktop shortcuts.               |
 | `marktext-win-x64-<version>.zip`       | Portable zip. Extract anywhere and run `marktext.exe`. See [Portable mode](PORTABLE.md) for details on keeping your data alongside the app. |
 
-After installing, MarkText registers itself as a handler for `.md`, `.markdown`, `.mmd`, `.mdown`, `.mdtxt` and `.mdtext` files.
+After installing, WordBird registers itself as a handler for `.md`, `.markdown`, `.mmd`, `.mdown`, `.mdtxt` and `.mdtext` files.
 
 ## macOS
 
@@ -19,7 +19,7 @@ After installing, MarkText registers itself as a handler for `.md`, `.markdown`,
 | `marktext-mac-x64-<version>.dmg`    | Intel Macs.                        |
 | `marktext-mac-<arch>-<version>.zip` | Plain zip alternative to the DMG.  |
 
-Open the DMG and drag MarkText into your **Applications** folder. Builds are not currently notarized, so the first launch may prompt the system Gatekeeper — right-click the app and choose **Open** to accept it once.
+Open the DMG and drag WordBird into your **Applications** folder. Builds are not currently notarized, so the first launch may prompt the system Gatekeeper — right-click the app and choose **Open** to accept it once.
 
 You can also install via Homebrew Cask:
 
@@ -29,7 +29,7 @@ brew install --cask mark-text
 
 ## Linux
 
-MarkText is shipped in five Linux formats. Most users want the AppImage.
+WordBird is shipped in five Linux formats. Most users want the AppImage.
 
 | Artifact                            | When to choose                                                                                              |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -39,7 +39,7 @@ MarkText is shipped in five Linux formats. Most users want the AppImage.
 | `marktext-linux-<version>.snap`     | Ubuntu / any snap-enabled distro (`sudo snap install marktext-linux-<version>.snap --dangerous --classic`). |
 | `marktext-linux-<version>.tar.gz`   | Portable tarball. Extract and run the included `marktext` binary.                                           |
 
-Arch Linux users can install MarkText from the AUR (`marktext-bin`).
+Arch Linux users can install WordBird from the AUR (`marktext-bin`).
 
 > [!NOTE]
 > See [Linux notes](LINUX.md) for distro-specific tips (sandbox flags, font configuration, file-association quirks).
@@ -70,7 +70,7 @@ Output installers land in the repository's `dist/` folder.
 
 ## Updating
 
-MarkText checks for updates on launch (this can be disabled under **Preferences → General → Updates**). When an update is published, the app downloads it in the background and installs on next restart.
+WordBird checks for updates on launch (this can be disabled under **Preferences → General → Updates**). When an update is published, the app downloads it in the background and installs on next restart.
 
 Portable installs and the AppImage do not auto-update — re-download the latest artifact when you want to upgrade.
 
@@ -78,11 +78,11 @@ Portable installs and the AppImage do not auto-update — re-download the latest
 
 | Platform                  | How                                                                                                  |
 | ------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Windows                   | **Settings → Apps**, or run the bundled `Uninstall MarkText.exe`.                                    |
-| macOS                     | Drag **MarkText.app** to the Trash. Optionally also remove `~/Library/Application Support/marktext`. |
+| Windows                   | **Settings → Apps**, or run the bundled `Uninstall WordBird.exe`.                                    |
+| macOS                     | Drag **WordBird.app** to the Trash. Optionally also remove `~/Library/Application Support/marktext`. |
 | Linux (.deb)              | `sudo apt remove marktext`                                                                           |
 | Linux (.rpm)              | `sudo rpm -e marktext`                                                                               |
 | Linux (snap)              | `sudo snap remove marktext`                                                                          |
 | Linux (AppImage / tar.gz) | Delete the file you extracted.                                                                       |
 
-To wipe MarkText's user data as well, remove its [application data directory](APPLICATION_DATA_DIRECTORY.md).
+To wipe WordBird's user data as well, remove its [application data directory](APPLICATION_DATA_DIRECTORY.md).

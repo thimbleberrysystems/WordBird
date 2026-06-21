@@ -1,7 +1,7 @@
 {
   "name": "marktext-monorepo",
   "version": "0.20.0-dev",
-  "description": "MarkText monorepo root",
+  "description": "WordBird monorepo root",
   "private": true,
   "homepage": "https://github.com/marktext/marktext",
   "packageManager": "pnpm@10.33.4",

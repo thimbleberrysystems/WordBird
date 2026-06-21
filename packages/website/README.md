@@ -1,10 +1,10 @@
-# MarkText Website
+# WordBird Website
 
 [![Built with React](https://img.shields.io/badge/React-brightgreen?logo=react&logoColor=white)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-purple?logo=vite&logoColor=white)](https://vitejs.dev/)
 
-The official website for [MarkText](https://github.com/marktext/marktext) - A simple and elegant markdown editor.
+The official website for [WordBird](https://github.com/marktext/marktext) - A simple and elegant markdown editor.
 
 ## ✨ Features
 
@@ -234,14 +234,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔗 Links
 
-- **Main Project**: [MarkText Editor](https://github.com/marktext/marktext)
+- **Main Project**: [WordBird Editor](https://github.com/marktext/marktext)
 - **Website**: [https://marktext.me](https://marktext.me)
-- **Documentation**: [MarkText Docs](https://github.com/marktext/marktext/tree/develop/docs)
+- **Documentation**: [WordBird Docs](https://github.com/marktext/marktext/tree/develop/docs)
 
 ## 💖 Sponsors
 
-Special thanks to all our sponsors for supporting the MarkText project!
+Special thanks to all our sponsors for supporting the WordBird project!
 
 ---
 
-Made with ❤️ by the MarkText Team
+Made with ❤️ by the WordBird Team

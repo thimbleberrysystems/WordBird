@@ -73,6 +73,6 @@ $ pnpm run build:linux
 - [Debugging](DEBUGGING.md)
 - [Inter-process communication (IPC)](IPC.md)
 - [Interface](INTERFACE.md)
-- [Steps to release MarkText](RELEASE.md)
+- [Steps to release WordBird](RELEASE.md)
 - [Prepare a hotfix](RELEASE_HOTFIX.md)
 - [TypeScript layout and conventions](TYPESCRIPT.md)

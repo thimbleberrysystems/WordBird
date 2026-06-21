@@ -48,7 +48,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="foot-bot">
-          <span>© 2017–2026 MarkText · Released under the MIT License</span>
+          <span>© 2017–2026 WordBird · Released under the MIT License</span>
           <div className="foot-social">
             <a className="icon-btn" href={DOWNLOAD.repo} {...EXT_LINK} aria-label="GitHub">
               <GitHubIcon />
