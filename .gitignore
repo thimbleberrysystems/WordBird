@@ -21,3 +21,13 @@ playwright-report/
 .claude/
 .agents/
 .agent/
+
+# Internal planning / reverse-engineering notes — not for distribution
+.reveng/
+
+# Secrets & local environment (safeguard — never commit these)
+.env
+.env.*
+*.pem
+*.p12
+*.keystore
