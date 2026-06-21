@@ -10,7 +10,7 @@ WordBird is a desktop application and available for:
 
 ### Is WordBird open-source and free?
 
-Yes, WordBird is licensed under the [MIT](https://github.com/marktext/marktext/blob/develop/LICENSE) license and completely free for everyone. The source-code is available on [GitHub](https://github.com/marktext/marktext).
+Yes, WordBird is licensed under the [MIT](https://github.com/Thimbleberrysystems/WordBird/blob/feat/wordbird/LICENSE) license and completely free for everyone. The source-code is available on [GitHub](https://github.com/Thimbleberrysystems/WordBird).
 
 ### Can I use WordBird as note management/taking app?
 

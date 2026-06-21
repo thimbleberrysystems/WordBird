@@ -78,7 +78,7 @@ const jsonLd = {
   operatingSystem: 'macOS, Windows, Linux',
   description: DESCRIPTION,
   url: SITE_URL,
-  license: 'https://github.com/marktext/marktext/blob/develop/LICENSE',
+  license: 'https://github.com/Thimbleberrysystems/WordBird/blob/feat/wordbird/LICENSE',
   author: { '@type': 'Person', name: 'Ran Luo', url: 'https://github.com/Jocs' },
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   downloadUrl: 'https://github.com/marktext/marktext/releases/latest',
