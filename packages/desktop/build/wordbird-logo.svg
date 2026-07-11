@@ -1,80 +1,52 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#BDE3FF"/>
-      <stop offset="100%" stop-color="#7CC4F8"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FDF6E3"/>
+      <stop offset="100%" stop-color="#F3E4BC"/>
     </linearGradient>
-    <linearGradient id="headGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FFE95C"/>
-      <stop offset="100%" stop-color="#FFD21F"/>
-    </linearGradient>
-    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FFDF3D"/>
-      <stop offset="100%" stop-color="#FFC712"/>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFE45C"/>
+      <stop offset="100%" stop-color="#FFC81F"/>
     </linearGradient>
   </defs>
+  <rect width="512" height="512" rx="110" fill="url(#bg)"/>
 
-  <!-- Rounded-square app background -->
-  <rect x="0" y="0" width="512" height="512" rx="110" ry="110" fill="url(#bgGrad)"/>
+  <!-- Bird peeking over the book -->
+  <circle cx="256" cy="248" r="152" fill="url(#body)"/>
 
-  <!-- ══ Body (small, under the big head — classic cartoon canary) ══ -->
-  <ellipse cx="256" cy="408" rx="92" ry="70" fill="url(#bodyGrad)" stroke="#B07C00" stroke-width="7"/>
+  <!-- Head feathers -->
+  <path d="M 230 106 Q 222 64 238 40 Q 248 76 248 102 Z" fill="#FFC81F"/>
+  <path d="M 254 100 Q 258 54 278 36 Q 274 74 268 102 Z" fill="#FFE45C"/>
+  <path d="M 280 108 Q 296 74 318 66 Q 306 98 292 114 Z" fill="#FFC81F"/>
 
-  <!-- Wings -->
-  <path d="M 172 380 Q 128 400 130 445 Q 165 440 188 415 Q 180 395 172 380 Z"
-        fill="#FFD21F" stroke="#B07C00" stroke-width="6"/>
-  <path d="M 340 380 Q 384 400 382 445 Q 347 440 324 415 Q 332 395 340 380 Z"
-        fill="#FFD21F" stroke="#B07C00" stroke-width="6"/>
+  <!-- Eyes -->
+  <ellipse cx="204" cy="230" rx="44" ry="54" fill="#FFFFFF"/>
+  <ellipse cx="308" cy="230" rx="44" ry="54" fill="#FFFFFF"/>
+  <circle cx="212" cy="240" r="22" fill="#3B79D6"/>
+  <circle cx="300" cy="240" r="22" fill="#3B79D6"/>
+  <circle cx="215" cy="242" r="10" fill="#14213D"/>
+  <circle cx="297" cy="242" r="10" fill="#14213D"/>
+  <circle cx="220" cy="230" r="7" fill="#FFFFFF"/>
+  <circle cx="305" cy="230" r="7" fill="#FFFFFF"/>
 
-  <!-- Tummy patch -->
-  <ellipse cx="256" cy="422" rx="52" ry="42" fill="#FFF3B0"/>
+  <!-- Beak -->
+  <path d="M 224 292 Q 256 278 288 292 Q 280 320 256 324 Q 232 320 224 292 Z" fill="#FF9F38"/>
+  <path d="M 230 296 Q 256 308 282 296" fill="none" stroke="#E07818" stroke-width="6" stroke-linecap="round"/>
 
-  <!-- ══ Big round head ══ -->
-  <circle cx="256" cy="212" r="158" fill="url(#headGrad)" stroke="#B07C00" stroke-width="8"/>
+  <!-- Blush -->
+  <ellipse cx="152" cy="282" rx="20" ry="12" fill="#FFB37C" opacity="0.8"/>
+  <ellipse cx="360" cy="282" rx="20" ry="12" fill="#FFB37C" opacity="0.8"/>
 
-  <!-- Three head feathers -->
-  <path d="M 236 58 Q 228 22 244 6 Q 250 34 252 56 Z" fill="#FFD21F" stroke="#B07C00" stroke-width="5"/>
-  <path d="M 256 54 Q 258 16 276 2 Q 274 32 268 56 Z" fill="#FFE95C" stroke="#B07C00" stroke-width="5"/>
-  <path d="M 274 60 Q 288 28 308 22 Q 296 50 282 66 Z" fill="#FFD21F" stroke="#B07C00" stroke-width="5"/>
+  <!-- Open book -->
+  <path d="M 60 398 Q 158 368 256 396 Q 354 368 452 398 L 452 456 Q 354 430 256 456 Q 158 430 60 456 Z" fill="#4F86C6"/>
+  <path d="M 72 394 Q 164 366 256 392 Q 348 366 440 394 L 440 444 Q 348 421 256 444 Q 164 421 72 444 Z" fill="#FFFFFF"/>
+  <line x1="256" y1="392" x2="256" y2="444" stroke="#D8DEE9" stroke-width="5"/>
+  <path d="M 98 406 Q 168 388 234 404 M 98 420 Q 168 402 234 418 M 278 404 Q 344 388 414 406 M 278 418 Q 344 402 414 420"
+        stroke="#C7D2E0" stroke-width="6" fill="none" stroke-linecap="round"/>
 
-  <!-- ══ Huge cartoon eyes ══ -->
-  <ellipse cx="206" cy="196" rx="52" ry="68" fill="#FFFFFF" stroke="#333333" stroke-width="7"/>
-  <ellipse cx="306" cy="196" rx="52" ry="68" fill="#FFFFFF" stroke="#333333" stroke-width="7"/>
-  <!-- Irises -->
-  <circle cx="218" cy="210" r="25" fill="#3D8BE8"/>
-  <circle cx="294" cy="210" r="25" fill="#3D8BE8"/>
-  <!-- Pupils -->
-  <circle cx="221" cy="212" r="12" fill="#1A1A1A"/>
-  <circle cx="291" cy="212" r="12" fill="#1A1A1A"/>
-  <!-- Eye sparkles -->
-  <circle cx="226" cy="200" r="7" fill="#FFFFFF"/>
-  <circle cx="300" cy="200" r="7" fill="#FFFFFF"/>
-  <circle cx="212" cy="222" r="4" fill="#FFFFFF" opacity="0.8"/>
-  <circle cx="286" cy="222" r="4" fill="#FFFFFF" opacity="0.8"/>
-
-  <!-- Cheerful eyebrows -->
-  <path d="M 168 118 Q 208 100 244 114" fill="none" stroke="#B07C00" stroke-width="9" stroke-linecap="round"/>
-  <path d="M 268 114 Q 304 100 344 118" fill="none" stroke="#B07C00" stroke-width="9" stroke-linecap="round"/>
-
-  <!-- Blush cheeks -->
-  <ellipse cx="152" cy="258" rx="24" ry="15" fill="#FFAD7A" opacity="0.75"/>
-  <ellipse cx="360" cy="258" rx="24" ry="15" fill="#FFAD7A" opacity="0.75"/>
-
-  <!-- ══ Smiling orange beak ══ -->
-  <path d="M 216 278 Q 256 256 296 278 Q 287 310 256 314 Q 225 310 216 278 Z"
-        fill="#FF9E2C" stroke="#C96A10" stroke-width="7"/>
-  <path d="M 220 282 Q 256 298 292 282" fill="none" stroke="#C96A10" stroke-width="6" stroke-linecap="round"/>
-
-  <!-- ══ Quill pen held by the right wing (the writer's bird) ══ -->
-  <g transform="rotate(-30 420 420)">
-    <rect x="413" y="360" width="13" height="92" rx="6" fill="#F5F9FF" stroke="#8FB4D9" stroke-width="5"/>
-    <path d="M 419 356 Q 400 318 419 288 Q 438 318 419 356 Z" fill="#FF7A59" stroke="#C94F2E" stroke-width="5"/>
-    <path d="M 415 456 L 419 474 L 424 456 Z" fill="#3D6B9E"/>
+  <!-- Wing paws gripping the page edge -->
+  <g fill="#FFC81F">
+    <path d="M 128 366 Q 108 374 108 392 Q 108 404 124 406 Q 118 396 126 390 Q 120 402 134 406 Q 130 396 138 391 Q 134 403 148 405 Q 156 402 156 390 Q 156 372 140 366 Z"/>
+    <path d="M 384 366 Q 404 374 404 392 Q 404 404 388 406 Q 394 396 386 390 Q 392 402 378 406 Q 382 396 374 391 Q 378 403 364 405 Q 356 402 356 390 Q 356 372 372 366 Z"/>
   </g>
-
-  <!-- Feet peeking out -->
-  <path d="M 216 470 q -8 14 -20 16 M 216 470 q 2 16 -4 22 M 216 470 q 12 12 10 22"
-        fill="none" stroke="#FF9E2C" stroke-width="9" stroke-linecap="round"/>
-  <path d="M 296 470 q 8 14 20 16 M 296 470 q -2 16 4 22 M 296 470 q -12 12 -10 22"
-        fill="none" stroke="#FF9E2C" stroke-width="9" stroke-linecap="round"/>
 </svg>
