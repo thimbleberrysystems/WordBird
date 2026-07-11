@@ -122,6 +122,19 @@
           </div>
         </div>
 
+        <!-- Assistant replies are markdown — render a sanitized subset. -->
+        <div
+          v-else-if="message.role === 'assistant' || message.role === 'ai'"
+          :class="['message', `message--${message.role}`]"
+        >
+          <!-- eslint-disable-next-line vue/no-v-html -- sanitized by DOMPurify in renderChatMarkdown -->
+          <div
+            class="message__text message__text--md"
+            @click="handleMarkdownClick"
+            v-html="renderChatMarkdown(message.content)"
+          />
+        </div>
+
         <div
           v-else
           :class="['message', `message--${message.role}`]"
@@ -291,6 +304,7 @@ import { useLayoutStore } from '../../store/layout'
 import { langGraphService } from '../../services/langgraph'
 import bus from '../../bus'
 import { t } from '../../i18n'
+import { renderChatMarkdown } from '../../util/chatMarkdown'
 import { DArrowRight, Plus, ChatLineSquare, Delete, WarningFilled } from '@element-plus/icons-vue'
 import GlobalAgentReview from '../agent/GlobalAgentReview.vue'
 import type {
@@ -639,6 +653,16 @@ function handleBiscuitAsk (payload: unknown): void {
   userInput.value = text
   if (aiIsConnected.value && !sending.value) {
     sendMessage()
+  }
+}
+
+// Window-open is denied app-wide; route chat links to the system browser.
+function handleMarkdownClick (event: MouseEvent): void {
+  const anchor = (event.target as HTMLElement).closest('a')
+  const href = anchor?.getAttribute('href')
+  if (href && /^https?:\/\//i.test(href)) {
+    event.preventDefault()
+    window.electron.shell.openExternal(href)
   }
 }
 
@@ -1135,6 +1159,87 @@ async function sendMessage (): Promise<void> {
 .message--assistant .message__text {
   text-align: left;
   color: var(--color-primary, #409eff);
+}
+
+/* Rendered-markdown subset for assistant replies. Uses :deep() because
+   the HTML comes from v-html and misses the scoped attribute. */
+.message__text--md {
+  color: var(--editorColor, #303133);
+  & :deep(p) {
+    margin: 0 0 0.5em;
+  }
+  & :deep(p:last-child) {
+    margin-bottom: 0;
+  }
+  & :deep(strong) {
+    font-weight: 700;
+    color: var(--editorColor, #303133);
+  }
+  & :deep(em) {
+    font-style: italic;
+  }
+  & :deep(ul),
+  & :deep(ol) {
+    margin: 0.3em 0 0.6em;
+    padding-left: 1.4em;
+  }
+  & :deep(li) {
+    margin: 0.15em 0;
+  }
+  & :deep(h1),
+  & :deep(h2),
+  & :deep(h3),
+  & :deep(h4),
+  & :deep(h5),
+  & :deep(h6) {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin: 0.7em 0 0.35em;
+    color: var(--editorColor, #303133);
+  }
+  & :deep(code) {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+    background: var(--itemBgColor, rgba(128, 128, 128, 0.12));
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  & :deep(pre) {
+    background: var(--itemBgColor, rgba(128, 128, 128, 0.12));
+    padding: 8px 10px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 0.4em 0 0.6em;
+    & code {
+      background: transparent;
+      padding: 0;
+    }
+  }
+  & :deep(blockquote) {
+    margin: 0.4em 0;
+    padding: 2px 10px;
+    border-left: 3px solid var(--themeColor, #409eff);
+    color: var(--iconColor, #909399);
+  }
+  & :deep(hr) {
+    border: none;
+    border-top: 1px solid var(--itemBgColor, rgba(128, 128, 128, 0.2));
+    margin: 0.7em 0;
+  }
+  & :deep(a) {
+    color: var(--themeColor, #409eff);
+    text-decoration: underline;
+  }
+  & :deep(table) {
+    border-collapse: collapse;
+    margin: 0.4em 0;
+    font-size: 0.78rem;
+  }
+  & :deep(th),
+  & :deep(td) {
+    border: 1px solid var(--itemBgColor, rgba(128, 128, 128, 0.25));
+    padding: 3px 8px;
+  }
 }
 
 .message--stopped .message__text {

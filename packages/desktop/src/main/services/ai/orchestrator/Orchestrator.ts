@@ -250,9 +250,12 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   '- Before sweeping multi-file changes, have an agent take snapshot_project so the writer can rewind.\n' +
   '- New canon discovered while working should be recorded via a drafter with propose_bible_update.\n' +
   (mode === 'plan'
-    ? '\nPLAN MODE IS ACTIVE: do NOT call any tools. Instead, reply with a short numbered plan of ' +
-      'what you would do — which specialists you would spawn and what each would be asked. ' +
-      'End by asking the writer to switch modes or say "go" to execute.\n'
+    ? '\nPLAN MODE IS ACTIVE: you may use your read tools to analyze, but you cannot spawn ' +
+      'agents and NOTHING can be written, saved, or changed — no files, no scenes, no bible ' +
+      'pages. Reply with a short numbered plan of what you would do. If the writer asks you ' +
+      'to write or save ANYTHING, tell them plainly: "I\'m in Plan mode, so I can\'t make ' +
+      'changes — press Shift+Tab (the mode line under the chat box) to switch to Ask or Auto ' +
+      'and I\'ll do it." Saying "go" is not enough; only the writer can switch the mode.\n'
     : '') +
   (mode === 'ask'
     ? '\nASK MODE IS ACTIVE: the writer approves each spawn wave. Keep waves small and purposeful.\n'
@@ -618,8 +621,10 @@ export class Orchestrator {
     if (this._mode === 'plan') {
       this._activity('plan', 'Plan mode: spawning is disabled')
       return (
-        'PLAN MODE: sub-agents cannot be spawned. Present your plan to the writer as a ' +
-        'numbered list instead, and ask them to approve or switch modes.'
+        'PLAN MODE: sub-agents cannot be spawned and nothing can be written. Present your ' +
+        'plan to the writer as a numbered list, and tell them to press Shift+Tab (the mode ' +
+        'line under the chat box) to switch to Ask or Auto when they want it executed — ' +
+        'only the writer can switch the mode.'
       )
     }
 
