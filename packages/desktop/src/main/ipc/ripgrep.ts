@@ -4,7 +4,7 @@ import { ipcMain, type WebContents } from 'electron'
 import log from 'electron-log'
 import { rgPath as bundledRgPath } from '@vscode/ripgrep'
 
-const resolveRgPath = (): string => {
+export const resolveRgPath = (): string => {
   if (process.env.MARKTEXT_RIPGREP_PATH) return process.env.MARKTEXT_RIPGREP_PATH
   return bundledRgPath.replace(/\bapp\.asar\b/, 'app.asar.unpacked')
 }

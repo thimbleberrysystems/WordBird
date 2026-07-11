@@ -3,6 +3,55 @@
   "enabled": true,
   "tools": [
     {
+      "id": "list_structure",
+      "name": "list_structure",
+      "displayName": "List manuscript structure",
+      "description": "Return the novel's binder tree: parts, chapters, and scenes with their ids, titles, status, POV, synopsis, and word counts. Call this first to orient yourself in the project.",
+      "handler": "list_structure",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": { "type": "object", "properties": {} }
+    },
+    {
+      "id": "read_unit",
+      "name": "read_unit",
+      "displayName": "Read scene/chapter",
+      "description": "Read the full prose of a scene, chapter, or part by its unit id (from list_structure). Reading a container concatenates its scenes in order.",
+      "handler": "read_unit",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "unitId": { "type": "string", "description": "Unit id from list_structure." }
+        },
+        "required": ["unitId"]
+      }
+    },
+    {
+      "id": "search_manuscript",
+      "name": "search_manuscript",
+      "displayName": "Search manuscript",
+      "description": "Fast text or regex search across every file in the project (prose, bible, notes). Use this to find where characters, objects, or phrases appear before making claims or edits.",
+      "handler": "search_manuscript",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Text or regex to search for." },
+          "regex": { "type": "boolean", "description": "Treat query as a regular expression (default false)." },
+          "caseSensitive": { "type": "boolean", "description": "Case-sensitive match (default false)." },
+          "contextLines": { "type": "integer", "description": "Context lines around each match, max 5 (default 1)." },
+          "maxResults": { "type": "integer", "description": "Maximum matches to return, max 200 (default 50)." }
+        },
+        "required": ["query"]
+      }
+    },
+    {
       "id": "read_project_file",
       "name": "read_project_file",
       "displayName": "Read file",
@@ -64,6 +113,214 @@
           }
         },
         "required": ["fname", "newdata"]
+      }
+    },
+    {
+      "id": "propose_new_unit",
+      "name": "propose_new_unit",
+      "displayName": "Create scene/chapter",
+      "description": "Add a new part, chapter, or scene to the binder. If prose content is provided it is returned as an edit proposal for user review; the structural shell is created immediately.",
+      "handler": "propose_new_unit",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "renderer",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "enum": ["part", "chapter", "scene"], "description": "Kind of unit to create." },
+          "title": { "type": "string", "description": "Title for the new unit." },
+          "parentId": { "type": "string", "description": "Parent unit id (omit for top level)." },
+          "index": { "type": "integer", "description": "Insert position among siblings (appends when omitted)." },
+          "synopsis": { "type": "string", "description": "One-paragraph synopsis stored as binder metadata." },
+          "content": { "type": "string", "description": "Optional prose for the new unit — goes through user review." }
+        },
+        "required": ["type", "title"]
+      }
+    },
+    {
+      "id": "restructure_unit",
+      "name": "restructure_unit",
+      "displayName": "Move unit",
+      "description": "Move a scene/chapter/part to a new parent and/or position in the binder. Order in the binder is the reading order of the novel.",
+      "handler": "restructure_unit",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "renderer",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "unitId": { "type": "string", "description": "Unit to move." },
+          "newParentId": { "type": "string", "description": "Destination parent id (omit for top level)." },
+          "index": { "type": "integer", "description": "Position among the destination's children (default 0)." }
+        },
+        "required": ["unitId"]
+      }
+    },
+    {
+      "id": "update_unit_meta",
+      "name": "update_unit_meta",
+      "displayName": "Update unit metadata",
+      "description": "Update a unit's binder metadata: title, status (idea/draft/revised/final), POV character, location, or synopsis. Does not touch prose.",
+      "handler": "update_unit_meta",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "unitId": { "type": "string" },
+          "title": { "type": "string" },
+          "status": { "type": "string", "enum": ["idea", "draft", "revised", "final"] },
+          "pov": { "type": "string" },
+          "location": { "type": "string" },
+          "synopsis": { "type": "string" }
+        },
+        "required": ["unitId"]
+      }
+    },
+    {
+      "id": "read_bible",
+      "name": "read_bible",
+      "displayName": "Read story bible",
+      "description": "Without a path: list every story-bible page (characters, places, threads, research) with its first line. With a path: read that page in full. ALWAYS consult the bible before writing or editing prose so you stay consistent with established canon.",
+      "handler": "read_bible",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "Bible-relative file to read in full, e.g. bible/characters/elara.md." }
+        }
+      }
+    },
+    {
+      "id": "propose_bible_update",
+      "name": "propose_bible_update",
+      "displayName": "Update story bible",
+      "description": "Propose creating or rewriting a story-bible page (must live under bible/). Use this to record new canon facts, character sheets, places, plot threads, or cited research notes. Goes through user review.",
+      "handler": "propose_bible_update",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "renderer",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "Target page under bible/, e.g. bible/characters/elara.md." },
+          "newContent": { "type": "string", "description": "Full new content of the page." },
+          "reason": { "type": "string", "description": "Why this canon change/addition is needed." }
+        },
+        "required": ["path", "newContent"]
+      }
+    },
+    {
+      "id": "read_summary",
+      "name": "read_summary",
+      "displayName": "Read summary",
+      "description": "Read the maintained synopsis for a unit (by id) or the whole book (omit unitId). Prefer summaries over reading full prose when you only need orientation.",
+      "handler": "read_summary",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "unitId": { "type": "string", "description": "Unit id; omit for the book-level summary." }
+        }
+      }
+    },
+    {
+      "id": "update_summary",
+      "name": "update_summary",
+      "displayName": "Update summary",
+      "description": "Write the maintained synopsis for a unit (by id) or the whole book (omit unitId). Keep summaries current after prose changes: scene summaries 3-6 sentences, chapter/book summaries proportionally longer.",
+      "handler": "update_summary",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "unitId": { "type": "string", "description": "Unit id; omit for the book-level summary." },
+          "content": { "type": "string", "description": "The summary text (markdown)." }
+        },
+        "required": ["content"]
+      }
+    },
+    {
+      "id": "log_continuity_issue",
+      "name": "log_continuity_issue",
+      "displayName": "Log continuity issue",
+      "description": "Record a contradiction, timeline problem, dangling setup, or open question you discovered, so the writer can review it later. Include the affected files.",
+      "handler": "log_continuity_issue",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "description": "Short name for the issue." },
+          "description": { "type": "string", "description": "What conflicts with what, with quotes/locations." },
+          "severity": { "type": "string", "enum": ["low", "medium", "high"] },
+          "relatedPaths": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Project-relative files involved."
+          }
+        },
+        "required": ["title", "description"]
+      }
+    },
+    {
+      "id": "snapshot_project",
+      "name": "snapshot_project",
+      "displayName": "Snapshot project",
+      "description": "Save a named checkpoint of the entire project (prose + bible) before risky or sweeping work, so the writer can rewind if needed.",
+      "handler": "snapshot_project",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string", "description": "What this snapshot captures, e.g. 'Before renaming Elara'." }
+        },
+        "required": ["message"]
+      }
+    },
+    {
+      "id": "web_search",
+      "name": "web_search",
+      "displayName": "Search the web",
+      "description": "Search the internet for research (history, geography, science, names, culture). Returns titles, URLs, and snippets. Follow up with web_fetch to read a promising result, and save durable findings to bible/research/ with citations.",
+      "handler": "web_search",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Search query." },
+          "maxResults": { "type": "integer", "description": "Max results, up to 10 (default 5)." }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "id": "web_fetch",
+      "name": "web_fetch",
+      "displayName": "Fetch a web page",
+      "description": "Fetch a public web page and return its readable text (truncated to ~20k characters). Only http(s) URLs; private/local hosts are blocked.",
+      "handler": "web_fetch",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "description": "Absolute http(s) URL to fetch." }
+        },
+        "required": ["url"]
       }
     }
   ]

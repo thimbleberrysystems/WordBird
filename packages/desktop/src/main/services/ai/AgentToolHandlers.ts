@@ -1,6 +1,8 @@
 import crypto from 'crypto'
 import fsPromises from 'fs/promises'
 import path from 'path'
+import { registerNovelAgentToolHandlers } from './NovelToolHandlers'
+import { registerWebAgentToolHandlers } from './WebToolHandlers'
 import type { AgentToolContext } from './AgentToolService'
 import type { AgentToolService } from './AgentToolService'
 
@@ -193,4 +195,6 @@ const proposeProjectFileEdit = async(
 export const registerBuiltInAgentToolHandlers = (service: AgentToolService): void => {
   service.registerHandler('read_project_file', readAgentFile)
   service.registerHandler('propose_project_file_edit', proposeProjectFileEdit)
+  registerNovelAgentToolHandlers(service)
+  registerWebAgentToolHandlers(service)
 }
