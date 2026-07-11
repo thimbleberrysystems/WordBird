@@ -311,7 +311,7 @@ describe('live plans (create → update → list → propose)', () => {
 
   it('lists plans newest-first with titles', async() => {
     await run('save_plan', { title: 'Older Plan', plan: 'a' })
-    await new Promise((r) => setTimeout(r, 10))
+    await new Promise((resolve) => setTimeout(resolve, 10))
     await run('save_plan', { title: 'Newer Plan', plan: 'b' })
     const result = (await run('list_plans', {})) as {
       plans: Array<{ planId: string; title: string }>
