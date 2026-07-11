@@ -1,4 +1,5 @@
 import {
+  Notebook as BinderIcon,
   Folder as FilesIcon,
   Search as SearchIcon,
   Memo as TocIcon,
@@ -13,6 +14,11 @@ export interface SideBarIconEntry {
 }
 
 export const sideBarIcons: SideBarIconEntry[] = [
+  {
+    id: 'binder',
+    name: () => t('sideBar.icons.binder'),
+    icon: BinderIcon
+  },
   {
     id: 'files',
     name: () => t('sideBar.icons.files'),

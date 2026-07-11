@@ -291,7 +291,8 @@
       "search": "検索",
       "toc": "目次",
       "biscuit": "Biscuit",
-      "settings": "設定"
+      "settings": "設定",
+      "binder": "原稿"
     }
   },
   "commandPalette": {
@@ -1417,5 +1418,21 @@
     "copy": "コピー",
     "paste": "貼り付け",
     "selectAll": "すべて選択"
+  },
+  "binder": {
+    "title": "原稿",
+    "words": "語",
+    "part": "部",
+    "chapter": "章",
+    "scene": "シーン",
+    "newPartTitle": "新しい部",
+    "newChapterTitle": "新しい章",
+    "newSceneTitle": "新しいシーン",
+    "newScene": "中に追加",
+    "delete": "削除",
+    "deleteConfirm": "「{title}」とそのファイルを削除しますか？スナップショットから復元できます。",
+    "compile": "コンパイル",
+    "compiled": "原稿を {path} に出力しました",
+    "empty": "まだ何もありません。章を追加して始めましょう。"
   }
 }

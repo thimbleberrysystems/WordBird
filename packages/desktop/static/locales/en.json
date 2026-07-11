@@ -290,7 +290,8 @@
       "search": "Search",
       "toc": "Table of Contents",
       "biscuit": "Biscuit",
-      "settings": "Settings"
+      "settings": "Settings",
+      "binder": "Manuscript"
     }
   },
   "commandPalette": {
@@ -1415,5 +1416,21 @@
     "vega-lite-start": "vega-lite start",
     "click-to-add-image": "Click to add image",
     "load-image-failed": "Load image failed"
+  },
+  "binder": {
+    "title": "Manuscript",
+    "words": "words",
+    "part": "Part",
+    "chapter": "Chapter",
+    "scene": "Scene",
+    "newPartTitle": "New Part",
+    "newChapterTitle": "New Chapter",
+    "newSceneTitle": "New Scene",
+    "newScene": "Add inside",
+    "delete": "Delete",
+    "deleteConfirm": "Delete \"{title}\" and its files? A snapshot can bring it back.",
+    "compile": "Compile",
+    "compiled": "Manuscript compiled to {path}",
+    "empty": "Nothing here yet — add a chapter to begin."
   }
 }

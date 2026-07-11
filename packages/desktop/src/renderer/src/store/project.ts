@@ -125,7 +125,7 @@ export const useProjectStore = defineStore('project', () => {
     currentProjectPath.value = pathname
 
     const layout = {
-      rightColumn: 'files',
+      rightColumn: 'binder',
       showSideBar: true,
       showTabBar: true
     }

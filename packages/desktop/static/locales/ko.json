@@ -291,7 +291,8 @@
       "search": "검색",
       "toc": "목차",
       "biscuit": "Biscuit",
-      "settings": "설정"
+      "settings": "설정",
+      "binder": "원고"
     }
   },
   "commandPalette": {
@@ -1417,5 +1418,21 @@
     "copy": "복사",
     "paste": "붙여넣기",
     "selectAll": "모두 선택"
+  },
+  "binder": {
+    "title": "원고",
+    "words": "단어",
+    "part": "부",
+    "chapter": "챕터",
+    "scene": "장면",
+    "newPartTitle": "새 부",
+    "newChapterTitle": "새 챕터",
+    "newSceneTitle": "새 장면",
+    "newScene": "안에 추가",
+    "delete": "삭제",
+    "deleteConfirm": "\"{title}\"과(와) 해당 파일을 삭제할까요? 스냅숏으로 되돌릴 수 있습니다.",
+    "compile": "컴파일",
+    "compiled": "원고가 {path}에 저장되었습니다",
+    "empty": "아직 아무것도 없습니다. 챕터를 추가해 시작하세요."
   }
 }

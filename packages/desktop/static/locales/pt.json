@@ -291,7 +291,8 @@
       "search": "Pesquisar",
       "toc": "Índice",
       "biscuit": "Biscuit",
-      "settings": "Configurações"
+      "settings": "Configurações",
+      "binder": "Manuscrito"
     }
   },
   "commandPalette": {
@@ -1417,5 +1418,21 @@
     "copy": "Copiar",
     "paste": "Colar",
     "selectAll": "Selecionar tudo"
+  },
+  "binder": {
+    "title": "Manuscrito",
+    "words": "palavras",
+    "part": "Parte",
+    "chapter": "Capítulo",
+    "scene": "Cena",
+    "newPartTitle": "Nova parte",
+    "newChapterTitle": "Novo capítulo",
+    "newSceneTitle": "Nova cena",
+    "newScene": "Adicionar dentro",
+    "delete": "Excluir",
+    "deleteConfirm": "Excluir \"{title}\" e seus arquivos? Um instantâneo pode trazê-los de volta.",
+    "compile": "Compilar",
+    "compiled": "Manuscrito compilado em {path}",
+    "empty": "Nada aqui ainda — adicione um capítulo para começar."
   }
 }

@@ -291,7 +291,8 @@
       "search": "Rechercher",
       "toc": "Table des matières",
       "biscuit": "Biscuit",
-      "settings": "Paramètres"
+      "settings": "Paramètres",
+      "binder": "Manuscrit"
     }
   },
   "commandPalette": {
@@ -1417,5 +1418,21 @@
     "copy": "Copier",
     "paste": "Coller",
     "selectAll": "Tout sélectionner"
+  },
+  "binder": {
+    "title": "Manuscrit",
+    "words": "mots",
+    "part": "Partie",
+    "chapter": "Chapitre",
+    "scene": "Scène",
+    "newPartTitle": "Nouvelle partie",
+    "newChapterTitle": "Nouveau chapitre",
+    "newSceneTitle": "Nouvelle scène",
+    "newScene": "Ajouter à l’intérieur",
+    "delete": "Supprimer",
+    "deleteConfirm": "Supprimer « {title} » et ses fichiers ? Un instantané peut les restaurer.",
+    "compile": "Compiler",
+    "compiled": "Manuscrit compilé vers {path}",
+    "empty": "Rien ici pour l’instant — ajoutez un chapitre pour commencer."
   }
 }

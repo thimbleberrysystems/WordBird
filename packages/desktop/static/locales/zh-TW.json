@@ -291,7 +291,8 @@
       "search": "搜尋",
       "toc": "目錄",
       "biscuit": "Biscuit",
-      "settings": "設定"
+      "settings": "設定",
+      "binder": "書稿"
     }
   },
   "commandPalette": {
@@ -1425,5 +1426,21 @@
     "copy": "複製",
     "paste": "貼上",
     "selectAll": "全選"
+  },
+  "binder": {
+    "title": "書稿",
+    "words": "字",
+    "part": "卷",
+    "chapter": "章",
+    "scene": "場景",
+    "newPartTitle": "新卷",
+    "newChapterTitle": "新章節",
+    "newSceneTitle": "新場景",
+    "newScene": "在其中新增",
+    "delete": "刪除",
+    "deleteConfirm": "刪除「{title}」及其檔案？可透過快照復原。",
+    "compile": "編譯",
+    "compiled": "書稿已輸出到 {path}",
+    "empty": "這裡還沒有內容——新增一個章節開始吧。"
   }
 }

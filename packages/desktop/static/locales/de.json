@@ -290,7 +290,8 @@
       "search": "Suchen",
       "toc": "Inhaltsverzeichnis",
       "biscuit": "Biscuit",
-      "settings": "Einstellungen"
+      "settings": "Einstellungen",
+      "binder": "Manuskript"
     }
   },
   "commandPalette": {
@@ -1415,5 +1416,21 @@
     "copy": "Kopieren",
     "paste": "Einfügen",
     "selectAll": "Alles auswählen"
+  },
+  "binder": {
+    "title": "Manuskript",
+    "words": "Wörter",
+    "part": "Teil",
+    "chapter": "Kapitel",
+    "scene": "Szene",
+    "newPartTitle": "Neuer Teil",
+    "newChapterTitle": "Neues Kapitel",
+    "newSceneTitle": "Neue Szene",
+    "newScene": "Darin hinzufügen",
+    "delete": "Löschen",
+    "deleteConfirm": "„{title}“ und zugehörige Dateien löschen? Ein Schnappschuss kann sie zurückbringen.",
+    "compile": "Zusammenstellen",
+    "compiled": "Manuskript erstellt unter {path}",
+    "empty": "Noch nichts hier — füge ein Kapitel hinzu."
   }
 }

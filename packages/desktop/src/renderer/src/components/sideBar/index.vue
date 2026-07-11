@@ -35,9 +35,13 @@
         </li>
       </ul>
     </div>
-    <div v-show="rightColumn" class="right-column">
+    <div
+      v-show="rightColumn"
+      class="right-column"
+    >
+      <binder v-if="rightColumn === 'binder'" />
       <tree
-        v-if="rightColumn === 'files'"
+        v-else-if="rightColumn === 'files'"
         :project-tree="projectTree"
         :opened-files="openedFiles"
         :tabs="tabs"
@@ -45,7 +49,11 @@
       <side-bar-search v-else-if="rightColumn === 'search'" />
       <toc v-else-if="rightColumn === 'toc'" />
     </div>
-    <div v-show="rightColumn" ref="dragBar" class="drag-bar" />
+    <div
+      v-show="rightColumn"
+      ref="dragBar"
+      class="drag-bar"
+    />
   </div>
 </template>
 
@@ -56,6 +64,7 @@ import { useProjectStore } from '@/store/project'
 import { useEditorStore } from '@/store/editor'
 
 import { sideBarIcons, sideBarBottomIcons } from './help'
+import Binder from './binder.vue'
 import Tree from './tree.vue'
 import SideBarSearch from './search.vue'
 import Toc from './toc.vue'
