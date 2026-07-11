@@ -127,7 +127,11 @@ import 'muya/themes/default.css'
 import '@/assets/themes/codemirror/one-dark.css'
 import { Close as CloseIcon } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { applyAllPendingEdits } from '@/services/agentMultiFileApply'
+import {
+  applyAllPendingEdits,
+  planMultiFileApply,
+  editDiskPath
+} from '@/services/agentMultiFileApply'
 
 const { t } = useI18n()
 const STANDAR_Y = 320
@@ -351,7 +355,20 @@ function hideInlineDiff (): void {
 // Global Apply All / Discard All (bar above the Biscuit prompt). When a diff is
 // being reviewed in the editor, route through the same hunk logic; otherwise
 // just clear the store so the bar dismisses.
+// Book-wide applies are transactional: snapshot the whole project first so
+// the writer can rewind the entire batch from History.
+async function snapshotBeforeApply (label: string): Promise<void> {
+  const root = projectStore.currentProjectPath
+  if (!root) return
+  try {
+    await window.electron.novel.snapshot(root, label)
+  } catch {
+    // Snapshot is protective, never blocking.
+  }
+}
+
 async function handleAgentApplyAll (): Promise<void> {
+  await snapshotBeforeApply('Before applying Biscuit\'s edits')
   // The open file's edit goes through the editor (in-memory + save); every
   // other pending edit is written straight to disk. Routing is verified in
   // agent-multifile-apply.spec.ts.
@@ -379,6 +396,38 @@ function handleAgentDiscardAll (): void {
     void discardAllHunks()
   }
   agentStore.clearPendingEdits()
+}
+
+// Per-edit review from the queue in the Biscuit panel: the open file's edit
+// applies through the editor, any other file is written straight to disk.
+async function handleAgentApplyOne (editId: unknown): Promise<void> {
+  const edit = agentStore.getPendingEdit(String(editId))
+  if (!edit || edit.status !== 'pending') return
+
+  const currentPath = currentFile.value?.pathname || currentFile.value?.filename || null
+  const { currentEdit } = planMultiFileApply([edit], currentPath)
+
+  if (currentEdit) {
+    applyContentToFile(edit.newContent)
+    hideInlineDiff()
+  } else {
+    const result = await window.electron.ai.writeFile(editDiskPath(edit), edit.newContent)
+    if (!result.ok) {
+      ElMessage.error(`Could not apply: ${result.error || 'write failed'}`)
+      return
+    }
+  }
+  agentStore.updateEditStatus(edit.id, 'applied')
+}
+
+function handleAgentDiscardOne (editId: unknown): void {
+  const edit = agentStore.getPendingEdit(String(editId))
+  if (!edit || edit.status !== 'pending') return
+  // If this edit's diff is on screen, take it down too.
+  if (inlineDiffHandle && diffEditId === edit.id) {
+    hideInlineDiff()
+  }
+  agentStore.updateEditStatus(edit.id, 'rejected')
 }
 
 class SimpleImageViewer {
@@ -1444,6 +1493,8 @@ onMounted(() => {
   bus.on('apply-agent-edit', handleApplyAgentEdit as any)
   // Global Apply All / Discard All from the bar above the Biscuit prompt
   bus.on('agent-apply-all', handleAgentApplyAll)
+  bus.on('agent-apply-one', handleAgentApplyOne)
+  bus.on('agent-discard-one', handleAgentDiscardOne)
   bus.on('agent-discard-all', handleAgentDiscardAll)
 
   // Listen for AI edit proposals from main process
@@ -1592,6 +1643,8 @@ onBeforeUnmount(() => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   bus.off('apply-agent-edit', handleApplyAgentEdit as any)
   bus.off('agent-apply-all', handleAgentApplyAll)
+  bus.off('agent-apply-one', handleAgentApplyOne)
+  bus.off('agent-discard-one', handleAgentDiscardOne)
   bus.off('agent-discard-all', handleAgentDiscardAll)
   bus.off('language-changed', handleLanguageChanged)
 
