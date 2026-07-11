@@ -25,15 +25,16 @@
       </div>
       <div class="header-actions">
         <el-tooltip
-          content="Start a fresh conversation"
+          content="New conversation"
           placement="bottom"
         >
-          <el-icon
-            class="header-action"
+          <button
+            class="header-action new-chat-btn"
             @click="newConversation"
           >
-            <CirclePlus />
-          </el-icon>
+            <el-icon><Plus /></el-icon>
+            <span>New</span>
+          </button>
         </el-tooltip>
       </div>
     </header>
@@ -178,7 +179,7 @@ import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '../../store/preferences'
 import { useLayoutStore } from '../../store/layout'
 import { langGraphService } from '../../services/langgraph'
-import { DArrowRight, CirclePlus } from '@element-plus/icons-vue'
+import { DArrowRight, Plus } from '@element-plus/icons-vue'
 import GlobalAgentReview from '../agent/GlobalAgentReview.vue'
 import type {
   ILangGraphMessage,
@@ -515,6 +516,21 @@ async function sendMessage (): Promise<void> {
   color: var(--color-secondary, #909399);
   &:hover {
     color: var(--color-primary, #409eff);
+  }
+}
+
+.new-chat-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font: inherit;
+  font-size: 0.7rem;
+  padding: 1px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.25));
+  background: transparent;
+  &:hover {
+    border-color: var(--color-primary, #409eff);
   }
 }
 
