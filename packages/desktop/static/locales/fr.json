@@ -1469,5 +1469,42 @@
     "title": "Continuité",
     "resolve": "Marquer résolu",
     "empty": "Aucun problème de continuité ouvert. Biscuit consignera ici ce qu’il trouve."
+  },
+  "biscuit": {
+    "placeholder": "Bonjour ! Je suis Biscuit. Apportez l’encre et vos idées les plus folles, donnons-leur vie.",
+    "thinking": "J’analyse les miettes que vous venez de laisser...",
+    "newChat": "Nouveau",
+    "newChatTip": "Nouvelle conversation",
+    "historyTip": "Conversations passées",
+    "conversations": "Conversations",
+    "noConversations": "Pas encore de conversations passées.",
+    "deleteTip": "Supprimer",
+    "approvalTitle": "Biscuit souhaite envoyer :",
+    "approve": "Allez-y",
+    "decline": "Pas maintenant",
+    "stop": "Arrêter",
+    "send": "Envoyer",
+    "disconnected": "Déconnecté",
+    "connected": "Connecté",
+    "configureTip": "Configurer l’IA",
+    "collapseTip": "Replier Biscuit",
+    "expandTip": "Déplier Biscuit",
+    "modeCycleHint": "(maj+tab pour changer)",
+    "modePlan": "mode plan",
+    "modePlanHint": "Biscuit décrit ce qu’il ferait — rien ne s’exécute.",
+    "modeAsk": "mode demande",
+    "modeAskHint": "Biscuit demande avant d’envoyer des assistants.",
+    "modeAuto": "mode auto",
+    "modeAutoHint": "Biscuit travaille librement ; vous relisez chaque changement.",
+    "modeMax": "mode max",
+    "modeMaxHint": "Tâches longues, budgets plus larges ; changements toujours relus."
+  },
+  "review": {
+    "pendingOne": "1 modification en attente",
+    "pendingMany": "{count} modifications en attente",
+    "applyAll": "Tout appliquer",
+    "discardAll": "Tout rejeter",
+    "applyOne": "Appliquer cette modification",
+    "discardOne": "Rejeter cette modification"
   }
 }

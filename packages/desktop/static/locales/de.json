@@ -1467,5 +1467,42 @@
     "title": "Kontinuität",
     "resolve": "Als gelöst markieren",
     "empty": "Keine offenen Kontinuitätsprobleme. Biscuit trägt hier ein, was es findet."
+  },
+  "biscuit": {
+    "placeholder": "Hallo! Ich bin Biscuit. Bring Tinte und deine wildesten Ideen mit — wir erwecken sie zum Leben.",
+    "thinking": "Analysiere die Krümel, die du gerade fallen gelassen hast...",
+    "newChat": "Neu",
+    "newChatTip": "Neue Unterhaltung",
+    "historyTip": "Frühere Unterhaltungen",
+    "conversations": "Unterhaltungen",
+    "noConversations": "Noch keine früheren Unterhaltungen.",
+    "deleteTip": "Löschen",
+    "approvalTitle": "Biscuit möchte losschicken:",
+    "approve": "Los geht’s",
+    "decline": "Jetzt nicht",
+    "stop": "Stopp",
+    "send": "Senden",
+    "disconnected": "Nicht verbunden",
+    "connected": "Verbunden",
+    "configureTip": "KI konfigurieren",
+    "collapseTip": "Biscuit einklappen",
+    "expandTip": "Biscuit ausklappen",
+    "modeCycleHint": "(Umschalt+Tab zum Wechseln)",
+    "modePlan": "Plan-Modus",
+    "modePlanHint": "Biscuit beschreibt, was es tun würde — nichts läuft.",
+    "modeAsk": "Frage-Modus",
+    "modeAskHint": "Biscuit fragt, bevor es Helfer losschickt.",
+    "modeAuto": "Auto-Modus",
+    "modeAutoHint": "Biscuit arbeitet frei; du prüfst jede Änderung.",
+    "modeMax": "Max-Modus",
+    "modeMaxHint": "Lange Aufgaben, größere Budgets; Änderungen werden geprüft."
+  },
+  "review": {
+    "pendingOne": "1 ausstehende Änderung",
+    "pendingMany": "{count} ausstehende Änderungen",
+    "applyAll": "Alle übernehmen",
+    "discardAll": "Alle verwerfen",
+    "applyOne": "Diese Änderung übernehmen",
+    "discardOne": "Diese Änderung verwerfen"
   }
 }

@@ -9,7 +9,7 @@
     <div
       v-if="showExpandIcon"
       class="toggle-biscuit-btn expand"
-      title="Expand Biscuit"
+      :title="t('biscuit.expandTip')"
       @click="handleExpandClick"
     >
       <el-icon><DArrowLeft /></el-icon>
@@ -66,6 +66,7 @@ import { useProjectStore } from '@/store/project'
 import { useEditorStore } from '@/store/editor'
 
 import { sideBarIcons, sideBarBottomIcons } from './help'
+import { t } from '../../i18n'
 import Binder from './binder.vue'
 import Tree from './tree.vue'
 import SideBarSearch from './search.vue'

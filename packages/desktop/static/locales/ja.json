@@ -1469,5 +1469,42 @@
     "title": "整合性",
     "resolve": "解決済みにする",
     "empty": "未解決の整合性の問題はありません。Biscuitが見つけたものはここに記録されます。"
+  },
+  "biscuit": {
+    "placeholder": "こんにちは！Biscuitです。インクと大胆なアイデアを持ってきて、一緒に形にしましょう。",
+    "thinking": "落としてくれたパンくずを分析中...",
+    "newChat": "新規",
+    "newChatTip": "新しい会話",
+    "historyTip": "過去の会話",
+    "conversations": "会話",
+    "noConversations": "まだ過去の会話はありません。",
+    "deleteTip": "削除",
+    "approvalTitle": "Biscuitが送り出したいもの:",
+    "approve": "進める",
+    "decline": "今はしない",
+    "stop": "停止",
+    "send": "送信",
+    "disconnected": "未接続",
+    "connected": "接続済み",
+    "configureTip": "AIを設定",
+    "collapseTip": "Biscuitを折りたたむ",
+    "expandTip": "Biscuitを展開",
+    "modeCycleHint": "（shift+tabで切替）",
+    "modePlan": "プランモード",
+    "modePlanHint": "Biscuitは実行せず、何をするかを説明します。",
+    "modeAsk": "確認モード",
+    "modeAskHint": "ヘルパーを送る前にBiscuitが確認します。",
+    "modeAuto": "自動モード",
+    "modeAutoHint": "Biscuitは自由に作業し、変更はすべてあなたが確認します。",
+    "modeMax": "最大モード",
+    "modeMaxHint": "長いタスクと大きな予算。変更は引き続き確認されます。"
+  },
+  "review": {
+    "pendingOne": "保留中の編集 1件",
+    "pendingMany": "保留中の編集 {count}件",
+    "applyAll": "すべて適用",
+    "discardAll": "すべて破棄",
+    "applyOne": "この編集を適用",
+    "discardOne": "この編集を破棄"
   }
 }

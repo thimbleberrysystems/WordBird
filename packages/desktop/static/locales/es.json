@@ -1467,5 +1467,42 @@
     "title": "Continuidad",
     "resolve": "Marcar resuelto",
     "empty": "Sin problemas de continuidad abiertos. Biscuit anotará aquí lo que encuentre."
+  },
+  "biscuit": {
+    "placeholder": "¡Hola! Soy Biscuit. Trae la tinta y tus ideas más locas, y les daremos vida.",
+    "thinking": "Analizando las migas que acabas de dejar...",
+    "newChat": "Nueva",
+    "newChatTip": "Nueva conversación",
+    "historyTip": "Conversaciones anteriores",
+    "conversations": "Conversaciones",
+    "noConversations": "Aún no hay conversaciones anteriores.",
+    "deleteTip": "Eliminar",
+    "approvalTitle": "Biscuit quiere enviar:",
+    "approve": "Adelante",
+    "decline": "Ahora no",
+    "stop": "Detener",
+    "send": "Enviar",
+    "disconnected": "Desconectado",
+    "connected": "Conectado",
+    "configureTip": "Configurar IA",
+    "collapseTip": "Contraer Biscuit",
+    "expandTip": "Expandir Biscuit",
+    "modeCycleHint": "(mayús+tab para cambiar)",
+    "modePlan": "modo plan",
+    "modePlanHint": "Biscuit describe lo que haría; no se ejecuta nada.",
+    "modeAsk": "modo preguntar",
+    "modeAskHint": "Biscuit pregunta antes de enviar ayudantes.",
+    "modeAuto": "modo auto",
+    "modeAutoHint": "Biscuit trabaja libremente; tú revisas cada cambio.",
+    "modeMax": "modo máx",
+    "modeMaxHint": "Tareas largas, más presupuesto; los cambios se revisan."
+  },
+  "review": {
+    "pendingOne": "1 edición pendiente",
+    "pendingMany": "{count} ediciones pendientes",
+    "applyAll": "Aplicar todo",
+    "discardAll": "Descartar todo",
+    "applyOne": "Aplicar esta edición",
+    "discardOne": "Descartar esta edición"
   }
 }

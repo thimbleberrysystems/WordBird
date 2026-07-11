@@ -6,20 +6,20 @@
   >
     <div class="review-header">
       <span class="review-label">
-        {{ pendingCount }} pending edit{{ pendingCount > 1 ? 's' : '' }}
+        {{ pendingCount > 1 ? t('review.pendingMany', { count: pendingCount }) : t('review.pendingOne') }}
       </span>
       <div class="review-actions">
         <button
           class="review-btn review-btn--accept"
           @click="applyAll"
         >
-          Apply All
+          {{ t('review.applyAll') }}
         </button>
         <button
           class="review-btn review-btn--discard"
           @click="discardAll"
         >
-          Discard All
+          {{ t('review.discardAll') }}
         </button>
       </div>
     </div>
@@ -51,12 +51,12 @@
           <span class="item-controls">
             <button
               class="review-btn review-btn--accept"
-              title="Apply this edit"
+              :title="t('review.applyOne')"
               @click.stop="applyOne(edit.id)"
             >✓</button>
             <button
               class="review-btn review-btn--discard"
-              title="Discard this edit"
+              :title="t('review.discardOne')"
               @click.stop="discardOne(edit.id)"
             >✗</button>
           </span>
@@ -79,6 +79,7 @@ import { storeToRefs } from 'pinia'
 import { useAgentStore } from '@/store/agent'
 import AgentDiffView from './AgentDiffView.vue'
 import bus from '@/bus'
+import { t } from '../../i18n'
 
 const agentStore = useAgentStore()
 const { pendingCount, pendingEdits } = storeToRefs(agentStore)

@@ -1467,5 +1467,42 @@
     "title": "Continuity",
     "resolve": "Mark resolved",
     "empty": "No open continuity issues. Biscuit files anything it finds here."
+  },
+  "biscuit": {
+    "placeholder": "Greetings! I'm Biscuit. Bring the ink and your wildest ideas, and let's bring them to life.",
+    "thinking": "Analyzing the crumbs you just dropped...",
+    "newChat": "New",
+    "newChatTip": "New conversation",
+    "historyTip": "Past conversations",
+    "conversations": "Conversations",
+    "noConversations": "No past conversations yet.",
+    "deleteTip": "Delete",
+    "approvalTitle": "Biscuit would like to send out:",
+    "approve": "Go ahead",
+    "decline": "Not now",
+    "stop": "Stop",
+    "send": "Send",
+    "disconnected": "Disconnected",
+    "connected": "Connected",
+    "configureTip": "Configure AI",
+    "collapseTip": "Collapse Biscuit",
+    "expandTip": "Expand Biscuit",
+    "modeCycleHint": "(shift+tab to cycle)",
+    "modePlan": "plan mode",
+    "modePlanHint": "Biscuit describes what it would do — nothing runs.",
+    "modeAsk": "ask mode",
+    "modeAskHint": "Biscuit asks before sending out helpers.",
+    "modeAuto": "auto mode",
+    "modeAutoHint": "Biscuit works freely; you review every change.",
+    "modeMax": "max mode",
+    "modeMaxHint": "Long tasks, bigger budgets; changes still reviewed."
+  },
+  "review": {
+    "pendingOne": "1 pending edit",
+    "pendingMany": "{count} pending edits",
+    "applyAll": "Apply All",
+    "discardAll": "Discard All",
+    "applyOne": "Apply this edit",
+    "discardOne": "Discard this edit"
   }
 }

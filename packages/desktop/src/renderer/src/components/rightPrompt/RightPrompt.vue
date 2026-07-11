@@ -13,7 +13,7 @@
     <!-- Unified Toggle Button (Collapse) -->
     <div
       class="toggle-biscuit-btn collapse"
-      title="Collapse Biscuit"
+      :title="t('biscuit.collapseTip')"
       @click="togglePanel"
     >
       <el-icon><DArrowRight /></el-icon>
@@ -34,14 +34,14 @@
           <template #reference>
             <button
               class="header-action"
-              title="Past conversations"
+              :title="t('biscuit.historyTip')"
             >
               <el-icon><ChatLineSquare /></el-icon>
             </button>
           </template>
           <div class="history-list">
             <div class="history-list__title">
-              Conversations
+              {{ t('biscuit.conversations') }}
             </div>
             <div
               v-for="conv in sortedConversations"
@@ -53,7 +53,7 @@
               <span class="history-row__label">{{ conv.title }}</span>
               <el-icon
                 class="history-row__delete"
-                title="Delete"
+                :title="t('biscuit.deleteTip')"
                 @click.stop="deleteConversation(conv.id)"
               >
                 <Delete />
@@ -63,13 +63,13 @@
               v-if="sortedConversations.length === 0"
               class="history-empty"
             >
-              No past conversations yet.
+              {{ t('biscuit.noConversations') }}
             </div>
           </div>
         </el-popover>
 
         <el-tooltip
-          content="New conversation"
+          :content="t('biscuit.newChatTip')"
           placement="bottom"
         >
           <button
@@ -77,7 +77,7 @@
             @click="newConversation"
           >
             <el-icon><Plus /></el-icon>
-            <span>New</span>
+            <span>{{ t('biscuit.newChat') }}</span>
           </button>
         </el-tooltip>
       </div>
@@ -103,7 +103,7 @@
         class="approval-card"
       >
         <div class="approval-title">
-          Biscuit would like to send out:
+          {{ t('biscuit.approvalTitle') }}
         </div>
         <div class="approval-summary">
           {{ pendingApproval.summary }}
@@ -113,14 +113,14 @@
             size="small"
             @click="respondApproval(false)"
           >
-            Not now
+            {{ t('biscuit.decline') }}
           </el-button>
           <el-button
             size="small"
             type="primary"
             @click="respondApproval(true)"
           >
-            Go ahead
+            {{ t('biscuit.approve') }}
           </el-button>
         </div>
       </div>
@@ -148,7 +148,7 @@
         class="message message--assistant message--thinking"
       >
         <div class="message__text italic">
-          Analyzing the crumbs you just dropped...
+          {{ t('biscuit.thinking') }}
         </div>
       </div>
     </section>
@@ -161,7 +161,7 @@
             v-model="userInput"
             rows="4"
             aria-label="Chat input"
-            placeholder="Greetings! I'm Biscuit. Bring the ink and your wildest ideas, and let's bring them to life."
+            :placeholder="t('biscuit.placeholder')"
             @keydown.enter.exact.prevent="sendMessage"
             @keydown.shift.tab.exact.prevent="cycleMode"
           />
@@ -170,12 +170,12 @@
         <div
           class="mode-line"
           :class="`mode-line--${mode}`"
-          :title="currentModeInfo.hint"
+          :title="currentModeInfo.hint()"
           @click="cycleMode"
         >
           <span class="mode-symbol">{{ currentModeInfo.symbol }}</span>
-          <span class="mode-name">{{ currentModeInfo.label.toLowerCase() }} mode</span>
-          <span class="mode-cycle-hint">(shift+tab to cycle)</span>
+          <span class="mode-name">{{ currentModeInfo.label() }}</span>
+          <span class="mode-cycle-hint">{{ t('biscuit.modeCycleHint') }}</span>
         </div>
         <div class="prompt-input-actions">
           <el-button
@@ -183,7 +183,7 @@
             size="small"
             plain
             class="connection-status-btn"
-            title="Configure AI"
+            :title="t('biscuit.configureTip')"
             @click="openAiSettings"
           >
             <span
@@ -199,7 +199,7 @@
             :disabled="!sending"
             @click="stopGeneration"
           >
-            Stop
+            {{ t('biscuit.stop') }}
           </el-button>
           <el-button
             type="primary"
@@ -208,7 +208,7 @@
             :loading="sending"
             @click="sendMessage"
           >
-            Send
+            {{ t('biscuit.send') }}
           </el-button>
         </div>
       </div>
@@ -223,6 +223,7 @@ import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '../../store/preferences'
 import { useLayoutStore } from '../../store/layout'
 import { langGraphService } from '../../services/langgraph'
+import { t } from '../../i18n'
 import { DArrowRight, Plus, ChatLineSquare, Delete } from '@element-plus/icons-vue'
 import GlobalAgentReview from '../agent/GlobalAgentReview.vue'
 import type {
@@ -238,9 +239,9 @@ const layoutStore = useLayoutStore()
 const { aiProvider, aiConfigs, aiIsConnected } = storeToRefs(preferencesStore)
 
 const currentModelName = computed(() => {
-  if (!aiIsConnected.value) return 'Disconnected'
+  if (!aiIsConnected.value) return t('biscuit.disconnected')
   const config = aiConfigs.value[aiProvider.value]
-  const name = config?.model || 'Connected'
+  const name = config?.model || t('biscuit.connected')
   return name.length > 15 ? name.substring(0, 12) + '...' : name
 })
 
@@ -304,11 +305,17 @@ const sending = ref(false)
 const aiMessages = ref<ILangGraphMessage[]>([])
 
 // ---- Autonomy mode (Claude-CLI style: line under the prompt, shift+tab cycles) ----
-const MODES: Array<{ id: AgentPermissionMode; label: string; symbol: string; hint: string }> = [
-  { id: 'plan', label: 'Plan', symbol: '⏸', hint: 'Biscuit describes what it would do — nothing runs.' },
-  { id: 'ask', label: 'Ask', symbol: '⇥', hint: 'Biscuit asks before sending out helpers.' },
-  { id: 'auto', label: 'Auto', symbol: '⏵', hint: 'Biscuit works freely; you review every change.' },
-  { id: 'full-auto', label: 'Max', symbol: '⏵⏵', hint: 'Long tasks, bigger budgets; changes still reviewed.' }
+// Labels/hints are functions so they re-resolve when the app language changes.
+const MODES: Array<{
+  id: AgentPermissionMode
+  label: () => string
+  symbol: string
+  hint: () => string
+}> = [
+  { id: 'plan', label: () => t('biscuit.modePlan'), symbol: '⏸', hint: () => t('biscuit.modePlanHint') },
+  { id: 'ask', label: () => t('biscuit.modeAsk'), symbol: '⇥', hint: () => t('biscuit.modeAskHint') },
+  { id: 'auto', label: () => t('biscuit.modeAuto'), symbol: '⏵', hint: () => t('biscuit.modeAutoHint') },
+  { id: 'full-auto', label: () => t('biscuit.modeMax'), symbol: '⏵⏵', hint: () => t('biscuit.modeMaxHint') }
 ]
 const mode = ref<AgentPermissionMode>(
   (localStorage.getItem('biscuit-mode') as AgentPermissionMode) || 'ask'
@@ -585,16 +592,18 @@ async function sendMessage (): Promise<void> {
 
 .prompt-header {
   height: 40px;
-  /* Leave room on the left for the collapse tab that sticks into the panel. */
-  padding: 0 var(--spacing-3) 0 22px;
+  padding: 0 var(--spacing-3, 8px);
   background: var(--editorBgColor);
-  display: flex;
-  justify-content: space-between;
+  /* Three-column grid: the title stays centered, actions pin right, and
+     neither can ever overlap — when space runs out the right column keeps
+     its content (max-content floor) and the title shifts left instead. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(max-content, 1fr);
+  column-gap: 6px;
   align-items: center;
-  gap: 8px;
   box-sizing: border-box;
   position: relative;
-  border-bottom: 1px solid var(--color-border, rgba(128, 128, 128, 0.12));
+  border-bottom: 1px solid var(--itemBgColor);
 }
 
 /* Base style for toggle buttons in both SideBar (Expand) and RightPrompt (Collapse) */
@@ -639,24 +648,27 @@ async function sendMessage (): Promise<void> {
 }
 
 .prompt-title {
+  grid-column: 2;
   margin: 0;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--color-primary, #409eff);
+  color: var(--themeColor, #409eff);
   letter-spacing: 0.05em;
-  border: 1px solid var(--color-primary, #409eff);
+  border: 1px solid var(--themeColor, #409eff);
   padding: 1px 10px;
   border-radius: 12px;
-  background: rgba(64, 158, 255, 0.05);
+  background: var(--itemBgColor);
   line-height: normal;
-  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .header-actions {
+  grid-column: 3;
+  justify-self: end;
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
+  gap: 4px;
+  min-width: 0;
 }
 
 .header-action {
@@ -665,23 +677,24 @@ async function sendMessage (): Promise<void> {
   gap: 3px;
   cursor: pointer;
   font: inherit;
-  color: var(--color-secondary, #909399);
+  color: var(--iconColor, #909399);
   background: transparent;
   border: 1px solid transparent;
   border-radius: 10px;
   padding: 3px 6px;
   &:hover {
-    color: var(--color-primary, #409eff);
-    border-color: var(--color-border, rgba(128, 128, 128, 0.25));
+    color: var(--themeColor, #409eff);
+    border-color: var(--itemBgColor);
   }
 }
 
 .new-chat-btn {
   font-size: 0.7rem;
   padding: 3px 9px;
-  border-color: var(--color-border, rgba(128, 128, 128, 0.25));
+  border-color: var(--itemBgColor);
+  color: var(--editorColor);
   &:hover {
-    border-color: var(--color-primary, #409eff);
+    border-color: var(--themeColor, #409eff);
   }
 }
 
@@ -699,7 +712,7 @@ async function sendMessage (): Promise<void> {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-secondary, #909399);
+  color: var(--iconColor, #909399);
   padding: 2px 6px 6px;
 }
 
@@ -711,20 +724,20 @@ async function sendMessage (): Promise<void> {
   border-radius: 6px;
   cursor: pointer;
   &:hover {
-    background: var(--itemBgColor, rgba(128, 128, 128, 0.08));
+    background: var(--floatHoverColor, var(--itemBgColor));
     & .history-row__delete {
       opacity: 1;
     }
   }
   &.current {
-    background: rgba(64, 158, 255, 0.1);
+    background: var(--itemBgColor);
   }
 }
 
 .history-row__label {
   flex: 1;
   font-size: 0.78rem;
-  color: var(--color-text, #303133);
+  color: var(--floatFontColor, var(--editorColor));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -732,17 +745,17 @@ async function sendMessage (): Promise<void> {
 
 .history-row__delete {
   opacity: 0;
-  color: var(--color-secondary, #909399);
+  color: var(--iconColor, #909399);
   flex-shrink: 0;
   &:hover {
-    color: #f56c6c;
+    color: var(--deleteColor, #f56c6c);
   }
 }
 
 .history-empty {
   padding: 12px 6px;
   font-size: 0.75rem;
-  color: var(--color-secondary, #909399);
+  color: var(--iconColor, #909399);
   text-align: center;
 }
 
@@ -1048,5 +1061,22 @@ async function sendMessage (): Promise<void> {
 .status-indicator.connected {
   background-color: #67c23a; /* el-color-success fallback */
   box-shadow: 0 0 5px rgba(103, 194, 58, 0.5);
+}
+</style>
+
+<style>
+/* The history popover teleports to <body>, outside this component's DOM —
+   theme its shell explicitly with the app's float variables so it follows
+   every WordBird theme (Element Plus would otherwise render it white). */
+.el-popover.biscuit-history-popover {
+  background: var(--floatBgColor, #ffffff);
+  border: 1px solid var(--floatBorderColor, rgba(128, 128, 128, 0.25));
+  box-shadow: var(--floatShadow, 0 4px 12px rgba(0, 0, 0, 0.15));
+  color: var(--floatFontColor, #303133);
+}
+
+.el-popover.biscuit-history-popover .el-popper__arrow::before {
+  background: var(--floatBgColor, #ffffff);
+  border-color: var(--floatBorderColor, rgba(128, 128, 128, 0.25));
 }
 </style>

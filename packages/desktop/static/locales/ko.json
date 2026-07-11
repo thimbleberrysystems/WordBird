@@ -1469,5 +1469,42 @@
     "title": "연속성",
     "resolve": "해결됨으로 표시",
     "empty": "미해결 연속성 문제가 없습니다. Biscuit이 발견한 내용이 여기에 기록됩니다."
+  },
+  "biscuit": {
+    "placeholder": "안녕하세요! 저는 Biscuit입니다. 잉크와 가장 대담한 아이디어를 가져오세요. 함께 실현해 봅시다.",
+    "thinking": "방금 떨어뜨린 빵 부스러기를 분석하는 중...",
+    "newChat": "새로",
+    "newChatTip": "새 대화",
+    "historyTip": "지난 대화",
+    "conversations": "대화",
+    "noConversations": "아직 지난 대화가 없습니다.",
+    "deleteTip": "삭제",
+    "approvalTitle": "Biscuit이 보내려는 작업:",
+    "approve": "진행",
+    "decline": "나중에",
+    "stop": "중지",
+    "send": "보내기",
+    "disconnected": "연결 안 됨",
+    "connected": "연결됨",
+    "configureTip": "AI 설정",
+    "collapseTip": "Biscuit 접기",
+    "expandTip": "Biscuit 펼치기",
+    "modeCycleHint": "(shift+tab으로 전환)",
+    "modePlan": "플랜 모드",
+    "modePlanHint": "Biscuit이 할 일을 설명만 하고 실행하지 않습니다.",
+    "modeAsk": "확인 모드",
+    "modeAskHint": "도우미를 보내기 전에 Biscuit이 물어봅니다.",
+    "modeAuto": "자동 모드",
+    "modeAutoHint": "Biscuit이 자유롭게 작업하고, 모든 변경은 직접 검토합니다.",
+    "modeMax": "최대 모드",
+    "modeMaxHint": "긴 작업, 더 큰 예산. 변경 사항은 여전히 검토됩니다."
+  },
+  "review": {
+    "pendingOne": "대기 중인 편집 1개",
+    "pendingMany": "대기 중인 편집 {count}개",
+    "applyAll": "모두 적용",
+    "discardAll": "모두 취소",
+    "applyOne": "이 편집 적용",
+    "discardOne": "이 편집 취소"
   }
 }

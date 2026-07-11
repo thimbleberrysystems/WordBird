@@ -1477,5 +1477,42 @@
     "title": "連貫性",
     "resolve": "標記為已解決",
     "empty": "沒有未解決的連貫性問題。Biscuit 發現的問題會記錄在這裡。"
+  },
+  "biscuit": {
+    "placeholder": "你好！我是 Biscuit。帶上墨水和你最大膽的想法，我們一起讓它們成真。",
+    "thinking": "正在分析你剛剛落下的麵包屑...",
+    "newChat": "新增",
+    "newChatTip": "新對話",
+    "historyTip": "歷史對話",
+    "conversations": "對話",
+    "noConversations": "還沒有歷史對話。",
+    "deleteTip": "刪除",
+    "approvalTitle": "Biscuit 想要派出：",
+    "approve": "開始吧",
+    "decline": "暫時不要",
+    "stop": "停止",
+    "send": "傳送",
+    "disconnected": "未連線",
+    "connected": "已連線",
+    "configureTip": "設定 AI",
+    "collapseTip": "收合 Biscuit",
+    "expandTip": "展開 Biscuit",
+    "modeCycleHint": "（shift+tab 切換）",
+    "modePlan": "計畫模式",
+    "modePlanHint": "Biscuit 只描述將做什麼，不執行任何操作。",
+    "modeAsk": "詢問模式",
+    "modeAskHint": "派出助手前 Biscuit 會先詢問你。",
+    "modeAuto": "自動模式",
+    "modeAutoHint": "Biscuit 自由工作；每處變更由你審核。",
+    "modeMax": "最大模式",
+    "modeMaxHint": "長任務、更大預算；變更仍需審核。"
+  },
+  "review": {
+    "pendingOne": "1 處待處理編輯",
+    "pendingMany": "{count} 處待處理編輯",
+    "applyAll": "全部套用",
+    "discardAll": "全部捨棄",
+    "applyOne": "套用此編輯",
+    "discardOne": "捨棄此編輯"
   }
 }
