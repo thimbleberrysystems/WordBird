@@ -1526,7 +1526,11 @@
     "selCustomPlaceholder": "想讓 Biscuit 對這段文字做什麼？",
     "planApproveAuto": "核准並執行（自動）",
     "planApproveAsk": "核准並執行（詢問）",
-    "planLater": "繼續規劃"
+    "planLater": "繼續規劃",
+    "agentsTitle": "智慧代理",
+    "cancelAgent": "取消該代理",
+    "activityLog": "活動日誌",
+    "usageTip": "權杖 — 本輪：▼{tin} ▲{tout} · 工作階段：▼{sin} ▲{sout}（{calls} 次呼叫）"
   },
   "review": {
     "pendingOne": "1 處待處理編輯",

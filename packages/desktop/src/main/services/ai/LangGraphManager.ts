@@ -50,7 +50,6 @@ export class LangGraphManager {
   private _currentAbortController: AbortController | null = null
   private _agentToolService: AgentToolService = new AgentToolService()
   private _systemPromptAdded: boolean = false
-  private _editProposed: boolean = false
   private _checkpointer: FileCheckpointSaver | null = null
   private _threadId: string | null = null
   private _orchestrator: Orchestrator | null = null
@@ -136,8 +135,12 @@ export class LangGraphManager {
   resetThread(): string {
     this._threadId = this._persistNewThreadId()
     this._systemPromptAdded = false
-    this._editProposed = false
+    this._orchestrator?.resetSessionUsage()
     return this._threadId
+  }
+
+  cancelAgent(agentId: string): boolean {
+    return this._orchestrator?.cancelAgent(agentId) ?? false
   }
 
   flushCheckpoints(): void {
@@ -323,6 +326,12 @@ export class LangGraphManager {
           buildBrief: () => contextBuilder.buildProjectBrief(getActiveAgentProjectRoot()),
           emitContextUsage: (usage) => {
             this._getMainWindow()?.webContents.send('mt::ai:context-usage', usage)
+          },
+          emitTokenUsage: (usage) => {
+            this._getMainWindow()?.webContents.send('mt::ai:token-usage', usage)
+          },
+          emitAgentStatus: (status) => {
+            this._getMainWindow()?.webContents.send('mt::ai:agent-status', status)
           }
         },
         checkpointer: this._checkpointer ?? undefined
@@ -344,7 +353,6 @@ export class LangGraphManager {
     this._currentProvider = null
     this._currentModel = null
     this._systemPromptAdded = false
-    this._editProposed = false
     this._checkpointer = null
     this._threadId = null
     for (const [id] of this._pendingApprovals) {
@@ -509,13 +517,6 @@ export class LangGraphManager {
 
     const langchainMessages = outgoing.map(toLangchain)
 
-    if (this._editProposed) {
-      langchainMessages.unshift(new SystemMessage(
-        'IMPORTANT: An edit has already been proposed. Do NOT call any tools. ' +
-        'Just provide a natural language summary of what was done.'
-      ))
-    }
-
     const response = await this._agent!.invoke(
       { messages: langchainMessages },
       {
@@ -637,7 +638,6 @@ export class LangGraphManager {
 
     if (result.ok && this._agentToolService.isEditProposalPayload(result.data)) {
       const proposal = result.data
-      this._editProposed = true
 
       const mainWindow = this._getMainWindow()
       if (mainWindow) {

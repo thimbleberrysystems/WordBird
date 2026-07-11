@@ -92,35 +92,14 @@
         :key="index"
       >
         <!-- Errors get a structured, explained card — not a raw dump. -->
-        <div
+        <error-card
           v-if="message.role === 'error'"
-          class="error-card"
-        >
-          <div class="error-card__title">
-            <el-icon><WarningFilled /></el-icon>
-            {{ message.errorInfo?.title || t('biscuit.errorTitleGeneric') }}
-          </div>
-          <div class="error-card__explain">
-            {{ message.errorInfo?.explanation || t('biscuit.errorExplainGeneric') }}
-          </div>
-          <details class="error-card__details">
-            <summary>{{ t('biscuit.errorDetails') }}</summary>
-            <code>{{ message.content }}</code>
-          </details>
-          <div
-            v-if="message.errorInfo?.showSettings"
-            class="error-card__actions"
-          >
-            <el-button
-              size="small"
-              type="primary"
-              plain
-              @click="openAiSettings"
-            >
-              {{ t('biscuit.openSettings') }}
-            </el-button>
-          </div>
-        </div>
+          :content="message.content"
+          :title="message.errorInfo?.title"
+          :explanation="message.errorInfo?.explanation"
+          :show-settings="message.errorInfo?.showSettings"
+          @open-settings="openAiSettings"
+        />
 
         <!-- Assistant replies are markdown — render a sanitized subset. -->
         <div
@@ -146,43 +125,12 @@
       </template>
 
       <!-- Plan approval card (Claude-Code-style plan mode) -->
-      <div
+      <plan-card
         v-if="pendingPlan"
-        class="plan-card"
-      >
-        <div class="plan-card__title">
-          📋 {{ pendingPlan.title }}
-        </div>
-        <!-- eslint-disable-next-line vue/no-v-html -- sanitized by DOMPurify in renderChatMarkdown -->
-        <div
-          class="plan-card__body message__text--md"
-          v-html="renderChatMarkdown(pendingPlan.content)"
-        />
-        <div class="plan-card__path">
-          {{ pendingPlan.path }}
-        </div>
-        <div class="plan-card__actions">
-          <el-button
-            size="small"
-            @click="dismissPlan"
-          >
-            {{ t('biscuit.planLater') }}
-          </el-button>
-          <el-button
-            size="small"
-            @click="approvePlan('ask')"
-          >
-            {{ t('biscuit.planApproveAsk') }}
-          </el-button>
-          <el-button
-            size="small"
-            type="primary"
-            @click="approvePlan('auto')"
-          >
-            {{ t('biscuit.planApproveAuto') }}
-          </el-button>
-        </div>
-      </div>
+        :plan="pendingPlan"
+        @approve="approvePlan"
+        @dismiss="dismissPlan"
+      />
 
       <!-- Approval request card (ask mode) -->
       <div
@@ -212,22 +160,13 @@
         </div>
       </div>
 
-      <!-- Live activity feed (plain-language agent monitor) -->
-      <div
-        v-if="sending && activity.length > 0"
-        class="activity-feed"
-      >
-        <div
-          v-for="item in visibleActivity"
-          :key="item.id"
-          class="activity-item"
-          :class="`activity--${item.kind}`"
-          :title="item.detail"
-        >
-          <span class="activity-dot" />
-          <span class="activity-label">{{ item.label }}</span>
-        </div>
-      </div>
+      <!-- Live agent panel: per-agent status, elapsed, cancel; the raw
+           activity log folds underneath. Persists after the turn. -->
+      <agent-panel
+        :agents="agentList"
+        :activity="activity"
+        @cancel="cancelAgent"
+      />
 
       <!-- Thinking Indicator -->
       <div
@@ -264,6 +203,15 @@
             <span class="mode-symbol">{{ currentModeInfo.symbol }}</span>
             <span class="mode-name">{{ currentModeInfo.label() }}</span>
             <span class="mode-cycle-hint">{{ t('biscuit.modeCycleHint') }}</span>
+          </div>
+
+          <!-- Session token counter -->
+          <div
+            v-if="tokenUsage"
+            class="token-counter"
+            :title="tokenTip"
+          >
+            ▼{{ fmtTokens(tokenUsage.session.inputTokens) }} ▲{{ fmtTokens(tokenUsage.session.outputTokens) }}
           </div>
 
           <!-- Context ring (GH-Copilot style): fills as the conversation
@@ -344,14 +292,19 @@ import { langGraphService } from '../../services/langgraph'
 import bus from '../../bus'
 import { t } from '../../i18n'
 import { renderChatMarkdown } from '../../util/chatMarkdown'
-import { DArrowRight, Plus, ChatLineSquare, Delete, WarningFilled } from '@element-plus/icons-vue'
+import { DArrowRight, Plus, ChatLineSquare, Delete } from '@element-plus/icons-vue'
 import GlobalAgentReview from '../agent/GlobalAgentReview.vue'
+import AgentPanel from './AgentPanel.vue'
+import PlanCard from './PlanCard.vue'
+import ErrorCard from './ErrorCard.vue'
 import type {
   ILangGraphMessage,
   IAgentActivityEvent,
   IAgentApprovalRequest,
   IContextUsage,
   IPlanProposal,
+  ITokenUsageUpdate,
+  IAgentStatus,
   AgentPermissionMode
 } from '@shared/types/langgraph'
 
@@ -420,6 +373,8 @@ onBeforeUnmount(() => {
   unsubApproval?.()
   unsubUsage?.()
   unsubPlan?.()
+  unsubTokens?.()
+  unsubAgents?.()
   bus.off('biscuit-ask', handleBiscuitAsk)
 })
 
@@ -558,16 +513,45 @@ const dismissPlan = (): void => {
   pendingPlan.value = null
 }
 
+// ---- Token usage counter ----
+const tokenUsage = ref<ITokenUsageUpdate | null>(null)
+
+const fmtTokens = (n: number): string =>
+  n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)
+
+const tokenTip = computed(() => {
+  if (!tokenUsage.value) return ''
+  const { turn, session } = tokenUsage.value
+  const roles = Object.entries(session.byRole)
+    .map(([role, u]) => `${role}: ▼${fmtTokens(u.inputTokens)} ▲${fmtTokens(u.outputTokens)} (${u.calls})`)
+    .join('\n')
+  return t('biscuit.usageTip', {
+    tin: fmtTokens(turn.inputTokens),
+    tout: fmtTokens(turn.outputTokens),
+    sin: fmtTokens(session.inputTokens),
+    sout: fmtTokens(session.outputTokens),
+    calls: session.calls
+  }) + (roles ? `\n${roles}` : '')
+})
+
+// ---- Live agents (panel with per-agent cancel) ----
+const agentMap = ref(new Map<string, IAgentStatus>())
+const agentList = computed(() => Array.from(agentMap.value.values()))
+
+const cancelAgent = async (agentId: string): Promise<void> => {
+  await window.electron.ai.cancelAgent(agentId)
+}
+
 // ---- Activity feed + approvals ----
 const activity = ref<IAgentActivityEvent[]>([])
 const pendingApproval = ref<IAgentApprovalRequest | null>(null)
-
-const visibleActivity = computed(() => activity.value.slice(-8))
 
 let unsubActivity: (() => void) | null = null
 let unsubApproval: (() => void) | null = null
 let unsubUsage: (() => void) | null = null
 let unsubPlan: (() => void) | null = null
+let unsubTokens: (() => void) | null = null
+let unsubAgents: (() => void) | null = null
 
 onMounted(() => {
   if (aiIsConnected.value) setMode(mode.value)
@@ -589,6 +573,14 @@ onMounted(() => {
   })
   unsubPlan = window.electron.ai.onPlanProposal((plan) => {
     pendingPlan.value = plan
+  })
+  unsubTokens = window.electron.ai.onTokenUsage((usage) => {
+    tokenUsage.value = usage
+  })
+  unsubAgents = window.electron.ai.onAgentStatus((status) => {
+    const next = new Map(agentMap.value)
+    next.set(status.agentId, status)
+    agentMap.value = next
   })
   // Selection actions in the editor route through the normal chat pipeline.
   bus.on('biscuit-ask', handleBiscuitAsk)
@@ -676,8 +668,10 @@ const newConversation = async (): Promise<void> => {
   }
   aiMessages.value = []
   activity.value = []
+  agentMap.value = new Map()
   pendingApproval.value = null
   contextUsage.value = null
+  tokenUsage.value = null
   currentId.value = ''
   persistHistory()
 }
@@ -761,6 +755,7 @@ async function sendMessage (): Promise<void> {
   userInput.value = ''
   sending.value = true
   activity.value = []
+  agentMap.value = new Map()
 
   await nextTick()
   if (promptBody.value) {
@@ -1031,6 +1026,15 @@ async function sendMessage (): Promise<void> {
   }
 }
 
+.token-counter {
+  font-size: 0.66rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--iconColor, #909399);
+  white-space: nowrap;
+  cursor: help;
+  flex-shrink: 0;
+}
+
 /* Context ring: quiet at rest, amber past half, red near compaction,
    pulsing while old turns are being condensed. */
 .context-ring {
@@ -1110,41 +1114,6 @@ async function sendMessage (): Promise<void> {
   transition: opacity 0.15s;
 }
 
-.plan-card {
-  border: 1px solid var(--themeColor, #409eff);
-  border-radius: 8px;
-  padding: 10px 12px;
-  background: var(--floatBgColor, rgba(64, 158, 255, 0.05));
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.plan-card__title {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--themeColor, #409eff);
-}
-
-.plan-card__body {
-  font-size: 0.8rem;
-  max-height: 260px;
-  overflow-y: auto;
-}
-
-.plan-card__path {
-  font-size: 0.68rem;
-  color: var(--iconColor, #909399);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
-.plan-card__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
 .approval-card {
   border: 1px solid var(--color-primary, #409eff);
   border-radius: 8px;
@@ -1173,50 +1142,6 @@ async function sendMessage (): Promise<void> {
   display: flex;
   justify-content: flex-end;
   gap: 6px;
-}
-
-.activity-feed {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 6px 10px;
-  border-left: 2px solid var(--color-border, rgba(128, 128, 128, 0.25));
-  margin: 0 4px;
-}
-
-.activity-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.72rem;
-  color: var(--color-secondary, #909399);
-}
-
-.activity-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--color-secondary, #909399);
-  flex-shrink: 0;
-}
-
-.activity--spawn .activity-dot,
-.activity--agent-start .activity-dot {
-  background: var(--color-primary, #409eff);
-}
-
-.activity--agent-done .activity-dot {
-  background: #67c23a;
-}
-
-.activity--approval .activity-dot {
-  background: #e6a23c;
-}
-
-.activity-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .prompt-body {
@@ -1353,58 +1278,6 @@ async function sendMessage (): Promise<void> {
 
 /* Structured error card: friendly headline + explanation, technical
    detail folded away, optional action button. */
-.error-card {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 0 4px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(245, 108, 108, 0.35);
-  background: rgba(245, 108, 108, 0.07);
-}
-
-.error-card__title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #f56c6c;
-}
-
-.error-card__explain {
-  font-size: 0.78rem;
-  line-height: 1.5;
-  color: var(--editorColor, #303133);
-}
-
-.error-card__details {
-  font-size: 0.7rem;
-  color: var(--iconColor, #909399);
-  & summary {
-    cursor: pointer;
-    user-select: none;
-    &:hover {
-      color: var(--themeColor, #409eff);
-    }
-  }
-  & code {
-    display: block;
-    margin-top: 4px;
-    padding: 6px 8px;
-    border-radius: 4px;
-    background: var(--itemBgColor, rgba(128, 128, 128, 0.08));
-    word-break: break-word;
-    white-space: pre-wrap;
-    font-size: 0.68rem;
-  }
-}
-
-.error-card__actions {
-  display: flex;
-  justify-content: flex-end;
-}
 
 .message--thinking .message__text {
   color: var(--color-secondary, #909399);

@@ -28,6 +28,8 @@ import type {
   IAgentApprovalRequest,
   IContextUsage,
   IPlanProposal,
+  ITokenUsageUpdate,
+  IAgentStatus,
   AgentPermissionMode
 } from '@shared/types/langgraph'
 import type {
@@ -171,6 +173,9 @@ declare global {
       onApprovalRequest: (handler: (request: IAgentApprovalRequest) => void) => () => void
       onContextUsage: (handler: (usage: IContextUsage) => void) => () => void
       onPlanProposal: (handler: (plan: IPlanProposal) => void) => () => void
+      onTokenUsage: (handler: (usage: ITokenUsageUpdate) => void) => () => void
+      onAgentStatus: (handler: (status: IAgentStatus) => void) => () => void
+      cancelAgent: (agentId: string) => Promise<{ cancelled: boolean }>
       fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) => Promise<string[]>
       pullModel: (model: string, baseUrl?: string) => Promise<{ success: boolean }>
       onPullProgress: (

@@ -46,7 +46,10 @@ import type {
   IAgentActivityEvent,
   IAgentApprovalRequest,
   IAgentSpawnRequest,
-  IContextUsage
+  IAgentStatus,
+  IContextUsage,
+  ITokenTally,
+  ITokenUsageUpdate
 } from '../../../../shared/types/langgraph'
 
 export interface OrchestratorCallbacks {
@@ -56,6 +59,68 @@ export interface OrchestratorCallbacks {
   buildBrief?: () => Promise<string>
   /** Context-window pressure updates, drives the ring indicator in the UI. */
   emitContextUsage?: (usage: IContextUsage) => void
+  /** Token accounting per turn/session, drives the usage counter. */
+  emitTokenUsage?: (usage: ITokenUsageUpdate) => void
+  /** Live per-agent status updates, drives the agent panel. */
+  emitAgentStatus?: (status: IAgentStatus) => void
+}
+
+// ---- Token accounting -------------------------------------------------
+
+export const emptyTally = (): ITokenTally => ({
+  inputTokens: 0,
+  outputTokens: 0,
+  calls: 0,
+  byRole: {}
+})
+
+/** Pull token counts off a model response (usage_metadata is the modern
+ * field; response_metadata.tokenUsage covers older provider adapters). */
+export const extractUsage = (
+  message: BaseMessage
+): { inputTokens: number; outputTokens: number } | null => {
+  const m = message as unknown as {
+    usage_metadata?: { input_tokens?: number; output_tokens?: number }
+    response_metadata?: { tokenUsage?: { promptTokens?: number; completionTokens?: number } }
+  }
+  if (m.usage_metadata) {
+    return {
+      inputTokens: m.usage_metadata.input_tokens ?? 0,
+      outputTokens: m.usage_metadata.output_tokens ?? 0
+    }
+  }
+  const legacy = m.response_metadata?.tokenUsage
+  if (legacy && (legacy.promptTokens || legacy.completionTokens)) {
+    return {
+      inputTokens: legacy.promptTokens ?? 0,
+      outputTokens: legacy.completionTokens ?? 0
+    }
+  }
+  return null
+}
+
+export const addToTally = (
+  tally: ITokenTally,
+  role: string,
+  usage: { inputTokens: number; outputTokens: number }
+): void => {
+  tally.inputTokens += usage.inputTokens
+  tally.outputTokens += usage.outputTokens
+  tally.calls += 1
+  const bucket = (tally.byRole[role] ??= { inputTokens: 0, outputTokens: 0, calls: 0 })
+  bucket.inputTokens += usage.inputTokens
+  bucket.outputTokens += usage.outputTokens
+  bucket.calls += 1
+}
+
+/** ~80-char single-line preview of tool args for the activity feed. */
+export const previewArgs = (args: unknown): string => {
+  try {
+    const text = JSON.stringify(args ?? {})
+    return text.length > 80 ? text.slice(0, 80) + '…' : text
+  } catch {
+    return ''
+  }
 }
 
 // ---- Context budgeting -------------------------------------------------
@@ -166,11 +231,6 @@ export const trimHistory = (
     start += 1
   }
   return { messages: clipped.slice(start), trimmed: true }
-}
-
-export interface OrchestratorRunOptions {
-  threadId?: string
-  signal?: AbortSignal
 }
 
 interface BindableModel extends Runnable {
@@ -299,6 +359,46 @@ export class Orchestrator {
     this._mode = mode
   }
 
+  // ---- Token accounting state ----
+  private _turnUsage: ITokenTally = emptyTally()
+  private _sessionUsage: ITokenTally = emptyTally()
+
+  private _recordUsage(role: string, message: BaseMessage): void {
+    const usage = extractUsage(message)
+    if (!usage) return
+    addToTally(this._turnUsage, role, usage)
+    addToTally(this._sessionUsage, role, usage)
+    this._callbacks.emitTokenUsage?.({
+      turn: JSON.parse(JSON.stringify(this._turnUsage)),
+      session: JSON.parse(JSON.stringify(this._sessionUsage))
+    })
+  }
+
+  /** New user turn — turn tally starts fresh (called from housekeeping). */
+  private _beginTurnUsage(): void {
+    this._turnUsage = emptyTally()
+  }
+
+  resetSessionUsage(): void {
+    this._turnUsage = emptyTally()
+    this._sessionUsage = emptyTally()
+  }
+
+  // ---- Live agent registry (per-agent cancel) ----
+  private _liveAgents = new Map<string, { controller: AbortController; status: IAgentStatus }>()
+
+  /** Abort ONE running sub-agent; the rest of the wave continues. */
+  cancelAgent(agentId: string): boolean {
+    const live = this._liveAgents.get(agentId)
+    if (!live) return false
+    live.controller.abort()
+    return true
+  }
+
+  private _emitAgentStatus(status: IAgentStatus): void {
+    this._callbacks.emitAgentStatus?.({ ...status })
+  }
+
   // The project brief is rebuilt at most once per few seconds: the
   // supervisor and every parallel worker in the same turn share one build.
   private _briefCache: { value: string; at: number } | null = null
@@ -371,6 +471,7 @@ export class Orchestrator {
         ],
         { signal } as never
       )) as BaseMessage
+      this._recordUsage('compaction', response)
       const summaryText =
         typeof response.content === 'string'
           ? response.content
@@ -402,7 +503,10 @@ export class Orchestrator {
   }
 
   /** Build a transient ReAct worker for one role. */
-  private _buildWorker(role: AgentRole): { graph: Runnable; toolCount: number } {
+  private _buildWorker(
+    role: AgentRole,
+    onToolCall?: (name: string, args: unknown) => void
+  ): { graph: Runnable; toolCount: number } {
     const definition = AGENT_ROLES[role]
     const tools = this._toolsByName(definition.allowedTools)
     const model = this._modelFactory()
@@ -412,6 +516,7 @@ export class Orchestrator {
     const workflow = new StateGraph(MessagesAnnotation)
       .addNode('agent', async(state) => {
         const response = await bound.invoke(state.messages)
+        this._recordUsage(role, response as BaseMessage)
         return { messages: [response] }
       })
       .addNode('tools', async(state) => {
@@ -423,7 +528,13 @@ export class Orchestrator {
           let content: string
           try {
             if (!toolImpl) throw new Error(`Tool ${call.name} is not available to this agent.`)
-            this._activity('tool', `${definition.displayName}: ${call.name}`, undefined, role)
+            onToolCall?.(call.name, call.args)
+            this._activity(
+              'tool',
+              `${definition.displayName}: ${call.name}`,
+              previewArgs(call.args),
+              role
+            )
             const raw = await toolImpl.invoke(call.args ?? {})
             content = typeof raw === 'string' ? raw : JSON.stringify(raw)
           } catch (error) {
@@ -456,8 +567,31 @@ export class Orchestrator {
   ): Promise<string> {
     const definition = AGENT_ROLES[spawn.role]
     this._activity('agent-start', `${definition.displayName}: ${definition.activityLabel}`, spawn.task, spawn.role)
+
+    // Every worker is individually cancellable from the agent panel; the
+    // turn-level Stop still aborts everyone via the combined signal.
+    const agentId = crypto.randomUUID()
+    const controller = new AbortController()
+    const status: IAgentStatus = {
+      agentId,
+      role: spawn.role,
+      task: spawn.task,
+      status: 'running',
+      startedAt: Date.now(),
+      toolCalls: 0
+    }
+    this._liveAgents.set(agentId, { controller, status })
+    this._emitAgentStatus(status)
+
+    const combinedSignal = signal
+      ? AbortSignal.any([signal, controller.signal])
+      : controller.signal
+
     try {
-      const { graph } = this._buildWorker(spawn.role)
+      const { graph } = this._buildWorker(spawn.role, () => {
+        status.toolCalls += 1
+        this._emitAgentStatus(status)
+      })
       // Workers are context-isolated (they never see the conversation), but
       // they share the same compact project grounding as the supervisor so
       // they start oriented instead of re-discovering the novel via tools.
@@ -467,7 +601,7 @@ export class Orchestrator {
         {
           messages: [new SystemMessage(systemText), new HumanMessage(spawn.task)]
         },
-        { recursionLimit, signal } as never
+        { recursionLimit, signal: combinedSignal } as never
       )) as { messages: BaseMessage[] }
       const last = result.messages[result.messages.length - 1]
       let content =
@@ -478,12 +612,25 @@ export class Orchestrator {
           content.slice(0, WORKER_RESULT_CHAR_CAP) +
           `\n…[report truncated at ${WORKER_RESULT_CHAR_CAP} characters]`
       }
+      status.status = 'done'
+      status.endedAt = Date.now()
+      this._emitAgentStatus(status)
       this._activity('agent-done', `${definition.displayName} finished`, undefined, spawn.role)
       return content || '(no result)'
     } catch (error) {
+      const cancelled = controller.signal.aborted && !signal?.aborted
+      status.status = cancelled ? 'cancelled' : 'failed'
+      status.endedAt = Date.now()
+      this._emitAgentStatus(status)
+      if (cancelled) {
+        this._activity('agent-done', `${definition.displayName} cancelled`, undefined, spawn.role)
+        return `The ${definition.displayName} agent was cancelled by the writer before finishing.`
+      }
       const message = error instanceof Error ? error.message : String(error)
       this._activity('agent-done', `${definition.displayName} failed`, message, spawn.role)
       return `The ${definition.displayName} agent failed: ${message}`
+    } finally {
+      this._liveAgents.delete(agentId)
     }
   }
 
@@ -539,8 +686,10 @@ export class Orchestrator {
 
     const workflow = new StateGraph(MessagesAnnotation)
       .addNode('housekeeping', async(state, config) => {
-        // Runs once per user turn, before the supervisor: report context
-        // pressure and, past the threshold, durably compact the thread.
+        // Runs once per user turn, before the supervisor: reset the turn
+        // token tally, report context pressure and, past the threshold,
+        // durably compact the thread.
+        this._beginTurnUsage()
         const used = historyChars(state.messages)
         if (used > HISTORY_CHAR_BUDGET * COMPACT_TRIGGER_RATIO) {
           const update = await this._compact(
@@ -571,6 +720,7 @@ export class Orchestrator {
             : '')
         const messages = [new SystemMessage(systemText), ...history]
         const response = await bound.invoke(messages, config)
+        this._recordUsage('supervisor', response as BaseMessage)
         return { messages: [response] }
       })
       .addNode('actions', async(state, config) => {
@@ -595,7 +745,7 @@ export class Orchestrator {
           let content: string
           try {
             if (!toolImpl) throw new Error(`Unknown tool: ${call.name}`)
-            this._activity('tool', `Biscuit: ${call.name}`)
+            this._activity('tool', `Biscuit: ${call.name}`, previewArgs(call.args))
             const raw = await (toolImpl as DynamicStructuredTool).invoke(call.args ?? {})
             content = typeof raw === 'string' ? raw : JSON.stringify(raw)
           } catch (error) {

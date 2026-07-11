@@ -78,6 +78,10 @@ export const registerAIHandlers = (): void => {
     return { handled: langGraphManager.resolveApproval(approvalId, approved) }
   })
 
+  ipcMain.handle('mt::ai:cancel-agent', async(_e, agentId: string) => {
+    return { cancelled: langGraphManager.cancelAgent(agentId) }
+  })
+
   // Durable agent threads: make sure buffered checkpoints reach disk.
   app.on('will-quit', () => {
     langGraphManager.flushCheckpoints()

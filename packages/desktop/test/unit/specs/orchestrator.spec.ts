@@ -3,11 +3,19 @@ import { AIMessage, HumanMessage } from '@langchain/core/messages'
 import type { BaseMessage } from '@langchain/core/messages'
 import { tool } from '@langchain/core/tools'
 import { z } from 'zod'
-import { Orchestrator } from '../../../src/main/services/ai/orchestrator/Orchestrator'
+import {
+  Orchestrator,
+  extractUsage,
+  addToTally,
+  emptyTally,
+  previewArgs
+} from '../../../src/main/services/ai/orchestrator/Orchestrator'
 import { AGENT_ROLES, MODE_BUDGETS } from '../../../src/main/services/ai/orchestrator/roles'
 import type {
   IAgentActivityEvent,
-  IAgentApprovalRequest
+  IAgentApprovalRequest,
+  IAgentStatus,
+  ITokenUsageUpdate
 } from '../../../src/shared/types/langgraph'
 
 /**
@@ -50,6 +58,8 @@ const echoTool = tool(async({ query }: { query: string }) => `echo:${query}`, {
 let activities: IAgentActivityEvent[]
 let approvals: IAgentApprovalRequest[]
 let approveNext: boolean
+let usages: ITokenUsageUpdate[]
+let agentStatuses: IAgentStatus[]
 
 const makeOrchestrator = (model: ScriptedModel): Orchestrator =>
   new Orchestrator({
@@ -60,7 +70,9 @@ const makeOrchestrator = (model: ScriptedModel): Orchestrator =>
       requestApproval: async(req) => {
         approvals.push(req)
         return approveNext
-      }
+      },
+      emitTokenUsage: (u) => usages.push(u),
+      emitAgentStatus: (s) => agentStatuses.push(s)
     }
   })
 
@@ -81,7 +93,18 @@ beforeEach(() => {
   activities = []
   approvals = []
   approveNext = true
+  usages = []
+  agentStatuses = []
 })
+
+const withUsage = (message: AIMessage, input: number, output: number): AIMessage => {
+  ;(message as unknown as { usage_metadata: unknown }).usage_metadata = {
+    input_tokens: input,
+    output_tokens: output,
+    total_tokens: input + output
+  }
+  return message
+}
 
 describe('roles catalog', () => {
   it('gives read-only tools to explorer and auditor, propose tools to drafter', () => {
@@ -213,6 +236,125 @@ describe('Orchestrator', () => {
     expect(
       activities.some((a) => a.kind === 'tool' && a.label.includes('search_manuscript'))
     ).toBe(true)
+  })
+
+  it('tallies token usage per turn and session with a by-role breakdown', async() => {
+    const model = new ScriptedModel([
+      // supervisor: spawn one explorer (with usage)
+      withUsage(spawnCall([{ role: 'explorer', task: 'look around' }]), 100, 20),
+      // worker reply
+      withUsage(new AIMessage('found things'), 50, 10),
+      // supervisor final
+      withUsage(new AIMessage('done'), 200, 30)
+    ])
+    const orchestrator = makeOrchestrator(model)
+    orchestrator.setMode('auto')
+    await invokeGraph(orchestrator, 'sweep')
+
+    const last = usages[usages.length - 1]
+    expect(last.turn.inputTokens).toBe(350)
+    expect(last.turn.outputTokens).toBe(60)
+    expect(last.turn.calls).toBe(3)
+    expect(last.turn.byRole.supervisor.calls).toBe(2)
+    expect(last.turn.byRole.explorer.inputTokens).toBe(50)
+    // Session mirrors the single turn here.
+    expect(last.session.inputTokens).toBe(350)
+
+    // A second turn resets the turn tally but grows the session.
+    model.responses.push(withUsage(new AIMessage('again'), 40, 5))
+    await invokeGraph(orchestrator, 'hi again')
+    const final = usages[usages.length - 1]
+    expect(final.turn.inputTokens).toBe(40)
+    expect(final.session.inputTokens).toBe(390)
+
+    orchestrator.resetSessionUsage()
+    model.responses.push(withUsage(new AIMessage('fresh'), 7, 3))
+    await invokeGraph(orchestrator, 'fresh start')
+    expect(usages[usages.length - 1].session.inputTokens).toBe(7)
+  })
+
+  it('emits agent status lifecycle and supports cancelling one worker of a wave', async() => {
+    // Two explorers spawn; worker A hangs long enough to be cancelled,
+    // worker B answers quickly; the supervisor still gets both reports.
+    let callCount = 0
+    const model = {
+      bindTools() {
+        return this
+      },
+      async invoke(): Promise<AIMessage> {
+        callCount += 1
+        if (callCount === 1) {
+          return spawnCall([
+            { role: 'explorer', task: 'slow sweep' },
+            { role: 'explorer', task: 'fast sweep' }
+          ])
+        }
+        if (callCount === 2 || callCount === 3) {
+          // Worker calls: first one to arrive sleeps, second returns fast.
+          if (callCount === 2) {
+            await new Promise((resolve) => setTimeout(resolve, 400))
+            return new AIMessage('slow result')
+          }
+          return new AIMessage('fast result')
+        }
+        return new AIMessage('summary of both')
+      }
+    }
+    const orchestrator = new Orchestrator({
+      modelFactory: () => model as never,
+      tools: [],
+      callbacks: {
+        emitActivity: (e) => activities.push(e),
+        requestApproval: async() => true,
+        emitAgentStatus: (s) => agentStatuses.push(s)
+      }
+    })
+    orchestrator.setMode('auto')
+
+    // Cancel the slow agent shortly after it starts running.
+    const cancelSoon = setInterval(() => {
+      const running = agentStatuses.find(
+        (s) => s.status === 'running' && s.task === 'slow sweep'
+      )
+      if (running) {
+        clearInterval(cancelSoon)
+        setTimeout(() => orchestrator.cancelAgent(running.agentId), 50)
+      }
+    }, 10)
+
+    const result = await invokeGraph(orchestrator, 'sweep everything')
+    clearInterval(cancelSoon)
+
+    const final = result.messages[result.messages.length - 1]
+    expect(String(final.content)).toBe('summary of both')
+
+    // Lifecycle: both agents ran; one cancelled, one done.
+    const settled = new Map(
+      agentStatuses
+        .filter((s) => s.status !== 'running')
+        .map((s) => [s.task, s.status])
+    )
+    expect(settled.get('slow sweep')).toBe('cancelled')
+    expect(settled.get('fast sweep')).toBe('done')
+
+    // The supervisor's tool result reflects the cancellation.
+    const toolMsg = result.messages.find((m) => m.getType?.() === 'tool')
+    expect(String(toolMsg?.content)).toContain('cancelled by the writer')
+    expect(String(toolMsg?.content)).toContain('fast result')
+  })
+
+  it('tally/preview helpers behave', () => {
+    expect(extractUsage(new AIMessage('no usage'))).toBeNull()
+    expect(extractUsage(withUsage(new AIMessage('x'), 5, 7))).toEqual({
+      inputTokens: 5,
+      outputTokens: 7
+    })
+    const tally = emptyTally()
+    addToTally(tally, 'drafter', { inputTokens: 10, outputTokens: 2 })
+    addToTally(tally, 'drafter', { inputTokens: 5, outputTokens: 1 })
+    expect(tally).toMatchObject({ inputTokens: 15, outputTokens: 3, calls: 2 })
+    expect(tally.byRole.drafter.calls).toBe(2)
+    expect(previewArgs({ query: 'x'.repeat(200) }).length).toBeLessThanOrEqual(81)
   })
 
   it('reports an unknown-role spawn as invalid instead of crashing', async() => {

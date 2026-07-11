@@ -256,9 +256,77 @@ Muya  (packages/muyajs/)            ← workspace package @marktext/muyajs
       coexist until callers migrate.
 ```
 
+## WordBird Novel + Biscuit AI Architecture
+
+WordBird layers a novel-writing model and an agentic AI companion ("Biscuit")
+on top of the MarkText editor. All paths below are under `packages/desktop/src/`.
+
+### Novel model (main process)
+- `main/services/novel/StructureService.ts` — `.wordbird/structure.json` is the
+  source of truth for binder order/metadata (parts/chapters/scenes, status,
+  POV, synopsis, word counts). Scan/reconcile per project flavor
+  (`chapters-scenes` | `scene-pool` | `flat`), unit CRUD, compile.
+- `main/services/novel/SnapshotService.ts` — "mini git" over the whole project
+  via isomorphic-git: snapshot/list/non-destructive rewind. Auto-snapshots
+  guard every destructive agent operation.
+- `main/services/novel/ContinuityService.ts` — `.wordbird/continuity/issues.json`
+  issue lifecycle (agents log; resolution requires verified evidence).
+- `main/services/novel/RevisionService.ts` — sweeping revisions ("remove this
+  character"): `.wordbird/revisions/<id>/` holds the author directive +
+  per-unit impact map; resumable across turns/restarts.
+- IPC: `main/ipc/novel.ts` (`mt::novel:*`), every handler validates the
+  project root first. Renderer store: `renderer/src/store/novel.ts`.
+
+### Biscuit agent runtime (main process)
+- `main/services/ai/LangGraphManager.ts` — provider clients (OpenAI/Anthropic/
+  Gemini/OpenRouter/Ollama), credential validation at connect, durable
+  threads, permission modes, IPC surface.
+- `main/services/ai/orchestrator/Orchestrator.ts` — dynamic supervisor graph
+  (housekeeping → supervisor ⇄ actions). Spawns role-scoped ReAct workers in
+  parallel waves; per-mode budgets; conversation compaction past 80% of the
+  history budget (durable thread rewrite); history trimming safety net;
+  token-usage tallies; per-agent AbortControllers (`cancelAgent`).
+- `main/services/ai/orchestrator/roles.ts` — agent catalog (explorer,
+  researcher, drafter, auditor, line-editor, plotter) with allowed-tool lists;
+  a matrix test asserts every tool maps to a registered handler.
+- Tools: `main/services/ai/AgentToolHandlers.ts` (core file read/edit),
+  `NovelToolHandlers.ts` (structure/bible/summaries/continuity/revisions/
+  plans/file management), `WebToolHandlers.ts` (web/wiki/dictionary, SSRF
+  guards). Definitions live in `static/agentTools.json`; handlers must be
+  registered in code — JSON alone cannot add executable behavior. Tool
+  outputs are context-capped (~24k chars) with announced truncation.
+- `main/services/ai/ContextBuilder.ts` — the per-turn "project brief"
+  (outline + book summary + open issues + active revisions) injected into
+  supervisor AND workers; never persisted into thread state.
+- `main/services/ai/FileCheckpointSaver.ts` — file-backed LangGraph
+  checkpointer under `.wordbird/agent-state/` (excluded from snapshots).
+
+### Safety model
+Prose/bible changes are ALWAYS review-gated (`propose_*` tools → edit
+proposal → renderer diff queue). Structural/file operations are direct but
+auto-snapshot first. `.wordbird/` and `.git/` are untouchable by tools.
+Locked bible pages (`locked: true` front matter) are immutable to agents.
+Plans live in `plans/` (writer-editable); `propose_plan` raises the approval
+card that switches modes and starts execution.
+
+### Renderer AI surfaces
+- `renderer/src/components/rightPrompt/` — RightPrompt (chat, mode line with
+  Shift+Tab cycling, context ring, token counter) + AgentPanel (live agent
+  rows, per-agent cancel) + PlanCard + ErrorCard.
+- `renderer/src/components/agent/` — review queue (GlobalAgentReview) and
+  inline diff plumbing; `renderer/src/services/agentDiff*.ts`.
+- Markdown in chat renders through `renderer/src/util/chatMarkdown.ts`
+  (marked + DOMPurify allow-list).
+
+### AI test suites (Vitest, `packages/desktop/test/unit/specs/`)
+`orchestrator*.spec.ts`, `agent-context.spec.ts`, `novel-*.spec.ts`,
+`revision-engine.spec.ts`, `file-checkpoint-saver.spec.ts`,
+`chat-markdown.spec.ts`. Workers/supervisor are tested with scripted models —
+no network needed.
+
 ## IPC Conventions
 
-Most IPC channels between main and renderer use the `mt::` prefix (e.g. `mt::open-new-tab`, `mt::file-saved`). Some internal channels do not follow this convention (e.g. `language-changed`).
+Most IPC channels between main and renderer use the `mt::` prefix (e.g. `mt::open-new-tab`, `mt::file-saved`). AI channels use `mt::ai:*`, novel-model channels `mt::novel:*`. Some internal channels do not follow this convention (e.g. `language-changed`).
 
 See `packages/website/content/docs/dev/IPC.md` for conventions and examples.
 

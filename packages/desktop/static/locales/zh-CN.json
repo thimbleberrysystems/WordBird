@@ -1517,7 +1517,11 @@
     "selCustomPlaceholder": "想让 Biscuit 对这段文字做什么？",
     "planApproveAuto": "批准并执行（自动）",
     "planApproveAsk": "批准并执行（询问）",
-    "planLater": "继续规划"
+    "planLater": "继续规划",
+    "agentsTitle": "智能体",
+    "cancelAgent": "取消该智能体",
+    "activityLog": "活动日志",
+    "usageTip": "令牌 — 本轮：▼{tin} ▲{tout} · 会话：▼{sin} ▲{sout}（{calls} 次调用）"
   },
   "review": {
     "pendingOne": "1 处待处理编辑",

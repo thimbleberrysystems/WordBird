@@ -140,6 +140,34 @@ export interface IPlanProposal {
   content: string
 }
 
+/** Token accounting for one scope (a turn or the whole session). */
+export interface ITokenTally {
+  inputTokens: number
+  outputTokens: number
+  /** Number of model calls. */
+  calls: number
+  /** Per-role breakdown: supervisor, worker roles, compaction. */
+  byRole: Record<string, { inputTokens: number; outputTokens: number; calls: number }>
+}
+
+export interface ITokenUsageUpdate {
+  turn: ITokenTally
+  session: ITokenTally
+}
+
+export type AgentRunStatus = 'running' | 'done' | 'failed' | 'cancelled'
+
+/** Live status of one spawned sub-agent, drives the agent panel. */
+export interface IAgentStatus {
+  agentId: string
+  role: AgentRole
+  task: string
+  status: AgentRunStatus
+  startedAt: number
+  endedAt?: number
+  toolCalls: number
+}
+
 /** Context-window pressure for the ring indicator in the Biscuit panel. */
 export interface IContextUsage {
   usedChars: number

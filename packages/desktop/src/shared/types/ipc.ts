@@ -31,6 +31,8 @@ import type {
   IAgentApprovalRequest,
   IContextUsage,
   IPlanProposal,
+  ITokenUsageUpdate,
+  IAgentStatus,
   AgentPermissionMode
 } from './langgraph'
 import type {
@@ -135,6 +137,7 @@ export interface IpcInvokeChannels {
   'mt::ai:set-mode': { args: [mode: AgentPermissionMode]; ret: { mode: AgentPermissionMode } }
   'mt::ai:get-mode': { args: []; ret: { mode: AgentPermissionMode } }
   'mt::ai:approve': { args: [approvalId: string, approved: boolean]; ret: { handled: boolean } }
+  'mt::ai:cancel-agent': { args: [agentId: string]; ret: { cancelled: boolean } }
   'mt::ai:fetch-models': { args: [AIProvider, string, string?]; ret: string[] }
   'mt::ai:pull-model': { args: [string, string?]; ret: { success: boolean } }
   'mt::project:create': { args: [ProjectCreateArgs?]; ret: ProjectCreateResult }
@@ -329,6 +332,8 @@ export interface IpcMainEventChannels {
   'mt::ai:approval-request': [request: IAgentApprovalRequest]
   'mt::ai:context-usage': [usage: IContextUsage]
   'mt::ai:plan-proposal': [plan: IPlanProposal]
+  'mt::ai:token-usage': [usage: ITokenUsageUpdate]
+  'mt::ai:agent-status': [status: IAgentStatus]
   'mt::about-dialog': []
   'mt::ask-for-close': []
   'mt::bootstrap-editor': [config: BootstrapEditorConfig]

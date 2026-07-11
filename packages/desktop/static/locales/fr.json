@@ -1518,7 +1518,11 @@
     "selCustomPlaceholder": "Que doit faire Biscuit de ce passage ?",
     "planApproveAuto": "Approuver et exécuter (Auto)",
     "planApproveAsk": "Approuver et exécuter (Demander)",
-    "planLater": "Continuer à planifier"
+    "planLater": "Continuer à planifier",
+    "agentsTitle": "Agents",
+    "cancelAgent": "Annuler cet agent",
+    "activityLog": "Journal d’activité",
+    "usageTip": "Jetons — ce tour : ▼{tin} ▲{tout} · session : ▼{sin} ▲{sout} en {calls} appels"
   },
   "review": {
     "pendingOne": "1 modification en attente",

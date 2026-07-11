@@ -34,6 +34,8 @@ import type {
   IAgentApprovalRequest,
   IContextUsage,
   IPlanProposal,
+  ITokenUsageUpdate,
+  IAgentStatus,
   AgentPermissionMode
 } from '@shared/types/langgraph'
 
@@ -308,6 +310,17 @@ const aiAPI = {
     ipcRenderer.on('mt::ai:plan-proposal', subscription)
     return () => ipcRenderer.removeListener('mt::ai:plan-proposal', subscription)
   },
+  onTokenUsage: (handler: (usage: ITokenUsageUpdate) => void) => {
+    const subscription = (_e: unknown, usage: ITokenUsageUpdate) => handler(usage)
+    ipcRenderer.on('mt::ai:token-usage', subscription)
+    return () => ipcRenderer.removeListener('mt::ai:token-usage', subscription)
+  },
+  onAgentStatus: (handler: (status: IAgentStatus) => void) => {
+    const subscription = (_e: unknown, status: IAgentStatus) => handler(status)
+    ipcRenderer.on('mt::ai:agent-status', subscription)
+    return () => ipcRenderer.removeListener('mt::ai:agent-status', subscription)
+  },
+  cancelAgent: (agentId: string) => invoke('mt::ai:cancel-agent', agentId),
   fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) =>
     invoke('mt::ai:fetch-models', provider, apiKey, baseUrl),
   pullModel: (model: string, baseUrl?: string) => invoke('mt::ai:pull-model', model, baseUrl),

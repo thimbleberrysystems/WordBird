@@ -1516,7 +1516,11 @@
     "selCustomPlaceholder": "What should Biscuit do with this passage?",
     "planApproveAuto": "Approve & run (Auto)",
     "planApproveAsk": "Approve & run (Ask)",
-    "planLater": "Keep planning"
+    "planLater": "Keep planning",
+    "agentsTitle": "Agents",
+    "cancelAgent": "Cancel this agent",
+    "activityLog": "Activity log",
+    "usageTip": "Tokens — this turn: ▼{tin} ▲{tout} · session: ▼{sin} ▲{sout} in {calls} calls"
   },
   "review": {
     "pendingOne": "1 pending edit",

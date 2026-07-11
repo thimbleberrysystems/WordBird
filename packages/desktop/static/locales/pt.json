@@ -1518,7 +1518,11 @@
     "selCustomPlaceholder": "O que o Biscuit deve fazer com este trecho?",
     "planApproveAuto": "Aprovar e executar (Auto)",
     "planApproveAsk": "Aprovar e executar (Perguntar)",
-    "planLater": "Continuar planejando"
+    "planLater": "Continuar planejando",
+    "agentsTitle": "Agentes",
+    "cancelAgent": "Cancelar este agente",
+    "activityLog": "Registro de atividade",
+    "usageTip": "Tokens — este turno: ▼{tin} ▲{tout} · sessão: ▼{sin} ▲{sout} em {calls} chamadas"
   },
   "review": {
     "pendingOne": "1 edição pendente",

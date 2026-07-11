@@ -1518,7 +1518,11 @@
     "selCustomPlaceholder": "이 구절로 Biscuit이 무엇을 할까요?",
     "planApproveAuto": "승인 후 실행 (자동)",
     "planApproveAsk": "승인 후 실행 (확인)",
-    "planLater": "계속 계획하기"
+    "planLater": "계속 계획하기",
+    "agentsTitle": "에이전트",
+    "cancelAgent": "이 에이전트 취소",
+    "activityLog": "활동 로그",
+    "usageTip": "토큰 — 이번 턴: ▼{tin} ▲{tout} · 세션: ▼{sin} ▲{sout} ({calls}회 호출)"
   },
   "review": {
     "pendingOne": "대기 중인 편집 1개",
