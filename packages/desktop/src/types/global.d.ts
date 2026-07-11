@@ -155,6 +155,7 @@ declare global {
       disconnect: () => Promise<void>
       sendMessage: (messages: ILangGraphMessage[]) => Promise<ILangGraphResponse>
       abort: () => Promise<void>
+      resetThread: () => Promise<{ threadId: string }>
       fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) => Promise<string[]>
       pullModel: (model: string, baseUrl?: string) => Promise<{ success: boolean }>
       onPullProgress: (

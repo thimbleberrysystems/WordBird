@@ -125,6 +125,7 @@ export interface IpcInvokeChannels {
   'mt::ai:write-file': { args: [string, string]; ret: { ok: boolean; error?: string } }
   'mt::ai:apply-edit-in-renderer': { args: [IAgentApplyEditRequest]; ret: { ok: boolean; error?: string } }
   'mt::ai:abort': { args: []; ret: { success: boolean } }
+  'mt::ai:reset-thread': { args: []; ret: { threadId: string } }
   'mt::ai:fetch-models': { args: [AIProvider, string, string?]; ret: string[] }
   'mt::ai:pull-model': { args: [string, string?]; ret: { success: boolean } }
   'mt::project:create': { args: [ProjectCreateArgs?]; ret: ProjectCreateResult }

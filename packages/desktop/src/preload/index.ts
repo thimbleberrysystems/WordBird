@@ -275,6 +275,7 @@ const aiAPI = {
   disconnect: () => invoke('mt::ai:disconnect'),
   sendMessage: (messages: ILangGraphMessage[]) => invoke('mt::ai:send-message', messages),
   abort: () => invoke('mt::ai:abort'),
+  resetThread: () => invoke('mt::ai:reset-thread'),
   fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) =>
     invoke('mt::ai:fetch-models', provider, apiKey, baseUrl),
   pullModel: (model: string, baseUrl?: string) => invoke('mt::ai:pull-model', model, baseUrl),

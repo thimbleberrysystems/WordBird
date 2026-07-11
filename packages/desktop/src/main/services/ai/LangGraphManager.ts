@@ -1,5 +1,7 @@
 import path from 'path'
-import { BrowserWindow } from 'electron'
+import fs from 'fs'
+import crypto from 'crypto'
+import { app, BrowserWindow } from 'electron'
 import log from 'electron-log'
 import { ChatOpenAI } from '@langchain/openai'
 import { ChatAnthropic } from '@langchain/anthropic'
@@ -24,12 +26,17 @@ import axios from 'axios'
 import { AgentToolService, AgentToolPackLoader } from './AgentToolService'
 import { registerBuiltInAgentToolHandlers } from './AgentToolHandlers'
 import { getActiveAgentProjectRoot, setAgentToolAccessor } from './AgentProjectRootResolver'
+import { FileCheckpointSaver } from './FileCheckpointSaver'
 import type Accessor from '../../app/accessor'
 
 type CompiledAgent = {
   invoke: (
     state: { messages: unknown[] },
-    opts?: { signal?: AbortSignal; recursionLimit?: number }
+    opts?: {
+      signal?: AbortSignal
+      recursionLimit?: number
+      configurable?: Record<string, unknown>
+    }
   ) => Promise<unknown>
 }
 
@@ -54,6 +61,61 @@ export class LangGraphManager {
   private _agentToolService: AgentToolService = new AgentToolService()
   private _systemPromptAdded: boolean = false
   private _editProposed: boolean = false
+  private _checkpointer: FileCheckpointSaver | null = null
+  private _threadId: string | null = null
+
+  /**
+   * Durable agent state lives inside the project (`.wordbird/agent-state/`,
+   * excluded from snapshots) so threads follow the novel; without a project
+   * it falls back to the app's userData directory.
+   */
+  private _agentStateDir(): string {
+    const projectRoot = getActiveAgentProjectRoot()
+    if (projectRoot) {
+      return path.join(projectRoot, '.wordbird', 'agent-state')
+    }
+    return path.join(app.getPath('userData'), 'agent-state')
+  }
+
+  private _sessionPath(): string {
+    return path.join(this._agentStateDir(), 'session.json')
+  }
+
+  private _loadOrCreateThreadId(): string {
+    try {
+      const raw = fs.readFileSync(this._sessionPath(), 'utf8')
+      const parsed = JSON.parse(raw) as { threadId?: unknown }
+      if (typeof parsed.threadId === 'string' && parsed.threadId) {
+        return parsed.threadId
+      }
+    } catch {
+      // First run for this project — fall through and create one.
+    }
+    return this._persistNewThreadId()
+  }
+
+  private _persistNewThreadId(): string {
+    const threadId = `biscuit-${crypto.randomUUID()}`
+    try {
+      fs.mkdirSync(this._agentStateDir(), { recursive: true })
+      fs.writeFileSync(this._sessionPath(), JSON.stringify({ threadId }), 'utf8')
+    } catch (error) {
+      log.warn('[LangGraphMain] Failed to persist thread id:', error)
+    }
+    return threadId
+  }
+
+  /** Start a fresh conversation thread (old checkpoints are kept on disk). */
+  resetThread(): string {
+    this._threadId = this._persistNewThreadId()
+    this._systemPromptAdded = false
+    this._editProposed = false
+    return this._threadId
+  }
+
+  flushCheckpoints(): void {
+    this._checkpointer?.flush()
+  }
 
   public get isConnected(): boolean {
     return !!this._agent
@@ -146,6 +208,13 @@ export class LangGraphManager {
 
       this._agent = null
 
+      // Durable thread state: checkpoints persist under the active project
+      // so long agent runs survive an app restart and resume.
+      this._checkpointer = new FileCheckpointSaver(
+        path.join(this._agentStateDir(), 'checkpoints.json')
+      )
+      this._threadId = this._loadOrCreateThreadId()
+
       const modelClient = this._createChatModel(config)
       const tools = this._agentToolService.getLangChainTools()
       const modelWithTools =
@@ -161,11 +230,14 @@ export class LangGraphManager {
   }
 
   disconnect(): void {
+    this._checkpointer?.flush()
     this._agent = null
     this._currentProvider = null
     this._currentModel = null
     this._systemPromptAdded = false
     this._editProposed = false
+    this._checkpointer = null
+    this._threadId = null
   }
 
   async fetchModels(provider: AIProvider, apiKey: string, baseUrl?: string): Promise<string[]> {
@@ -287,7 +359,7 @@ export class LangGraphManager {
       throw new Error('Not connected to any AI provider')
     }
 
-    const langchainMessages = messages.map((msg) => {
+    const toLangchain = (msg: ILangGraphMessage): HumanMessage | AIMessage | SystemMessage => {
       switch (msg.role) {
         case 'system':
           return new SystemMessage(msg.content)
@@ -299,10 +371,30 @@ export class LangGraphManager {
         default:
           return new HumanMessage(msg.content)
       }
-    })
+    }
+
+    // With a checkpointer, the thread itself holds the conversation state —
+    // only forward messages the thread hasn't seen (everything after the
+    // last assistant turn); the renderer still sends its full display
+    // history for compatibility.
+    const threadHasState =
+      !!this._checkpointer &&
+      !!this._threadId &&
+      (await this._checkpointer.hasThread(this._threadId))
+
+    let outgoing = messages
+    if (threadHasState) {
+      const lastAssistantIndex = messages.reduce(
+        (acc, msg, i) => (msg.role === 'assistant' || msg.role === 'ai' ? i : acc),
+        -1
+      )
+      outgoing = messages.slice(lastAssistantIndex + 1).filter((m) => m.role !== 'system')
+    }
+
+    const langchainMessages = outgoing.map(toLangchain)
 
     const hasSystemMessage = langchainMessages.some((m) => m instanceof SystemMessage)
-    if (!hasSystemMessage && !this._systemPromptAdded) {
+    if (!hasSystemMessage && !this._systemPromptAdded && !threadHasState) {
       const toolDefinitions = this._agentToolService.getDefinitions()
       const toolDescriptions = toolDefinitions
         .map((t) => `${t.name}: ${t.description}`)
@@ -320,7 +412,13 @@ export class LangGraphManager {
 
     const response = await this._agent.invoke(
       { messages: langchainMessages },
-      { signal, recursionLimit: 10 }
+      {
+        signal,
+        recursionLimit: 10,
+        ...(this._checkpointer && this._threadId
+          ? { configurable: { thread_id: this._threadId } }
+          : {})
+      }
     )
     const content = this._extractResponseContent(response)
 
@@ -402,7 +500,9 @@ export class LangGraphManager {
       })
       .addEdge('tools', 'agent')
 
-    return workflow.compile() as unknown as CompiledAgent
+    return workflow.compile({
+      checkpointer: this._checkpointer ?? undefined
+    }) as unknown as CompiledAgent
   }
 
   private _extractResponseContent(response: unknown): string {

@@ -54,8 +54,9 @@ const COMMON_FOLDERS = [
 const COMMON_FILES: Record<string, string> = {
   'bible/README.md': BIBLE_README,
   'README.md': '# {{name}}\n\nA novel written with WordBird.',
-  // Compiled output is derived — keep it out of snapshots.
-  '.gitignore': 'exports/\n'
+  // Compiled output and agent thread state are derived/machine-local —
+  // keep them out of snapshots.
+  '.gitignore': 'exports/\n.wordbird/agent-state/\n'
 }
 
 const FLAVOR_TEMPLATES: Record<

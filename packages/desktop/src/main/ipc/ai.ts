@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { app, ipcMain } from 'electron'
 import log from 'electron-log'
 import { langGraphManager } from '../services/ai/LangGraphManager'
 import { writeMarkdownFileWithDefaults } from '../filesystem/markdown'
@@ -47,6 +47,15 @@ export const registerAIHandlers = (): void => {
   ipcMain.handle('mt::ai:abort', async() => {
     langGraphManager.abort()
     return { success: true }
+  })
+
+  ipcMain.handle('mt::ai:reset-thread', async() => {
+    return { threadId: langGraphManager.resetThread() }
+  })
+
+  // Durable agent threads: make sure buffered checkpoints reach disk.
+  app.on('will-quit', () => {
+    langGraphManager.flushCheckpoints()
   })
 
   ipcMain.handle('mt::ai:fetch-models', async(_e, provider: AIProvider, apiKey: string, baseUrl?: string) => {
