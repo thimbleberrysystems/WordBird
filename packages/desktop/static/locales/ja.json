@@ -1515,7 +1515,10 @@
     "selExpand": "ふくらませる",
     "selDescribe": "描写する",
     "selCustom": "依頼…",
-    "selCustomPlaceholder": "この一節をBiscuitにどうしてほしい？"
+    "selCustomPlaceholder": "この一節をBiscuitにどうしてほしい？",
+    "planApproveAuto": "承認して実行（自動）",
+    "planApproveAsk": "承認して実行（確認）",
+    "planLater": "計画を続ける"
   },
   "review": {
     "pendingOne": "保留中の編集 1件",

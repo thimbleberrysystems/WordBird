@@ -1513,7 +1513,10 @@
     "selExpand": "Ampliar",
     "selDescribe": "Describir",
     "selCustom": "Pedir…",
-    "selCustomPlaceholder": "¿Qué debe hacer Biscuit con este pasaje?"
+    "selCustomPlaceholder": "¿Qué debe hacer Biscuit con este pasaje?",
+    "planApproveAuto": "Aprobar y ejecutar (Auto)",
+    "planApproveAsk": "Aprobar y ejecutar (Preguntar)",
+    "planLater": "Seguir planificando"
   },
   "review": {
     "pendingOne": "1 edición pendiente",

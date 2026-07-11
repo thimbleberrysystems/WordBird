@@ -1515,7 +1515,10 @@
     "selExpand": "확장",
     "selDescribe": "묘사",
     "selCustom": "요청…",
-    "selCustomPlaceholder": "이 구절로 Biscuit이 무엇을 할까요?"
+    "selCustomPlaceholder": "이 구절로 Biscuit이 무엇을 할까요?",
+    "planApproveAuto": "승인 후 실행 (자동)",
+    "planApproveAsk": "승인 후 실행 (확인)",
+    "planLater": "계속 계획하기"
   },
   "review": {
     "pendingOne": "대기 중인 편집 1개",

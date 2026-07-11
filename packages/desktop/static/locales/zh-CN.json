@@ -1514,7 +1514,10 @@
     "selExpand": "扩写",
     "selDescribe": "描写",
     "selCustom": "自定义…",
-    "selCustomPlaceholder": "想让 Biscuit 对这段文字做什么？"
+    "selCustomPlaceholder": "想让 Biscuit 对这段文字做什么？",
+    "planApproveAuto": "批准并执行（自动）",
+    "planApproveAsk": "批准并执行（询问）",
+    "planLater": "继续规划"
   },
   "review": {
     "pendingOne": "1 处待处理编辑",

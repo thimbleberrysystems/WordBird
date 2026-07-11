@@ -285,6 +285,9 @@ export class LangGraphManager {
       await this.fetchModels(provider, apiKey, baseUrl)
 
       await this._loadToolPacks()
+      this._agentToolService.setPlanProposalEmitter(async({ planProposal }) => {
+        this._getMainWindow()?.webContents.send('mt::ai:plan-proposal', planProposal)
+      })
       this._agentToolService.setEditProposalEmitter(async(proposal) => {
         log.debug('[LangGraphMain] ToolNode edit proposal emitter received:', proposal)
         const mainWindow = this._getMainWindow()

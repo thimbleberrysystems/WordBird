@@ -1523,7 +1523,10 @@
     "selExpand": "擴寫",
     "selDescribe": "描寫",
     "selCustom": "自訂…",
-    "selCustomPlaceholder": "想讓 Biscuit 對這段文字做什麼？"
+    "selCustomPlaceholder": "想讓 Biscuit 對這段文字做什麼？",
+    "planApproveAuto": "核准並執行（自動）",
+    "planApproveAsk": "核准並執行（詢問）",
+    "planLater": "繼續規劃"
   },
   "review": {
     "pendingOne": "1 處待處理編輯",

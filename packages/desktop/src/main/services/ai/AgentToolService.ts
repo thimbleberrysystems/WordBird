@@ -40,6 +40,20 @@ interface EditProposalPayload {
 
 type EditProposalEmitter = (proposal: EditProposalPayload) => void | Promise<void>
 
+interface PlanProposalPayload {
+  planProposal: import('../../../shared/types/langgraph').IPlanProposal
+}
+
+type PlanProposalEmitter = (proposal: PlanProposalPayload) => void | Promise<void>
+
+const isPlanProposalPayload = (value: unknown): value is PlanProposalPayload => {
+  if (!value || typeof value !== 'object') return false
+  const data = (value as Record<string, unknown>).planProposal as
+    | Record<string, unknown>
+    | undefined
+  return Boolean(data && data.id && data.title && data.path)
+}
+
 const isEditProposalPayload = (value: unknown): value is EditProposalPayload => {
   if (!value || typeof value !== 'object') return false
   const data = value as Record<string, unknown>
@@ -123,9 +137,14 @@ export class AgentToolService {
   private readonly _tools = new Map<string, LoadedTool>()
   private _currentProjectRoot: string | null = null
   private _editProposalEmitter: EditProposalEmitter | null = null
+  private _planProposalEmitter: PlanProposalEmitter | null = null
 
   setEditProposalEmitter(emitter: EditProposalEmitter): void {
     this._editProposalEmitter = emitter
+  }
+
+  setPlanProposalEmitter(emitter: PlanProposalEmitter): void {
+    this._planProposalEmitter = emitter
   }
 
   registerHandler(id: string, handler: AgentToolHandler): void {
@@ -215,6 +234,14 @@ export class AgentToolService {
         if (this._editProposalEmitter && isEditProposalPayload(result)) {
           await this._editProposalEmitter(result)
           return `Edit proposal created with ID: ${result.edit.id}`
+        }
+
+        if (this._planProposalEmitter && isPlanProposalPayload(result)) {
+          await this._planProposalEmitter(result)
+          return (
+            `Plan saved as ${result.planProposal.path} (id ${result.planProposal.id}). ` +
+            'The writer now sees an approval card — stop and wait for their decision.'
+          )
         }
 
         if (result && typeof result === 'object') {

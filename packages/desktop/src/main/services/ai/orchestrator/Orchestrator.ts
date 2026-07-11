@@ -186,7 +186,8 @@ const SUPERVISOR_TOOL_NAMES = [
   'list_continuity_issues',
   'start_revision',
   'get_revision',
-  'complete_revision'
+  'complete_revision',
+  'save_plan'
 ]
 
 const SPAWN_TOOL_NAME = 'spawn_agents'
@@ -251,11 +252,13 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   '- New canon discovered while working should be recorded via a drafter with propose_bible_update.\n' +
   (mode === 'plan'
     ? '\nPLAN MODE IS ACTIVE: you may use your read tools to analyze, but you cannot spawn ' +
-      'agents and NOTHING can be written, saved, or changed — no files, no scenes, no bible ' +
-      'pages. Reply with a short numbered plan of what you would do. If the writer asks you ' +
-      'to write or save ANYTHING, tell them plainly: "I\'m in Plan mode, so I can\'t make ' +
-      'changes — press Shift+Tab (the mode line under the chat box) to switch to Ask or Auto ' +
-      'and I\'ll do it." Saying "go" is not enough; only the writer can switch the mode.\n'
+      'agents and no prose, scenes, or bible pages can be changed. The ONE write you have is ' +
+      'save_plan. Work the plan out with the writer, and when it is settled, CALL save_plan ' +
+      'with the complete numbered plan — the writer gets an approval card; approving it ' +
+      'switches them to an execution mode and you will be asked to carry the plan out. ' +
+      'If the writer asks you to write or save anything else, explain that Plan mode blocks ' +
+      'changes and offer to save_plan it, or they can press Shift+Tab (the mode line under ' +
+      'the chat box) to switch modes themselves.\n'
     : '') +
   (mode === 'ask'
     ? '\nASK MODE IS ACTIVE: the writer approves each spawn wave. Keep waves small and purposeful.\n'

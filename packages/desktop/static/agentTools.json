@@ -464,6 +464,24 @@
       }
     },
     {
+      "id": "save_plan",
+      "name": "save_plan",
+      "displayName": "Save plan for approval",
+      "description": "Save a finished plan to a durable file and present it to the writer as an approval card. In Plan mode this is how every planning conversation should END — the writer approves the card, gets switched to an execution mode, and asks you to carry the plan out. The plan must be complete and self-contained (numbered steps, files/units involved, what each specialist will do).",
+      "handler": "save_plan",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "description": "Short plan name, e.g. 'Draft the Amityville short story'." },
+          "plan": { "type": "string", "description": "The full plan in markdown — numbered steps, self-contained." }
+        },
+        "required": ["title", "plan"]
+      }
+    },
+    {
       "id": "start_revision",
       "name": "start_revision",
       "displayName": "Start sweeping revision",

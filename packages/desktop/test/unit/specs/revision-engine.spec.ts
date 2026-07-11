@@ -279,6 +279,57 @@ describe('revision tools — the Marcus scenario', () => {
   })
 })
 
+describe('save_plan (plan mode → approval card)', () => {
+  it('writes a durable plan file and returns the proposal payload', async() => {
+    const result = (await run('save_plan', {
+      title: 'Draft the Amityville short story',
+      plan: '1. Research the DeFeo case\n2. Outline\n3. Draft scene one'
+    })) as { planProposal: { id: string; title: string; path: string; content: string } }
+
+    expect(result.planProposal.id).toMatch(/^plan-/)
+    expect(result.planProposal.title).toContain('Amityville')
+    const saved = fs.readFileSync(path.join(root, result.planProposal.path), 'utf8')
+    expect(saved).toContain('# Draft the Amityville short story')
+    expect(saved).toContain('Research the DeFeo case')
+  })
+
+  it('is intercepted by AgentToolService and raised to the plan emitter', async() => {
+    const emitted: unknown[] = []
+    service.setPlanProposalEmitter((p) => {
+      emitted.push(p)
+    })
+    service.setProjectRoot(root)
+    service.loadToolPack({
+      version: 1,
+      enabled: true,
+      source: 'test',
+      tools: [
+        {
+          id: 'save_plan',
+          name: 'save_plan',
+          description: 'save a plan',
+          handler: 'save_plan',
+          enabled: true,
+          scope: 'project',
+          confirm: 'never',
+          schema: {
+            type: 'object',
+            properties: { title: { type: 'string' }, plan: { type: 'string' } },
+            required: ['title', 'plan']
+          }
+        }
+      ]
+    })
+    const langChainTool = service.getLangChainTools().find((t) => t.name === 'save_plan')!
+    const reply = (await langChainTool.invoke({ title: 'T', plan: 'P' })) as string
+
+    expect(emitted).toHaveLength(1)
+    expect((emitted[0] as { planProposal: { title: string } }).planProposal.title).toBe('T')
+    // The model gets a wait-for-decision instruction, not the raw payload.
+    expect(reply).toContain('approval card')
+  })
+})
+
 describe('plotter role + revision tool wiring', () => {
   it('registers plotter with structural tools and no prose tools', () => {
     const plotter = AGENT_ROLES.plotter

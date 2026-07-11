@@ -1513,7 +1513,10 @@
     "selExpand": "Expand",
     "selDescribe": "Describe",
     "selCustom": "Ask…",
-    "selCustomPlaceholder": "What should Biscuit do with this passage?"
+    "selCustomPlaceholder": "What should Biscuit do with this passage?",
+    "planApproveAuto": "Approve & run (Auto)",
+    "planApproveAsk": "Approve & run (Ask)",
+    "planLater": "Keep planning"
   },
   "review": {
     "pendingOne": "1 pending edit",

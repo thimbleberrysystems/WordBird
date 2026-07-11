@@ -1515,7 +1515,10 @@
     "selExpand": "Développer",
     "selDescribe": "Décrire",
     "selCustom": "Demander…",
-    "selCustomPlaceholder": "Que doit faire Biscuit de ce passage ?"
+    "selCustomPlaceholder": "Que doit faire Biscuit de ce passage ?",
+    "planApproveAuto": "Approuver et exécuter (Auto)",
+    "planApproveAsk": "Approuver et exécuter (Demander)",
+    "planLater": "Continuer à planifier"
   },
   "review": {
     "pendingOne": "1 modification en attente",

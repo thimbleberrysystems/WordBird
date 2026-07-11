@@ -865,6 +865,28 @@ const deleteUnit = async(
   return { deleted: true, unitId, title: found.unit.title, snapshotTaken: true }
 }
 
+// ---- plans (Claude-Code-style: durable file + approval card) ----
+
+const savePlan = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const title = str(args, 'title')
+  const plan = str(args, 'plan')
+
+  const id = `plan-${Date.now()}`
+  const relative = path.join('.wordbird', 'plans', `${id}.md`)
+  const target = path.join(root, relative)
+  await fsPromises.mkdir(path.dirname(target), { recursive: true })
+  const content = `# ${title}\n\n${plan}\n`
+  await fsPromises.writeFile(target, content, 'utf8')
+
+  // The planProposal shape is intercepted by AgentToolService and raised
+  // to the renderer as an approval card.
+  return { planProposal: { id, title, path: relative, content } }
+}
+
 // ---- sweeping revisions ("book surgery") ----
 
 const VALID_CLASSIFICATIONS = new Set(['remove', 'rewrite', 'mention-only', 'plot-dependency'])
@@ -1014,6 +1036,7 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('move_file', moveFile)
   service.registerHandler('delete_file', deleteFile)
   service.registerHandler('delete_unit', deleteUnit)
+  service.registerHandler('save_plan', savePlan)
   service.registerHandler('start_revision', startRevision)
   service.registerHandler('get_revision', getRevision)
   service.registerHandler('update_impact_map', updateImpactMap)

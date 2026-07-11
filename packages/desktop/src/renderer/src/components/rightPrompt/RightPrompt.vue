@@ -145,6 +145,45 @@
         </div>
       </template>
 
+      <!-- Plan approval card (Claude-Code-style plan mode) -->
+      <div
+        v-if="pendingPlan"
+        class="plan-card"
+      >
+        <div class="plan-card__title">
+          📋 {{ pendingPlan.title }}
+        </div>
+        <!-- eslint-disable-next-line vue/no-v-html -- sanitized by DOMPurify in renderChatMarkdown -->
+        <div
+          class="plan-card__body message__text--md"
+          v-html="renderChatMarkdown(pendingPlan.content)"
+        />
+        <div class="plan-card__path">
+          {{ pendingPlan.path }}
+        </div>
+        <div class="plan-card__actions">
+          <el-button
+            size="small"
+            @click="dismissPlan"
+          >
+            {{ t('biscuit.planLater') }}
+          </el-button>
+          <el-button
+            size="small"
+            @click="approvePlan('ask')"
+          >
+            {{ t('biscuit.planApproveAsk') }}
+          </el-button>
+          <el-button
+            size="small"
+            type="primary"
+            @click="approvePlan('auto')"
+          >
+            {{ t('biscuit.planApproveAuto') }}
+          </el-button>
+        </div>
+      </div>
+
       <!-- Approval request card (ask mode) -->
       <div
         v-if="pendingApproval"
@@ -312,6 +351,7 @@ import type {
   IAgentActivityEvent,
   IAgentApprovalRequest,
   IContextUsage,
+  IPlanProposal,
   AgentPermissionMode
 } from '@shared/types/langgraph'
 
@@ -379,6 +419,7 @@ onBeforeUnmount(() => {
   unsubActivity?.()
   unsubApproval?.()
   unsubUsage?.()
+  unsubPlan?.()
   bus.off('biscuit-ask', handleBiscuitAsk)
 })
 
@@ -494,6 +535,29 @@ const contextRingTip = computed(() => {
   })
 })
 
+// ---- Plan approval (Claude-Code-style: plan file → card → mode switch) ----
+const pendingPlan = ref<IPlanProposal | null>(null)
+
+const approvePlan = async (targetMode: 'ask' | 'auto'): Promise<void> => {
+  const plan = pendingPlan.value
+  if (!plan) return
+  pendingPlan.value = null
+  await setMode(targetMode)
+  const message =
+    `The plan "${plan.title}" is APPROVED — I switched to ${targetMode} mode. ` +
+    `Execute it now, step by step. The full plan is saved at ${plan.path} ` +
+    '(read it with read_project_file if you need to re-check a step).'
+  userInput.value = message
+  if (aiIsConnected.value && !sending.value) {
+    sendMessage()
+  }
+}
+
+const dismissPlan = (): void => {
+  // The plan file stays on disk; only the card is dismissed.
+  pendingPlan.value = null
+}
+
 // ---- Activity feed + approvals ----
 const activity = ref<IAgentActivityEvent[]>([])
 const pendingApproval = ref<IAgentApprovalRequest | null>(null)
@@ -503,6 +567,7 @@ const visibleActivity = computed(() => activity.value.slice(-8))
 let unsubActivity: (() => void) | null = null
 let unsubApproval: (() => void) | null = null
 let unsubUsage: (() => void) | null = null
+let unsubPlan: (() => void) | null = null
 
 onMounted(() => {
   if (aiIsConnected.value) setMode(mode.value)
@@ -521,6 +586,9 @@ onMounted(() => {
   })
   unsubUsage = window.electron.ai.onContextUsage((usage) => {
     contextUsage.value = usage
+  })
+  unsubPlan = window.electron.ai.onPlanProposal((plan) => {
+    pendingPlan.value = plan
   })
   // Selection actions in the editor route through the normal chat pipeline.
   bus.on('biscuit-ask', handleBiscuitAsk)
@@ -1040,6 +1108,41 @@ async function sendMessage (): Promise<void> {
 .mode-cycle-hint {
   opacity: 0.55;
   transition: opacity 0.15s;
+}
+
+.plan-card {
+  border: 1px solid var(--themeColor, #409eff);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--floatBgColor, rgba(64, 158, 255, 0.05));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plan-card__title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--themeColor, #409eff);
+}
+
+.plan-card__body {
+  font-size: 0.8rem;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.plan-card__path {
+  font-size: 0.68rem;
+  color: var(--iconColor, #909399);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.plan-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .approval-card {

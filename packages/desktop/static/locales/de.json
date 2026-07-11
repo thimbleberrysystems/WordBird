@@ -1513,7 +1513,10 @@
     "selExpand": "Ausbauen",
     "selDescribe": "Beschreiben",
     "selCustom": "Fragen…",
-    "selCustomPlaceholder": "Was soll Biscuit mit dieser Passage tun?"
+    "selCustomPlaceholder": "Was soll Biscuit mit dieser Passage tun?",
+    "planApproveAuto": "Genehmigen & ausführen (Auto)",
+    "planApproveAsk": "Genehmigen & ausführen (Fragen)",
+    "planLater": "Weiter planen"
   },
   "review": {
     "pendingOne": "1 ausstehende Änderung",

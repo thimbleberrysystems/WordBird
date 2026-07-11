@@ -127,6 +127,19 @@ export interface IAgentApprovalRequest {
   spawns: IAgentSpawnRequest[]
 }
 
+/**
+ * A saved plan awaiting the writer's approval (Claude-Code-style plan
+ * mode: the plan is durable on disk, reviewed as a card, and approval
+ * switches the mode and kicks off execution).
+ */
+export interface IPlanProposal {
+  id: string
+  title: string
+  /** Project-relative path of the saved plan file. */
+  path: string
+  content: string
+}
+
 /** Context-window pressure for the ring indicator in the Biscuit panel. */
 export interface IContextUsage {
   usedChars: number
