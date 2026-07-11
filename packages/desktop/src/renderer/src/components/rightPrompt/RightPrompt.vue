@@ -38,20 +38,6 @@
       </div>
     </header>
 
-    <!-- Autonomy mode selector (Claude-Code style) -->
-    <div class="mode-selector">
-      <button
-        v-for="m in MODES"
-        :key="m.id"
-        class="mode-chip"
-        :class="{ active: mode === m.id }"
-        :title="m.hint"
-        @click="setMode(m.id)"
-      >
-        {{ m.label }}
-      </button>
-    </div>
-
     <section
       ref="promptBody"
       class="prompt-body"
@@ -132,7 +118,19 @@
             aria-label="Chat input"
             placeholder="Greetings! I'm Biscuit. Bring the ink and your wildest ideas, and let's bring them to life."
             @keydown.enter.exact.prevent="sendMessage"
+            @keydown.shift.tab.exact.prevent="cycleMode"
           />
+        </div>
+        <!-- Autonomy mode line (Claude-CLI style): shift+tab cycles -->
+        <div
+          class="mode-line"
+          :class="`mode-line--${mode}`"
+          :title="currentModeInfo.hint"
+          @click="cycleMode"
+        >
+          <span class="mode-symbol">{{ currentModeInfo.symbol }}</span>
+          <span class="mode-name">{{ currentModeInfo.label.toLowerCase() }} mode</span>
+          <span class="mode-cycle-hint">(shift+tab to cycle)</span>
         </div>
         <div class="prompt-input-actions">
           <el-button
@@ -260,15 +258,19 @@ const userInput = ref('')
 const sending = ref(false)
 const aiMessages = ref<ILangGraphMessage[]>([])
 
-// ---- Autonomy mode (Claude-Code style) ----
-const MODES: Array<{ id: AgentPermissionMode; label: string; hint: string }> = [
-  { id: 'plan', label: 'Plan', hint: 'Biscuit describes what it would do — nothing runs.' },
-  { id: 'ask', label: 'Ask', hint: 'Biscuit asks before sending out helpers.' },
-  { id: 'auto', label: 'Auto', hint: 'Biscuit works freely; you review every change.' },
-  { id: 'full-auto', label: 'Max', hint: 'Long tasks, bigger budgets; changes still reviewed.' }
+// ---- Autonomy mode (Claude-CLI style: line under the prompt, shift+tab cycles) ----
+const MODES: Array<{ id: AgentPermissionMode; label: string; symbol: string; hint: string }> = [
+  { id: 'plan', label: 'Plan', symbol: '⏸', hint: 'Biscuit describes what it would do — nothing runs.' },
+  { id: 'ask', label: 'Ask', symbol: '⇥', hint: 'Biscuit asks before sending out helpers.' },
+  { id: 'auto', label: 'Auto', symbol: '⏵', hint: 'Biscuit works freely; you review every change.' },
+  { id: 'full-auto', label: 'Max', symbol: '⏵⏵', hint: 'Long tasks, bigger budgets; changes still reviewed.' }
 ]
 const mode = ref<AgentPermissionMode>(
   (localStorage.getItem('biscuit-mode') as AgentPermissionMode) || 'ask'
+)
+
+const currentModeInfo = computed(
+  () => MODES.find((m) => m.id === mode.value) ?? MODES[1]
 )
 
 const setMode = async (m: AgentPermissionMode): Promise<void> => {
@@ -279,6 +281,12 @@ const setMode = async (m: AgentPermissionMode): Promise<void> => {
   } catch {
     // Not connected yet — pushed again after connect.
   }
+}
+
+const cycleMode = (): void => {
+  const index = MODES.findIndex((m) => m.id === mode.value)
+  const next = MODES[(index + 1) % MODES.length]
+  setMode(next.id)
 }
 
 // Push the persisted mode down to main once connected.
@@ -510,34 +518,52 @@ async function sendMessage (): Promise<void> {
   }
 }
 
-.mode-selector {
+/* Claude-CLI-style mode line under the prompt. */
+.mode-line {
   display: flex;
-  gap: 4px;
-  justify-content: center;
-  padding: 4px var(--spacing-4) 6px;
-  background: var(--editorBgColor);
+  align-items: center;
+  gap: 6px;
+  padding: 1px 4px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  user-select: none;
+  color: var(--color-secondary, #909399);
+  &:hover .mode-cycle-hint {
+    opacity: 1;
+  }
 }
 
-.mode-chip {
-  font: inherit;
+.mode-symbol {
   font-size: 0.7rem;
-  padding: 2px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.25));
-  background: transparent;
+}
+
+.mode-name {
+  font-weight: 600;
+}
+
+.mode-line--plan .mode-symbol,
+.mode-line--plan .mode-name {
+  color: #e6a23c;
+}
+
+.mode-line--ask .mode-symbol,
+.mode-line--ask .mode-name {
   color: var(--color-secondary, #909399);
-  cursor: pointer;
-  transition: all 0.15s;
-  &:hover {
-    border-color: var(--color-primary, #409eff);
-    color: var(--color-primary, #409eff);
-  }
-  &.active {
-    border-color: var(--color-primary, #409eff);
-    background: rgba(64, 158, 255, 0.1);
-    color: var(--color-primary, #409eff);
-    font-weight: 600;
-  }
+}
+
+.mode-line--auto .mode-symbol,
+.mode-line--auto .mode-name {
+  color: var(--color-primary, #409eff);
+}
+
+.mode-line--full-auto .mode-symbol,
+.mode-line--full-auto .mode-name {
+  color: #f56c6c;
+}
+
+.mode-cycle-hint {
+  opacity: 0.55;
+  transition: opacity 0.15s;
 }
 
 .approval-card {
