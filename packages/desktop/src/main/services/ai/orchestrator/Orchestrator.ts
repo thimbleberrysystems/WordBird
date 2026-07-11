@@ -406,6 +406,9 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   '- bible/ is established canon. Anything that touches characters, places, or plot must be checked ' +
   'against it (read_bible) before writing or claiming facts. Pages marked locked are immutable.\n' +
   '- Never assert where something appears in the manuscript without search_manuscript evidence.\n' +
+  '- Past conversations are mirrored under .wordbird/transcripts/ and search_manuscript finds ' +
+  'them — when the writer references an earlier discussion or decision you do not remember, ' +
+  'search there before asking them to repeat themselves.\n' +
   '- Prefer summaries (read_summary) over full prose to orient; read full units only when the task ' +
   'demands the actual text. Have summaries refreshed (update_summary) after prose changes.\n' +
   '- Before sweeping multi-file changes, have an agent take snapshot_project so the writer can rewind.\n' +
@@ -679,6 +682,48 @@ export class Orchestrator {
     recursionLimit: number,
     signal?: AbortSignal
   ): Promise<string> {
+    const attempt = await this._runWorkerAttempt(spawn, recursionLimit, signal)
+    return attempt.report
+  }
+
+  /**
+   * In-wave resurrection: a FAILED worker (exception — never a writer
+   * cancellation) is retried once, still inside its wave so the supervisor
+   * receives the retried report seamlessly. Auto/Max retry automatically;
+   * Ask mode raises the normal approval card first — main-side
+   * resurrection only with the writer's consent.
+   */
+  private async _runWorkerWithRetry(
+    spawn: IAgentSpawnRequest,
+    recursionLimit: number,
+    signal?: AbortSignal
+  ): Promise<string> {
+    const first = await this._runWorkerAttempt(spawn, recursionLimit, signal)
+    if (!first.failed || signal?.aborted) return first.report
+
+    const definition = AGENT_ROLES[spawn.role]
+    if (this._mode === 'ask') {
+      const approved = await this._callbacks.requestApproval({
+        id: crypto.randomUUID(),
+        summary: `${definition.displayName} failed and can be retried:\n${spawn.task}\n\n${first.report}`,
+        spawns: [spawn]
+      })
+      if (!approved) return first.report
+    }
+
+    this._activity('status', `Retrying ${definition.displayName}`, spawn.task, spawn.role)
+    const second = await this._runWorkerAttempt(spawn, recursionLimit, signal)
+    if (second.failed) {
+      return `${second.report} (retry also failed — first failure: ${first.report})`
+    }
+    return second.report
+  }
+
+  private async _runWorkerAttempt(
+    spawn: IAgentSpawnRequest,
+    recursionLimit: number,
+    signal?: AbortSignal
+  ): Promise<{ report: string; failed: boolean }> {
     const definition = AGENT_ROLES[spawn.role]
     this._activity('agent-start', `${definition.displayName}: ${definition.activityLabel}`, spawn.task, spawn.role)
 
@@ -730,7 +775,7 @@ export class Orchestrator {
       status.endedAt = Date.now()
       this._emitAgentStatus(status)
       this._activity('agent-done', `${definition.displayName} finished`, undefined, spawn.role)
-      return content || '(no result)'
+      return { report: content || '(no result)', failed: false }
     } catch (error) {
       const cancelled = controller.signal.aborted && !signal?.aborted
       status.status = cancelled ? 'cancelled' : 'failed'
@@ -738,11 +783,15 @@ export class Orchestrator {
       this._emitAgentStatus(status)
       if (cancelled) {
         this._activity('agent-done', `${definition.displayName} cancelled`, undefined, spawn.role)
-        return `The ${definition.displayName} agent was cancelled by the writer before finishing.`
+        return {
+          report: `The ${definition.displayName} agent was cancelled by the writer before finishing.`,
+          // A writer cancellation is a decision, never retried.
+          failed: false
+        }
       }
       const message = error instanceof Error ? error.message : String(error)
       this._activity('agent-done', `${definition.displayName} failed`, message, spawn.role)
-      return `The ${definition.displayName} agent failed: ${message}`
+      return { report: `The ${definition.displayName} agent failed: ${message}`, failed: true }
     } finally {
       this._liveAgents.delete(agentId)
     }
@@ -961,7 +1010,7 @@ export class Orchestrator {
     )
 
     const results = await Promise.all(
-      spawns.map((spawn) => this._runWorker(spawn, budget.workerRecursionLimit, signal))
+      spawns.map((spawn) => this._runWorkerWithRetry(spawn, budget.workerRecursionLimit, signal))
     )
 
     return spawns

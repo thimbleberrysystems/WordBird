@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { AIMessage, HumanMessage, ToolMessage } from '@langchain/core/messages'
 import type { BaseMessage } from '@langchain/core/messages'
 import { MemorySaver } from '@langchain/langgraph'
@@ -268,6 +268,80 @@ describe('mid-run steering', () => {
     expect(noteIdx).toBeGreaterThan(-1)
     expect(noteIdx).toBeLessThan(replyIdx)
     expect(queue).toHaveLength(0)
+  })
+})
+
+describe('in-wave worker resurrection', () => {
+  const failingThenGoodModel = (approvalLog: string[], mode: 'auto' | 'ask', approve: boolean) => {
+    let calls = 0
+    const model = {
+      bindTools() {
+        return this
+      },
+      async invoke(): Promise<AIMessage> {
+        calls += 1
+        if (calls === 1) {
+          return new AIMessage({
+            content: '',
+            tool_calls: [
+              {
+                id: 'w1',
+                name: 'spawn_agents',
+                args: { agents: [{ role: 'explorer', task: 'find the letters' }] }
+              }
+            ]
+          })
+        }
+        if (calls === 2) throw new Error('provider hiccup')
+        if (calls === 3 && mode === 'auto') return new AIMessage('second attempt worked')
+        if (calls === 3) return approve ? new AIMessage('second attempt worked') : new AIMessage('final answer')
+        return new AIMessage('final answer')
+      }
+    }
+    const orchestrator = new Orchestrator({
+      modelFactory: () => model as never,
+      tools: [],
+      callbacks: {
+        emitActivity: () => {},
+        requestApproval: async(req) => {
+          approvalLog.push(req.summary)
+          // Approve spawn waves; apply the scripted decision only to retries.
+          if (!req.summary.includes('failed and can be retried')) return true
+          return approve
+        }
+      }
+    })
+    orchestrator.setMode(mode)
+    return orchestrator
+  }
+
+  it('auto mode retries a failed worker once, inside the wave', async() => {
+    const approvals: string[] = []
+    const orchestrator = failingThenGoodModel(approvals, 'auto', true)
+    const graph = orchestrator.buildGraph() as unknown as InvokableGraph
+    const result = await graph.invoke(
+      { messages: [new HumanMessage('go')] },
+      { configurable: { thread_id: 'r1' }, recursionLimit: 12 }
+    )
+    const toolMsg = result.messages.find((m) => m.getType() === 'tool')
+    expect(String(toolMsg?.content)).toContain('second attempt worked')
+    // Auto mode never asks.
+    expect(approvals).toHaveLength(0)
+  })
+
+  it('ask mode requests approval before resurrecting; decline keeps the failure', async() => {
+    const approvals: string[] = []
+    const orchestrator = failingThenGoodModel(approvals, 'ask', false)
+    const graph = orchestrator.buildGraph() as unknown as InvokableGraph
+    const result = await graph.invoke(
+      { messages: [new HumanMessage('go')] },
+      { configurable: { thread_id: 'r2' }, recursionLimit: 12 }
+    )
+    // Two approvals: the spawn wave itself, then the retry offer.
+    expect(approvals.length).toBeGreaterThanOrEqual(2)
+    expect(approvals.some((a) => a.includes('failed and can be retried'))).toBe(true)
+    const toolMsg = result.messages.find((m) => m.getType() === 'tool')
+    expect(String(toolMsg?.content)).toContain('failed: provider hiccup')
   })
 })
 

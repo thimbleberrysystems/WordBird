@@ -762,6 +762,37 @@ const saveCurrent = (): void => {
     })
   }
   persistHistory()
+  scheduleTranscriptWrite(snapshot)
+}
+
+// Durable transcripts: every conversation is mirrored into the project at
+// .wordbird/transcripts/<id>.md — snapshot-versioned and, crucially,
+// searchable by the agents (search_manuscript reaches .wordbird except
+// agent-state), so decisions made in past chats stay discoverable.
+let transcriptTimer: ReturnType<typeof setTimeout> | null = null
+const scheduleTranscriptWrite = (snapshot: ChatEntry[]): void => {
+  if (transcriptTimer) clearTimeout(transcriptTimer)
+  transcriptTimer = setTimeout(() => {
+    transcriptTimer = null
+    writeTranscript(snapshot)
+  }, 2000)
+}
+
+const writeTranscript = async (snapshot: ChatEntry[]): Promise<void> => {
+  const root = useProjectStore().currentProjectPath
+  if (!root || !currentId.value) return
+  const lines: string[] = [`# ${deriveTitle(snapshot)}`, '']
+  for (const message of snapshot) {
+    if (message.role === 'error' || message.role === 'stopped') continue
+    const who = message.role === 'user' ? 'Writer' : 'Biscuit'
+    lines.push(`## ${who}`, '', message.content, '')
+  }
+  const target = window.path.join(root, '.wordbird', 'transcripts', `${currentId.value}.md`)
+  try {
+    await window.fileUtils.outputFile(target, lines.join('\n'))
+  } catch {
+    // Transcript mirroring is best-effort; the localStorage copy remains.
+  }
 }
 
 // Persist the transcript as it grows (assistant replies, errors, etc.).
