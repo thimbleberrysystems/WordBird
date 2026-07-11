@@ -41,7 +41,12 @@ const BIBLE_README =
   '- `characters/` — one page per character\n' +
   '- `places/` — locations and settings\n' +
   '- `threads/` — plot threads, arcs, and open questions\n' +
-  '- `research/` — real-world research notes with sources\n'
+  '- `research/` — real-world research notes with sources\n\n' +
+  '## Locking canon\n\n' +
+  'Add `locked: true` to a page\'s front matter to make it hard canon:\n\n' +
+  '```\n---\nlocked: true\n---\n```\n\n' +
+  'Biscuit can read locked pages but may never change them — if prose\n' +
+  'conflicts with locked canon, the prose gets fixed, not the canon.\n'
 
 const COMMON_FOLDERS = [
   'bible/characters',

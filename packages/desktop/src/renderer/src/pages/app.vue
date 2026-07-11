@@ -26,6 +26,7 @@
           <view-switcher v-if="projectTree" />
           <corkboard v-if="projectTree && novelViewMode === 'corkboard'" />
           <outline-view v-else-if="projectTree && novelViewMode === 'outline'" />
+          <timeline-view v-else-if="projectTree && novelViewMode === 'timeline'" />
           <editor-with-tabs
             v-if="hasCurrentFile"
             v-show="novelViewMode === 'page'"
@@ -69,6 +70,7 @@ import AgentProposalController from '@/components/agent/AgentProposalController.
 import ViewSwitcher from '@/components/novel/ViewSwitcher.vue'
 import Corkboard from '@/components/novel/Corkboard.vue'
 import OutlineView from '@/components/novel/OutlineView.vue'
+import TimelineView from '@/components/novel/TimelineView.vue'
 import { useNovelStore } from '@/store/novel'
 import bus from '@/bus'
 import { DEFAULT_STYLE } from '@/config'

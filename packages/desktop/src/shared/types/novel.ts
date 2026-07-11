@@ -35,6 +35,8 @@ export interface INovelUnit {
   pov?: string
   location?: string
   synopsis?: string
+  /** In-story moment (free text: "Day 3", "1889-06-12", "That night"). */
+  when?: string
   /** Cached word count of the backing file (leaf units only). */
   wordCount?: number
   children?: INovelUnit[]
@@ -71,6 +73,24 @@ export interface INovelUnitUpdate {
   pov?: string
   location?: string
   synopsis?: string
+  when?: string
+}
+
+/** A continuity problem recorded by the agent (or writer) for review. */
+export interface IContinuityIssue {
+  id: string
+  title: string
+  description: string
+  severity: 'low' | 'medium' | 'high'
+  relatedPaths: string[]
+  status: 'open' | 'resolved'
+  createdAt: string
+}
+
+export interface IContinuityListResult {
+  ok: boolean
+  issues?: IContinuityIssue[]
+  error?: string
 }
 
 export interface INovelCompileOptions {

@@ -292,7 +292,8 @@
       "biscuit": "Biscuit",
       "settings": "Einstellungen",
       "binder": "Manuskript",
-      "history": "Verlauf"
+      "history": "Verlauf",
+      "continuity": "Kontinuität"
     }
   },
   "commandPalette": {
@@ -1456,6 +1457,15 @@
     "colLocation": "Ort",
     "colStatus": "Status",
     "colWords": "Wörter",
-    "colSynopsis": "Zusammenfassung"
+    "colSynopsis": "Zusammenfassung",
+    "timeline": "Zeitleiste",
+    "narrativeOrder": "Erzählreihenfolge",
+    "chronologicalOrder": "Story-Zeit",
+    "whenPlaceholder": "wann?"
+  },
+  "continuity": {
+    "title": "Kontinuität",
+    "resolve": "Als gelöst markieren",
+    "empty": "Keine offenen Kontinuitätsprobleme. Biscuit trägt hier ein, was es findet."
   }
 }

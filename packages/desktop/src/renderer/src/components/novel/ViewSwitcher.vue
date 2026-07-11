@@ -23,7 +23,8 @@ const { viewMode } = storeToRefs(novelStore)
 const options: Array<{ id: NovelViewMode; label: string }> = [
   { id: 'page', label: t('views.page') },
   { id: 'corkboard', label: t('views.corkboard') },
-  { id: 'outline', label: t('views.outline') }
+  { id: 'outline', label: t('views.outline') },
+  { id: 'timeline', label: t('views.timeline') }
 ]
 </script>
 

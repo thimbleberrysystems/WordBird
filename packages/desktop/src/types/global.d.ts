@@ -36,6 +36,7 @@ import type {
   INovelCompileResult,
   ISnapshotListResult,
   ISnapshotActionResult,
+  IContinuityListResult,
   ProjectFlavor
 } from '@shared/types/novel'
 
@@ -152,6 +153,8 @@ declare global {
       snapshot: (root: string, message: string) => Promise<ISnapshotActionResult>
       listSnapshots: (root: string, limit?: number) => Promise<ISnapshotListResult>
       restoreSnapshot: (root: string, snapshotId: string) => Promise<ISnapshotActionResult>
+      continuityIssues: (root: string) => Promise<IContinuityListResult>
+      resolveIssue: (root: string, issueId: string) => Promise<{ ok: boolean; error?: string }>
     }
     ai: {
       connect: (config: IAIConfig) => Promise<void>

@@ -293,7 +293,8 @@
       "biscuit": "Biscuit",
       "settings": "設定",
       "binder": "書稿",
-      "history": "歷史"
+      "history": "歷史",
+      "continuity": "連貫性"
     }
   },
   "commandPalette": {
@@ -1466,6 +1467,15 @@
     "colLocation": "地點",
     "colStatus": "狀態",
     "colWords": "字數",
-    "colSynopsis": "梗概"
+    "colSynopsis": "梗概",
+    "timeline": "時間線",
+    "narrativeOrder": "敘事順序",
+    "chronologicalOrder": "故事時間",
+    "whenPlaceholder": "何時？"
+  },
+  "continuity": {
+    "title": "連貫性",
+    "resolve": "標記為已解決",
+    "empty": "沒有未解決的連貫性問題。Biscuit 發現的問題會記錄在這裡。"
   }
 }

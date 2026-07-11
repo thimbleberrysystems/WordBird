@@ -160,7 +160,7 @@
       "id": "update_unit_meta",
       "name": "update_unit_meta",
       "displayName": "Update unit metadata",
-      "description": "Update a unit's binder metadata: title, status (idea/draft/revised/final), POV character, location, or synopsis. Does not touch prose.",
+      "description": "Update a unit's binder metadata: title, status (idea/draft/revised/final), POV character, location, synopsis, or when (the in-story moment, e.g. 'Day 3' or '1889-06-12', used by the timeline). Does not touch prose.",
       "handler": "update_unit_meta",
       "enabled": true,
       "scope": "project",
@@ -173,7 +173,8 @@
           "status": { "type": "string", "enum": ["idea", "draft", "revised", "final"] },
           "pov": { "type": "string" },
           "location": { "type": "string" },
-          "synopsis": { "type": "string" }
+          "synopsis": { "type": "string" },
+          "when": { "type": "string" }
         },
         "required": ["unitId"]
       }

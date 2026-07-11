@@ -49,6 +49,7 @@
       <side-bar-search v-else-if="rightColumn === 'search'" />
       <toc v-else-if="rightColumn === 'toc'" />
       <history v-else-if="rightColumn === 'history'" />
+      <continuity v-else-if="rightColumn === 'continuity'" />
     </div>
     <div
       v-show="rightColumn"
@@ -70,6 +71,7 @@ import Tree from './tree.vue'
 import SideBarSearch from './search.vue'
 import Toc from './toc.vue'
 import History from './history.vue'
+import Continuity from './continuity.vue'
 import { DArrowLeft } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
 import type { TabDescriptor } from './types'

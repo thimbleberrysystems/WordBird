@@ -12,6 +12,7 @@ import log from 'electron-log'
 import { isValidProjectPath } from '../filesystem/markdown'
 import { structureService } from '../services/novel/StructureService'
 import { snapshotService } from '../services/novel/SnapshotService'
+import { continuityService } from '../services/novel/ContinuityService'
 import type {
   INovelStructure,
   INovelCreateUnitPayload,
@@ -21,6 +22,7 @@ import type {
   INovelCompileResult,
   ISnapshotListResult,
   ISnapshotActionResult,
+  IContinuityListResult,
   ProjectFlavor
 } from '../../shared/types/novel'
 
@@ -169,6 +171,35 @@ export const registerNovelHandlers = (): void => {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         log.error('[novel] restore-snapshot failed:', error)
+        return { ok: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'mt::novel:continuity-issues',
+    async(_e, root: string): Promise<IContinuityListResult> => {
+      const safeRoot = guardRoot(root)
+      if (!safeRoot) return { ok: false, error: 'Not a valid WordBird project' }
+      try {
+        return { ok: true, issues: await continuityService.list(safeRoot) }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        return { ok: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'mt::novel:resolve-issue',
+    async(_e, root: string, issueId: string): Promise<{ ok: boolean; error?: string }> => {
+      const safeRoot = guardRoot(root)
+      if (!safeRoot) return { ok: false, error: 'Not a valid WordBird project' }
+      try {
+        const resolved = await continuityService.resolve(safeRoot, issueId)
+        return resolved ? { ok: true } : { ok: false, error: 'Issue not found' }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
         return { ok: false, error: message }
       }
     }

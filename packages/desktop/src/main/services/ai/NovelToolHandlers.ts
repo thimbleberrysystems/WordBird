@@ -19,8 +19,9 @@ import { promisify } from 'util'
 import { resolveRgPath } from '../../ipc/ripgrep'
 import { structureService, collectLeaves, findUnit } from '../novel/StructureService'
 import { snapshotService } from '../novel/SnapshotService'
+import { continuityService } from '../novel/ContinuityService'
 import type { AgentToolContext, AgentToolService } from './AgentToolService'
-import type { INovelUnit } from '../../../shared/types/novel'
+import type { INovelUnit, IContinuityIssue } from '../../../shared/types/novel'
 
 const execFileAsync = promisify(execFile)
 
@@ -284,12 +285,12 @@ const updateUnitMeta = async(
   const root = requireRoot(context)
   const unitId = str(args, 'unitId')
   const update: Record<string, string> = {}
-  for (const key of ['title', 'status', 'pov', 'location', 'synopsis'] as const) {
+  for (const key of ['title', 'status', 'pov', 'location', 'synopsis', 'when'] as const) {
     const value = optStr(args, key)
     if (value !== undefined) update[key] = value
   }
   if (Object.keys(update).length === 0) {
-    throw new Error('Provide at least one of title/status/pov/location/synopsis.')
+    throw new Error('Provide at least one of title/status/pov/location/synopsis/when.')
   }
   const structure = await structureService.loadReconciled(root)
   await structureService.updateUnit(root, structure, unitId, update)
@@ -342,6 +343,17 @@ const readBible = async(
   return { entries }
 }
 
+/**
+ * A bible page is locked canon when its YAML front matter contains
+ * `locked: true`. Locked pages are read-only for the agent — only the
+ * writer may change them (directly in the editor).
+ */
+export const isLockedCanon = (content: string): boolean => {
+  const fm = /^---\n([\s\S]*?)\n---/.exec(content)
+  if (!fm) return false
+  return /^\s*locked\s*:\s*true\s*$/m.test(fm[1])
+}
+
 const proposeBibleUpdate = async(
   args: Record<string, unknown>,
   context: AgentToolContext
@@ -355,6 +367,13 @@ const proposeBibleUpdate = async(
   let oldContent = ''
   if (fs.existsSync(filePath)) {
     oldContent = await readTextSafe(filePath)
+    if (isLockedCanon(oldContent)) {
+      throw new Error(
+        `This bible page is LOCKED canon (${target}). You must not change it — ` +
+        'treat its facts as immutable. If prose conflicts with it, fix the prose, ' +
+        'or log a continuity issue for the writer to decide.'
+      )
+    }
   } else {
     // New bible page: make sure the parent directory will exist on apply.
     await fsPromises.mkdir(path.dirname(filePath), { recursive: true })
@@ -436,19 +455,6 @@ const readSummary = async(
   }
 }
 
-interface ContinuityIssue {
-  id: string
-  title: string
-  description: string
-  severity: 'low' | 'medium' | 'high'
-  relatedPaths: string[]
-  status: 'open' | 'resolved'
-  createdAt: string
-}
-
-const continuityPath = (root: string): string =>
-  path.join(root, '.wordbird', 'continuity', 'issues.json')
-
 const logContinuityIssue = async(
   args: Record<string, unknown>,
   context: AgentToolContext
@@ -457,23 +463,14 @@ const logContinuityIssue = async(
   const title = str(args, 'title')
   const description = str(args, 'description')
   const severityArg = optStr(args, 'severity') ?? 'medium'
-  const severity: ContinuityIssue['severity'] =
+  const severity: IContinuityIssue['severity'] =
     severityArg === 'low' || severityArg === 'high' ? severityArg : 'medium'
   const relatedRaw = args.relatedPaths
   const relatedPaths = Array.isArray(relatedRaw)
     ? relatedRaw.filter((p): p is string => typeof p === 'string').slice(0, 20)
     : []
 
-  const target = continuityPath(root)
-  await fsPromises.mkdir(path.dirname(target), { recursive: true })
-  let issues: ContinuityIssue[] = []
-  try {
-    issues = JSON.parse(await fsPromises.readFile(target, 'utf8'))
-    if (!Array.isArray(issues)) issues = []
-  } catch {
-    issues = []
-  }
-  const issue: ContinuityIssue = {
+  const issue: IContinuityIssue = {
     id: crypto.randomUUID(),
     title,
     description,
@@ -482,9 +479,8 @@ const logContinuityIssue = async(
     status: 'open',
     createdAt: new Date().toISOString()
   }
-  issues.push(issue)
-  await fsPromises.writeFile(target, JSON.stringify(issues, null, 2), 'utf8')
-  return { logged: true, issueId: issue.id, openIssues: issues.filter((i) => i.status === 'open').length }
+  const openIssues = await continuityService.add(root, issue)
+  return { logged: true, issueId: issue.id, openIssues }
 }
 
 // ---- snapshots ----

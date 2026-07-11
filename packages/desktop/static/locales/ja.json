@@ -293,7 +293,8 @@
       "biscuit": "Biscuit",
       "settings": "設定",
       "binder": "原稿",
-      "history": "履歴"
+      "history": "履歴",
+      "continuity": "整合性"
     }
   },
   "commandPalette": {
@@ -1458,6 +1459,15 @@
     "colLocation": "場所",
     "colStatus": "状態",
     "colWords": "語数",
-    "colSynopsis": "あらすじ"
+    "colSynopsis": "あらすじ",
+    "timeline": "タイムライン",
+    "narrativeOrder": "物語順",
+    "chronologicalOrder": "時系列",
+    "whenPlaceholder": "いつ？"
+  },
+  "continuity": {
+    "title": "整合性",
+    "resolve": "解決済みにする",
+    "empty": "未解決の整合性の問題はありません。Biscuitが見つけたものはここに記録されます。"
   }
 }

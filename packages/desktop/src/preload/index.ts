@@ -270,7 +270,10 @@ const novelAPI = {
   snapshot: (root: string, message: string) => invoke('mt::novel:snapshot', root, message),
   listSnapshots: (root: string, limit?: number) => invoke('mt::novel:snapshots', root, limit),
   restoreSnapshot: (root: string, snapshotId: string) =>
-    invoke('mt::novel:restore-snapshot', root, snapshotId)
+    invoke('mt::novel:restore-snapshot', root, snapshotId),
+  continuityIssues: (root: string) => invoke('mt::novel:continuity-issues', root),
+  resolveIssue: (root: string, issueId: string) =>
+    invoke('mt::novel:resolve-issue', root, issueId)
 }
 
 const aiAPI = {

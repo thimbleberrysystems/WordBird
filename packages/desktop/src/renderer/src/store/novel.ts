@@ -18,7 +18,7 @@ import type {
   INovelCompileResult
 } from '@shared/types/novel'
 
-export type NovelViewMode = 'page' | 'corkboard' | 'outline'
+export type NovelViewMode = 'page' | 'corkboard' | 'outline' | 'timeline'
 
 export const useNovelStore = defineStore('novel', () => {
   const structure = ref<INovelStructure | null>(null)

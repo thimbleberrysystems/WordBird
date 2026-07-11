@@ -293,7 +293,8 @@
       "biscuit": "Biscuit",
       "settings": "설정",
       "binder": "원고",
-      "history": "기록"
+      "history": "기록",
+      "continuity": "연속성"
     }
   },
   "commandPalette": {
@@ -1458,6 +1459,15 @@
     "colLocation": "장소",
     "colStatus": "상태",
     "colWords": "단어",
-    "colSynopsis": "시놉시스"
+    "colSynopsis": "시놉시스",
+    "timeline": "타임라인",
+    "narrativeOrder": "서사 순서",
+    "chronologicalOrder": "이야기 시간",
+    "whenPlaceholder": "언제?"
+  },
+  "continuity": {
+    "title": "연속성",
+    "resolve": "해결됨으로 표시",
+    "empty": "미해결 연속성 문제가 없습니다. Biscuit이 발견한 내용이 여기에 기록됩니다."
   }
 }

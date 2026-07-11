@@ -292,7 +292,8 @@
       "biscuit": "Biscuit",
       "settings": "Settings",
       "binder": "Manuscript",
-      "history": "History"
+      "history": "History",
+      "continuity": "Continuity"
     }
   },
   "commandPalette": {
@@ -1456,6 +1457,15 @@
     "colLocation": "Location",
     "colStatus": "Status",
     "colWords": "Words",
-    "colSynopsis": "Synopsis"
+    "colSynopsis": "Synopsis",
+    "timeline": "Timeline",
+    "narrativeOrder": "Narrative order",
+    "chronologicalOrder": "Story time",
+    "whenPlaceholder": "when?"
+  },
+  "continuity": {
+    "title": "Continuity",
+    "resolve": "Mark resolved",
+    "empty": "No open continuity issues. Biscuit files anything it finds here."
   }
 }

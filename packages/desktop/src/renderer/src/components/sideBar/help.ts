@@ -4,6 +4,7 @@ import {
   Search as SearchIcon,
   Memo as TocIcon,
   Clock as HistoryIcon,
+  Warning as ContinuityIcon,
   Setting as SettingIcon
 } from '@element-plus/icons-vue'
 import { t } from '@/i18n'
@@ -39,6 +40,11 @@ export const sideBarIcons: SideBarIconEntry[] = [
     id: 'history',
     name: () => t('sideBar.icons.history'),
     icon: HistoryIcon
+  },
+  {
+    id: 'continuity',
+    name: () => t('sideBar.icons.continuity'),
+    icon: ContinuityIcon
   }
 ]
 

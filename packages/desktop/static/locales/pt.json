@@ -293,7 +293,8 @@
       "biscuit": "Biscuit",
       "settings": "Configurações",
       "binder": "Manuscrito",
-      "history": "Histórico"
+      "history": "Histórico",
+      "continuity": "Continuidade"
     }
   },
   "commandPalette": {
@@ -1458,6 +1459,15 @@
     "colLocation": "Local",
     "colStatus": "Estado",
     "colWords": "Palavras",
-    "colSynopsis": "Sinopse"
+    "colSynopsis": "Sinopse",
+    "timeline": "Linha do tempo",
+    "narrativeOrder": "Ordem narrativa",
+    "chronologicalOrder": "Tempo da história",
+    "whenPlaceholder": "quando?"
+  },
+  "continuity": {
+    "title": "Continuidade",
+    "resolve": "Marcar como resolvido",
+    "empty": "Sem problemas de continuidade abertos. O Biscuit registrará aqui o que encontrar."
   }
 }
