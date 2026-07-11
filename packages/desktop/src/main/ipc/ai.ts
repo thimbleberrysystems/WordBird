@@ -39,7 +39,16 @@ export const registerAIHandlers = (): void => {
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('Request aborted')
       }
-      throw new Error(error instanceof Error ? error.message : 'Failed to send message')
+      const message = error instanceof Error ? error.message : 'Failed to send message'
+      // Auth failures read like line noise ("401 User not found…") — point
+      // the writer at the actual fix.
+      if (/\b401\b|\b403\b|User not found|MODEL_AUTHENTICATION|invalid[_ ]api[_ ]key/i.test(message)) {
+        throw new Error(
+          `Your API key was rejected by the provider (${message.slice(0, 120)}). ` +
+          'Open Settings → AI and check the key for the selected provider.'
+        )
+      }
+      throw new Error(message)
     } finally {
       langGraphManager.clearAbortController()
     }

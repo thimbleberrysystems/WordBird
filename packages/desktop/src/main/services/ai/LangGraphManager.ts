@@ -213,12 +213,74 @@ export class LangGraphManager {
     this._agentToolService.setProjectRoot(projectRoot)
   }
 
+  /**
+   * Verify the credentials actually work before declaring the provider
+   * connected. Without this, a bad key sails through connect() (model
+   * listing errors are swallowed, and OpenRouter's /models is public) and
+   * only explodes on the first message with an opaque 401.
+   */
+  private async _validateCredentials(
+    provider: AIProvider,
+    apiKey: string,
+    baseUrl?: string
+  ): Promise<void> {
+    const base = baseUrl || PROVIDER_BASE_URLS[provider]
+    const rejected = (detail?: string): Error =>
+      new Error(
+        `${provider} rejected these credentials${detail ? ` (${detail})` : ''}. ` +
+        'Double-check the API key in Settings → AI.'
+      )
+
+    try {
+      if (provider === 'openai') {
+        await axios.get(`${base}/models`, {
+          headers: { Authorization: `Bearer ${apiKey}` },
+          timeout: 10000
+        })
+      } else if (provider === 'openrouter') {
+        // /models is public on OpenRouter — /key requires a valid key.
+        await axios.get(`${base}/key`, {
+          headers: { Authorization: `Bearer ${apiKey}` },
+          timeout: 10000
+        })
+      } else if (provider === 'anthropic') {
+        await axios.get(`${base}/models`, {
+          headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+          timeout: 10000
+        })
+      } else if (provider === 'google') {
+        await axios.get(
+          `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+          { timeout: 10000 }
+        )
+      } else {
+        // ollama / ollama_bundled: no key — just confirm the server responds.
+        await axios.get(`${base}/api/tags`, { timeout: 10000 })
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status
+        if (status === 401 || status === 403) {
+          throw rejected(`HTTP ${status}`)
+        }
+        if (!error.response) {
+          throw new Error(
+            `Could not reach ${provider} at ${base}: ${error.message}. ` +
+            'Check the base URL and your network connection.'
+          )
+        }
+      }
+      throw error
+    }
+  }
+
   async connect(config: IAIConfig): Promise<void> {
     const { provider, apiKey, baseUrl } = config
     this._currentProvider = provider
     this._currentModel = config.model || null
 
     try {
+      await this._validateCredentials(provider, apiKey, baseUrl)
       await this.fetchModels(provider, apiKey, baseUrl)
 
       await this._loadToolPacks()
