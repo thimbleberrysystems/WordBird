@@ -390,7 +390,16 @@
   "recent": {
     "noProjectOpen": "You have no project open.",
     "createProject": "Create Project",
-    "loadProject": "Load Project"
+    "loadProject": "Load Project",
+    "chooseFlavor": "How do you like to organize your writing?",
+    "flavorChapters": "Chapters & Scenes",
+    "flavorChaptersDesc": "Folders for chapters with a file per scene — the classic binder.",
+    "flavorScenePool": "Scene Pool",
+    "flavorScenePoolDesc": "A flat pool of scene files; group them into chapters whenever you like.",
+    "flavorFlat": "Simple",
+    "flavorFlatDesc": "One file per chapter. Minimal and clean.",
+    "create": "Create",
+    "cancel": "Cancel"
   },
   "import": {
     "title": "Import or Open",

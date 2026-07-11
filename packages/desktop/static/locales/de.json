@@ -390,7 +390,16 @@
   "recent": {
     "noProjectOpen": "Kein Projekt geöffnet.",
     "createProject": "Projekt erstellen",
-    "loadProject": "Projekt laden"
+    "loadProject": "Projekt laden",
+    "chooseFlavor": "Wie möchtest du dein Schreiben organisieren?",
+    "flavorChapters": "Kapitel & Szenen",
+    "flavorChaptersDesc": "Ordner für Kapitel mit einer Datei pro Szene — der klassische Binder.",
+    "flavorScenePool": "Szenen-Pool",
+    "flavorScenePoolDesc": "Ein flacher Pool von Szenendateien; gruppiere sie später zu Kapiteln.",
+    "flavorFlat": "Einfach",
+    "flavorFlatDesc": "Eine Datei pro Kapitel. Minimal und übersichtlich.",
+    "create": "Erstellen",
+    "cancel": "Abbrechen"
   },
   "import": {
     "title": "Importieren oder öffnen",

@@ -391,7 +391,16 @@
   "recent": {
     "noProjectOpen": "열려 있는 프로젝트가 없습니다.",
     "createProject": "프로젝트 생성",
-    "loadProject": "프로젝트 로드"
+    "loadProject": "프로젝트 로드",
+    "chooseFlavor": "글을 어떻게 구성하시겠어요?",
+    "flavorChapters": "챕터와 장면",
+    "flavorChaptersDesc": "챕터별 폴더에 장면별 파일 — 클래식 바인더 방식.",
+    "flavorScenePool": "장면 모음",
+    "flavorScenePoolDesc": "장면 파일을 평평하게 모아두고 나중에 챕터로 묶으세요.",
+    "flavorFlat": "심플",
+    "flavorFlatDesc": "챕터당 파일 하나. 미니멀하고 깔끔하게.",
+    "create": "만들기",
+    "cancel": "취소"
   },
   "import": {
     "title": "가져오기 또는 열기",

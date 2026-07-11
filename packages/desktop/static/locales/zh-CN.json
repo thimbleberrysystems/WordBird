@@ -391,7 +391,16 @@
   "recent": {
     "noProjectOpen": "您没有打开的项目。",
     "createProject": "创建项目",
-    "loadProject": "加载项目"
+    "loadProject": "加载项目",
+    "chooseFlavor": "你想如何组织你的写作？",
+    "flavorChapters": "章节与场景",
+    "flavorChaptersDesc": "每章一个文件夹，每个场景一个文件 —— 经典活页夹方式。",
+    "flavorScenePool": "场景池",
+    "flavorScenePoolDesc": "场景文件平铺存放，随时再归入章节。",
+    "flavorFlat": "简洁",
+    "flavorFlatDesc": "每章一个文件，极简清爽。",
+    "create": "创建",
+    "cancel": "取消"
   },
   "import": {
     "title": "导入或打开",

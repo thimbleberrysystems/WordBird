@@ -54,6 +54,8 @@ import type {
 export interface ProjectCreateArgs {
   name?: string
   location?: string
+  /** On-disk layout for the new novel project; defaults to 'chapters-scenes'. */
+  flavor?: ProjectFlavor
 }
 
 export interface ProjectCreateResult {

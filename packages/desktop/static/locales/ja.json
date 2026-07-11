@@ -391,7 +391,16 @@
   "recent": {
     "noProjectOpen": "開いているプロジェクトがありません。",
     "createProject": "プロジェクトを作成",
-    "loadProject": "プロジェクトを読み込む"
+    "loadProject": "プロジェクトを読み込む",
+    "chooseFlavor": "執筆の整理方法を選んでください",
+    "flavorChapters": "章とシーン",
+    "flavorChaptersDesc": "章ごとのフォルダーにシーンごとのファイル — 定番のバインダー方式。",
+    "flavorScenePool": "シーンプール",
+    "flavorScenePoolDesc": "シーンファイルをフラットに保存し、後から章にまとめられます。",
+    "flavorFlat": "シンプル",
+    "flavorFlatDesc": "章ごとに1ファイル。ミニマルですっきり。",
+    "create": "作成",
+    "cancel": "キャンセル"
   },
   "import": {
     "title": "インポートまたは開く",

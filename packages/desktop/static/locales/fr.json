@@ -391,7 +391,16 @@
   "recent": {
     "noProjectOpen": "Aucun projet ouvert.",
     "createProject": "Créer un projet",
-    "loadProject": "Charger un projet"
+    "loadProject": "Charger un projet",
+    "chooseFlavor": "Comment souhaitez-vous organiser votre écriture ?",
+    "flavorChapters": "Chapitres et scènes",
+    "flavorChaptersDesc": "Des dossiers par chapitre avec un fichier par scène — le classeur classique.",
+    "flavorScenePool": "Réserve de scènes",
+    "flavorScenePoolDesc": "Un ensemble plat de scènes ; regroupez-les en chapitres quand vous voulez.",
+    "flavorFlat": "Simple",
+    "flavorFlatDesc": "Un fichier par chapitre. Minimal et épuré.",
+    "create": "Créer",
+    "cancel": "Annuler"
   },
   "import": {
     "title": "Importer ou ouvrir",

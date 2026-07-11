@@ -6,10 +6,12 @@ import fsExtra from 'fs-extra'
 import * as git from 'isomorphic-git'
 import { isDirectory2 } from 'common/filesystem'
 import { isValidProjectPath } from '../filesystem/markdown'
+import { structureService } from '../services/novel/StructureService'
 import type {
   ProjectCreateArgs,
   ProjectLoadArgs
 } from '@shared/types/ipc'
+import type { ProjectFlavor } from '@shared/types/novel'
 
 const normalizePath = (pathname: string): string => path.resolve(pathname)
 
@@ -27,34 +29,61 @@ const chooseDirectory = async(win: BrowserWindow | null): Promise<string | null>
   return normalizePath(filePaths[0])
 }
 
-// Default project template embedded in code
-// This is used when the static/projectTemplate.json file is not available
-const DEFAULT_PROJECT_TEMPLATE = {
-  folders: ['src', 'docs'],
-  files: {
-    'README.md': '# {{name}}\n\nA new project created with WordBird.',
-    'src/index.md': '<!-- Main content file -->\n\n# Welcome to {{name}}'
-  }
+// Per-flavor novel project scaffolding. All flavors share the story bible
+// and notes; they differ only in how prose files are laid out on disk
+// (see @shared/types/novel for the flavor descriptions).
+const BIBLE_README =
+  '# Story Bible\n\n' +
+  'Everything that is true about your story lives here — characters, places,\n' +
+  'plot threads, and research. Biscuit reads these pages to stay consistent\n' +
+  'with your canon and keeps them up to date as the story grows.\n\n' +
+  '- `characters/` — one page per character\n' +
+  '- `places/` — locations and settings\n' +
+  '- `threads/` — plot threads, arcs, and open questions\n' +
+  '- `research/` — real-world research notes with sources\n'
+
+const COMMON_FOLDERS = [
+  'bible/characters',
+  'bible/places',
+  'bible/threads',
+  'bible/research',
+  'notes'
+]
+
+const COMMON_FILES: Record<string, string> = {
+  'bible/README.md': BIBLE_README,
+  'README.md': '# {{name}}\n\nA novel written with WordBird.'
 }
 
-const loadProjectTemplate = (): { folders?: string[]; files?: Record<string, string> } | null => {
-  // In production: resources/static/projectTemplate.json
-  // In development: packages/desktop/static/projectTemplate.json
-  // __dirname in compiled code is out/main/, so we need to go up 2 levels to reach packages/desktop/
-  const templatePath = path.join(__dirname, '..', '..', 'static', 'projectTemplate.json')
-
-  try {
-    if (fs.existsSync(templatePath)) {
-      const templateContent = fs.readFileSync(templatePath, 'utf8')
-      return JSON.parse(templateContent)
+const FLAVOR_TEMPLATES: Record<
+  ProjectFlavor,
+  { folders: string[]; files: Record<string, string> }
+> = {
+  'chapters-scenes': {
+    folders: [...COMMON_FOLDERS, 'manuscript/chapter-one'],
+    files: {
+      ...COMMON_FILES,
+      'manuscript/chapter-one/opening-scene.md': ''
     }
-  } catch (err) {
-    log.warn('Failed to load project template from file, using default:', err)
+  },
+  'scene-pool': {
+    folders: [...COMMON_FOLDERS, 'scenes'],
+    files: {
+      ...COMMON_FILES,
+      'scenes/opening-scene.md': ''
+    }
+  },
+  flat: {
+    folders: [...COMMON_FOLDERS],
+    files: {
+      ...COMMON_FILES,
+      'chapter-one.md': ''
+    }
   }
-
-  // Fallback to embedded template
-  return DEFAULT_PROJECT_TEMPLATE
 }
+
+const isProjectFlavor = (value: unknown): value is ProjectFlavor =>
+  value === 'chapters-scenes' || value === 'scene-pool' || value === 'flat'
 
 const updateLastOpenedFolder = (win: BrowserWindow | null, pathname: string): void => {
   if (!win) return
@@ -73,16 +102,15 @@ export const registerProjectHandlers = (): void => {
       return { projectPath: null }
     }
 
-    // Phase 2: Create project structure
+    // Phase 2: Create project structure for the chosen flavor
     try {
-      const template = loadProjectTemplate()
-      if (!template) {
-        log.error('Failed to load project template')
-        return { projectPath: null }
-      }
+      const flavor: ProjectFlavor = isProjectFlavor(args.flavor)
+        ? args.flavor
+        : 'chapters-scenes'
+      const template = FLAVOR_TEMPLATES[flavor]
 
       // Create directories
-      for (const folder of template.folders || []) {
+      for (const folder of template.folders) {
         const folderPath = path.join(location, folder)
         fs.mkdirSync(folderPath, { recursive: true })
       }
@@ -90,7 +118,7 @@ export const registerProjectHandlers = (): void => {
       // Create files with placeholder interpolation
       const name = args.name || path.basename(location)
       const slug = name.toLowerCase().replace(/\s+/g, '-')
-      for (const [filename, content] of Object.entries(template.files || {})) {
+      for (const [filename, content] of Object.entries(template.files)) {
         const interpolated = String(content).replace(/\{\{name\}\}/g, name).replace(/\{\{slug\}\}/g, slug)
         fs.writeFileSync(path.join(location, filename), interpolated, 'utf8')
       }
@@ -104,8 +132,16 @@ export const registerProjectHandlers = (): void => {
       fs.writeFileSync(markerPath, JSON.stringify({
         name,
         createdAt: new Date().toISOString(),
-        templateId: 'default'
+        flavor
       }, null, 2), 'utf8')
+
+      // Build the initial structure manifest from the scaffolded files
+      try {
+        const structure = await structureService.scan(location, flavor)
+        await structureService.save(location, structure)
+      } catch (structureErr) {
+        log.warn('Initial structure manifest creation failed:', structureErr)
+      }
 
       // Phase 3: Initialize git repository
       try {

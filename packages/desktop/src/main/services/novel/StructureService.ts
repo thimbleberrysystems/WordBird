@@ -256,16 +256,44 @@ export class StructureService {
     await fsPromises.writeFile(target, JSON.stringify(structure, null, 2), 'utf8')
   }
 
+  /** Read the project's flavor from `.wordbird/project.json` (if recorded). */
+  async readProjectFlavor(root: string): Promise<ProjectFlavor | null> {
+    try {
+      const raw = await fsPromises.readFile(
+        path.join(root, '.wordbird', 'project.json'),
+        'utf8'
+      )
+      const parsed = JSON.parse(raw) as { flavor?: unknown }
+      const flavor = parsed.flavor
+      if (flavor === 'chapters-scenes' || flavor === 'scene-pool' || flavor === 'flat') {
+        return flavor
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+
   /**
    * Load the manifest, reconciling it against the files on disk:
    * units whose backing file vanished are dropped; markdown files found in
    * the flavor's manuscript area but missing from the manifest are appended.
    * Creates a manifest by scanning when none exists (imported projects).
    */
-  async loadReconciled(root: string, fallbackFlavor: ProjectFlavor = 'flat'): Promise<INovelStructure> {
+  async loadReconciled(root: string, fallbackFlavor?: ProjectFlavor): Promise<INovelStructure> {
     let structure = await this.load(root)
     if (!structure) {
-      structure = await this.scan(root, fallbackFlavor)
+      const flavor =
+        fallbackFlavor ??
+        (await this.readProjectFlavor(root)) ??
+        // Imported/legacy projects: chapters-scenes if a manuscript/ tree
+        // exists, scene-pool if scenes/, otherwise flat.
+        (fs.existsSync(path.join(root, 'manuscript'))
+          ? 'chapters-scenes'
+          : fs.existsSync(path.join(root, 'scenes'))
+            ? 'scene-pool'
+            : 'flat')
+      structure = await this.scan(root, flavor)
       await this.save(root, structure)
       return structure
     }

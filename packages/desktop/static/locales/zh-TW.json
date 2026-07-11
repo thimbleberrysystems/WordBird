@@ -391,7 +391,16 @@
   "recent": {
     "noProjectOpen": "您沒有打開的項目。",
     "createProject": "創建項目",
-    "loadProject": "加載項目"
+    "loadProject": "加載項目",
+    "chooseFlavor": "你想如何組織你的寫作？",
+    "flavorChapters": "章節與場景",
+    "flavorChaptersDesc": "每章一個資料夾，每個場景一個檔案 —— 經典活頁夾方式。",
+    "flavorScenePool": "場景池",
+    "flavorScenePoolDesc": "場景檔案平鋪存放，隨時再歸入章節。",
+    "flavorFlat": "簡潔",
+    "flavorFlatDesc": "每章一個檔案，極簡清爽。",
+    "create": "建立",
+    "cancel": "取消"
   },
   "import": {
     "title": "匯入或開啟",
