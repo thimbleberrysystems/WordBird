@@ -24,6 +24,50 @@
         Biscuit
       </div>
       <div class="header-actions">
+        <el-popover
+          v-model:visible="historyVisible"
+          placement="bottom-end"
+          :width="260"
+          trigger="click"
+          popper-class="biscuit-history-popover"
+        >
+          <template #reference>
+            <button
+              class="header-action"
+              title="Past conversations"
+            >
+              <el-icon><ChatLineSquare /></el-icon>
+            </button>
+          </template>
+          <div class="history-list">
+            <div class="history-list__title">
+              Conversations
+            </div>
+            <div
+              v-for="conv in sortedConversations"
+              :key="conv.id"
+              class="history-row"
+              :class="{ current: conv.id === currentId }"
+              @click="loadConversation(conv.id)"
+            >
+              <span class="history-row__label">{{ conv.title }}</span>
+              <el-icon
+                class="history-row__delete"
+                title="Delete"
+                @click.stop="deleteConversation(conv.id)"
+              >
+                <Delete />
+              </el-icon>
+            </div>
+            <div
+              v-if="sortedConversations.length === 0"
+              class="history-empty"
+            >
+              No past conversations yet.
+            </div>
+          </div>
+        </el-popover>
+
         <el-tooltip
           content="New conversation"
           placement="bottom"
@@ -179,7 +223,7 @@ import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '../../store/preferences'
 import { useLayoutStore } from '../../store/layout'
 import { langGraphService } from '../../services/langgraph'
-import { DArrowRight, Plus } from '@element-plus/icons-vue'
+import { DArrowRight, Plus, ChatLineSquare, Delete } from '@element-plus/icons-vue'
 import GlobalAgentReview from '../agent/GlobalAgentReview.vue'
 import type {
   ILangGraphMessage,
@@ -306,6 +350,10 @@ let unsubApproval: (() => void) | null = null
 
 onMounted(() => {
   if (aiIsConnected.value) setMode(mode.value)
+  // Restore the last open conversation so a renderer reload doesn't lose it.
+  loadHistory()
+  const current = conversations.value.find((c) => c.id === currentId.value)
+  if (current) aiMessages.value = JSON.parse(JSON.stringify(current.messages))
   unsubActivity = window.electron.ai.onActivity(async (event) => {
     activity.value.push(event)
     if (activity.value.length > 200) activity.value.splice(0, 100)
@@ -325,7 +373,73 @@ const respondApproval = async (approved: boolean): Promise<void> => {
   }
 }
 
+// ---- Conversation history (renderer-local, persisted in localStorage) ----
+interface StoredConversation {
+  id: string
+  title: string
+  messages: ILangGraphMessage[]
+  updatedAt: number
+}
+
+const HISTORY_KEY = 'biscuit-conversations'
+const CURRENT_KEY = 'biscuit-current-conversation'
+
+const conversations = ref<StoredConversation[]>([])
+const currentId = ref<string>('')
+const historyVisible = ref(false)
+
+const sortedConversations = computed(() =>
+  [...conversations.value].sort((a, b) => b.updatedAt - a.updatedAt)
+)
+
+const loadHistory = (): void => {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY)
+    conversations.value = raw ? (JSON.parse(raw) as StoredConversation[]) : []
+  } catch {
+    conversations.value = []
+  }
+  currentId.value = localStorage.getItem(CURRENT_KEY) || ''
+}
+
+const persistHistory = (): void => {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(conversations.value))
+  localStorage.setItem(CURRENT_KEY, currentId.value)
+}
+
+const deriveTitle = (messages: ILangGraphMessage[]): string => {
+  const firstUser = messages.find((m) => m.role === 'user')
+  const text = firstUser?.content?.trim() || 'New conversation'
+  return text.length > 40 ? text.slice(0, 40) + '…' : text
+}
+
+// Save the live transcript into the current conversation entry (creating one
+// on the first message). Called whenever aiMessages changes.
+const saveCurrent = (): void => {
+  if (aiMessages.value.length === 0) return
+  if (!currentId.value) currentId.value = `conv-${Date.now()}`
+  const snapshot = JSON.parse(JSON.stringify(aiMessages.value)) as ILangGraphMessage[]
+  const existing = conversations.value.find((c) => c.id === currentId.value)
+  if (existing) {
+    existing.messages = snapshot
+    existing.title = deriveTitle(snapshot)
+    existing.updatedAt = Date.now()
+  } else {
+    conversations.value.push({
+      id: currentId.value,
+      title: deriveTitle(snapshot),
+      messages: snapshot,
+      updatedAt: Date.now()
+    })
+  }
+  persistHistory()
+}
+
+// Persist the transcript as it grows (assistant replies, errors, etc.).
+watch(aiMessages, saveCurrent, { deep: true })
+
 const newConversation = async (): Promise<void> => {
+  saveCurrent()
   try {
     await window.electron.ai.resetThread()
   } catch {
@@ -334,6 +448,39 @@ const newConversation = async (): Promise<void> => {
   aiMessages.value = []
   activity.value = []
   pendingApproval.value = null
+  currentId.value = ''
+  persistHistory()
+}
+
+const loadConversation = async (id: string): Promise<void> => {
+  historyVisible.value = false
+  if (id === currentId.value) return
+  saveCurrent()
+  const conv = conversations.value.find((c) => c.id === id)
+  if (!conv) return
+  // Start a fresh main-process thread; the transcript is replayed as context
+  // on the next send.
+  try {
+    await window.electron.ai.resetThread()
+  } catch {
+    // ignore — not connected
+  }
+  aiMessages.value = JSON.parse(JSON.stringify(conv.messages)) as ILangGraphMessage[]
+  activity.value = []
+  pendingApproval.value = null
+  currentId.value = id
+  persistHistory()
+  await nextTick()
+  if (promptBody.value) promptBody.value.scrollTop = promptBody.value.scrollHeight
+}
+
+const deleteConversation = (id: string): void => {
+  conversations.value = conversations.value.filter((c) => c.id !== id)
+  if (id === currentId.value) {
+    aiMessages.value = []
+    currentId.value = ''
+  }
+  persistHistory()
 }
 
 // Open settings window to AI page
@@ -437,14 +584,17 @@ async function sendMessage (): Promise<void> {
 }
 
 .prompt-header {
-  height: 28px;
-  padding: 0 var(--spacing-4);
+  height: 40px;
+  /* Leave room on the left for the collapse tab that sticks into the panel. */
+  padding: 0 var(--spacing-3) 0 22px;
   background: var(--editorBgColor);
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
+  gap: 8px;
   box-sizing: border-box;
   position: relative;
+  border-bottom: 1px solid var(--color-border, rgba(128, 128, 128, 0.12));
 }
 
 /* Base style for toggle buttons in both SideBar (Expand) and RightPrompt (Collapse) */
@@ -494,44 +644,106 @@ async function sendMessage (): Promise<void> {
   font-weight: 600;
   color: var(--color-primary, #409eff);
   letter-spacing: 0.05em;
-  text-align: center;
   border: 1px solid var(--color-primary, #409eff);
   padding: 1px 10px;
   border-radius: 12px;
   background: rgba(64, 158, 255, 0.05);
   line-height: normal;
+  flex-shrink: 0;
 }
 
 .header-actions {
-  position: absolute;
-  right: var(--spacing-4);
-  top: 50%;
-  transform: translateY(-50%);
   display: flex;
+  align-items: center;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .header-action {
+  display: flex;
+  align-items: center;
+  gap: 3px;
   cursor: pointer;
+  font: inherit;
   color: var(--color-secondary, #909399);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 3px 6px;
   &:hover {
     color: var(--color-primary, #409eff);
+    border-color: var(--color-border, rgba(128, 128, 128, 0.25));
   }
 }
 
 .new-chat-btn {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  font: inherit;
   font-size: 0.7rem;
-  padding: 1px 8px;
-  border-radius: 10px;
-  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.25));
-  background: transparent;
+  padding: 3px 9px;
+  border-color: var(--color-border, rgba(128, 128, 128, 0.25));
   &:hover {
     border-color: var(--color-primary, #409eff);
   }
+}
+
+/* History popover contents */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.history-list__title {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-secondary, #909399);
+  padding: 2px 6px 6px;
+}
+
+.history-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  &:hover {
+    background: var(--itemBgColor, rgba(128, 128, 128, 0.08));
+    & .history-row__delete {
+      opacity: 1;
+    }
+  }
+  &.current {
+    background: rgba(64, 158, 255, 0.1);
+  }
+}
+
+.history-row__label {
+  flex: 1;
+  font-size: 0.78rem;
+  color: var(--color-text, #303133);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-row__delete {
+  opacity: 0;
+  color: var(--color-secondary, #909399);
+  flex-shrink: 0;
+  &:hover {
+    color: #f56c6c;
+  }
+}
+
+.history-empty {
+  padding: 12px 6px;
+  font-size: 0.75rem;
+  color: var(--color-secondary, #909399);
+  text-align: center;
 }
 
 /* Claude-CLI-style mode line under the prompt. */
