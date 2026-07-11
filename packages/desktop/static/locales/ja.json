@@ -1510,7 +1510,12 @@
     "openSettings": "AI設定を開く",
     "stopped": "停止しました。",
     "contextTip": "会話メモリ使用率 {percent}% — いっぱいになると、Biscuitが古いやり取りを自動で要約します。",
-    "compacting": "以前の会話を要約中…"
+    "compacting": "以前の会話を要約中…",
+    "selRewrite": "書き直す",
+    "selExpand": "ふくらませる",
+    "selDescribe": "描写する",
+    "selCustom": "依頼…",
+    "selCustomPlaceholder": "この一節をBiscuitにどうしてほしい？"
   },
   "review": {
     "pendingOne": "保留中の編集 1件",

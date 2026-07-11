@@ -1508,7 +1508,12 @@
     "openSettings": "Abrir ajustes de IA",
     "stopped": "Detenido.",
     "contextTip": "Memoria de conversación al {percent}% — Biscuit condensa los turnos antiguos automáticamente cuando se llena.",
-    "compacting": "Condensando la conversación anterior…"
+    "compacting": "Condensando la conversación anterior…",
+    "selRewrite": "Reescribir",
+    "selExpand": "Ampliar",
+    "selDescribe": "Describir",
+    "selCustom": "Pedir…",
+    "selCustomPlaceholder": "¿Qué debe hacer Biscuit con este pasaje?"
   },
   "review": {
     "pendingOne": "1 edición pendiente",

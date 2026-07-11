@@ -93,6 +93,40 @@ export interface IContinuityListResult {
   error?: string
 }
 
+// ---- Sweeping revisions ("book surgery") ----
+
+export type RevisionClassification =
+  | 'remove'
+  | 'rewrite'
+  | 'mention-only'
+  | 'plot-dependency'
+
+export type RevisionUnitStatus = 'pending' | 'done' | 'skipped'
+
+export interface IRevisionImpactEntry {
+  unitId: string
+  path?: string
+  classification: RevisionClassification
+  /** Quoted evidence of why this unit is affected. */
+  evidence: string
+  /** One-sentence plan for what happens to this unit. */
+  plan: string
+  status: RevisionUnitStatus
+  note?: string
+}
+
+export interface IRevision {
+  id: string
+  title: string
+  status: 'analyzing' | 'executing' | 'completed' | 'abandoned'
+  createdAt: string
+  completedAt?: string
+  /** Final verification report. */
+  report?: string
+  /** The impact map: one entry per affected unit. */
+  entries: IRevisionImpactEntry[]
+}
+
 export interface INovelCompileOptions {
   /** Include scene titles as headings (default false — scenes flow as prose). */
   includeSceneTitles?: boolean

@@ -183,7 +183,10 @@ const SUPERVISOR_TOOL_NAMES = [
   'search_manuscript',
   'read_bible',
   'list_files',
-  'list_continuity_issues'
+  'list_continuity_issues',
+  'start_revision',
+  'get_revision',
+  'complete_revision'
 ]
 
 const SPAWN_TOOL_NAME = 'spawn_agents'
@@ -193,7 +196,7 @@ const spawnSchema = z.object({
     .array(
       z.object({
         role: z
-          .enum(['explorer', 'researcher', 'drafter', 'auditor', 'line-editor'])
+          .enum(['explorer', 'researcher', 'drafter', 'auditor', 'line-editor', 'plotter'])
           .describe('Which specialist to spawn.'),
         task: z
           .string()
@@ -222,6 +225,22 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'reviewable diffs — never claim changes happened without spawning an agent that proposed them.\n' +
   '- After results return, either spawn another wave (if genuinely needed) or reply to the writer ' +
   'in warm, plain language. Do not mention roles, waves, or tool names to the writer.\n' +
+  '\nSWEEPING REVISIONS (removing a character, changing a timeline, renaming across the book):\n' +
+  '- Never wing a book-wide change. Run the revision workflow:\n' +
+  '  1) INTERVIEW the writer first: exactly what changes; every name/alias involved; who ' +
+  'inherits orphaned plot functions; delete vs rewrite policy for essential scenes; tone ' +
+  'constraints. Then start_revision with their answers as the directive.\n' +
+  '  2) IMPACT ANALYSIS: fan out explorers using search_manuscript entity=<name> to find ' +
+  'EVERY affected unit and classify it into the impact map (update_impact_map).\n' +
+  '  3) Present the impact map to the writer, highlighting plot-dependency units that need ' +
+  'their decision. Get approval BEFORE any edits.\n' +
+  '  4) EXECUTE in small batches: spawn drafters per batch of units; each reads the ' +
+  'directive via get_revision, proposes edits through normal review, and marks units done. ' +
+  'Do a few units per turn and tell the writer to say "continue" for the next batch.\n' +
+  '  5) VERIFY: when the map is exhausted, spawn an auditor to prove zero references ' +
+  'survive and nothing new contradicts; then complete_revision with the report.\n' +
+  '- If the project brief shows an ACTIVE REVISION, continue it: get_revision, work the ' +
+  'next pending units.\n' +
   '\nTHE NOVEL IS THE SOURCE OF TRUTH:\n' +
   '- bible/ is established canon. Anything that touches characters, places, or plot must be checked ' +
   'against it (read_bible) before writing or claiming facts. Pages marked locked are immutable.\n' +

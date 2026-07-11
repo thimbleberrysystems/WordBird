@@ -1508,7 +1508,12 @@
     "openSettings": "Open AI Settings",
     "stopped": "Stopped.",
     "contextTip": "Conversation memory {percent}% full — Biscuit condenses older turns automatically when it fills up.",
-    "compacting": "Condensing earlier conversation…"
+    "compacting": "Condensing earlier conversation…",
+    "selRewrite": "Rewrite",
+    "selExpand": "Expand",
+    "selDescribe": "Describe",
+    "selCustom": "Ask…",
+    "selCustomPlaceholder": "What should Biscuit do with this passage?"
   },
   "review": {
     "pendingOne": "1 pending edit",

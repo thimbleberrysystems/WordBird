@@ -1510,7 +1510,12 @@
     "openSettings": "Abrir configurações de IA",
     "stopped": "Interrompido.",
     "contextTip": "Memória da conversa {percent}% cheia — o Biscuit condensa automaticamente os turnos antigos quando ela enche.",
-    "compacting": "Condensando a conversa anterior…"
+    "compacting": "Condensando a conversa anterior…",
+    "selRewrite": "Reescrever",
+    "selExpand": "Expandir",
+    "selDescribe": "Descrever",
+    "selCustom": "Pedir…",
+    "selCustomPlaceholder": "O que o Biscuit deve fazer com este trecho?"
   },
   "review": {
     "pendingOne": "1 edição pendente",

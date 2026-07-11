@@ -98,7 +98,13 @@ export interface IBlockDiffState {
  */
 export type AgentPermissionMode = 'plan' | 'ask' | 'auto' | 'full-auto'
 
-export type AgentRole = 'explorer' | 'researcher' | 'drafter' | 'auditor' | 'line-editor'
+export type AgentRole =
+  | 'explorer'
+  | 'researcher'
+  | 'drafter'
+  | 'auditor'
+  | 'line-editor'
+  | 'plotter'
 
 export interface IAgentSpawnRequest {
   role: AgentRole

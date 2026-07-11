@@ -15,6 +15,7 @@ import fs from 'fs'
 import fsPromises from 'fs/promises'
 import { structureService, collectLeaves } from '../novel/StructureService'
 import { continuityService } from '../novel/ContinuityService'
+import { revisionService, RevisionService } from '../novel/RevisionService'
 import type { INovelUnit } from '../../../shared/types/novel'
 
 const MAX_OUTLINE_LINES = 80
@@ -91,6 +92,19 @@ export class ContextBuilder {
         } catch {
           // Unreadable summary — skip.
         }
+      }
+
+      // In-flight sweeping revisions: every turn must know one is active.
+      const active = await revisionService.listActive(projectRoot)
+      if (active.length > 0) {
+        const lines = active.map((r) => {
+          const progress = RevisionService.progress(r)
+          return `- ${r.title} <id:${r.id}> — ${r.status}, ${progress.done}/${progress.total} units handled`
+        })
+        sections.push(
+          `ACTIVE REVISION${active.length > 1 ? 'S' : ''} (continue via get_revision):\n` +
+          lines.join('\n')
+        )
       }
 
       // Open continuity issues: the agent should not re-introduce known problems.

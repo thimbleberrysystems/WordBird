@@ -46,7 +46,11 @@ const BIBLE_README =
   'Add `locked: true` to a page\'s front matter to make it hard canon:\n\n' +
   '```\n---\nlocked: true\n---\n```\n\n' +
   'Biscuit can read locked pages but may never change them — if prose\n' +
-  'conflicts with locked canon, the prose gets fixed, not the canon.\n'
+  'conflicts with locked canon, the prose gets fixed, not the canon.\n\n' +
+  '## Aliases\n\n' +
+  'List every name a character or place goes by so searches and revisions\n' +
+  'never miss a reference:\n\n' +
+  '```\n---\naliases: [Liz, Lizzy, the Widow Hale]\n---\n# Elizabeth Hale\n```\n'
 
 const COMMON_FOLDERS = [
   'bible/characters',
@@ -56,8 +60,20 @@ const COMMON_FOLDERS = [
   'notes'
 ]
 
+const STYLE_TEMPLATE =
+  '# Style Guide\n\n' +
+  'Biscuit reads this page before writing or polishing prose. Fill in what\n' +
+  'matters to you; delete what doesn\'t.\n\n' +
+  '## Voice & tense\n\n- Point of view: (e.g. third limited, single POV per scene)\n' +
+  '- Tense: (e.g. past)\n- Narrator voice: (e.g. wry, restrained; no purple prose)\n\n' +
+  '## Prose rules\n\n- Dialogue tags: (e.g. said/asked only)\n' +
+  '- Words/phrases to avoid: (e.g. suddenly, very, "little did they know")\n' +
+  '- Profanity/content boundaries:\n\n' +
+  '## Character voices\n\n- (Name): speech habits, vocabulary, rhythm\n'
+
 const COMMON_FILES: Record<string, string> = {
   'bible/README.md': BIBLE_README,
+  'bible/style.md': STYLE_TEMPLATE,
   'README.md': '# {{name}}\n\nA novel written with WordBird.',
   // Compiled output and agent thread state are derived/machine-local —
   // keep them out of snapshots.

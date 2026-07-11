@@ -1508,7 +1508,12 @@
     "openSettings": "KI-Einstellungen öffnen",
     "stopped": "Gestoppt.",
     "contextTip": "Gesprächsspeicher zu {percent} % voll — Biscuit verdichtet ältere Beiträge automatisch, wenn er sich füllt.",
-    "compacting": "Frühere Unterhaltung wird verdichtet…"
+    "compacting": "Frühere Unterhaltung wird verdichtet…",
+    "selRewrite": "Umschreiben",
+    "selExpand": "Ausbauen",
+    "selDescribe": "Beschreiben",
+    "selCustom": "Fragen…",
+    "selCustomPlaceholder": "Was soll Biscuit mit dieser Passage tun?"
   },
   "review": {
     "pendingOne": "1 ausstehende Änderung",

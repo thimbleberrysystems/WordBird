@@ -20,6 +20,7 @@ import { resolveRgPath } from '../../ipc/ripgrep'
 import { structureService, collectLeaves, findUnit } from '../novel/StructureService'
 import { snapshotService } from '../novel/SnapshotService'
 import { continuityService } from '../novel/ContinuityService'
+import { revisionService, RevisionService } from '../novel/RevisionService'
 import type { AgentToolContext, AgentToolService } from './AgentToolService'
 import type { INovelUnit, IContinuityIssue } from '../../../shared/types/novel'
 
@@ -186,16 +187,104 @@ const readUnit = async(
   }
 }
 
+/**
+ * Parse `aliases:` from a bible page's YAML front matter. Supports the
+ * inline form `aliases: [Liz, Lizzy]` and the dash-list form.
+ */
+export const parseAliases = (content: string): string[] => {
+  const fm = /^---\n([\s\S]*?)\n---/.exec(content)
+  if (!fm) return []
+  const yaml = fm[1]
+
+  const inline = /^\s*aliases\s*:\s*\[([^\]]*)\]\s*$/m.exec(yaml)
+  if (inline) {
+    return inline[1]
+      .split(',')
+      .map((a) => a.trim().replace(/^['"]|['"]$/g, ''))
+      .filter(Boolean)
+  }
+
+  const block = /^\s*aliases\s*:\s*$/m.exec(yaml)
+  if (block) {
+    const after = yaml.slice(block.index + block[0].length).replace(/^\n/, '')
+    const aliases: string[] = []
+    for (const line of after.split('\n')) {
+      const item = /^\s+-\s+(.+?)\s*$/.exec(line)
+      if (!item) break
+      aliases.push(item[1].trim().replace(/^['"]|['"]$/g, ''))
+    }
+    return aliases.filter(Boolean)
+  }
+  return []
+}
+
+/**
+ * Resolve an entity (character/place) into every name it goes by: the
+ * bible page's title plus its front-matter aliases. Falls back to the
+ * given name when no bible page matches.
+ */
+export const resolveEntityTerms = async(root: string, entity: string): Promise<{
+  terms: string[]
+  biblePage: string | null
+}> => {
+  const files = await listFilesRecursive(path.join(root, 'bible'), 'bible')
+  const wanted = entity.trim().toLowerCase()
+
+  for (const file of files) {
+    let content: string
+    try {
+      content = await readTextSafe(path.join(root, file))
+    } catch {
+      continue
+    }
+    const aliases = parseAliases(content)
+    const heading = /^#\s+(.+)$/m.exec(content)?.[1]?.trim()
+    const basename = path
+      .basename(file)
+      .replace(/\.(md|markdown|txt)$/i, '')
+      .replace(/[-_]+/g, ' ')
+    const names = [heading, basename, ...aliases].filter((n): n is string => !!n)
+
+    if (names.some((n) => n.toLowerCase() === wanted)) {
+      // Dedupe case-insensitively, keep original casing for the search.
+      const seen = new Set<string>()
+      const terms: string[] = []
+      for (const name of [entity, ...names]) {
+        const key = name.toLowerCase()
+        if (!seen.has(key)) {
+          seen.add(key)
+          terms.push(name)
+        }
+      }
+      return { terms, biblePage: file }
+    }
+  }
+  return { terms: [entity], biblePage: null }
+}
+
 const searchManuscript = async(
   args: Record<string, unknown>,
   context: AgentToolContext
 ): Promise<unknown> => {
   const root = requireRoot(context)
-  const query = str(args, 'query')
+  const entity = optStr(args, 'entity')
+  const rawQuery = entity ? undefined : str(args, 'query')
   const isRegex = optBool(args, 'regex') ?? false
   const caseSensitive = optBool(args, 'caseSensitive') ?? false
   const contextLines = Math.min(optInt(args, 'contextLines') ?? 1, 5)
   const maxResults = Math.min(optInt(args, 'maxResults') ?? 50, MAX_SEARCH_MATCHES)
+
+  // Entity mode: hunt every name the bible knows for this character/place,
+  // so impact analysis never under-counts ("Liz" = "Elizabeth").
+  let patterns: string[]
+  let biblePage: string | null = null
+  if (entity) {
+    const resolved = await resolveEntityTerms(root, entity)
+    patterns = resolved.terms
+    biblePage = resolved.biblePage
+  } else {
+    patterns = [rawQuery as string]
+  }
 
   const rgArgs = [
     '--json',
@@ -210,7 +299,10 @@ const searchManuscript = async(
     '!exports/**'
   ]
   if (!isRegex) rgArgs.push('--fixed-strings')
-  rgArgs.push('--', query, '.')
+  for (const pattern of patterns) {
+    rgArgs.push('-e', pattern)
+  }
+  rgArgs.push('--', '.')
 
   let stdout = ''
   try {
@@ -223,7 +315,9 @@ const searchManuscript = async(
   } catch (error) {
     // ripgrep exits 1 on "no matches" — treat as empty, rethrow real errors.
     const e = error as { code?: number; stdout?: string }
-    if (e.code === 1 && !e.stdout) return { query, matches: [] }
+    if (e.code === 1 && !e.stdout) {
+      return { query: patterns.join(' | '), entity, biblePage, matches: [] }
+    }
     if (e.stdout) stdout = e.stdout
     else throw error
   }
@@ -244,7 +338,13 @@ const searchManuscript = async(
       // Skip malformed JSON lines.
     }
   }
-  return { query, matches, truncated: matches.length >= maxResults }
+  return {
+    query: patterns.join(' | '),
+    entity,
+    biblePage,
+    matches,
+    truncated: matches.length >= maxResults
+  }
 }
 
 const proposeNewUnit = async(
@@ -618,6 +718,123 @@ const deleteUnit = async(
   return { deleted: true, unitId, title: found.unit.title, snapshotTaken: true }
 }
 
+// ---- sweeping revisions ("book surgery") ----
+
+const VALID_CLASSIFICATIONS = new Set(['remove', 'rewrite', 'mention-only', 'plot-dependency'])
+
+const startRevision = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const title = str(args, 'title')
+  const directive = str(args, 'directive')
+  const revision = await revisionService.create(root, title, directive)
+  return {
+    revisionId: revision.id,
+    title: revision.title,
+    snapshotTaken: true,
+    next: 'Fan out explorers with search_manuscript (entity=…) to build the impact map via update_impact_map, then present it to the writer for approval.'
+  }
+}
+
+const getRevision = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const revisionId = str(args, 'revisionId')
+  const loaded = await revisionService.get(root, revisionId)
+  if (!loaded) throw new Error(`No revision with id ${revisionId}.`)
+  const { revision, directive } = loaded
+  const progress = RevisionService.progress(revision)
+  const capped = capForContext(directive, 'directive truncated')
+  return {
+    revisionId: revision.id,
+    title: revision.title,
+    status: revision.status,
+    directive: capped.text,
+    progress,
+    entries: revision.entries.map((e) => ({
+      unitId: e.unitId,
+      path: e.path,
+      classification: e.classification,
+      plan: e.plan.slice(0, 300),
+      status: e.status
+    }))
+  }
+}
+
+const updateImpactMap = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const revisionId = str(args, 'revisionId')
+  const raw = args.entries
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw new Error("Agent tool argument 'entries' must be a non-empty array.")
+  }
+  const entries = raw.map((item) => {
+    const entry = item as Record<string, unknown>
+    const classification = String(entry.classification ?? '')
+    if (!VALID_CLASSIFICATIONS.has(classification)) {
+      throw new Error(
+        `Invalid classification '${classification}' — use remove | rewrite | mention-only | plot-dependency.`
+      )
+    }
+    return {
+      unitId: str(entry, 'unitId'),
+      path: optStr(entry, 'path'),
+      classification: classification as 'remove' | 'rewrite' | 'mention-only' | 'plot-dependency',
+      evidence: str(entry, 'evidence').slice(0, 600),
+      plan: str(entry, 'plan').slice(0, 400)
+    }
+  })
+  const revision = await revisionService.updateImpactMap(root, revisionId, entries)
+  const progress = RevisionService.progress(revision)
+  return { updated: entries.length, mappedUnits: progress.total }
+}
+
+const markRevisionUnit = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const revisionId = str(args, 'revisionId')
+  const unitId = str(args, 'unitId')
+  const statusArg = str(args, 'status')
+  if (statusArg !== 'done' && statusArg !== 'skipped' && statusArg !== 'pending') {
+    throw new Error("Agent tool argument 'status' must be done | skipped | pending.")
+  }
+  const note = optStr(args, 'note')
+  const revision = await revisionService.markUnit(root, revisionId, unitId, statusArg, note)
+  const progress = RevisionService.progress(revision)
+  return { unitId, status: statusArg, progress }
+}
+
+const completeRevision = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const revisionId = str(args, 'revisionId')
+  const report = str(args, 'report')
+  const abandoned = optBool(args, 'abandoned') ?? false
+  const loaded = await revisionService.get(root, revisionId)
+  if (!loaded) throw new Error(`No revision with id ${revisionId}.`)
+  const progress = RevisionService.progress(loaded.revision)
+  if (!abandoned && progress.pending.length > 0) {
+    throw new Error(
+      `Revision still has ${progress.pending.length} pending unit(s): ` +
+      `${progress.pending.slice(0, 10).join(', ')}. Finish or skip them first, ` +
+      'or pass abandoned=true.'
+    )
+  }
+  const revision = await revisionService.complete(root, revisionId, report, abandoned)
+  return { revisionId, status: revision.status, unitsHandled: progress.done }
+}
+
 // ---- snapshots ----
 
 const snapshotProject = async(
@@ -646,5 +863,10 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('resolve_continuity_issue', resolveContinuityIssue)
   service.registerHandler('list_files', listFiles)
   service.registerHandler('delete_unit', deleteUnit)
+  service.registerHandler('start_revision', startRevision)
+  service.registerHandler('get_revision', getRevision)
+  service.registerHandler('update_impact_map', updateImpactMap)
+  service.registerHandler('mark_revision_unit', markRevisionUnit)
+  service.registerHandler('complete_revision', completeRevision)
   service.registerHandler('snapshot_project', snapshotProject)
 }

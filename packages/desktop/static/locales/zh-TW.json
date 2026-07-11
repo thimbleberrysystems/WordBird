@@ -1518,7 +1518,12 @@
     "openSettings": "開啟 AI 設定",
     "stopped": "已停止。",
     "contextTip": "對話記憶已用 {percent}% —— 快滿時 Biscuit 會自動壓縮較早的對話。",
-    "compacting": "正在壓縮較早的對話…"
+    "compacting": "正在壓縮較早的對話…",
+    "selRewrite": "重寫",
+    "selExpand": "擴寫",
+    "selDescribe": "描寫",
+    "selCustom": "自訂…",
+    "selCustomPlaceholder": "想讓 Biscuit 對這段文字做什麼？"
   },
   "review": {
     "pendingOne": "1 處待處理編輯",

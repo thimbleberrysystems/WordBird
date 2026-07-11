@@ -38,6 +38,7 @@
             :text-direction="textDirection"
             :platform="platform"
           />
+          <selection-actions v-if="hasCurrentFile" />
         </div>
         <RightPrompt v-if="showRightPrompt" />
       </div>
@@ -71,6 +72,7 @@ import ViewSwitcher from '@/components/novel/ViewSwitcher.vue'
 import Corkboard from '@/components/novel/Corkboard.vue'
 import OutlineView from '@/components/novel/OutlineView.vue'
 import TimelineView from '@/components/novel/TimelineView.vue'
+import SelectionActions from '@/components/novel/SelectionActions.vue'
 import { useNovelStore } from '@/store/novel'
 import bus from '@/bus'
 import { DEFAULT_STYLE } from '@/config'

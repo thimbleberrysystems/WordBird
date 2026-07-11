@@ -289,6 +289,7 @@ import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '../../store/preferences'
 import { useLayoutStore } from '../../store/layout'
 import { langGraphService } from '../../services/langgraph'
+import bus from '../../bus'
 import { t } from '../../i18n'
 import { DArrowRight, Plus, ChatLineSquare, Delete, WarningFilled } from '@element-plus/icons-vue'
 import GlobalAgentReview from '../agent/GlobalAgentReview.vue'
@@ -364,6 +365,7 @@ onBeforeUnmount(() => {
   unsubActivity?.()
   unsubApproval?.()
   unsubUsage?.()
+  bus.off('biscuit-ask', handleBiscuitAsk)
 })
 
 // Chat entries: plain conversation messages, plus structured info for
@@ -506,6 +508,8 @@ onMounted(() => {
   unsubUsage = window.electron.ai.onContextUsage((usage) => {
     contextUsage.value = usage
   })
+  // Selection actions in the editor route through the normal chat pipeline.
+  bus.on('biscuit-ask', handleBiscuitAsk)
 })
 
 const respondApproval = async (approved: boolean): Promise<void> => {
@@ -625,6 +629,17 @@ const deleteConversation = (id: string): void => {
     currentId.value = ''
   }
   persistHistory()
+}
+
+// A selection action from the editor: put the request in the input and
+// send immediately when connected (otherwise leave it for the writer).
+function handleBiscuitAsk (payload: unknown): void {
+  const text = typeof payload === 'string' ? payload : ''
+  if (!text) return
+  userInput.value = text
+  if (aiIsConnected.value && !sending.value) {
+    sendMessage()
+  }
 }
 
 // Open settings window to AI page

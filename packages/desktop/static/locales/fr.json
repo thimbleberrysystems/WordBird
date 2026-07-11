@@ -1510,7 +1510,12 @@
     "openSettings": "Ouvrir les réglages IA",
     "stopped": "Arrêté.",
     "contextTip": "Mémoire de conversation remplie à {percent} % — Biscuit condense automatiquement les anciens échanges quand elle se remplit.",
-    "compacting": "Condensation de la conversation antérieure…"
+    "compacting": "Condensation de la conversation antérieure…",
+    "selRewrite": "Réécrire",
+    "selExpand": "Développer",
+    "selDescribe": "Décrire",
+    "selCustom": "Demander…",
+    "selCustomPlaceholder": "Que doit faire Biscuit de ce passage ?"
   },
   "review": {
     "pendingOne": "1 modification en attente",

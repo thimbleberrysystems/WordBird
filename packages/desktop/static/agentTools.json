@@ -34,7 +34,7 @@
       "id": "search_manuscript",
       "name": "search_manuscript",
       "displayName": "Search manuscript",
-      "description": "Fast text or regex search across every file in the project (prose, bible, notes). Use this to find where characters, objects, or phrases appear before making claims or edits.",
+      "description": "Fast text or regex search across every file in the project (prose, bible, notes). Use this to find where characters, objects, or phrases appear before making claims or edits. For a character or place, pass `entity` instead of `query`: it also searches every alias listed on their bible page, so references are never under-counted.",
       "handler": "search_manuscript",
       "enabled": true,
       "scope": "project",
@@ -42,13 +42,13 @@
       "schema": {
         "type": "object",
         "properties": {
-          "query": { "type": "string", "description": "Text or regex to search for." },
+          "query": { "type": "string", "description": "Text or regex to search for (omit when using entity)." },
+          "entity": { "type": "string", "description": "A character/place name — expands to its bible-page aliases automatically." },
           "regex": { "type": "boolean", "description": "Treat query as a regular expression (default false)." },
           "caseSensitive": { "type": "boolean", "description": "Case-sensitive match (default false)." },
           "contextLines": { "type": "integer", "description": "Context lines around each match, max 5 (default 1)." },
           "maxResults": { "type": "integer", "description": "Maximum matches to return, max 200 (default 50)." }
-        },
-        "required": ["query"]
+        }
       }
     },
     {
@@ -388,6 +388,111 @@
           "word": { "type": "string", "description": "A single English word." }
         },
         "required": ["word"]
+      }
+    },
+    {
+      "id": "start_revision",
+      "name": "start_revision",
+      "displayName": "Start sweeping revision",
+      "description": "Begin a book-wide revision (removing a character, changing a timeline, renaming across the manuscript). The directive must capture the writer's answers from your interview: what changes, every alias to hunt, who inherits plot functions, delete-vs-rewrite policy, tone constraints. Snapshots the project automatically.",
+      "handler": "start_revision",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "renderer",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "description": "Short name, e.g. 'Remove Marcus'." },
+          "directive": { "type": "string", "description": "The writer's full guidance (markdown)." }
+        },
+        "required": ["title", "directive"]
+      }
+    },
+    {
+      "id": "get_revision",
+      "name": "get_revision",
+      "displayName": "Read revision state",
+      "description": "Read a revision's directive, impact map, and progress. EVERY agent working on a revision must call this first so its edits follow the writer's directive.",
+      "handler": "get_revision",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "revisionId": { "type": "string" }
+        },
+        "required": ["revisionId"]
+      }
+    },
+    {
+      "id": "update_impact_map",
+      "name": "update_impact_map",
+      "displayName": "Update revision impact map",
+      "description": "File per-unit findings into a revision's impact map. Classify every affected unit: remove (unit should be cut) | rewrite (substantial changes) | mention-only (trivial reference) | plot-dependency (other storylines depend on this — needs the writer's decision). Include quoted evidence.",
+      "handler": "update_impact_map",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "revisionId": { "type": "string" },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "unitId": { "type": "string", "description": "Unit id from list_structure." },
+                "path": { "type": "string", "description": "Backing file path." },
+                "classification": { "type": "string", "enum": ["remove", "rewrite", "mention-only", "plot-dependency"] },
+                "evidence": { "type": "string", "description": "Quoted proof this unit is affected." },
+                "plan": { "type": "string", "description": "One sentence: what happens to this unit." }
+              },
+              "required": ["unitId", "classification", "evidence", "plan"]
+            }
+          }
+        },
+        "required": ["revisionId", "entries"]
+      }
+    },
+    {
+      "id": "mark_revision_unit",
+      "name": "mark_revision_unit",
+      "displayName": "Mark revision unit",
+      "description": "Record progress on one impact-map unit after proposing its edits (done), deciding it needs nothing (skipped), or reopening it (pending). This is how a revision larger than one sitting stays resumable.",
+      "handler": "mark_revision_unit",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "revisionId": { "type": "string" },
+          "unitId": { "type": "string" },
+          "status": { "type": "string", "enum": ["done", "skipped", "pending"] },
+          "note": { "type": "string", "description": "What was done, briefly." }
+        },
+        "required": ["revisionId", "unitId", "status"]
+      }
+    },
+    {
+      "id": "complete_revision",
+      "name": "complete_revision",
+      "displayName": "Complete revision",
+      "description": "Close a revision after a verification sweep confirms the directive is fully applied (e.g. zero surviving references via search_manuscript entity=…). Refuses while units are still pending unless abandoned=true.",
+      "handler": "complete_revision",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "renderer",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "revisionId": { "type": "string" },
+          "report": { "type": "string", "description": "Verification findings and anything left for the writer." },
+          "abandoned": { "type": "boolean", "description": "True to close without finishing." }
+        },
+        "required": ["revisionId", "report"]
       }
     },
     {
