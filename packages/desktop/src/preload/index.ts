@@ -32,6 +32,13 @@ import type {
   IAgentEditProposal
 } from '@shared/types/langgraph'
 
+import type {
+  INovelCreateUnitPayload,
+  INovelUnitUpdate,
+  INovelCompileOptions,
+  ProjectFlavor
+} from '@shared/types/novel'
+
 type RendererEventListener<K extends keyof IpcMainEventChannels> = (
   event: IpcRendererEvent,
   ...args: IpcMainEventChannels[K]
@@ -243,6 +250,22 @@ const projectAPI = {
   saveAs: (currentPath: string) => invoke('mt::project:save-as', currentPath)
 }
 
+const novelAPI = {
+  getStructure: (root: string) => invoke('mt::novel:get-structure', root),
+  initStructure: (root: string, flavor: ProjectFlavor) =>
+    invoke('mt::novel:init-structure', root, flavor),
+  createUnit: (root: string, payload: INovelCreateUnitPayload) =>
+    invoke('mt::novel:create-unit', root, payload),
+  updateUnit: (root: string, unitId: string, update: INovelUnitUpdate) =>
+    invoke('mt::novel:update-unit', root, unitId, update),
+  moveUnit: (root: string, unitId: string, newParentId: string | null, index: number) =>
+    invoke('mt::novel:move-unit', root, unitId, newParentId, index),
+  deleteUnit: (root: string, unitId: string, deleteFiles: boolean) =>
+    invoke('mt::novel:delete-unit', root, unitId, deleteFiles),
+  compile: (root: string, options?: INovelCompileOptions) =>
+    invoke('mt::novel:compile', root, options)
+}
+
 const aiAPI = {
   connect: (config: IAIConfig) => invoke('mt::ai:connect', config),
   disconnect: () => invoke('mt::ai:disconnect'),
@@ -318,6 +341,7 @@ const electronAPI = {
   paths: bootInfo?.paths || {},
   isUpdatable: !!bootInfo?.isUpdatable,
   project: projectAPI,
+  novel: novelAPI,
   ai: aiAPI,
   windowControl: windowControlAPI
 }

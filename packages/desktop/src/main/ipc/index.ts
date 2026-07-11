@@ -9,6 +9,7 @@ import { registerWindowHandlers } from './window'
 import { registerCmdHandlers } from './cmd'
 import { registerI18nHandlers } from './i18n'
 import { registerProjectHandlers } from './project'
+import { registerNovelHandlers } from './novel'
 import { registerAIHandlers } from './ai'
 
 export const registerSandboxIpcHandlers = (): void => {
@@ -23,5 +24,6 @@ export const registerSandboxIpcHandlers = (): void => {
   registerCmdHandlers()
   registerI18nHandlers()
   registerProjectHandlers()
+  registerNovelHandlers()
   registerAIHandlers()
 }

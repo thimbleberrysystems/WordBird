@@ -25,6 +25,14 @@ import type {
   IAgentApplyEditRequest,
   IAgentEditProposal
 } from '@shared/types/langgraph'
+import type {
+  INovelCreateUnitPayload,
+  INovelUnitUpdate,
+  INovelCompileOptions,
+  INovelStructureResult,
+  INovelCompileResult,
+  ProjectFlavor
+} from '@shared/types/novel'
 
 declare global {
   // ---- Build-time defines (electron-vite `define`) ----
@@ -111,6 +119,31 @@ declare global {
       load: (args?: ProjectLoadArgs) => Promise<ProjectLoadResult>
       validate: (path: string) => Promise<boolean>
       saveAs: (currentPath: string) => Promise<ProjectCreateResult>
+    }
+    novel: {
+      getStructure: (root: string) => Promise<INovelStructureResult>
+      initStructure: (root: string, flavor: ProjectFlavor) => Promise<INovelStructureResult>
+      createUnit: (
+        root: string,
+        payload: INovelCreateUnitPayload
+      ) => Promise<INovelStructureResult>
+      updateUnit: (
+        root: string,
+        unitId: string,
+        update: INovelUnitUpdate
+      ) => Promise<INovelStructureResult>
+      moveUnit: (
+        root: string,
+        unitId: string,
+        newParentId: string | null,
+        index: number
+      ) => Promise<INovelStructureResult>
+      deleteUnit: (
+        root: string,
+        unitId: string,
+        deleteFiles: boolean
+      ) => Promise<INovelStructureResult>
+      compile: (root: string, options?: INovelCompileOptions) => Promise<INovelCompileResult>
     }
     ai: {
       connect: (config: IAIConfig) => Promise<void>

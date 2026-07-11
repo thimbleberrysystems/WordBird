@@ -1,0 +1,152 @@
+/**
+ * IPC surface for the novel structure manifest (`mt::novel:*`).
+ *
+ * Every handler validates that the supplied root is a real WordBird
+ * project (contains `.wordbird/project.json`) before touching disk, so a
+ * compromised renderer cannot use these channels as arbitrary fs access.
+ */
+
+import { ipcMain } from 'electron'
+import path from 'path'
+import log from 'electron-log'
+import { isValidProjectPath } from '../filesystem/markdown'
+import { structureService } from '../services/novel/StructureService'
+import type {
+  INovelStructure,
+  INovelCreateUnitPayload,
+  INovelUnitUpdate,
+  INovelCompileOptions,
+  INovelStructureResult,
+  INovelCompileResult,
+  ProjectFlavor
+} from '../../shared/types/novel'
+
+const guardRoot = (root: string): string | null => {
+  if (typeof root !== 'string' || !root) return null
+  const normalized = path.resolve(root)
+  return isValidProjectPath(normalized) ? normalized : null
+}
+
+const fail = (error: string): INovelStructureResult => ({ ok: false, error })
+
+const withStructure = async(
+  root: string,
+  action: (root: string, structure: INovelStructure) => Promise<void>
+): Promise<INovelStructureResult> => {
+  const safeRoot = guardRoot(root)
+  if (!safeRoot) return fail('Not a valid WordBird project')
+  try {
+    const structure = await structureService.loadReconciled(safeRoot)
+    await action(safeRoot, structure)
+    return { ok: true, structure }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    log.error('[novel] IPC action failed:', error)
+    return fail(message)
+  }
+}
+
+export const registerNovelHandlers = (): void => {
+  ipcMain.handle(
+    'mt::novel:get-structure',
+    async(_e, root: string): Promise<INovelStructureResult> => {
+      return withStructure(root, async() => {})
+    }
+  )
+
+  ipcMain.handle(
+    'mt::novel:init-structure',
+    async(_e, root: string, flavor: ProjectFlavor): Promise<INovelStructureResult> => {
+      const safeRoot = guardRoot(root)
+      if (!safeRoot) return fail('Not a valid WordBird project')
+      try {
+        const structure = await structureService.scan(safeRoot, flavor)
+        await structureService.save(safeRoot, structure)
+        return { ok: true, structure }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        log.error('[novel] init-structure failed:', error)
+        return fail(message)
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'mt::novel:create-unit',
+    async(_e, root: string, payload: INovelCreateUnitPayload): Promise<INovelStructureResult> => {
+      return withStructure(root, async(safeRoot, structure) => {
+        await structureService.createUnit(safeRoot, structure, payload)
+      })
+    }
+  )
+
+  ipcMain.handle(
+    'mt::novel:update-unit',
+    async(
+      _e,
+      root: string,
+      unitId: string,
+      update: INovelUnitUpdate
+    ): Promise<INovelStructureResult> => {
+      return withStructure(root, async(safeRoot, structure) => {
+        await structureService.updateUnit(safeRoot, structure, unitId, update)
+      })
+    }
+  )
+
+  ipcMain.handle(
+    'mt::novel:move-unit',
+    async(
+      _e,
+      root: string,
+      unitId: string,
+      newParentId: string | null,
+      index: number
+    ): Promise<INovelStructureResult> => {
+      return withStructure(root, async(safeRoot, structure) => {
+        await structureService.moveUnit(safeRoot, structure, unitId, newParentId, index)
+      })
+    }
+  )
+
+  ipcMain.handle(
+    'mt::novel:delete-unit',
+    async(
+      _e,
+      root: string,
+      unitId: string,
+      deleteFiles: boolean
+    ): Promise<INovelStructureResult> => {
+      return withStructure(root, async(safeRoot, structure) => {
+        await structureService.deleteUnit(safeRoot, structure, unitId, deleteFiles)
+      })
+    }
+  )
+
+  ipcMain.handle(
+    'mt::novel:compile',
+    async(_e, root: string, options?: INovelCompileOptions): Promise<INovelCompileResult> => {
+      const safeRoot = guardRoot(root)
+      if (!safeRoot) return { ok: false, error: 'Not a valid WordBird project' }
+      try {
+        const structure = await structureService.loadReconciled(safeRoot)
+        // Only allow writing compile output inside the project.
+        let outputPath = options?.outputPath
+        if (outputPath) {
+          const resolved = path.resolve(outputPath)
+          const rel = path.relative(safeRoot, resolved)
+          if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) {
+            outputPath = path.join(safeRoot, 'exports', path.basename(resolved))
+          } else {
+            outputPath = resolved
+          }
+        }
+        return await structureService.compile(safeRoot, structure, { ...options, outputPath })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        log.error('[novel] compile failed:', error)
+        return { ok: false, error: message }
+      }
+    }
+  )
+}

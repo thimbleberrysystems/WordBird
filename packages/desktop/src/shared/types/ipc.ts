@@ -42,6 +42,14 @@ import type {
 } from './files'
 import type { BufferedState as BufferedStateType } from './bufferedState'
 import type { MenuTemplate, MenuPopupPosition } from './menu'
+import type {
+  INovelCreateUnitPayload,
+  INovelUnitUpdate,
+  INovelCompileOptions,
+  INovelStructureResult,
+  INovelCompileResult,
+  ProjectFlavor
+} from './novel'
 
 export interface ProjectCreateArgs {
   name?: string
@@ -119,6 +127,31 @@ export interface IpcInvokeChannels {
   'mt::project:load': { args: [ProjectLoadArgs?]; ret: ProjectLoadResult }
   'mt::project:validate': { args: [path: string]; ret: boolean }
   'mt::project:save-as': { args: [path: string]; ret: ProjectCreateResult }
+  'mt::novel:get-structure': { args: [root: string]; ret: INovelStructureResult }
+  'mt::novel:init-structure': {
+    args: [root: string, flavor: ProjectFlavor]
+    ret: INovelStructureResult
+  }
+  'mt::novel:create-unit': {
+    args: [root: string, payload: INovelCreateUnitPayload]
+    ret: INovelStructureResult
+  }
+  'mt::novel:update-unit': {
+    args: [root: string, unitId: string, update: INovelUnitUpdate]
+    ret: INovelStructureResult
+  }
+  'mt::novel:move-unit': {
+    args: [root: string, unitId: string, newParentId: string | null, index: number]
+    ret: INovelStructureResult
+  }
+  'mt::novel:delete-unit': {
+    args: [root: string, unitId: string, deleteFiles: boolean]
+    ret: INovelStructureResult
+  }
+  'mt::novel:compile': {
+    args: [root: string, options?: INovelCompileOptions]
+    ret: INovelCompileResult
+  }
   'mt::uploader::upload': { args: [req: unknown]; ret: unknown }
   'mt::win::is-fullscreen': { args: []; ret: boolean }
   'mt::win::is-maximized': { args: []; ret: boolean }
