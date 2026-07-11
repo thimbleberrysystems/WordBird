@@ -1497,7 +1497,18 @@
     "modeAuto": "mode auto",
     "modeAutoHint": "Biscuit travaille librement ; vous relisez chaque changement.",
     "modeMax": "mode max",
-    "modeMaxHint": "Tâches longues, budgets plus larges ; changements toujours relus."
+    "modeMaxHint": "Tâches longues, budgets plus larges ; changements toujours relus.",
+    "errorTitleAuth": "Le fournisseur a refusé Biscuit",
+    "errorExplainAuth": "Votre clé d’API a été rejetée. Elle est peut-être mal saisie, expirée ou destinée à un autre fournisseur.",
+    "errorTitleRate": "Le fournisseur est saturé",
+    "errorExplainRate": "Vous avez atteint une limite d’utilisation. Patientez un instant et réessayez, ou vérifiez votre offre et votre facturation.",
+    "errorTitleNetwork": "Fournisseur injoignable",
+    "errorExplainNetwork": "La requête n’est jamais arrivée. Vérifiez votre connexion et, si vous utilisez un serveur local (comme Ollama), qu’il tourne à l’adresse configurée.",
+    "errorTitleGeneric": "Un problème est survenu",
+    "errorExplainGeneric": "Biscuit n’a pas pu terminer la requête. Réessayer aide souvent ; les détails techniques sont ci-dessous.",
+    "errorDetails": "Détails techniques",
+    "openSettings": "Ouvrir les réglages IA",
+    "stopped": "Arrêté."
   },
   "review": {
     "pendingOne": "1 modification en attente",

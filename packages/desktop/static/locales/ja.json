@@ -1497,7 +1497,18 @@
     "modeAuto": "自動モード",
     "modeAutoHint": "Biscuitは自由に作業し、変更はすべてあなたが確認します。",
     "modeMax": "最大モード",
-    "modeMaxHint": "長いタスクと大きな予算。変更は引き続き確認されます。"
+    "modeMaxHint": "長いタスクと大きな予算。変更は引き続き確認されます。",
+    "errorTitleAuth": "プロバイダーがBiscuitを拒否しました",
+    "errorExplainAuth": "APIキーが拒否されました。入力ミス、期限切れ、または別のプロバイダー用のキーかもしれません。",
+    "errorTitleRate": "プロバイダーが混雑しています",
+    "errorExplainRate": "レート制限か利用上限に達しました。少し待って再試行するか、プランと請求を確認してください。",
+    "errorTitleNetwork": "プロバイダーに接続できません",
+    "errorExplainNetwork": "リクエストが届きませんでした。ネット接続を確認し、ローカルサーバー（Ollamaなど）を使う場合は設定したアドレスで起動しているか確認してください。",
+    "errorTitleGeneric": "問題が発生しました",
+    "errorExplainGeneric": "Biscuitはリクエストを完了できませんでした。再試行で解決することが多いです。技術的な詳細は下にあります。",
+    "errorDetails": "技術的な詳細",
+    "openSettings": "AI設定を開く",
+    "stopped": "停止しました。"
   },
   "review": {
     "pendingOne": "保留中の編集 1件",

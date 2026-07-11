@@ -1495,7 +1495,18 @@
     "modeAuto": "modo auto",
     "modeAutoHint": "Biscuit trabaja libremente; tú revisas cada cambio.",
     "modeMax": "modo máx",
-    "modeMaxHint": "Tareas largas, más presupuesto; los cambios se revisan."
+    "modeMaxHint": "Tareas largas, más presupuesto; los cambios se revisan.",
+    "errorTitleAuth": "El proveedor rechazó a Biscuit",
+    "errorExplainAuth": "Tu clave de API fue rechazada. Puede estar mal escrita, caducada o ser de otro proveedor.",
+    "errorTitleRate": "El proveedor está saturado",
+    "errorExplainRate": "Alcanzaste un límite de uso. Espera un momento y reintenta, o revisa tu plan y facturación.",
+    "errorTitleNetwork": "No se pudo contactar al proveedor",
+    "errorExplainNetwork": "La solicitud nunca llegó. Revisa tu conexión a internet y, si usas un servidor propio o local (como Ollama), que esté activo en la dirección configurada.",
+    "errorTitleGeneric": "Algo salió mal",
+    "errorExplainGeneric": "Biscuit no pudo completar la solicitud. Reintentar suele ayudar; los detalles técnicos están abajo.",
+    "errorDetails": "Detalles técnicos",
+    "openSettings": "Abrir ajustes de IA",
+    "stopped": "Detenido."
   },
   "review": {
     "pendingOne": "1 edición pendiente",

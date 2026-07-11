@@ -87,15 +87,50 @@
       ref="promptBody"
       class="prompt-body"
     >
-      <div
+      <template
         v-for="(message, index) in aiMessages"
         :key="index"
-        :class="['message', `message--${message.role}`]"
       >
-        <div class="message__text">
-          {{ message.content }}
+        <!-- Errors get a structured, explained card — not a raw dump. -->
+        <div
+          v-if="message.role === 'error'"
+          class="error-card"
+        >
+          <div class="error-card__title">
+            <el-icon><WarningFilled /></el-icon>
+            {{ message.errorInfo?.title || t('biscuit.errorTitleGeneric') }}
+          </div>
+          <div class="error-card__explain">
+            {{ message.errorInfo?.explanation || t('biscuit.errorExplainGeneric') }}
+          </div>
+          <details class="error-card__details">
+            <summary>{{ t('biscuit.errorDetails') }}</summary>
+            <code>{{ message.content }}</code>
+          </details>
+          <div
+            v-if="message.errorInfo?.showSettings"
+            class="error-card__actions"
+          >
+            <el-button
+              size="small"
+              type="primary"
+              plain
+              @click="openAiSettings"
+            >
+              {{ t('biscuit.openSettings') }}
+            </el-button>
+          </div>
         </div>
-      </div>
+
+        <div
+          v-else
+          :class="['message', `message--${message.role}`]"
+        >
+          <div class="message__text">
+            {{ message.content }}
+          </div>
+        </div>
+      </template>
 
       <!-- Approval request card (ask mode) -->
       <div
@@ -218,13 +253,12 @@
 
 <script setup lang="ts">
 import { ref, nextTick, computed, onBeforeUnmount, onMounted, watch } from 'vue'
-import { ElMessage } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '../../store/preferences'
 import { useLayoutStore } from '../../store/layout'
 import { langGraphService } from '../../services/langgraph'
 import { t } from '../../i18n'
-import { DArrowRight, Plus, ChatLineSquare, Delete } from '@element-plus/icons-vue'
+import { DArrowRight, Plus, ChatLineSquare, Delete, WarningFilled } from '@element-plus/icons-vue'
 import GlobalAgentReview from '../agent/GlobalAgentReview.vue'
 import type {
   ILangGraphMessage,
@@ -298,11 +332,50 @@ onBeforeUnmount(() => {
   unsubApproval?.()
 })
 
+// Chat entries: plain conversation messages, plus structured info for
+// error cards (friendly title/explanation wrapped around the raw detail).
+interface ErrorInfo {
+  title: string
+  explanation: string
+  showSettings?: boolean
+}
+interface ChatEntry extends ILangGraphMessage {
+  errorInfo?: ErrorInfo
+}
+
 // Reactive state
 const promptBody = ref<HTMLElement | null>(null)
 const userInput = ref('')
 const sending = ref(false)
-const aiMessages = ref<ILangGraphMessage[]>([])
+const aiMessages = ref<ChatEntry[]>([])
+
+/** Map a raw failure onto a human explanation for the error card. */
+const classifyError = (raw: string): ErrorInfo => {
+  if (/\b401\b|\b403\b|rejected|User not found|MODEL_AUTHENTICATION|api[_ ]?key/i.test(raw)) {
+    return {
+      title: t('biscuit.errorTitleAuth'),
+      explanation: t('biscuit.errorExplainAuth'),
+      showSettings: true
+    }
+  }
+  if (/\b429\b|rate.?limit|quota|overloaded|insufficient/i.test(raw)) {
+    return {
+      title: t('biscuit.errorTitleRate'),
+      explanation: t('biscuit.errorExplainRate')
+    }
+  }
+  if (/ECONNREFUSED|ENOTFOUND|ETIMEDOUT|Could not reach|fetch failed|network|timeout/i.test(raw)) {
+    return {
+      title: t('biscuit.errorTitleNetwork'),
+      explanation: t('biscuit.errorExplainNetwork'),
+      showSettings: true
+    }
+  }
+  return {
+    title: t('biscuit.errorTitleGeneric'),
+    explanation: t('biscuit.errorExplainGeneric')
+  }
+}
 
 // ---- Autonomy mode (Claude-CLI style: line under the prompt, shift+tab cycles) ----
 // Labels/hints are functions so they re-resolve when the app language changes.
@@ -384,7 +457,7 @@ const respondApproval = async (approved: boolean): Promise<void> => {
 interface StoredConversation {
   id: string
   title: string
-  messages: ILangGraphMessage[]
+  messages: ChatEntry[]
   updatedAt: number
 }
 
@@ -414,7 +487,7 @@ const persistHistory = (): void => {
   localStorage.setItem(CURRENT_KEY, currentId.value)
 }
 
-const deriveTitle = (messages: ILangGraphMessage[]): string => {
+const deriveTitle = (messages: ChatEntry[]): string => {
   const firstUser = messages.find((m) => m.role === 'user')
   const text = firstUser?.content?.trim() || 'New conversation'
   return text.length > 40 ? text.slice(0, 40) + '…' : text
@@ -425,7 +498,7 @@ const deriveTitle = (messages: ILangGraphMessage[]): string => {
 const saveCurrent = (): void => {
   if (aiMessages.value.length === 0) return
   if (!currentId.value) currentId.value = `conv-${Date.now()}`
-  const snapshot = JSON.parse(JSON.stringify(aiMessages.value)) as ILangGraphMessage[]
+  const snapshot = JSON.parse(JSON.stringify(aiMessages.value)) as ChatEntry[]
   const existing = conversations.value.find((c) => c.id === currentId.value)
   if (existing) {
     existing.messages = snapshot
@@ -472,7 +545,7 @@ const loadConversation = async (id: string): Promise<void> => {
   } catch {
     // ignore — not connected
   }
-  aiMessages.value = JSON.parse(JSON.stringify(conv.messages)) as ILangGraphMessage[]
+  aiMessages.value = JSON.parse(JSON.stringify(conv.messages)) as ChatEntry[]
   activity.value = []
   pendingApproval.value = null
   currentId.value = id
@@ -524,7 +597,11 @@ async function sendMessage (): Promise<void> {
   }
 
   try {
-    const response = await langGraphService.sendMessage(aiMessages.value)
+    // Error/stopped cards are UI furniture — never send them to the model.
+    const conversation = aiMessages.value
+      .filter((m) => m.role !== 'error' && m.role !== 'stopped')
+      .map(({ role, content }) => ({ role, content }))
+    const response = await langGraphService.sendMessage(conversation)
 
     if (response && response.content) {
       aiMessages.value.push({
@@ -545,14 +622,15 @@ async function sendMessage (): Promise<void> {
     if (errorMessage.includes('aborted') || errorMessage.includes('canceled') || errorMessage.includes('stopped')) {
       aiMessages.value.push({
         role: 'stopped',
-        content: 'Request aborted.'
+        content: t('biscuit.stopped')
       })
     } else {
+      // Structured error card in the transcript — no toast splash.
       aiMessages.value.push({
         role: 'error',
-        content: `Error: ${errorMessage}`
+        content: errorMessage,
+        errorInfo: classifyError(errorMessage)
       })
-      ElMessage.error('Failed to send message: ' + errorMessage)
     }
 
     await nextTick()
@@ -932,12 +1010,59 @@ async function sendMessage (): Promise<void> {
   font-style: italic;
 }
 
-.message--error .message__text {
-  color: #f56c6c;
+/* Structured error card: friendly headline + explanation, technical
+   detail folded away, optional action button. */
+.error-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 4px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(245, 108, 108, 0.35);
+  background: rgba(245, 108, 108, 0.07);
+}
+
+.error-card__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 0.8rem;
-  background: rgba(245, 108, 108, 0.1);
-  padding: 8px;
-  border-radius: 4px;
+  font-weight: 600;
+  color: #f56c6c;
+}
+
+.error-card__explain {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--editorColor, #303133);
+}
+
+.error-card__details {
+  font-size: 0.7rem;
+  color: var(--iconColor, #909399);
+  & summary {
+    cursor: pointer;
+    user-select: none;
+    &:hover {
+      color: var(--themeColor, #409eff);
+    }
+  }
+  & code {
+    display: block;
+    margin-top: 4px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    background: var(--itemBgColor, rgba(128, 128, 128, 0.08));
+    word-break: break-word;
+    white-space: pre-wrap;
+    font-size: 0.68rem;
+  }
+}
+
+.error-card__actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .message--thinking .message__text {

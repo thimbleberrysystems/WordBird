@@ -1497,7 +1497,18 @@
     "modeAuto": "modo auto",
     "modeAutoHint": "O Biscuit trabalha livremente; você revisa cada mudança.",
     "modeMax": "modo máx",
-    "modeMaxHint": "Tarefas longas, orçamentos maiores; mudanças ainda revisadas."
+    "modeMaxHint": "Tarefas longas, orçamentos maiores; mudanças ainda revisadas.",
+    "errorTitleAuth": "O provedor recusou o Biscuit",
+    "errorExplainAuth": "Sua chave de API foi rejeitada. Pode estar digitada errada, expirada ou ser de outro provedor.",
+    "errorTitleRate": "O provedor está ocupado",
+    "errorExplainRate": "Você atingiu um limite de uso. Aguarde um momento e tente de novo, ou verifique seu plano e cobrança.",
+    "errorTitleNetwork": "Não foi possível alcançar o provedor",
+    "errorExplainNetwork": "A solicitação nunca chegou. Verifique sua internet e, se usa um servidor local (como Ollama), confirme que está rodando no endereço configurado.",
+    "errorTitleGeneric": "Algo deu errado",
+    "errorExplainGeneric": "O Biscuit não conseguiu concluir a solicitação. Tentar novamente costuma ajudar; os detalhes técnicos estão abaixo.",
+    "errorDetails": "Detalhes técnicos",
+    "openSettings": "Abrir configurações de IA",
+    "stopped": "Interrompido."
   },
   "review": {
     "pendingOne": "1 edição pendente",

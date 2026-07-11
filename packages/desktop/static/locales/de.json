@@ -1495,7 +1495,18 @@
     "modeAuto": "Auto-Modus",
     "modeAutoHint": "Biscuit arbeitet frei; du prüfst jede Änderung.",
     "modeMax": "Max-Modus",
-    "modeMaxHint": "Lange Aufgaben, größere Budgets; Änderungen werden geprüft."
+    "modeMaxHint": "Lange Aufgaben, größere Budgets; Änderungen werden geprüft.",
+    "errorTitleAuth": "Der Anbieter hat Biscuit abgewiesen",
+    "errorExplainAuth": "Dein API-Schlüssel wurde abgelehnt. Er könnte falsch eingegeben, abgelaufen oder für einen anderen Anbieter gedacht sein.",
+    "errorTitleRate": "Der Anbieter ist ausgelastet",
+    "errorExplainRate": "Du hast ein Raten- oder Nutzungslimit erreicht. Warte kurz und versuche es erneut, oder prüfe Tarif und Abrechnung.",
+    "errorTitleNetwork": "Anbieter nicht erreichbar",
+    "errorExplainNetwork": "Die Anfrage kam nie an. Prüfe deine Internetverbindung und, bei eigenem/lokalem Server (z. B. Ollama), ob er unter der konfigurierten Adresse läuft.",
+    "errorTitleGeneric": "Etwas ist schiefgelaufen",
+    "errorExplainGeneric": "Biscuit konnte die Anfrage nicht abschließen. Ein neuer Versuch hilft oft; die technischen Details stehen unten.",
+    "errorDetails": "Technische Details",
+    "openSettings": "KI-Einstellungen öffnen",
+    "stopped": "Gestoppt."
   },
   "review": {
     "pendingOne": "1 ausstehende Änderung",

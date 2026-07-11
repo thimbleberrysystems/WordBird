@@ -1495,7 +1495,18 @@
     "modeAuto": "auto mode",
     "modeAutoHint": "Biscuit works freely; you review every change.",
     "modeMax": "max mode",
-    "modeMaxHint": "Long tasks, bigger budgets; changes still reviewed."
+    "modeMaxHint": "Long tasks, bigger budgets; changes still reviewed.",
+    "errorTitleAuth": "The provider turned Biscuit away",
+    "errorExplainAuth": "Your API key was rejected. It may be mistyped, expired, or meant for a different provider (an OpenRouter key won’t work with OpenAI selected, and vice versa).",
+    "errorTitleRate": "The provider is busy",
+    "errorExplainRate": "You’ve hit a rate or usage limit. Wait a moment and try again, or check your plan and billing with the provider.",
+    "errorTitleNetwork": "Couldn’t reach the provider",
+    "errorExplainNetwork": "The request never arrived. Check your internet connection and, if you use a custom or local server (like Ollama), make sure it’s running at the configured address.",
+    "errorTitleGeneric": "Something went wrong",
+    "errorExplainGeneric": "Biscuit couldn’t finish that request. Trying again often helps; the technical details are below.",
+    "errorDetails": "Technical details",
+    "openSettings": "Open AI Settings",
+    "stopped": "Stopped."
   },
   "review": {
     "pendingOne": "1 pending edit",

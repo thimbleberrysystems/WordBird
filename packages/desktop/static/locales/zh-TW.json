@@ -1505,7 +1505,18 @@
     "modeAuto": "自動模式",
     "modeAutoHint": "Biscuit 自由工作；每處變更由你審核。",
     "modeMax": "最大模式",
-    "modeMaxHint": "長任務、更大預算；變更仍需審核。"
+    "modeMaxHint": "長任務、更大預算；變更仍需審核。",
+    "errorTitleAuth": "供應商拒絕了 Biscuit",
+    "errorExplainAuth": "你的 API 金鑰被拒絕。可能是輸入錯誤、已過期，或屬於其他供應商。",
+    "errorTitleRate": "供應商正忙",
+    "errorExplainRate": "已達到速率或用量限制。請稍候再試，或檢查你的方案與帳單。",
+    "errorTitleNetwork": "無法連線到供應商",
+    "errorExplainNetwork": "請求未能送達。請檢查網路連線；若使用本地服務（如 Ollama），確認它在設定的位址上執行。",
+    "errorTitleGeneric": "發生了一些問題",
+    "errorExplainGeneric": "Biscuit 未能完成該請求。重試通常有效；技術細節見下方。",
+    "errorDetails": "技術細節",
+    "openSettings": "開啟 AI 設定",
+    "stopped": "已停止。"
   },
   "review": {
     "pendingOne": "1 處待處理編輯",

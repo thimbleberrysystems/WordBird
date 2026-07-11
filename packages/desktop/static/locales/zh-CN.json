@@ -1496,7 +1496,18 @@
     "modeAuto": "自动模式",
     "modeAutoHint": "Biscuit 自由工作；每处更改由你审核。",
     "modeMax": "最大模式",
-    "modeMaxHint": "长任务、更大预算；更改仍需审核。"
+    "modeMaxHint": "长任务、更大预算；更改仍需审核。",
+    "errorTitleAuth": "提供商拒绝了 Biscuit",
+    "errorExplainAuth": "你的 API 密钥被拒绝。可能是输错、过期，或属于其他提供商。",
+    "errorTitleRate": "提供商正忙",
+    "errorExplainRate": "已达到速率或用量限制。请稍候重试，或检查你的套餐与账单。",
+    "errorTitleNetwork": "无法连接到提供商",
+    "errorExplainNetwork": "请求未能送达。请检查网络连接；若使用本地服务（如 Ollama），确认它在配置的地址上运行。",
+    "errorTitleGeneric": "出了点问题",
+    "errorExplainGeneric": "Biscuit 未能完成该请求。重试通常有效；技术细节见下方。",
+    "errorDetails": "技术细节",
+    "openSettings": "打开 AI 设置",
+    "stopped": "已停止。"
   },
   "review": {
     "pendingOne": "1 处待处理编辑",
