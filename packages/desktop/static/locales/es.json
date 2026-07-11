@@ -1445,5 +1445,17 @@
     "restoreConfirm": "¿Rebobinar todo el proyecto a «{message}»? Tu estado actual se guarda primero.",
     "restored": "Rebobinado a «{message}»",
     "empty": "Aún no hay instantáneas. Guarda una para poder volver a este momento."
+  },
+  "views": {
+    "page": "Página",
+    "corkboard": "Tablero",
+    "outline": "Esquema",
+    "scenes": "Escenas",
+    "noSynopsis": "Aún sin sinopsis…",
+    "colTitle": "Título",
+    "colLocation": "Lugar",
+    "colStatus": "Estado",
+    "colWords": "Palabras",
+    "colSynopsis": "Sinopsis"
   }
 }

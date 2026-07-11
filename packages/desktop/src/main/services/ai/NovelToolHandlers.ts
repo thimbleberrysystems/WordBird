@@ -392,6 +392,28 @@ const updateSummary = async(
   return { updated: true, target: path.relative(root, target) }
 }
 
+/** Newest mtime among the leaf files the summary covers. */
+const latestProseMtime = async(root: string, targetId: string | undefined): Promise<number> => {
+  const structure = await structureService.loadReconciled(root)
+  const scope = targetId
+    ? (() => {
+      const found = findUnit(structure.units, targetId)
+      if (!found) return []
+      return found.unit.path ? [found.unit] : collectLeaves(found.unit.children ?? [])
+    })()
+    : collectLeaves(structure.units)
+  let latest = 0
+  for (const leaf of scope) {
+    try {
+      const stat = await fsPromises.stat(path.join(root, leaf.path as string))
+      latest = Math.max(latest, stat.mtimeMs)
+    } catch {
+      // Missing file — reconcile will drop it.
+    }
+  }
+  return latest
+}
+
 const readSummary = async(
   args: Record<string, unknown>,
   context: AgentToolContext
@@ -400,9 +422,18 @@ const readSummary = async(
   const targetId = optStr(args, 'unitId')
   const target = summaryPath(root, targetId)
   if (!fs.existsSync(target)) {
-    return { unitId: targetId ?? 'book', content: '', exists: false }
+    return { unitId: targetId ?? 'book', content: '', exists: false, stale: true }
   }
-  return { unitId: targetId ?? 'book', content: await readTextSafe(target), exists: true }
+  const summaryStat = await fsPromises.stat(target)
+  const proseMtime = await latestProseMtime(root, targetId)
+  return {
+    unitId: targetId ?? 'book',
+    content: await readTextSafe(target),
+    exists: true,
+    // Stale = prose changed after the summary was last written; the agent
+    // should re-read the prose and refresh via update_summary.
+    stale: proseMtime > summaryStat.mtimeMs
+  }
 }
 
 interface ContinuityIssue {

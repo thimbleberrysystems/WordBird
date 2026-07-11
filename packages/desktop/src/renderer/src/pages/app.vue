@@ -13,12 +13,22 @@
         :is-saved="isSaved"
       />
 
-      <div v-if="!init" class="editor-placeholder" />
-      <div v-else class="main-workspace">
+      <div
+        v-if="!init"
+        class="editor-placeholder"
+      />
+      <div
+        v-else
+        class="main-workspace"
+      >
         <div class="editor-area">
           <recent v-if="showRecentPrompt" />
+          <view-switcher v-if="projectTree" />
+          <corkboard v-if="projectTree && novelViewMode === 'corkboard'" />
+          <outline-view v-else-if="projectTree && novelViewMode === 'outline'" />
           <editor-with-tabs
             v-if="hasCurrentFile"
+            v-show="novelViewMode === 'page'"
             :markdown="markdown"
             :cursor="cursor"
             :muya-index-cursor="muyaIndexCursor"
@@ -56,6 +66,10 @@ import ExportSettingDialog from '@/components/exportSettings/index.vue'
 import Rename from '@/components/rename/index.vue'
 import ImportModal from '@/components/import/index.vue'
 import AgentProposalController from '@/components/agent/AgentProposalController.vue'
+import ViewSwitcher from '@/components/novel/ViewSwitcher.vue'
+import Corkboard from '@/components/novel/Corkboard.vue'
+import OutlineView from '@/components/novel/OutlineView.vue'
+import { useNovelStore } from '@/store/novel'
 import bus from '@/bus'
 import { DEFAULT_STYLE } from '@/config'
 import { useLayoutStore } from '@/store/layout'
@@ -72,6 +86,7 @@ const editorStore = useEditorStore()
 const preferencesStore = usePreferencesStore()
 const layoutStore = useLayoutStore()
 const projectStore = useProjectStore()
+const novelStore = useNovelStore()
 const listenForMainStore = useListenForMainStore()
 const autoUpdateStore = useAutoUpdatesStore()
 const commandCenterStore = useCommandCenterStore()
@@ -85,6 +100,7 @@ const { showTabBar, showRightPrompt } = storeToRefs(layoutStore)
 const { sourceCode, theme, customCss, textDirection, zoom } = storeToRefs(preferencesStore)
 const { projectTree } = storeToRefs(projectStore)
 const { currentFile } = storeToRefs(editorStore)
+const { viewMode: novelViewMode } = storeToRefs(novelStore)
 
 const pathname = computed(() => currentFile.value?.pathname)
 const filename = computed(() => currentFile.value?.filename)
@@ -273,6 +289,8 @@ onMounted(async () => {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+  /* Anchor for the floating novel view switcher. */
+  position: relative;
 }
 
 .editor-area > .editor-placeholder,

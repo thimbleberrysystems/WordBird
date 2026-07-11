@@ -1446,5 +1446,17 @@
     "restoreConfirm": "将整个项目回退到“{message}”？当前状态会先保存，随时可以回来。",
     "restored": "已回退到“{message}”",
     "empty": "还没有快照。保存一个，之后就能随时回到此刻。"
+  },
+  "views": {
+    "page": "页面",
+    "corkboard": "软木板",
+    "outline": "大纲",
+    "scenes": "场景",
+    "noSynopsis": "还没有梗概…",
+    "colTitle": "标题",
+    "colLocation": "地点",
+    "colStatus": "状态",
+    "colWords": "字数",
+    "colSynopsis": "梗概"
   }
 }

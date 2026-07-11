@@ -1445,5 +1445,17 @@
     "restoreConfirm": "Rewind the whole project to \"{message}\"? Your current state is saved first, so you can always come back.",
     "restored": "Rewound to \"{message}\"",
     "empty": "No snapshots yet. Save one to make this moment easy to return to."
+  },
+  "views": {
+    "page": "Page",
+    "corkboard": "Corkboard",
+    "outline": "Outline",
+    "scenes": "Scenes",
+    "noSynopsis": "No synopsis yet…",
+    "colTitle": "Title",
+    "colLocation": "Location",
+    "colStatus": "Status",
+    "colWords": "Words",
+    "colSynopsis": "Synopsis"
   }
 }

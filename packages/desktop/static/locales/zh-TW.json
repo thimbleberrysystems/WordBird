@@ -1455,5 +1455,17 @@
     "restoreConfirm": "將整個專案回溯到「{message}」？目前狀態會先儲存，隨時可以回來。",
     "restored": "已回溯到「{message}」",
     "empty": "還沒有快照。儲存一個，之後就能隨時回到此刻。"
+  },
+  "views": {
+    "page": "頁面",
+    "corkboard": "軟木板",
+    "outline": "大綱",
+    "scenes": "場景",
+    "noSynopsis": "還沒有梗概…",
+    "colTitle": "標題",
+    "colLocation": "地點",
+    "colStatus": "狀態",
+    "colWords": "字數",
+    "colSynopsis": "梗概"
   }
 }

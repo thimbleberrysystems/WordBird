@@ -1447,5 +1447,17 @@
     "restoreConfirm": "프로젝트 전체를 \"{message}\"(으)로 되감을까요? 현재 상태가 먼저 저장됩니다.",
     "restored": "\"{message}\"(으)로 되감았습니다",
     "empty": "아직 스냅숏이 없습니다. 저장해 두면 언제든 이 순간으로 돌아올 수 있습니다."
+  },
+  "views": {
+    "page": "페이지",
+    "corkboard": "코르크보드",
+    "outline": "개요",
+    "scenes": "장면",
+    "noSynopsis": "아직 시놉시스 없음…",
+    "colTitle": "제목",
+    "colLocation": "장소",
+    "colStatus": "상태",
+    "colWords": "단어",
+    "colSynopsis": "시놉시스"
   }
 }

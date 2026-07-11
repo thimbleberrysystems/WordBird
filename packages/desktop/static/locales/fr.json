@@ -1447,5 +1447,17 @@
     "restoreConfirm": "Rembobiner tout le projet vers « {message} » ? Votre état actuel est d’abord sauvegardé.",
     "restored": "Rembobiné vers « {message} »",
     "empty": "Aucun instantané pour l’instant. Enregistrez-en un pour pouvoir revenir à ce moment."
+  },
+  "views": {
+    "page": "Page",
+    "corkboard": "Tableau",
+    "outline": "Plan",
+    "scenes": "Scènes",
+    "noSynopsis": "Pas encore de synopsis…",
+    "colTitle": "Titre",
+    "colLocation": "Lieu",
+    "colStatus": "Statut",
+    "colWords": "Mots",
+    "colSynopsis": "Synopsis"
   }
 }

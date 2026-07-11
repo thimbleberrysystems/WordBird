@@ -1447,5 +1447,17 @@
     "restoreConfirm": "Retroceder todo o projeto para \"{message}\"? Seu estado atual é salvo primeiro.",
     "restored": "Retrocedido para \"{message}\"",
     "empty": "Ainda não há instantâneos. Salve um para poder voltar a este momento."
+  },
+  "views": {
+    "page": "Página",
+    "corkboard": "Quadro",
+    "outline": "Esboço",
+    "scenes": "Cenas",
+    "noSynopsis": "Ainda sem sinopse…",
+    "colTitle": "Título",
+    "colLocation": "Local",
+    "colStatus": "Estado",
+    "colWords": "Palavras",
+    "colSynopsis": "Sinopse"
   }
 }

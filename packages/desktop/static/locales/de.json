@@ -1445,5 +1445,17 @@
     "restoreConfirm": "Das gesamte Projekt auf „{message}“ zurücksetzen? Der aktuelle Stand wird zuerst gesichert.",
     "restored": "Zurückgesetzt auf „{message}“",
     "empty": "Noch keine Schnappschüsse. Speichere einen, um zu diesem Moment zurückkehren zu können."
+  },
+  "views": {
+    "page": "Seite",
+    "corkboard": "Pinnwand",
+    "outline": "Gliederung",
+    "scenes": "Szenen",
+    "noSynopsis": "Noch keine Zusammenfassung…",
+    "colTitle": "Titel",
+    "colLocation": "Ort",
+    "colStatus": "Status",
+    "colWords": "Wörter",
+    "colSynopsis": "Zusammenfassung"
   }
 }

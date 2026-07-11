@@ -1447,5 +1447,17 @@
     "restoreConfirm": "プロジェクト全体を「{message}」に巻き戻しますか？現在の状態は先に保存されます。",
     "restored": "「{message}」に巻き戻しました",
     "empty": "まだスナップショットはありません。保存すればいつでもこの瞬間に戻れます。"
+  },
+  "views": {
+    "page": "ページ",
+    "corkboard": "コルクボード",
+    "outline": "アウトライン",
+    "scenes": "シーン",
+    "noSynopsis": "あらすじは未設定…",
+    "colTitle": "タイトル",
+    "colLocation": "場所",
+    "colStatus": "状態",
+    "colWords": "語数",
+    "colSynopsis": "あらすじ"
   }
 }

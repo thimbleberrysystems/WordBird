@@ -18,10 +18,14 @@ import type {
   INovelCompileResult
 } from '@shared/types/novel'
 
+export type NovelViewMode = 'page' | 'corkboard' | 'outline'
+
 export const useNovelStore = defineStore('novel', () => {
   const structure = ref<INovelStructure | null>(null)
   const loading = ref(false)
   const lastError = ref<string | null>(null)
+  /** Editor-area view: the prose page, the corkboard, or the outline table. */
+  const viewMode = ref<NovelViewMode>('page')
 
   const projectStore = useProjectStore()
 
@@ -101,9 +105,15 @@ export const useNovelStore = defineStore('novel', () => {
     return window.electron.novel.compile(root.value, { outputPath })
   }
 
+  function setViewMode(mode: NovelViewMode): void {
+    viewMode.value = mode
+    if (mode !== 'page') refresh()
+  }
+
   /** Open a unit's backing file in the editor (scenes / flat chapters). */
   function openUnit(unit: INovelUnit): void {
     if (!unit.path || !root.value) return
+    viewMode.value = 'page'
     const pathname = window.path.join(root.value, unit.path)
     const editorStore = useEditorStore()
     const openedTab = editorStore.tabs.find((f) =>
@@ -124,6 +134,8 @@ export const useNovelStore = defineStore('novel', () => {
     lastError,
     flavor,
     totalWordCount,
+    viewMode,
+    setViewMode,
     refresh,
     createUnit,
     updateUnit,
