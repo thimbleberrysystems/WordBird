@@ -466,8 +466,8 @@
     {
       "id": "save_plan",
       "name": "save_plan",
-      "displayName": "Save plan for approval",
-      "description": "Save a finished plan to a durable file and present it to the writer as an approval card. In Plan mode this is how every planning conversation should END — the writer approves the card, gets switched to an execution mode, and asks you to carry the plan out. The plan must be complete and self-contained (numbered steps, files/units involved, what each specialist will do).",
+      "displayName": "Create plan file",
+      "description": "Create a LIVE plan file in plans/ early in a planning conversation. The writer can open and edit it alongside the chat. Keep it current with update_plan as ideas evolve; when it's settled, present it with propose_plan. One plan per task — check list_plans before creating.",
       "handler": "save_plan",
       "enabled": true,
       "scope": "project",
@@ -476,9 +476,56 @@
         "type": "object",
         "properties": {
           "title": { "type": "string", "description": "Short plan name, e.g. 'Draft the Amityville short story'." },
-          "plan": { "type": "string", "description": "The full plan in markdown — numbered steps, self-contained." }
+          "plan": { "type": "string", "description": "The plan so far, in markdown — numbered steps." }
         },
         "required": ["title", "plan"]
+      }
+    },
+    {
+      "id": "update_plan",
+      "name": "update_plan",
+      "displayName": "Update plan file",
+      "description": "Rewrite an existing plan file as the conversation refines it. The writer may have edited the file themselves — read it first (read_project_file) and fold their changes in rather than clobbering them.",
+      "handler": "update_plan",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "planId": { "type": "string", "description": "Plan path from save_plan/list_plans, e.g. plans/amityville-short-story.md." },
+          "plan": { "type": "string", "description": "The complete updated plan body (markdown)." },
+          "title": { "type": "string", "description": "New title (keeps the old one when omitted)." }
+        },
+        "required": ["planId", "plan"]
+      }
+    },
+    {
+      "id": "list_plans",
+      "name": "list_plans",
+      "displayName": "List plans",
+      "description": "List existing plan files with titles and last-updated times. Use this to decide whether to continue an existing plan (update_plan) or start a fresh one for a new task (save_plan).",
+      "handler": "list_plans",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": { "type": "object", "properties": {} }
+    },
+    {
+      "id": "propose_plan",
+      "name": "propose_plan",
+      "displayName": "Propose plan for approval",
+      "description": "Present a settled plan to the writer as an approval card (reads the CURRENT file, so their manual edits are included). Approving switches them to an execution mode and you'll be asked to carry it out. Call this when planning is done — then stop and wait.",
+      "handler": "propose_plan",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "planId": { "type": "string", "description": "Plan path from save_plan/list_plans." }
+        },
+        "required": ["planId"]
       }
     },
     {

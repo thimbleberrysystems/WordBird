@@ -187,7 +187,10 @@ const SUPERVISOR_TOOL_NAMES = [
   'start_revision',
   'get_revision',
   'complete_revision',
-  'save_plan'
+  'save_plan',
+  'update_plan',
+  'list_plans',
+  'propose_plan'
 ]
 
 const SPAWN_TOOL_NAME = 'spawn_agents'
@@ -251,14 +254,19 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   '- Before sweeping multi-file changes, have an agent take snapshot_project so the writer can rewind.\n' +
   '- New canon discovered while working should be recorded via a drafter with propose_bible_update.\n' +
   (mode === 'plan'
-    ? '\nPLAN MODE IS ACTIVE: you may use your read tools to analyze, but you cannot spawn ' +
-      'agents and no prose, scenes, or bible pages can be changed. The ONE write you have is ' +
-      'save_plan. Work the plan out with the writer, and when it is settled, CALL save_plan ' +
-      'with the complete numbered plan — the writer gets an approval card; approving it ' +
-      'switches them to an execution mode and you will be asked to carry the plan out. ' +
-      'If the writer asks you to write or save anything else, explain that Plan mode blocks ' +
-      'changes and offer to save_plan it, or they can press Shift+Tab (the mode line under ' +
-      'the chat box) to switch modes themselves.\n'
+    ? '\nPLAN MODE IS ACTIVE: you may use read tools to analyze, but you cannot spawn agents ' +
+      'and no prose, scenes, or bible pages can change. Your one writable surface is the LIVE ' +
+      'PLAN FILE in plans/:\n' +
+      '- Check list_plans first: continue an existing plan for this task, or save_plan a new ' +
+      'one EARLY (a new task means a new plan file).\n' +
+      '- Keep the file current with update_plan as each exchange refines the idea — the ' +
+      'writer can open plans/<file>.md in the editor and edit it themselves, so re-read it ' +
+      '(read_project_file) before updating and fold their edits in, never clobber them.\n' +
+      '- When the plan is settled, call propose_plan — the writer gets an approval card; ' +
+      'approving switches them to an execution mode and you will be asked to carry it out. ' +
+      'Then STOP and wait.\n' +
+      '- If the writer asks you to write anything else, explain Plan mode blocks it and that ' +
+      'Shift+Tab (the mode line under the chat box) switches modes.\n'
     : '') +
   (mode === 'ask'
     ? '\nASK MODE IS ACTIVE: the writer approves each spawn wave. Keep waves small and purposeful.\n'

@@ -279,21 +279,48 @@ describe('revision tools — the Marcus scenario', () => {
   })
 })
 
-describe('save_plan (plan mode → approval card)', () => {
-  it('writes a durable plan file and returns the proposal payload', async() => {
+describe('live plans (create → update → list → propose)', () => {
+  it('creates a visible, editable plan file in plans/ without raising a card', async() => {
     const result = (await run('save_plan', {
       title: 'Draft the Amityville short story',
       plan: '1. Research the DeFeo case\n2. Outline\n3. Draft scene one'
-    })) as { planProposal: { id: string; title: string; path: string; content: string } }
+    })) as { planId: string; note: string }
 
-    expect(result.planProposal.id).toMatch(/^plan-/)
-    expect(result.planProposal.title).toContain('Amityville')
-    const saved = fs.readFileSync(path.join(root, result.planProposal.path), 'utf8')
+    expect(result.planId).toBe(path.join('plans', 'draft-the-amityville-short-story.md'))
+    const saved = fs.readFileSync(path.join(root, result.planId), 'utf8')
     expect(saved).toContain('# Draft the Amityville short story')
     expect(saved).toContain('Research the DeFeo case')
+    expect(result.note).toContain('update_plan')
+    expect((result as Record<string, unknown>).planProposal).toBeUndefined()
   })
 
-  it('is intercepted by AgentToolService and raised to the plan emitter', async() => {
+  it('updates a plan in place and preserves the title by default', async() => {
+    const { planId } = (await run('save_plan', { title: 'My Plan', plan: 'v1' })) as {
+      planId: string
+    }
+    await run('update_plan', { planId, plan: 'v2 with the writer\'s new twist' })
+    const saved = fs.readFileSync(path.join(root, planId), 'utf8')
+    expect(saved).toContain('# My Plan')
+    expect(saved).toContain('new twist')
+    expect(saved).not.toContain('v1')
+
+    await expect(run('update_plan', { planId: 'plans/ghost.md', plan: 'x' })).rejects.toThrow(
+      /list_plans/
+    )
+  })
+
+  it('lists plans newest-first with titles', async() => {
+    await run('save_plan', { title: 'Older Plan', plan: 'a' })
+    await new Promise((r) => setTimeout(r, 10))
+    await run('save_plan', { title: 'Newer Plan', plan: 'b' })
+    const result = (await run('list_plans', {})) as {
+      plans: Array<{ planId: string; title: string }>
+    }
+    expect(result.plans).toHaveLength(2)
+    expect(result.plans[0].title).toBe('Newer Plan')
+  })
+
+  it('propose_plan reads the CURRENT file (writer edits included) and raises the card', async() => {
     const emitted: unknown[] = []
     service.setPlanProposalEmitter((p) => {
       emitted.push(p)
@@ -305,26 +332,35 @@ describe('save_plan (plan mode → approval card)', () => {
       source: 'test',
       tools: [
         {
-          id: 'save_plan',
-          name: 'save_plan',
-          description: 'save a plan',
-          handler: 'save_plan',
+          id: 'propose_plan',
+          name: 'propose_plan',
+          description: 'propose a plan',
+          handler: 'propose_plan',
           enabled: true,
           scope: 'project',
           confirm: 'never',
           schema: {
             type: 'object',
-            properties: { title: { type: 'string' }, plan: { type: 'string' } },
-            required: ['title', 'plan']
+            properties: { planId: { type: 'string' } },
+            required: ['planId']
           }
         }
       ]
     })
-    const langChainTool = service.getLangChainTools().find((t) => t.name === 'save_plan')!
-    const reply = (await langChainTool.invoke({ title: 'T', plan: 'P' })) as string
+
+    const { planId } = (await run('save_plan', { title: 'T', plan: 'agent draft' })) as {
+      planId: string
+    }
+    // The writer edits the file directly in the editor…
+    fs.writeFileSync(path.join(root, planId), '# T\n\nwriter edited this\n')
+
+    const langChainTool = service.getLangChainTools().find((t) => t.name === 'propose_plan')!
+    const reply = (await langChainTool.invoke({ planId })) as string
 
     expect(emitted).toHaveLength(1)
-    expect((emitted[0] as { planProposal: { title: string } }).planProposal.title).toBe('T')
+    const proposal = (emitted[0] as { planProposal: { content: string } }).planProposal
+    expect(proposal.content).toContain('writer edited this')
+    expect(proposal.content).not.toContain('agent draft')
     // The model gets a wait-for-decision instruction, not the raw payload.
     expect(reply).toContain('approval card')
   })

@@ -865,7 +865,27 @@ const deleteUnit = async(
   return { deleted: true, unitId, title: found.unit.title, snapshotTaken: true }
 }
 
-// ---- plans (Claude-Code-style: durable file + approval card) ----
+// ---- plans (Claude-CLI-style: live file, incremental updates, explicit
+// approval). Plans live in plans/ — a normal, visible, writer-editable
+// project folder — NOT in .wordbird, so the writer can open a plan in the
+// editor beside the chat and edit it while brainstorming. ----
+
+const slugifyPlanTitle = (title: string): string => {
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+  return slug || 'plan'
+}
+
+const planPathFor = (root: string, title: string): string => {
+  let relative = path.join('plans', `${slugifyPlanTitle(title)}.md`)
+  if (fs.existsSync(path.join(root, relative))) {
+    relative = path.join('plans', `${slugifyPlanTitle(title)}-${Date.now() % 100000}.md`)
+  }
+  return relative
+}
 
 const savePlan = async(
   args: Record<string, unknown>,
@@ -875,16 +895,91 @@ const savePlan = async(
   const title = str(args, 'title')
   const plan = str(args, 'plan')
 
-  const id = `plan-${Date.now()}`
-  const relative = path.join('.wordbird', 'plans', `${id}.md`)
+  const relative = planPathFor(root, title)
   const target = path.join(root, relative)
   await fsPromises.mkdir(path.dirname(target), { recursive: true })
-  const content = `# ${title}\n\n${plan}\n`
-  await fsPromises.writeFile(target, content, 'utf8')
+  await fsPromises.writeFile(target, `# ${title}\n\n${plan}\n`, 'utf8')
+
+  return {
+    created: true,
+    planId: relative,
+    path: relative,
+    note:
+      'Plan file created — keep it CURRENT with update_plan as the conversation evolves. ' +
+      'The writer can open and edit this file too. When the plan is settled, call ' +
+      'propose_plan to present it for approval.'
+  }
+}
+
+const updatePlan = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const planId = str(args, 'planId')
+  const plan = str(args, 'plan')
+  const title = optStr(args, 'title')
+
+  const target = resolveInside(root, planId, 'plans')
+  if (!fs.existsSync(target)) {
+    throw new Error(`No plan at ${planId}. Use list_plans, or save_plan for a new one.`)
+  }
+  const existing = await readTextSafe(target)
+  const existingTitle = /^#\s+(.+)$/m.exec(existing)?.[1]?.trim() ?? 'Plan'
+  await fsPromises.writeFile(target, `# ${title ?? existingTitle}\n\n${plan}\n`, 'utf8')
+  return { updated: true, planId }
+}
+
+const listPlans = async(
+  _args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const dir = path.join(root, 'plans')
+  let entries: fs.Dirent[] = []
+  try {
+    entries = (await fsPromises.readdir(dir, { withFileTypes: true })).filter(
+      (e) => e.isFile() && /\.(md|markdown|txt)$/i.test(e.name)
+    )
+  } catch {
+    return { plans: [] }
+  }
+  const plans = []
+  for (const entry of entries) {
+    const relative = path.join('plans', entry.name)
+    try {
+      const content = await readTextSafe(path.join(dir, entry.name))
+      const stat = await fsPromises.stat(path.join(dir, entry.name))
+      plans.push({
+        planId: relative,
+        title: /^#\s+(.+)$/m.exec(content)?.[1]?.trim() ?? entry.name,
+        updatedAt: new Date(stat.mtimeMs).toISOString()
+      })
+    } catch {
+      // Unreadable plan — skip.
+    }
+  }
+  plans.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  return { plans }
+}
+
+const proposePlan = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const planId = str(args, 'planId')
+  const target = resolveInside(root, planId, 'plans')
+  if (!fs.existsSync(target)) {
+    throw new Error(`No plan at ${planId}. Use list_plans to find it.`)
+  }
+  // Read at propose time so the writer's own edits are what gets approved.
+  const content = await readTextSafe(target)
+  const title = /^#\s+(.+)$/m.exec(content)?.[1]?.trim() ?? planId
 
   // The planProposal shape is intercepted by AgentToolService and raised
   // to the renderer as an approval card.
-  return { planProposal: { id, title, path: relative, content } }
+  return { planProposal: { id: planId, title, path: planId, content } }
 }
 
 // ---- sweeping revisions ("book surgery") ----
@@ -1037,6 +1132,9 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('delete_file', deleteFile)
   service.registerHandler('delete_unit', deleteUnit)
   service.registerHandler('save_plan', savePlan)
+  service.registerHandler('update_plan', updatePlan)
+  service.registerHandler('list_plans', listPlans)
+  service.registerHandler('propose_plan', proposePlan)
   service.registerHandler('start_revision', startRevision)
   service.registerHandler('get_revision', getRevision)
   service.registerHandler('update_impact_map', updateImpactMap)
