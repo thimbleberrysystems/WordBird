@@ -16,7 +16,7 @@ type CodeMirrorLike = any
 type AnyObj = any
 
 const overlayMode = (CodeMirror: CodeMirrorLike): void => {
-  CodeMirror.overlayMode = function (base: AnyObj, overlay: AnyObj, combine?: boolean): AnyObj {
+  CodeMirror.overlayMode = function(base: AnyObj, overlay: AnyObj, combine?: boolean): AnyObj {
     return {
       startState() {
         return {
@@ -77,7 +77,7 @@ const overlayMode = (CodeMirror: CodeMirrorLike): void => {
 
       indent:
         base.indent &&
-        function (state: AnyObj, textAfter: string) {
+        function(state: AnyObj, textAfter: string) {
           return base.indent(state.base, textAfter)
         },
 

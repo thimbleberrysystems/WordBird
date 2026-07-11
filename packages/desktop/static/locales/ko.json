@@ -1535,7 +1535,17 @@
     "exportTranscript": "대화 내보내기…",
     "exported": "대화를 {path}에 저장했습니다",
     "exportedClipboard": "대화를 클립보드에 복사했습니다.",
-    "usageCost": "≈ 이 세션 {cost} (추정)"
+    "usageCost": "≈ 이 세션 {cost} (추정)",
+    "agentsTip": "에이전트 — 실행 중인 모든 에이전트 보기·제어",
+    "stopAll": "모두 중지",
+    "pauseAgent": "이 에이전트 일시정지",
+    "resumeAgent": "이 에이전트 재개",
+    "agentDetails": "작업 및 도구 사용 보기",
+    "noAgents": "아직 실행된 에이전트가 없습니다.",
+    "pausedShort": "일시정지됨",
+    "thinkingShort": "생각 중…",
+    "idle": "대기",
+    "agentsRunning": "{count}개 실행 중"
   },
   "review": {
     "pendingOne": "대기 중인 편집 1개",

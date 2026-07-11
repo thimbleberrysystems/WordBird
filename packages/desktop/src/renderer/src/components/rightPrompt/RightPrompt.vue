@@ -24,6 +24,42 @@
         Biscuit
       </div>
       <div class="header-actions">
+        <!-- Agents tree: every agent and sub-agent, expandable to its
+             task + tool use, with per-row pause and kill. -->
+        <el-popover
+          v-model:visible="agentsVisible"
+          placement="bottom-end"
+          :width="320"
+          trigger="click"
+          popper-class="biscuit-history-popover"
+        >
+          <template #reference>
+            <button
+              class="header-action"
+              :class="{ 'agents-active': runState === 'running' }"
+              :title="t('biscuit.agentsTip')"
+            >
+              <el-icon><Operation /></el-icon>
+              <span
+                v-if="runningAgentCount > 0"
+                class="agents-badge"
+              >{{ runningAgentCount }}</span>
+            </button>
+          </template>
+          <agent-tree
+            :agents="agentList"
+            :activity="activity"
+            :run-state="runState"
+            @cancel="cancelAgent"
+            @retry="retryAgent"
+            @pause-agent="pauseAgentRow"
+            @resume-agent="resumeAgentRow"
+            @pause-all="pauseRun"
+            @resume-all="resumeRun"
+            @stop-all="stopGeneration"
+          />
+        </el-popover>
+
         <el-popover
           v-model:visible="historyVisible"
           placement="bottom-end"
@@ -113,12 +149,13 @@
           v-else-if="message.role === 'assistant' || message.role === 'ai'"
           :class="['message', `message--${message.role}`]"
         >
-          <!-- eslint-disable-next-line vue/no-v-html -- sanitized by DOMPurify in renderChatMarkdown -->
+          <!-- eslint-disable vue/no-v-html -- sanitized by DOMPurify in renderChatMarkdown -->
           <div
             class="message__text message__text--md"
             @click="handleMarkdownClick"
             v-html="renderChatMarkdown(message.content)"
           />
+          <!-- eslint-enable vue/no-v-html -->
         </div>
 
         <div
@@ -166,15 +203,6 @@
           </el-button>
         </div>
       </div>
-
-      <!-- Live agent panel: per-agent status, elapsed, cancel; the raw
-           activity log folds underneath. Persists after the turn. -->
-      <agent-panel
-        :agents="agentList"
-        :activity="activity"
-        @cancel="cancelAgent"
-        @retry="retryAgent"
-      />
 
       <!-- Thinking Indicator -->
       <div
@@ -269,22 +297,9 @@
             {{ currentModelName }}
           </el-button>
 
-          <el-button
-            v-if="runState !== 'paused'"
-            size="small"
-            :disabled="runState !== 'running'"
-            @click="pauseRun"
-          >
-            ⏸ {{ t('biscuit.pause') }}
-          </el-button>
-          <el-button
-            v-else
-            size="small"
-            type="warning"
-            @click="resumeRun"
-          >
-            ▶ {{ t('biscuit.resume') }}
-          </el-button>
+          <!-- Stop is the panic button: kills the supervisor and every
+               sub-agent. Pause and per-agent control live in the agents
+               tree (header). -->
           <el-button
             type="danger"
             size="small"
@@ -314,14 +329,15 @@ import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '../../store/preferences'
 import { useLayoutStore } from '../../store/layout'
 import { useProjectStore } from '../../store/project'
+import { useEditorStore } from '../../store/editor'
 import { langGraphService } from '../../services/langgraph'
 import bus from '../../bus'
 import { t } from '../../i18n'
 import { renderChatMarkdown } from '../../util/chatMarkdown'
 import { estimateCostUsd, formatCostUsd } from '../../util/modelPricing'
-import { DArrowRight, Plus, ChatLineSquare, Delete } from '@element-plus/icons-vue'
+import { DArrowRight, Plus, ChatLineSquare, Delete, Operation } from '@element-plus/icons-vue'
 import GlobalAgentReview from '../agent/GlobalAgentReview.vue'
-import AgentPanel from './AgentPanel.vue'
+import AgentTree from './AgentTree.vue'
 import PlanCard from './PlanCard.vue'
 import ErrorCard from './ErrorCard.vue'
 import type {
@@ -400,6 +416,7 @@ onBeforeUnmount(() => {
   unsubApproval?.()
   unsubUsage?.()
   unsubPlan?.()
+  unsubPlanSaved?.()
   unsubTokens?.()
   unsubAgents?.()
   unsubRunState?.()
@@ -571,6 +588,24 @@ const condenseNow = async (): Promise<void> => {
   }
 }
 
+// ---- Live plan file → main editor ----
+const openPlanInEditor = (relativePath: string): void => {
+  const root = useProjectStore().currentProjectPath
+  if (!root || !relativePath) return
+  const pathname = window.path.join(root, relativePath)
+  const editorStore = useEditorStore()
+  const openedTab = editorStore.tabs.find((f) =>
+    window.fileUtils.isSamePathSync(f.pathname, pathname)
+  )
+  if (openedTab) {
+    if (editorStore.currentFile?.pathname !== openedTab.pathname) {
+      editorStore.UPDATE_CURRENT_FILE(openedTab)
+    }
+  } else {
+    window.electron.ipcRenderer.send('mt::open-file', pathname, {})
+  }
+}
+
 // ---- Retry a failed/cancelled agent ----
 const retryAgent = (task: string): void => {
   const message = t('biscuit.retryMessage', { task })
@@ -638,12 +673,24 @@ const tokenTip = computed(() => {
   return base + (roles ? `\n${roles}` : '')
 })
 
-// ---- Live agents (panel with per-agent cancel) ----
+// ---- Live agents (header tree with per-agent pause / kill) ----
 const agentMap = ref(new Map<string, IAgentStatus>())
 const agentList = computed(() => Array.from(agentMap.value.values()))
+const agentsVisible = ref(false)
+const runningAgentCount = computed(
+  () => agentList.value.filter((a) => a.status === 'running').length
+)
 
 const cancelAgent = async (agentId: string): Promise<void> => {
   await window.electron.ai.cancelAgent(agentId)
+}
+
+const pauseAgentRow = async (agentId: string): Promise<void> => {
+  await window.electron.ai.pauseAgent(agentId)
+}
+
+const resumeAgentRow = async (agentId: string): Promise<void> => {
+  await window.electron.ai.resumeAgent(agentId)
 }
 
 // ---- Activity feed + approvals ----
@@ -654,6 +701,7 @@ let unsubActivity: (() => void) | null = null
 let unsubApproval: (() => void) | null = null
 let unsubUsage: (() => void) | null = null
 let unsubPlan: (() => void) | null = null
+let unsubPlanSaved: (() => void) | null = null
 let unsubTokens: (() => void) | null = null
 let unsubAgents: (() => void) | null = null
 let unsubRunState: (() => void) | null = null
@@ -678,6 +726,13 @@ onMounted(() => {
   })
   unsubPlan = window.electron.ai.onPlanProposal((plan) => {
     pendingPlan.value = plan
+    openPlanInEditor(plan.path)
+  })
+  // The live plan is a real markdown file — surface it in the main editor
+  // the moment Biscuit creates or updates it, so the writer watches the
+  // plan take shape (and can edit it) while brainstorming.
+  unsubPlanSaved = window.electron.ai.onPlanSaved(({ path: planPath }) => {
+    openPlanInEditor(planPath)
   })
   unsubTokens = window.electron.ai.onTokenUsage((usage) => {
     tokenUsage.value = usage
@@ -1096,6 +1151,31 @@ async function sendMessage (): Promise<void> {
   &:hover {
     border-color: var(--themeColor, #409eff);
   }
+}
+
+/* Agents-tree trigger: highlighted while a run is live, with a
+   running-agent count badge. */
+.header-action.agents-active {
+  color: var(--themeColor, #409eff);
+}
+
+.agents-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 13px;
+  text-align: center;
+  padding: 2px 3px;
+  border-radius: 7px;
+  color: #fff;
+  background: var(--themeColor, #409eff);
+  animation: agents-badge-pulse 1.2s infinite ease-in-out;
+}
+
+@keyframes agents-badge-pulse {
+  0% { opacity: 0.55; }
+  50% { opacity: 1; }
+  100% { opacity: 0.55; }
 }
 
 /* History popover contents */

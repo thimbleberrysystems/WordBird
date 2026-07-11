@@ -513,14 +513,14 @@ const tokenizerFac = (src, beginRules, inlineRules, pos = 0, top, labels, option
         content: htmlTo[4],
         children: htmlTo[4]
           ? tokenizerFac(
-              htmlTo[4],
-              undefined,
-              inlineRules,
-              pos + htmlTo[2].length,
-              false,
-              labels,
-              options
-            )
+            htmlTo[4],
+            undefined,
+            inlineRules,
+            pos + htmlTo[2].length,
+            false,
+            labels,
+            options
+          )
           : '',
         range: {
           start: pos,

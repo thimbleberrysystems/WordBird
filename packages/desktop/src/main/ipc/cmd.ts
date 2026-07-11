@@ -3,7 +3,7 @@ import { ipcMain } from 'electron'
 import commandExists from 'command-exists'
 
 export const registerCmdHandlers = (): void => {
-  ipcMain.handle('mt::cmd::exists', async (_event, name: string) => {
+  ipcMain.handle('mt::cmd::exists', async(_event, name: string) => {
     try {
       if (commandExists.sync(name)) return true
 

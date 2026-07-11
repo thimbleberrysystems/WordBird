@@ -17,9 +17,7 @@ import type {
   IpcMainEventChannels,
   BootInfo,
   ProjectCreateArgs,
-  ProjectCreateResult,
-  ProjectLoadArgs,
-  ProjectLoadResult
+  ProjectLoadArgs
 } from '@shared/types/ipc'
 
 import type {
@@ -27,7 +25,6 @@ import type {
   IAIConfig,
   ILangGraphMessage,
   IAgentToolCall,
-  IAgentToolResult,
   IAgentApplyEditRequest,
   IAgentEditProposal,
   IAgentActivityEvent,
@@ -305,6 +302,11 @@ const aiAPI = {
     ipcRenderer.on('mt::ai:context-usage', subscription)
     return () => ipcRenderer.removeListener('mt::ai:context-usage', subscription)
   },
+  onPlanSaved: (handler: (event: { path: string }) => void) => {
+    const subscription = (_e: unknown, event: { path: string }) => handler(event)
+    ipcRenderer.on('mt::ai:plan-saved', subscription)
+    return () => ipcRenderer.removeListener('mt::ai:plan-saved', subscription)
+  },
   onPlanProposal: (handler: (plan: IPlanProposal) => void) => {
     const subscription = (_e: unknown, plan: IPlanProposal) => handler(plan)
     ipcRenderer.on('mt::ai:plan-proposal', subscription)
@@ -321,6 +323,8 @@ const aiAPI = {
     return () => ipcRenderer.removeListener('mt::ai:agent-status', subscription)
   },
   cancelAgent: (agentId: string) => invoke('mt::ai:cancel-agent', agentId),
+  pauseAgent: (agentId: string) => invoke('mt::ai:pause-agent', agentId),
+  resumeAgent: (agentId: string) => invoke('mt::ai:resume-agent', agentId),
   pause: () => invoke('mt::ai:pause'),
   resume: () => invoke('mt::ai:resume'),
   steer: (text: string) => invoke('mt::ai:steer', text),

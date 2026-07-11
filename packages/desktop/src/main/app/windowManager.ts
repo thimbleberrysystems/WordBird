@@ -282,10 +282,16 @@ class WindowManager extends TypedEmitter<WindowManagerEvents> {
       }
     }
 
+    // No editor windows contributed scores — fall back like the
+    // single-window case.
+    if (!filePathScores) {
+      return [{ windowId: lastActiveEditorId, fileList }]
+    }
+
     const buf: { windowId: number | null; fileList: string[] }[] = []
-    const len = filePathScores!.length
+    const len = filePathScores.length
     for (let i = 0; i < len; ++i) {
-      let { id: windowId, score } = filePathScores![i]
+      let { id: windowId, score } = filePathScores[i]
 
       if (score === -1) {
         // Skip files that already opened.

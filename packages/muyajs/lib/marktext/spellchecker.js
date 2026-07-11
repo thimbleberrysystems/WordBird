@@ -86,7 +86,6 @@ export const extractWord = (text, offset) => {
   let match = null
   let left = -1
   while ((match = WORD_DEFINITION.exec(text))) {
-    // eslint-disable-line
     if (match && match.index <= offset) {
       if (WORD_DEFINITION.lastIndex > offset) {
         left = match.index

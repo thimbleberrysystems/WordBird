@@ -121,8 +121,8 @@ class BaseWindow extends TypedEmitter<BaseWindowEvents> {
       userPreference.getAll()
 
     const baseUrl =
-      process.env.NODE_ENV === 'development'
-        ? process.env['ELECTRON_RENDERER_URL']!
+      process.env.NODE_ENV === 'development' && process.env['ELECTRON_RENDERER_URL']
+        ? process.env['ELECTRON_RENDERER_URL']
         : `file://${path.join(__dirname, '../renderer/index.html')}` // <-- This points to the path inside the packed ASAR archive, hence it is always correct
 
     const url = new URL(baseUrl)

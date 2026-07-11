@@ -249,7 +249,7 @@ export default function renderLeafBlock(parent, block, activeBlocks, matches, us
       const wrapper = document.createElement('div')
       wrapper.classList.add(`language-${transformedLang}`)
       wrapper.innerHTML = code
-      prism.highlightElement(wrapper, false, function () {
+      prism.highlightElement(wrapper, false, function() {
         const highlightedCode = this.innerHTML
         selector += `.language-${transformedLang}`
         children = htmlToVNode(highlightedCode)

@@ -13,7 +13,10 @@
         @select="handleSelect"
       >
         <template #suffix>
-          <Search width="16" height="16" />
+          <Search
+            width="16"
+            height="16"
+          />
         </template>
         <template #default="{ item }">
           <div class="name">

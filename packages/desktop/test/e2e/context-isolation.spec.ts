@@ -11,17 +11,17 @@ test.describe('Renderer sandboxing', () => {
   let app: ElectronApplication
   let page: Page
 
-  test.beforeAll(async () => {
+  test.beforeAll(async() => {
     const { app: electronApp, page: firstPage } = await launchElectron()
     app = electronApp
     page = firstPage
   })
 
-  test.afterAll(async () => {
+  test.afterAll(async() => {
     if (app) await app.close()
   })
 
-  test('contextBridge active, nodeIntegration disabled, no preload leakage', async () => {
+  test('contextBridge active, nodeIntegration disabled, no preload leakage', async() => {
     // contextBridge produced window.electron with a working ipcRenderer
     expect(await page.evaluate(() => typeof window.electron?.ipcRenderer?.invoke)).toBe('function')
 

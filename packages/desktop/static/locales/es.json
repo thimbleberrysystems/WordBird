@@ -1533,7 +1533,17 @@
     "exportTranscript": "Exportar transcripción…",
     "exported": "Transcripción guardada en {path}",
     "exportedClipboard": "Transcripción copiada al portapapeles.",
-    "usageCost": "≈ {cost} esta sesión (est.)"
+    "usageCost": "≈ {cost} esta sesión (est.)",
+    "agentsTip": "Agentes — ver y controlar cada agente en ejecución",
+    "stopAll": "Detener todo",
+    "pauseAgent": "Pausar este agente",
+    "resumeAgent": "Reanudar este agente",
+    "agentDetails": "Mostrar tarea y uso de herramientas",
+    "noAgents": "Aún no se ha ejecutado ningún agente.",
+    "pausedShort": "en pausa",
+    "thinkingShort": "pensando…",
+    "idle": "inactivo",
+    "agentsRunning": "{count} en ejecución"
   },
   "review": {
     "pendingOne": "1 edición pendiente",

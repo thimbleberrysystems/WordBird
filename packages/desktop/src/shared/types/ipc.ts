@@ -138,6 +138,8 @@ export interface IpcInvokeChannels {
   'mt::ai:get-mode': { args: []; ret: { mode: AgentPermissionMode } }
   'mt::ai:approve': { args: [approvalId: string, approved: boolean]; ret: { handled: boolean } }
   'mt::ai:cancel-agent': { args: [agentId: string]; ret: { cancelled: boolean } }
+  'mt::ai:pause-agent': { args: [agentId: string]; ret: { paused: boolean } }
+  'mt::ai:resume-agent': { args: [agentId: string]; ret: { resumed: boolean } }
   'mt::ai:pause': { args: []; ret: { paused: boolean } }
   'mt::ai:resume': { args: []; ret: { resumed: boolean } }
   'mt::ai:steer': { args: [text: string]; ret: { queued: boolean } }
@@ -342,6 +344,7 @@ export interface IpcMainEventChannels {
   'mt::ai:token-usage': [usage: ITokenUsageUpdate]
   'mt::ai:agent-status': [status: IAgentStatus]
   'mt::ai:run-state': [state: { state: 'idle' | 'running' | 'paused' }]
+  'mt::ai:plan-saved': [event: { path: string }]
   'mt::about-dialog': []
   'mt::ask-for-close': []
   'mt::bootstrap-editor': [config: BootstrapEditorConfig]

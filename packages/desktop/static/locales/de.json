@@ -1533,7 +1533,17 @@
     "exportTranscript": "Transkript exportieren…",
     "exported": "Transkript gespeichert unter {path}",
     "exportedClipboard": "Transkript in die Zwischenablage kopiert.",
-    "usageCost": "≈ {cost} diese Sitzung (geschätzt)"
+    "usageCost": "≈ {cost} diese Sitzung (geschätzt)",
+    "agentsTip": "Agenten — alle laufenden Agenten sehen und steuern",
+    "stopAll": "Alles stoppen",
+    "pauseAgent": "Diesen Agenten pausieren",
+    "resumeAgent": "Diesen Agenten fortsetzen",
+    "agentDetails": "Aufgabe und Werkzeugnutzung anzeigen",
+    "noAgents": "Noch keine Agenten gelaufen.",
+    "pausedShort": "pausiert",
+    "thinkingShort": "denkt…",
+    "idle": "inaktiv",
+    "agentsRunning": "{count} aktiv"
   },
   "review": {
     "pendingOne": "1 ausstehende Änderung",

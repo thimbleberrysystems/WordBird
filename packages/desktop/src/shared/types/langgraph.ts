@@ -166,6 +166,10 @@ export interface IAgentStatus {
   startedAt: number
   endedAt?: number
   toolCalls: number
+  /** Frozen at its next step boundary via the agents tree. */
+  paused?: boolean
+  /** Most recent tool calls ("name — args preview"), newest last. */
+  recentTools?: string[]
 }
 
 /** Context-window pressure for the ring indicator in the Biscuit panel. */

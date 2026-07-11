@@ -3,7 +3,7 @@ import * as actions from '../actions/format'
 import { t } from '../../i18n'
 import type Keybindings from '../../keyboard/shortcutHandler'
 
-export default function (keybindings: Keybindings): MenuItemConstructorOptions {
+export default function(keybindings: Keybindings): MenuItemConstructorOptions {
   return {
     id: 'formatMenuItem',
     label: t('menu.format.format'),

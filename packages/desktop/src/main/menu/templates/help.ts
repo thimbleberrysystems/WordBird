@@ -28,7 +28,7 @@ const isUpdatable = (): boolean => {
   return false
 }
 
-export default function (): MenuItemConstructorOptions {
+export default function(): MenuItemConstructorOptions {
   const submenu: MenuItemConstructorOptions[] = [
     {
       label: t('menu.help.markdownReference'),

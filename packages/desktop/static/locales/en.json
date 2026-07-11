@@ -1533,7 +1533,17 @@
     "exportTranscript": "Export transcript…",
     "exported": "Transcript saved to {path}",
     "exportedClipboard": "Transcript copied to clipboard.",
-    "usageCost": "≈ {cost} this session (est.)"
+    "usageCost": "≈ {cost} this session (est.)",
+    "agentsTip": "Agents — see and control every running agent",
+    "stopAll": "Stop everything",
+    "pauseAgent": "Pause this agent",
+    "resumeAgent": "Resume this agent",
+    "agentDetails": "Show task and tool use",
+    "noAgents": "No agents have run yet.",
+    "pausedShort": "paused",
+    "thinkingShort": "thinking…",
+    "idle": "idle",
+    "agentsRunning": "{count} running"
   },
   "review": {
     "pendingOne": "1 pending edit",

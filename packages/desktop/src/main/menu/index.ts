@@ -188,22 +188,23 @@ class AppMenu {
   addEditorMenu(window: BrowserWindow, options: AddEditorMenuOptions = {}): void {
     const isSourceMode = !!options.sourceCodeModeEnabled
     const { windowMenus } = this
-    windowMenus.set(window.id, this._buildEditorMenu())
+    const entry = this._buildEditorMenu()
+    windowMenus.set(window.id, entry)
+    const { menu } = entry
 
-    const entry = windowMenus.get(window.id)!
-    const menu = entry.menu!
+    if (menu) {
+      // Set source-code editor if preferred.
+      const sourceCodeModeMenuItem = menu.getMenuItemById('sourceCodeModeMenuItem')
+      if (sourceCodeModeMenuItem) {
+        sourceCodeModeMenuItem.checked = isSourceMode
+      }
 
-    // Set source-code editor if preferred.
-    const sourceCodeModeMenuItem = menu.getMenuItemById('sourceCodeModeMenuItem')
-    if (sourceCodeModeMenuItem) {
-      sourceCodeModeMenuItem.checked = isSourceMode
-    }
-
-    if (isSourceMode) {
-      const typewriterModeMenuItem = menu.getMenuItemById('typewriterModeMenuItem')
-      const focusModeMenuItem = menu.getMenuItemById('focusModeMenuItem')
-      if (typewriterModeMenuItem) typewriterModeMenuItem.enabled = false
-      if (focusModeMenuItem) focusModeMenuItem.enabled = false
+      if (isSourceMode) {
+        const typewriterModeMenuItem = menu.getMenuItemById('typewriterModeMenuItem')
+        const focusModeMenuItem = menu.getMenuItemById('focusModeMenuItem')
+        if (typewriterModeMenuItem) typewriterModeMenuItem.enabled = false
+        if (focusModeMenuItem) focusModeMenuItem.enabled = false
+      }
     }
 
     const { _keybindings } = this
@@ -490,7 +491,7 @@ class AppMenu {
     })
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ipcMain.on('broadcast-preferences-changed', async (prefs: any) => {
+    ipcMain.on('broadcast-preferences-changed', async(prefs: any) => {
       if (prefs.theme !== undefined || prefs.followSystemTheme !== undefined) {
         this.updateAppMenu()
       }

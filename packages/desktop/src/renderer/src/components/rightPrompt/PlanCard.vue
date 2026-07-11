@@ -3,11 +3,12 @@
     <div class="plan-card__title">
       📋 {{ plan.title }}
     </div>
-    <!-- eslint-disable-next-line vue/no-v-html -- sanitized by DOMPurify in renderChatMarkdown -->
+    <!-- eslint-disable vue/no-v-html -- sanitized by DOMPurify in renderChatMarkdown -->
     <div
       class="plan-card__body"
       v-html="renderChatMarkdown(plan.content)"
     />
+    <!-- eslint-enable vue/no-v-html -->
     <div class="plan-card__path">
       {{ plan.path }}
     </div>

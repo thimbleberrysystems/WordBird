@@ -274,10 +274,10 @@ async function renderInlineDiff (reason?: string): Promise<void> {
 
   inlineDiffHandle = injectInlineDiff(container, diffBase, diffTarget, {
     reason,
-    onAcceptFile: () => { void acceptAllHunks() },
-    onDiscardFile: () => { void discardAllHunks() },
-    onAcceptHunk: (i) => { void acceptOneHunk(i, reason) },
-    onDiscardHunk: (i) => { void discardOneHunk(i, reason) }
+    onAcceptFile: () => { acceptAllHunks() },
+    onDiscardFile: () => { discardAllHunks() },
+    onAcceptHunk: (i) => { acceptOneHunk(i, reason) },
+    onDiscardHunk: (i) => { discardOneHunk(i, reason) }
   })
 }
 
@@ -393,7 +393,7 @@ async function handleAgentApplyAll (): Promise<void> {
 
 function handleAgentDiscardAll (): void {
   if (inlineDiffHandle) {
-    void discardAllHunks()
+    discardAllHunks()
   }
   agentStore.clearPendingEdits()
 }
@@ -1489,7 +1489,6 @@ onMounted(() => {
   bus.on('switch-spellchecker-language', switchSpellcheckLanguage)
   bus.on('open-command-spellchecker-switch-language', openSpellcheckerLanguageCommand)
   bus.on('replace-misspelling', replaceMisspelling)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   bus.on('apply-agent-edit', handleApplyAgentEdit as any)
   // Global Apply All / Discard All from the bar above the Biscuit prompt
   bus.on('agent-apply-all', handleAgentApplyAll)
@@ -1640,7 +1639,6 @@ onBeforeUnmount(() => {
   bus.off('switch-spellchecker-language', switchSpellcheckLanguage)
   bus.off('open-command-spellchecker-switch-language', openSpellcheckerLanguageCommand)
   bus.off('replace-misspelling', replaceMisspelling)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   bus.off('apply-agent-edit', handleApplyAgentEdit as any)
   bus.off('agent-apply-all', handleAgentApplyAll)
   bus.off('agent-apply-one', handleAgentApplyOne)

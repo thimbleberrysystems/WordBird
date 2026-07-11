@@ -19,7 +19,7 @@ export const removeFromDictionary = (win: BrowserWindow, word: string): boolean 
 /**
  * Returns a list of all words in the custom dictionary.
  */
-export const getCustomDictionaryWords = async (win: BrowserWindow): Promise<string[]> => {
+export const getCustomDictionaryWords = async(win: BrowserWindow): Promise<string[]> => {
   return win.webContents.session.listWordsInSpellCheckerDictionary()
 }
 
@@ -56,23 +56,23 @@ export const getAvailableDictionaries = (win: BrowserWindow): string[] => {
 }
 
 const registerSpellcheckerHandlers = (): void => {
-  ipcMain.handle('mt::spellchecker-remove-word', async (e, word: string) => {
+  ipcMain.handle('mt::spellchecker-remove-word', async(e, word: string) => {
     const win = BrowserWindow.fromWebContents(e.sender)
     if (!win) return false
     return removeFromDictionary(win, word)
   })
-  ipcMain.handle('mt::spellchecker-switch-language', async (e, lang: string) => {
+  ipcMain.handle('mt::spellchecker-switch-language', async(e, lang: string) => {
     const win = BrowserWindow.fromWebContents(e.sender)
     if (win) switchLanguage(win, lang)
     return null
   })
-  ipcMain.handle('mt::spellchecker-get-available-dictionaries', async (e) => {
+  ipcMain.handle('mt::spellchecker-get-available-dictionaries', async(e) => {
     const win = BrowserWindow.fromWebContents(e.sender)
     if (!win) return []
     return getAvailableDictionaries(win)
   })
   // We have to set a language or call `switchLanguage` on Linux and Windows.
-  ipcMain.handle('mt::spellchecker-set-enabled', async (e, enabled: boolean) => {
+  ipcMain.handle('mt::spellchecker-set-enabled', async(e, enabled: boolean) => {
     const win = BrowserWindow.fromWebContents(e.sender)
     if (!win) return false
     if (!setSpellCheckerEnabled(win, enabled)) {
@@ -81,7 +81,7 @@ const registerSpellcheckerHandlers = (): void => {
     }
     return true
   })
-  ipcMain.handle('mt::spellchecker-get-custom-dictionary-words', async (e) => {
+  ipcMain.handle('mt::spellchecker-get-custom-dictionary-words', async(e) => {
     const win = BrowserWindow.fromWebContents(e.sender)
     if (!win) return []
     return getCustomDictionaryWords(win)

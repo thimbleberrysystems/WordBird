@@ -13,7 +13,8 @@ import type {
   IAgentToolCall,
   IAgentToolDefinition,
   IAgentToolPack,
-  IAgentToolResult
+  IAgentToolResult,
+  IPlanProposal
 } from '@shared/types/langgraph'
 
 export interface AgentToolContext {
@@ -41,10 +42,22 @@ interface EditProposalPayload {
 type EditProposalEmitter = (proposal: EditProposalPayload) => void | Promise<void>
 
 interface PlanProposalPayload {
-  planProposal: import('../../../shared/types/langgraph').IPlanProposal
+  planProposal: IPlanProposal
 }
 
 type PlanProposalEmitter = (proposal: PlanProposalPayload) => void | Promise<void>
+
+interface PlanSavedPayload {
+  planSaved: { path: string }
+}
+
+type PlanSavedEmitter = (event: PlanSavedPayload) => void | Promise<void>
+
+const isPlanSavedPayload = (value: unknown): value is PlanSavedPayload => {
+  if (!value || typeof value !== 'object') return false
+  const data = (value as Record<string, unknown>).planSaved as Record<string, unknown> | undefined
+  return Boolean(data && typeof data.path === 'string')
+}
 
 const isPlanProposalPayload = (value: unknown): value is PlanProposalPayload => {
   if (!value || typeof value !== 'object') return false
@@ -138,6 +151,7 @@ export class AgentToolService {
   private _currentProjectRoot: string | null = null
   private _editProposalEmitter: EditProposalEmitter | null = null
   private _planProposalEmitter: PlanProposalEmitter | null = null
+  private _planSavedEmitter: PlanSavedEmitter | null = null
 
   setEditProposalEmitter(emitter: EditProposalEmitter): void {
     this._editProposalEmitter = emitter
@@ -145,6 +159,10 @@ export class AgentToolService {
 
   setPlanProposalEmitter(emitter: PlanProposalEmitter): void {
     this._planProposalEmitter = emitter
+  }
+
+  setPlanSavedEmitter(emitter: PlanSavedEmitter): void {
+    this._planSavedEmitter = emitter
   }
 
   registerHandler(id: string, handler: AgentToolHandler): void {
@@ -234,6 +252,12 @@ export class AgentToolService {
         if (this._editProposalEmitter && isEditProposalPayload(result)) {
           await this._editProposalEmitter(result)
           return `Edit proposal created with ID: ${result.edit.id}`
+        }
+
+        // Live plan files surface in the main editor the moment they are
+        // written — the writer watches the plan take shape while chatting.
+        if (this._planSavedEmitter && isPlanSavedPayload(result)) {
+          await this._planSavedEmitter(result)
         }
 
         if (this._planProposalEmitter && isPlanProposalPayload(result)) {

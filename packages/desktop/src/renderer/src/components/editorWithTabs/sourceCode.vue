@@ -1,5 +1,8 @@
 <template>
-  <div ref="sourceCodeContainer" class="source-code" />
+  <div
+    ref="sourceCodeContainer"
+    class="source-code"
+  />
 </template>
 
 <script setup lang="ts">
@@ -222,7 +225,9 @@ const handleApplyAgentEdit = (request: {
     setMarkdown: (markdown: string) => editor.value?.setValue(markdown)
   })
 
-  if (!applied) return
+  if (!applied) {
+    // Nothing matched in this tab — the review queue keeps the proposal.
+  }
 }
 
 interface ImageActionPayload {
@@ -327,7 +332,7 @@ onMounted(() => {
     styleActiveLine: true,
     direction: textDirection,
     viewportMargin: Infinity,
-    lineNumberFormatter(line: number) {
+    lineNumberFormatter (line: number) {
       if (line % 10 === 0 || line === 1) {
         return line
       } else {
@@ -347,7 +352,6 @@ onMounted(() => {
   bus.on('file-changed', handleFileChange)
   bus.on('selectAll', handleSelectAll)
   bus.on('image-action', handleImageAction)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   bus.on('apply-agent-edit', handleApplyAgentEdit as any)
 
   // For some reason, code mirror does not seem to play well with Vue's refs if we reference editor.value directly.
@@ -386,7 +390,6 @@ onBeforeUnmount(() => {
   bus.off('file-changed', handleFileChange)
   bus.off('selectAll', handleSelectAll)
   bus.off('image-action', handleImageAction)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   bus.off('apply-agent-edit', handleApplyAgentEdit as any)
 
   const { cursor, markdown: newMarkdown } = getMarkdownAndCursor(editor.value)

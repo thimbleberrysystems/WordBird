@@ -1543,7 +1543,17 @@
     "exportTranscript": "匯出對話記錄…",
     "exported": "對話記錄已儲存到 {path}",
     "exportedClipboard": "對話記錄已複製到剪貼簿。",
-    "usageCost": "≈ 本工作階段 {cost}（估算）"
+    "usageCost": "≈ 本工作階段 {cost}（估算）",
+    "agentsTip": "代理 — 檢視並控制所有執行中的代理",
+    "stopAll": "全部停止",
+    "pauseAgent": "暫停該代理",
+    "resumeAgent": "恢復該代理",
+    "agentDetails": "顯示任務和工具使用",
+    "noAgents": "尚未執行任何代理。",
+    "pausedShort": "已暫停",
+    "thinkingShort": "思考中…",
+    "idle": "閒置",
+    "agentsRunning": "{count} 個執行中"
   },
   "review": {
     "pendingOne": "1 處待處理編輯",

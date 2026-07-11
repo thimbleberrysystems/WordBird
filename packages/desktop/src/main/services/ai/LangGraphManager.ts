@@ -143,6 +143,14 @@ export class LangGraphManager {
     return this._orchestrator?.cancelAgent(agentId) ?? false
   }
 
+  pauseAgent(agentId: string): boolean {
+    return this._orchestrator?.pauseAgent(agentId) ?? false
+  }
+
+  resumeAgent(agentId: string): boolean {
+    return this._orchestrator?.resumeAgent(agentId) ?? false
+  }
+
   // ---- Pause / resume / steering / manual compaction ----
   private _steeringQueue: string[] = []
   private _turnRunning = false
@@ -330,6 +338,9 @@ export class LangGraphManager {
       await this.fetchModels(provider, apiKey, baseUrl)
 
       await this._loadToolPacks()
+      this._agentToolService.setPlanSavedEmitter(({ planSaved }) => {
+        this._getMainWindow()?.webContents.send('mt::ai:plan-saved', planSaved)
+      })
       this._agentToolService.setPlanProposalEmitter(async({ planProposal }) => {
         this._getMainWindow()?.webContents.send('mt::ai:plan-proposal', planProposal)
       })
@@ -524,7 +535,8 @@ export class LangGraphManager {
     // Rebuild per turn: the compiled graph bakes in the permission mode,
     // which the writer can change between messages. Compilation is cheap.
     this._orchestrator.setMode(this._permissionMode)
-    this._agent = this._orchestrator.buildGraph() as unknown as CompiledAgent
+    const agent = this._orchestrator.buildGraph() as unknown as CompiledAgent
+    this._agent = agent
 
     const toLangchain = (msg: ILangGraphMessage): HumanMessage | AIMessage | SystemMessage => {
       switch (msg.role) {
@@ -564,7 +576,7 @@ export class LangGraphManager {
     this._emitRunState()
     let response: unknown
     try {
-      response = await this._agent!.invoke(
+      response = await agent.invoke(
         { messages: langchainMessages },
         {
           signal,
@@ -574,6 +586,25 @@ export class LangGraphManager {
             : {})
         }
       )
+    } catch (error) {
+      // Running out of supersteps is a budget, not a failure: the thread
+      // is checkpointed up to the last completed step (housekeeping repairs
+      // any dangling tool calls next turn), so answer gracefully instead of
+      // surfacing an error card.
+      if (
+        error instanceof Error &&
+        (error.name === 'GraphRecursionError' || /recursion limit/i.test(error.message))
+      ) {
+        log.warn('[LangGraphManager] Turn hit its step budget; responding gracefully')
+        return {
+          content:
+            'I hit this turn’s step budget before I could wrap up. Nothing is lost — ' +
+            'everything I did so far is saved. Say **continue** and I’ll pick up right ' +
+            'where I left off.',
+          model: this._currentModel || this._currentProvider || 'unknown'
+        }
+      }
+      throw error
     } finally {
       this._turnRunning = false
       // A pause must never outlive its turn — the next turn starts unfrozen.

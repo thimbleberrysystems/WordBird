@@ -16,8 +16,12 @@
               type="text"
               class="search"
               @keyup.enter="confirm"
-            />
-            <el-icon :size="16" class="confirm-icon" @click="confirm">
+            >
+            <el-icon
+              :size="16"
+              class="confirm-icon"
+              @click="confirm"
+            >
               <Check />
             </el-icon>
           </div>

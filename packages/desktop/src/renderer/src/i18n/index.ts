@@ -64,7 +64,7 @@ export const t = (key: string, ...args: any[]): string => {
 const inflightLoads = new Map<string, Promise<Record<string, unknown> | undefined>>()
 
 // Export language setter function
-export const setLanguage = async (locale: string): Promise<void> => {
+export const setLanguage = async(locale: string): Promise<void> => {
   if (!locale) return
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const globalI18n = i18n.global as any

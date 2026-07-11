@@ -1534,7 +1534,17 @@
     "exportTranscript": "导出对话记录…",
     "exported": "对话记录已保存到 {path}",
     "exportedClipboard": "对话记录已复制到剪贴板。",
-    "usageCost": "≈ 本会话 {cost}（估算）"
+    "usageCost": "≈ 本会话 {cost}（估算）",
+    "agentsTip": "智能体 — 查看并控制所有运行中的智能体",
+    "stopAll": "全部停止",
+    "pauseAgent": "暂停该智能体",
+    "resumeAgent": "恢复该智能体",
+    "agentDetails": "显示任务和工具使用",
+    "noAgents": "尚未运行任何智能体。",
+    "pausedShort": "已暂停",
+    "thinkingShort": "思考中…",
+    "idle": "空闲",
+    "agentsRunning": "{count} 个运行中"
   },
   "review": {
     "pendingOne": "1 处待处理编辑",

@@ -1,5 +1,8 @@
 <template>
-  <div class="agent-diff-view" :class="{ 'agent-diff-view--compact': compact }">
+  <div
+    class="agent-diff-view"
+    :class="{ 'agent-diff-view--compact': compact }"
+  >
     <div
       v-for="(line, index) in visibleLines"
       :key="`${line.type}-${index}`"
@@ -9,7 +12,10 @@
       <span class="agent-diff-view__marker">{{ markerFor(line.type) }}</span>
       <span class="agent-diff-view__text">{{ line.value }}</span>
     </div>
-    <div v-if="lineCount > visibleLines.length" class="agent-diff-view__more">
+    <div
+      v-if="lineCount > visibleLines.length"
+      class="agent-diff-view__more"
+    >
       +{{ lineCount - visibleLines.length }} more diff lines
     </div>
   </div>

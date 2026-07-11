@@ -8,7 +8,7 @@ import { hasSameKeys } from '../utils'
 import { getSupportedLanguages, isLanguageSupported } from 'common/i18n'
 import { TypedEmitter } from '@shared/types/typedEmitter'
 import type { IUserPreferences } from '@shared/types/preferences'
-import DataCenter from '../dataCenter'
+import type DataCenter from '../dataCenter'
 import schema from './schema.json'
 import { AI_DEFAULTS } from '@shared/constants/ai'
 
@@ -68,18 +68,21 @@ class Preference extends TypedEmitter<PreferenceEvents> {
   init = (): void => {
     let defaultSettings: Record<string, unknown> | null = null
     try {
-      defaultSettings = JSON.parse(fs.readFileSync(this.staticPath, { encoding: 'utf8' }) || '{}')
+      const parsed = JSON.parse(
+        fs.readFileSync(this.staticPath, { encoding: 'utf8' }) || '{}'
+      ) as Record<string, unknown>
+      defaultSettings = parsed
 
       // Set best theme on first application start.
       if (nativeTheme.shouldUseDarkColors) {
-        defaultSettings!.theme = 'dark'
+        parsed.theme = 'dark'
       }
 
       // Set system language on first application start
       if (!this.hasPreferencesFile) {
         const systemLanguage = this._getSystemLanguage()
         if (systemLanguage) {
-          defaultSettings!.language = systemLanguage
+          parsed.language = systemLanguage
         }
       }
     } catch (err) {
@@ -205,7 +208,7 @@ class Preference extends TypedEmitter<PreferenceEvents> {
   }
 
   _listenForIpcMain(): void {
-    ipcMain.on('mt::ask-for-user-preference', async (e) => {
+    ipcMain.on('mt::ask-for-user-preference', async(e) => {
       const win = BrowserWindow.fromWebContents(e.sender)
       if (win) {
         const prefs = this.getAll()
@@ -229,7 +232,7 @@ class Preference extends TypedEmitter<PreferenceEvents> {
               if (apiKey) {
                 prefs.aiConfigs[provider].apiKey = apiKey
               }
-            } catch (err) {
+            } catch {
               log.warn(`[AI-Config] Could not decrypt ${provider} key for hydration`)
             }
           }
@@ -252,6 +255,7 @@ class Preference extends TypedEmitter<PreferenceEvents> {
       this.setItems(settings as Record<string, unknown>)
     })
   }
+
   /**
    * Gets the system language, or null if it's not in the supported list
    * @returns Supported system language code or null
@@ -272,7 +276,7 @@ class Preference extends TypedEmitter<PreferenceEvents> {
       }
 
       // Attempt to match the primary part of the language (e.g. zh)
-      const primaryLanguage = systemLocale.split('-')[0]!
+      const primaryLanguage = systemLocale.split('-')[0] ?? systemLocale
       const matchedLanguage = supportedLanguages.find((lang) => lang.startsWith(primaryLanguage))
 
       if (matchedLanguage) {

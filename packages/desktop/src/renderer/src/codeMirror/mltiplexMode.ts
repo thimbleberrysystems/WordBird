@@ -7,7 +7,7 @@ type CodeMirrorLike = any
 type AnyObj = any
 
 const multiplexMode = (CodeMirror: CodeMirrorLike): void => {
-  CodeMirror.multiplexingMode = function (outer: AnyObj /*, others */): AnyObj {
+  CodeMirror.multiplexingMode = function(outer: AnyObj /*, others */): AnyObj {
     // Others should be {open, close, mode [, delimStyle] [, innerStyle]} objects
     // eslint-disable-next-line prefer-rest-params
     const others = Array.prototype.slice.call(arguments, 1)

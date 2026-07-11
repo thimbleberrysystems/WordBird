@@ -82,6 +82,14 @@ export const registerAIHandlers = (): void => {
     return { cancelled: langGraphManager.cancelAgent(agentId) }
   })
 
+  ipcMain.handle('mt::ai:pause-agent', async(_e, agentId: string) => {
+    return { paused: langGraphManager.pauseAgent(agentId) }
+  })
+
+  ipcMain.handle('mt::ai:resume-agent', async(_e, agentId: string) => {
+    return { resumed: langGraphManager.resumeAgent(agentId) }
+  })
+
   ipcMain.handle('mt::ai:pause', async() => {
     return { paused: langGraphManager.pause() }
   })

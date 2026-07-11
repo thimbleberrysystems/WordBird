@@ -311,8 +311,12 @@ card that switches modes and starts execution.
 
 ### Renderer AI surfaces
 - `renderer/src/components/rightPrompt/` — RightPrompt (chat, mode line with
-  Shift+Tab cycling, context ring, token counter) + AgentPanel (live agent
-  rows, per-agent cancel) + PlanCard + ErrorCard.
+  Shift+Tab cycling, context ring, token counter; Stop kills the whole run) +
+  AgentTree (header popover: Biscuit root → sub-agent rows in a tree,
+  expandable to task + tool use, per-agent/subtree pause-resume-kill) +
+  PlanCard + ErrorCard. Live plan files (plans/) open automatically in the
+  main editor as Biscuit writes them; conversations are mirrored to
+  `.wordbird/transcripts/` where search_manuscript can find them.
 - `renderer/src/components/agent/` — review queue (GlobalAgentReview) and
   inline diff plumbing; `renderer/src/services/agentDiff*.ts`.
 - Markdown in chat renders through `renderer/src/util/chatMarkdown.ts`

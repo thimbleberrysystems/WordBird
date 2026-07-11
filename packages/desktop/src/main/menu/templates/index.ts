@@ -33,7 +33,7 @@ export const configSettingMenu = (keybindings: Keybindings): MenuItemConstructor
  * @param keybindings The keybindings instance.
  * @param preferences The preference instance.
  */
-export default function (
+export default function(
   keybindings: Keybindings,
   preferences: Preference
 ): MenuItemConstructorOptions[] {

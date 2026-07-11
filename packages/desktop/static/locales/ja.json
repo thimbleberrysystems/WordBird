@@ -1535,7 +1535,17 @@
     "exportTranscript": "書き起こしをエクスポート…",
     "exported": "書き起こしを {path} に保存しました",
     "exportedClipboard": "書き起こしをクリップボードにコピーしました。",
-    "usageCost": "≈ このセッション {cost}（概算）"
+    "usageCost": "≈ このセッション {cost}（概算）",
+    "agentsTip": "エージェント — 実行中のエージェントを確認・操作",
+    "stopAll": "すべて停止",
+    "pauseAgent": "このエージェントを一時停止",
+    "resumeAgent": "このエージェントを再開",
+    "agentDetails": "タスクとツール使用を表示",
+    "noAgents": "まだエージェントは実行されていません。",
+    "pausedShort": "一時停止中",
+    "thinkingShort": "考え中…",
+    "idle": "待機中",
+    "agentsRunning": "{count} 件実行中"
   },
   "review": {
     "pendingOne": "保留中の編集 1件",

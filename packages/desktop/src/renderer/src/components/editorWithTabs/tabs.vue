@@ -1,7 +1,13 @@
 <template>
   <div class="editor-tabs">
-    <div ref="tabContainer" class="scrollable-tabs">
-      <ul ref="tabDropContainer" class="tabs-container">
+    <div
+      ref="tabContainer"
+      class="scrollable-tabs"
+    >
+      <ul
+        ref="tabDropContainer"
+        class="tabs-container"
+      >
         <li
           v-for="file of tabs"
           :key="file.id"
@@ -14,13 +20,20 @@
         >
           <span>{{ file.filename }}</span>
           <span class="unsaved-dot" />
-          <el-icon class="close-icon" :size="12" @click.stop="removeFileInTab(file)">
+          <el-icon
+            class="close-icon"
+            :size="12"
+            @click.stop="removeFileInTab(file)"
+          >
             <Close />
           </el-icon>
         </li>
       </ul>
     </div>
-    <div class="new-file" @click.stop="newFile()">
+    <div
+      class="new-file"
+      @click.stop="newFile()"
+    >
       <el-icon :size="16">
         <Plus />
       </el-icon>

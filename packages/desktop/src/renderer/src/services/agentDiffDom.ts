@@ -102,12 +102,13 @@ function buildHunkEl(hunk: DiffHunk, opts: InlineDiffOptions): HTMLDivElement {
 
     const actions = document.createElement('div')
     actions.className = 'wb-diff-hunk__actions'
-    if (opts.onAcceptHunk) {
-      actions.appendChild(makeButton('✓ Accept', 'accept', () => opts.onAcceptHunk!(hunk.hunkIndex)))
+    const { onAcceptHunk, onDiscardHunk } = opts
+    if (onAcceptHunk) {
+      actions.appendChild(makeButton('✓ Accept', 'accept', () => onAcceptHunk(hunk.hunkIndex)))
     }
-    if (opts.onDiscardHunk) {
+    if (onDiscardHunk) {
       actions.appendChild(
-        makeButton('✗ Discard', 'discard', () => opts.onDiscardHunk!(hunk.hunkIndex))
+        makeButton('✗ Discard', 'discard', () => onDiscardHunk(hunk.hunkIndex))
       )
     }
     header.appendChild(actions)

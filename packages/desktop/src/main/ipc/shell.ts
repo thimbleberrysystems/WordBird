@@ -3,7 +3,7 @@ import log from 'electron-log'
 import plist from 'plist'
 
 export const registerShellHandlers = (): void => {
-  ipcMain.handle('mt::shell::open-external', async (_e, url: string) => {
+  ipcMain.handle('mt::shell::open-external', async(_e, url: string) => {
     try {
       await shell.openExternal(url)
       return true
@@ -22,7 +22,7 @@ export const registerShellHandlers = (): void => {
       log.error('shell.showItemInFolder failed:', err)
     }
   })
-  ipcMain.handle('mt::shell::open-path', async (_e, fullPath: string) => {
+  ipcMain.handle('mt::shell::open-path', async(_e, fullPath: string) => {
     try {
       return await shell.openPath(fullPath)
     } catch (err) {

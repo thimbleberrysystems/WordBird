@@ -225,6 +225,9 @@ const HISTORY_CHAR_BUDGET = 60000
 const SINGLE_MESSAGE_CHAR_CAP = 16000
 const WORKER_RESULT_CHAR_CAP = 8000
 
+/** Most recent tool calls kept per agent for the agents-tree detail view. */
+const RECENT_TOOLS_CAP = 12
+
 const contentLength = (message: BaseMessage): number => {
   const c = message.content
   return typeof c === 'string' ? c.length : JSON.stringify(c ?? '').length
@@ -499,14 +502,37 @@ export class Orchestrator {
     return this._pauseGate.paused
   }
 
-  // ---- Live agent registry (per-agent cancel) ----
-  private _liveAgents = new Map<string, { controller: AbortController; status: IAgentStatus }>()
+  // ---- Live agent registry (per-agent cancel / pause) ----
+  private _liveAgents = new Map<
+    string,
+    { controller: AbortController; status: IAgentStatus; gate: PauseGate }
+  >()
 
   /** Abort ONE running sub-agent; the rest of the wave continues. */
   cancelAgent(agentId: string): boolean {
     const live = this._liveAgents.get(agentId)
     if (!live) return false
+    // Abort beats pause: a paused worker's gate.wait races the signal.
     live.controller.abort()
+    return true
+  }
+
+  /** Freeze ONE sub-agent at its next step boundary; siblings continue. */
+  pauseAgent(agentId: string): boolean {
+    const live = this._liveAgents.get(agentId)
+    if (!live) return false
+    live.gate.pause()
+    live.status.paused = true
+    this._emitAgentStatus(live.status)
+    return true
+  }
+
+  resumeAgent(agentId: string): boolean {
+    const live = this._liveAgents.get(agentId)
+    if (!live) return false
+    live.gate.resume()
+    live.status.paused = false
+    this._emitAgentStatus(live.status)
     return true
   }
 
@@ -620,6 +646,7 @@ export class Orchestrator {
   /** Build a transient ReAct worker for one role. */
   private _buildWorker(
     role: AgentRole,
+    gate: PauseGate,
     onToolCall?: (name: string, args: unknown) => void
   ): { graph: Runnable; toolCount: number } {
     const definition = AGENT_ROLES[role]
@@ -630,7 +657,10 @@ export class Orchestrator {
 
     const workflow = new StateGraph(MessagesAnnotation)
       .addNode('agent', async(state, config) => {
+        // Turn-wide pause first, then this agent's own gate — either can
+        // freeze the worker; the abort signal wins over both.
         await this._pauseGate.wait(config?.signal as AbortSignal | undefined)
+        await gate.wait(config?.signal as AbortSignal | undefined)
         const response = await bound.invoke(state.messages)
         this._recordUsage(role, response as BaseMessage)
         return { messages: [response] }
@@ -641,6 +671,7 @@ export class Orchestrator {
         const results: ToolMessage[] = []
         for (const call of calls) {
           await this._pauseGate.wait(config?.signal as AbortSignal | undefined)
+          await gate.wait(config?.signal as AbortSignal | undefined)
           const toolImpl = toolMap.get(call.name)
           let content: string
           try {
@@ -731,15 +762,19 @@ export class Orchestrator {
     // turn-level Stop still aborts everyone via the combined signal.
     const agentId = crypto.randomUUID()
     const controller = new AbortController()
+    const gate = new PauseGate()
+    const recentTools: string[] = []
     const status: IAgentStatus = {
       agentId,
       role: spawn.role,
       task: spawn.task,
       status: 'running',
       startedAt: Date.now(),
-      toolCalls: 0
+      toolCalls: 0,
+      paused: false,
+      recentTools
     }
-    this._liveAgents.set(agentId, { controller, status })
+    this._liveAgents.set(agentId, { controller, status, gate })
     this._emitAgentStatus(status)
 
     const combinedSignal = signal
@@ -747,8 +782,11 @@ export class Orchestrator {
       : controller.signal
 
     try {
-      const { graph } = this._buildWorker(spawn.role, () => {
+      const { graph } = this._buildWorker(spawn.role, gate, (name, args) => {
         status.toolCalls += 1
+        const preview = previewArgs(args)
+        recentTools.push(preview ? `${name} — ${preview}` : name)
+        if (recentTools.length > RECENT_TOOLS_CAP) recentTools.shift()
         this._emitAgentStatus(status)
       })
       // Workers are context-isolated (they never see the conversation), but
@@ -773,6 +811,7 @@ export class Orchestrator {
       }
       status.status = 'done'
       status.endedAt = Date.now()
+      status.paused = false
       this._emitAgentStatus(status)
       this._activity('agent-done', `${definition.displayName} finished`, undefined, spawn.role)
       return { report: content || '(no result)', failed: false }
@@ -780,6 +819,7 @@ export class Orchestrator {
       const cancelled = controller.signal.aborted && !signal?.aborted
       status.status = cancelled ? 'cancelled' : 'failed'
       status.endedAt = Date.now()
+      status.paused = false
       this._emitAgentStatus(status)
       if (cancelled) {
         this._activity('agent-done', `${definition.displayName} cancelled`, undefined, spawn.role)
@@ -1062,12 +1102,14 @@ export class Orchestrator {
   }
 
   /**
-   * Supervisor step ceiling: each wave costs 2 steps (supervisor +
-   * actions), plus the per-turn housekeeping step.
+   * Supervisor step ceiling: each spawn wave costs 2 supersteps
+   * (supervisor + actions) — but so does every DIRECT supervisor tool
+   * round (reads, searches, plan updates), which plan mode leans on
+   * exclusively. The flat headroom covers ~11 such rounds per turn.
    */
   recursionLimit(): number {
     const budget = MODE_BUDGETS[this._mode]
-    return Math.max(8, budget.maxWaves * 2 + 8)
+    return budget.maxWaves * 2 + 24
   }
 
   static isKnownRole(role: string): boolean {

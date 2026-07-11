@@ -203,8 +203,8 @@ export const useEditorStore = defineStore('editor', {
         const tab = restoredTabId
           ? this.tabs.find((t) => t.id === restoredTabId)
           : this.tabs.find((t) =>
-              window.fileUtils.isSamePathSync(t.pathname, warning.pathname ?? '')
-            )
+            window.fileUtils.isSamePathSync(t.pathname, warning.pathname ?? '')
+          )
 
         if (!tab) continue
 
@@ -1109,10 +1109,10 @@ export const useEditorStore = defineStore('editor', {
       const moveItem = <T>(arr: T[], from: number, to: number): boolean => {
         if (from === to) return true
         const len = arr.length
-        const item = arr.splice(from, 1)
-        if (item.length === 0) return false
+        const [moved] = arr.splice(from, 1)
+        if (moved === undefined) return false
 
-        arr.splice(to, 0, item[0]!)
+        arr.splice(to, 0, moved)
         return arr.length === len
       }
 
@@ -1365,7 +1365,9 @@ export const useEditorStore = defineStore('editor', {
         return
       }
 
-      const tab = this.tabs[this.tabIdToIndex[id]!]
+      const tabIndex = this.tabIdToIndex[id]
+      if (tabIndex === undefined) return
+      const tab = this.tabs[tabIndex]
       if (!tab) return
 
       const { filename, pathname, markdown: oldMarkdown, trimTrailingNewline } = tab
@@ -2001,11 +2003,11 @@ interface BufferedEditorState {
 const createBufferedEditorState = (state: unknown): BufferedEditorState | null => {
   const s = state as
     | {
-        tabs?: unknown
-        currentFileId?: string
-        currentFile?: { id?: string } | null
-        restoreWarnings?: unknown
-      }
+      tabs?: unknown
+      currentFileId?: string
+      currentFile?: { id?: string } | null
+      restoreWarnings?: unknown
+    }
     | null
     | undefined
   if (!s || !Array.isArray(s.tabs)) {
@@ -2017,8 +2019,8 @@ const createBufferedEditorState = (state: unknown): BufferedEditorState | null =
     tabs: (s.tabs as Array<Partial<IFileState> & { id: string }>).map(createBufferedTabState),
     restoreWarnings: Array.isArray(s.restoreWarnings)
       ? (s.restoreWarnings as RestoreWarning[])
-          .map(createBufferedRestoreWarning)
-          .filter((w): w is BufferedRestoreWarning => w !== null)
+        .map(createBufferedRestoreWarning)
+        .filter((w): w is BufferedRestoreWarning => w !== null)
       : []
   }
 }

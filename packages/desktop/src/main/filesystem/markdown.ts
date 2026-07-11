@@ -21,7 +21,7 @@ export const isValidProjectPath = (pathname: string): boolean => {
     }
     const markerPath = path.join(pathname, '.wordbird', 'project.json')
     return fs.existsSync(markerPath)
-  } catch (err) {
+  } catch {
     return false
   }
 }

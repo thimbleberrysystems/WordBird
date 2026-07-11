@@ -172,10 +172,13 @@ declare global {
       onActivity: (handler: (event: IAgentActivityEvent) => void) => () => void
       onApprovalRequest: (handler: (request: IAgentApprovalRequest) => void) => () => void
       onContextUsage: (handler: (usage: IContextUsage) => void) => () => void
+      onPlanSaved: (handler: (event: { path: string }) => void) => () => void
       onPlanProposal: (handler: (plan: IPlanProposal) => void) => () => void
       onTokenUsage: (handler: (usage: ITokenUsageUpdate) => void) => () => void
       onAgentStatus: (handler: (status: IAgentStatus) => void) => () => void
       cancelAgent: (agentId: string) => Promise<{ cancelled: boolean }>
+      pauseAgent: (agentId: string) => Promise<{ paused: boolean }>
+      resumeAgent: (agentId: string) => Promise<{ resumed: boolean }>
       pause: () => Promise<{ paused: boolean }>
       resume: () => Promise<{ resumed: boolean }>
       steer: (text: string) => Promise<{ queued: boolean }>

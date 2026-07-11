@@ -57,14 +57,17 @@ export const ensureWindowPosition = (
     if (screenArea.width < width) width = screenArea.width
     if (screenArea.height < height) height = screenArea.height
   } else {
+    // Consts keep the defined-ness narrowing inside the callback.
+    const winX = x
+    const winY = y
     center = !screen
       .getAllDisplays()
       .map(
         (display) =>
-          x! >= display.bounds.x &&
-          x! <= display.bounds.x + display.bounds.width &&
-          y! >= display.bounds.y &&
-          y! <= display.bounds.y + display.bounds.height
+          winX >= display.bounds.x &&
+          winX <= display.bounds.x + display.bounds.width &&
+          winY >= display.bounds.y &&
+          winY <= display.bounds.y + display.bounds.height
       )
       .some((display) => display)
   }

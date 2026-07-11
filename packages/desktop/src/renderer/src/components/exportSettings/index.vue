@@ -9,10 +9,16 @@
     >
       <h3>{{ t('exportSettings.title') }}</h3>
       <el-tabs v-model="activeName">
-        <el-tab-pane :label="t('exportSettings.info.label')" name="info">
+        <el-tab-pane
+          :label="t('exportSettings.info.label')"
+          name="info"
+        >
           <span class="text">{{ t('exportSettings.info.description') }}</span>
         </el-tab-pane>
-        <el-tab-pane :label="t('exportSettings.page.label')" name="page">
+        <el-tab-pane
+          :label="t('exportSettings.page.label')"
+          name="page"
+        >
           <!-- HTML -->
           <div v-if="!isPrintable">
             <text-box
@@ -33,7 +39,10 @@
                 :options="pageSizeList"
                 :on-change="(value: unknown) => onSelectChange('pageSize', value)"
               />
-              <div v-if="pageSize === 'custom'" class="row">
+              <div
+                v-if="pageSize === 'custom'"
+                class="row"
+              >
                 <div>{{ t('exportSettings.page.widthHeight') }}</div>
                 <el-input-number
                   v-model="pageSizeWidth"
@@ -101,7 +110,10 @@
             </div>
           </div>
         </el-tab-pane>
-        <el-tab-pane :label="t('exportSettings.style.label')" name="style">
+        <el-tab-pane
+          :label="t('exportSettings.style.label')"
+          name="style"
+        >
           <bool
             :description="t('exportSettings.style.overwriteThemeFont')"
             :bool="fontSettingsOverwrite"
@@ -142,7 +154,10 @@
             :on-change="(value: unknown) => onSelectChange('showFrontMatter', value)"
           />
         </el-tab-pane>
-        <el-tab-pane :label="t('exportSettings.theme.label')" name="theme">
+        <el-tab-pane
+          :label="t('exportSettings.theme.label')"
+          name="theme"
+        >
           <div class="text">
             {{ t('exportSettings.theme.description') }}
           </div>
@@ -242,7 +257,10 @@
           </div>
         </el-tab-pane>
 
-        <el-tab-pane :label="t('exportSettings.toc.label')" name="toc">
+        <el-tab-pane
+          :label="t('exportSettings.toc.label')"
+          name="toc"
+        >
           <bool
             :description="t('exportSettings.toc.includeTopHeading')"
             :detailed-description="t('exportSettings.toc.includeTopHeadingDetail')"
@@ -258,7 +276,10 @@
         </el-tab-pane>
       </el-tabs>
       <div class="button-controlls">
-        <button class="button-primary" @click="handleClicked">
+        <button
+          class="button-primary"
+          @click="handleClicked"
+        >
           {{ t('exportSettings.export') }}
         </button>
       </div>

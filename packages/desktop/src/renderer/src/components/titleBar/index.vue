@@ -1,6 +1,9 @@
 <template>
   <div>
-    <div class="title-bar-editor-bg" :class="{ 'tabs-visible': showTabBar }" />
+    <div
+      class="title-bar-editor-bg"
+      :class="{ 'tabs-visible': showTabBar }"
+    />
     <div
       class="title-bar"
       :class="[
@@ -16,9 +19,15 @@
         @dblclick.stop="toggleMaxmizeOnMacOS"
       >
         <span v-if="paths.length > 0">
-          <span v-for="(path, index) of paths" :key="index">
+          <span
+            v-for="(path, index) of paths"
+            :key="index"
+          >
             {{ path }}
-            <el-icon class="path-arrow" :size="12">
+            <el-icon
+              class="path-arrow"
+              :size="12"
+            >
               <ArrowRight />
             </el-icon>
           </span>
@@ -31,7 +40,11 @@
         >
           {{ filename }}
         </span>
-        <span v-if="filename" class="save-dot" :class="{ show: !isSaved }" />
+        <span
+          v-if="filename"
+          class="save-dot"
+          :class="{ show: !isSaved }"
+        />
       </div>
       <div :class="showCustomTitleBar ? 'left-toolbar title-no-drag' : 'right-toolbar'">
         <div
@@ -49,19 +62,20 @@
         >
           <template #content>
             <div class="title-item">
-              <span class="front">{{ t('menu.counter.words') }}:</span
-              ><span class="text">{{ wordCount['word'] }}</span>
+              <span class="front">{{ t('menu.counter.words') }}:</span><span class="text">{{ wordCount['word'] }}</span>
             </div>
             <div class="title-item">
-              <span class="front">{{ t('menu.counter.characters') }}:</span
-              ><span class="text">{{ wordCount['character'] }}</span>
+              <span class="front">{{ t('menu.counter.characters') }}:</span><span class="text">{{ wordCount['character'] }}</span>
             </div>
             <div class="title-item">
-              <span class="front">{{ t('menu.counter.paragraphs') }}:</span
-              ><span class="text">{{ wordCount['paragraph'] }}</span>
+              <span class="front">{{ t('menu.counter.paragraphs') }}:</span><span class="text">{{ wordCount['paragraph'] }}</span>
             </div>
           </template>
-          <div v-if="wordCount" class="word-count" @click.stop="handleWordClick">
+          <div
+            v-if="wordCount"
+            class="word-count"
+            @click.stop="handleWordClick"
+          >
             <span class="text-center-vertical">
               {{ `${HASH[show].short} ${wordCount[show]}` }}
             </span>
@@ -79,7 +93,10 @@
           @click.stop="handleCloseClick"
         >
           <div>
-            <svg width="10" height="10">
+            <svg
+              width="10"
+              height="10"
+            >
               <path :d="windowIconClose" />
             </svg>
           </div>
@@ -89,9 +106,18 @@
           @click.stop="handleMaximizeClick"
         >
           <div>
-            <svg width="10" height="10">
-              <path v-show="!isMaximized" :d="windowIconMaximize" />
-              <path v-show="isMaximized" :d="windowIconRestore" />
+            <svg
+              width="10"
+              height="10"
+            >
+              <path
+                v-show="!isMaximized"
+                :d="windowIconMaximize"
+              />
+              <path
+                v-show="isMaximized"
+                :d="windowIconRestore"
+              />
             </svg>
           </div>
         </div>
@@ -100,7 +126,10 @@
           @click.stop="handleMinimizeClick"
         >
           <div>
-            <svg width="10" height="10">
+            <svg
+              width="10"
+              height="10"
+            >
               <path :d="windowIconMinimize" />
             </svg>
           </div>

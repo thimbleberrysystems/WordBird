@@ -1,36 +1,70 @@
 <template>
-  <div v-if="visibleProposals.length > 0" class="agent-inline-proposals" aria-label="Agent edit proposals">
+  <div
+    v-if="visibleProposals.length > 0"
+    class="agent-inline-proposals"
+    aria-label="Agent edit proposals"
+  >
     <!-- Compact header with summary and actions -->
     <div class="agent-inline-proposal__header">
       <div class="agent-inline-proposal__summary">
         <span class="agent-inline-proposal__icon">✏️</span>
         <div class="agent-inline-proposal__info">
           <strong>{{ visibleProposals.length }} pending edit{{ visibleProposals.length > 1 ? 's' : '' }}</strong>
-          <span v-if="visibleProposals[0].start && visibleProposals[0].end" class="agent-inline-proposal__range">
+          <span
+            v-if="visibleProposals[0].start && visibleProposals[0].end"
+            class="agent-inline-proposal__range"
+          >
             in {{ visibleProposals[0].filePath }}
           </span>
         </div>
       </div>
       <div class="agent-inline-proposal__actions">
-        <el-button type="success" size="small" :loading="isApplying" @click="applyAllEdits">
+        <el-button
+          type="success"
+          size="small"
+          :loading="isApplying"
+          @click="applyAllEdits"
+        >
           Apply All
         </el-button>
-        <el-button type="danger" size="small" @click="rejectAllEdits">
+        <el-button
+          type="danger"
+          size="small"
+          @click="rejectAllEdits"
+        >
           Reject All
         </el-button>
-        <el-button type="text" size="small" @click="toggleDiffView">
+        <el-button
+          type="text"
+          size="small"
+          @click="toggleDiffView"
+        >
           {{ showDiffView ? 'Hide' : 'Show' }} Diff
         </el-button>
       </div>
     </div>
 
     <!-- Optional detailed diff view -->
-    <div v-if="showDiffView" class="agent-inline-proposal__details">
-      <div v-for="proposal in visibleProposals" :key="proposal.id" class="agent-inline-proposal">
-        <div v-if="proposal.reason" class="agent-inline-proposal__reason">
+    <div
+      v-if="showDiffView"
+      class="agent-inline-proposal__details"
+    >
+      <div
+        v-for="proposal in visibleProposals"
+        :key="proposal.id"
+        class="agent-inline-proposal"
+      >
+        <div
+          v-if="proposal.reason"
+          class="agent-inline-proposal__reason"
+        >
           {{ proposal.reason }}
         </div>
-        <AgentDiffView :old-content="proposal.oldContent" :new-content="proposal.newContent" compact />
+        <AgentDiffView
+          :old-content="proposal.oldContent"
+          :new-content="proposal.newContent"
+          compact
+        />
       </div>
     </div>
   </div>
@@ -44,7 +78,7 @@ import { useAgentStore, type AgentEditReview } from '@/store/agent'
 import { applyAgentEdit, rejectAgentEdit } from '@/services/agentEdit'
 
 const agentStore = useAgentStore()
-const { pendingEdits, isApplying, diffState } = storeToRefs(agentStore)
+const { pendingEdits, isApplying } = storeToRefs(agentStore)
 
 const showDiffView = ref(true)
 
@@ -52,11 +86,11 @@ const visibleProposals = computed<AgentEditReview[]>(() =>
   pendingEdits.value.filter((edit) => edit.status === 'pending')
 )
 
-function toggleDiffView(): void {
+function toggleDiffView (): void {
   showDiffView.value = !showDiffView.value
 }
 
-async function applyAllEdits(): Promise<void> {
+async function applyAllEdits (): Promise<void> {
   isApplying.value = true
   try {
     // Apply edits in reverse order to maintain line numbers
@@ -70,7 +104,7 @@ async function applyAllEdits(): Promise<void> {
   }
 }
 
-async function rejectAllEdits(): Promise<void> {
+async function rejectAllEdits (): Promise<void> {
   // Reject edits in reverse order
   for (const edit of [...visibleProposals.value].reverse()) {
     await rejectAgentEdit(edit.id)

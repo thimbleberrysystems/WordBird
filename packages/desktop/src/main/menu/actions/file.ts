@@ -11,7 +11,6 @@ import {
   type MenuItem
 } from 'electron'
 import log from 'electron-log'
-import { isFile } from 'common/filesystem'
 import { MARKDOWN_EXTENSIONS, isMarkdownFile } from 'common/filesystem/paths'
 import { checkUpdates, userSetting } from './marktext'
 import { showTabBar } from './view'
@@ -85,13 +84,13 @@ interface ExportPayload {
 }
 
 // Handle the export response from renderer process.
-const handleResponseForExport = async (e: IpcMainEvent, payload: ExportPayload): Promise<void> => {
+const handleResponseForExport = async(e: IpcMainEvent, payload: ExportPayload): Promise<void> => {
   const { type, content, pathname, title, pageOptions } = payload
   const win = BrowserWindow.fromWebContents(e.sender)
   if (!win) {
     return
   }
-  const extension = (EXTENSION_HASN as Record<string, string>)[type]
+  const extension = (EXTENSION_HASN as Record<string, string>)[type] ?? `.${type}`
   const dirname = pathname ? path.dirname(pathname) : getPath('documents')
   let nakedFilename = pathname ? path.basename(pathname, '.md') : title
   if (!nakedFilename) {
@@ -111,12 +110,12 @@ const handleResponseForExport = async (e: IpcMainEvent, payload: ExportPayload):
         Object.assign(options, getPdfPageOptions(pageOptions))
         const data = await win.webContents.printToPDF(options)
         removePrintServiceFromWindow(win)
-        await writeFile(filePath, data, extension!, 'binary')
+        await writeFile(filePath, data, extension, 'binary')
       } else {
         if (!content) {
           throw new Error('No HTML content found.')
         }
-        await writeFile(filePath, content, extension!, 'utf8')
+        await writeFile(filePath, content, extension, 'utf8')
       }
       win.webContents.send('mt::export-success', { type, filePath })
     } catch (err) {
@@ -137,7 +136,7 @@ const handleResponseForExport = async (e: IpcMainEvent, payload: ExportPayload):
   }
 }
 
-const handleResponseForPrint = async (e: IpcMainEvent): Promise<void> => {
+const handleResponseForPrint = async(e: IpcMainEvent): Promise<void> => {
   const win = BrowserWindow.fromWebContents(e.sender)
   if (!win) {
     return
@@ -147,7 +146,7 @@ const handleResponseForPrint = async (e: IpcMainEvent): Promise<void> => {
   })
 }
 
-const handleResponseForSave = async (
+const handleResponseForSave = async(
   e: IpcMainEvent,
   id: string,
   filename: string,
@@ -190,6 +189,9 @@ const handleResponseForSave = async (
   filePath = path.resolve(filePath)
   const extension = path.extname(filePath) || '.md'
   filePath = !filePath.endsWith(extension) ? (filePath += extension) : filePath
+  // Capture the final path as a const so the async continuation below keeps
+  // the non-null narrowing.
+  const targetPath = filePath
   // The original JS passed `win` here; writeMarkdownFile only takes 3 args
   // (the 4th was silently ignored). Drop it explicitly under strict mode.
   // The IPC `SaveOptions` has every field optional, but writeMarkdownFile
@@ -197,17 +199,17 @@ const handleResponseForSave = async (
   // populates every field for the unsaved-file dialog payload, so the cast
   // is safe at this seam.
   return writeMarkdownFile(filePath, markdown, options as Parameters<typeof writeMarkdownFile>[2])
-    .then(async () => {
-      const stats = await fsPromises.stat(filePath!)
+    .then(async() => {
+      const stats = await fsPromises.stat(targetPath)
       const mtimeMs = stats.mtimeMs
       if (!alreadyExistOnDisk) {
         ipcMain.emit('window-add-file-path', win.id, filePath)
         ipcMain.emit('menu-add-recently-used', filePath)
 
-        const newFilename = path.basename(filePath!)
+        const newFilename = path.basename(targetPath)
         win.webContents.send('mt::set-pathname', {
           id,
-          pathname: filePath,
+          pathname: targetPath,
           filename: newFilename,
           mtimeMs
         })
@@ -224,7 +226,7 @@ const handleResponseForSave = async (
     })
 }
 
-const showUnsavedFilesMessage = async (
+const showUnsavedFilesMessage = async(
   win: BrowserWindow,
   files: UnsavedFile[]
 ): Promise<{ needSave: boolean } | null> => {
@@ -265,7 +267,7 @@ const noticePandocNotFound = (win: BrowserWindow): void => {
   })
 }
 
-const openPandocFile = async (windowId: number, pathname: string): Promise<void> => {
+const openPandocFile = async(windowId: number, pathname: string): Promise<void> => {
   try {
     const converter = pandoc(pathname, 'markdown')
     const data = await converter()
@@ -298,7 +300,7 @@ ipcMain.on('mt::save-tabs', (e, unsavedFiles: UnsavedFile[]) => {
   ).catch(log.error)
 })
 
-ipcMain.on('mt::save-and-close-tabs', async (e, unsavedFiles: UnsavedFile[]) => {
+ipcMain.on('mt::save-and-close-tabs', async(e, unsavedFiles: UnsavedFile[]) => {
   const win = BrowserWindow.fromWebContents(e.sender)
   if (!win) {
     return
@@ -338,7 +340,7 @@ ipcMain.on('mt::save-and-close-tabs', async (e, unsavedFiles: UnsavedFile[]) => 
 
 ipcMain.on(
   'mt::response-file-save-as',
-  async (
+  async(
     e: IpcMainEvent,
     id: string,
     filename: string,
@@ -368,26 +370,27 @@ ipcMain.on(
 
     if (filePath && !canceled) {
       filePath = path.resolve(filePath)
+      const targetPath = filePath
       writeMarkdownFile(filePath, markdown, options as Parameters<typeof writeMarkdownFile>[2])
         .then(() => {
           if (!alreadyExistOnDisk) {
             ipcMain.emit('window-add-file-path', win.id, filePath)
             ipcMain.emit('menu-add-recently-used', filePath)
 
-            const newFilename = path.basename(filePath!)
+            const newFilename = path.basename(targetPath)
             win.webContents.send('mt::set-pathname', {
               id,
-              pathname: filePath,
+              pathname: targetPath,
               filename: newFilename
             })
           } else if (pathname !== filePath) {
             // Update window file list and watcher.
             ipcMain.emit('window-change-file-path', win.id, filePath, pathname)
 
-            const newFilename = path.basename(filePath!)
+            const newFilename = path.basename(targetPath)
             win.webContents.send('mt::set-pathname', {
               id,
-              pathname: filePath,
+              pathname: targetPath,
               filename: newFilename
             })
           } else {
@@ -404,7 +407,7 @@ ipcMain.on(
   }
 )
 
-ipcMain.on('mt::close-window-confirm', async (e, unsavedFiles: UnsavedFile[]) => {
+ipcMain.on('mt::close-window-confirm', async(e, unsavedFiles: UnsavedFile[]) => {
   const win = BrowserWindow.fromWebContents(e.sender)
   if (!win) {
     return
@@ -461,7 +464,7 @@ ipcMain.on('mt::response-export', handleResponseForExport as Parameters<typeof i
 
 ipcMain.on('mt::response-print', handleResponseForPrint as Parameters<typeof ipcMain.on>[1])
 
-ipcMain.on('mt::window::drop', async (e, fileList: string[]) => {
+ipcMain.on('mt::window::drop', async(e, fileList: string[]) => {
   const win = BrowserWindow.fromWebContents(e.sender)
   if (!win) {
     return
@@ -491,7 +494,7 @@ interface RenamePayload {
   newPathname: string
 }
 
-ipcMain.on('mt::rename', async (e, { id, pathname, newPathname }: RenamePayload) => {
+ipcMain.on('mt::rename', async(e, { id, pathname, newPathname }: RenamePayload) => {
   if (pathname === newPathname) return
   const win = BrowserWindow.fromWebContents(e.sender)
   if (!win) {
@@ -534,7 +537,7 @@ ipcMain.on('mt::rename', async (e, { id, pathname, newPathname }: RenamePayload)
 
 ipcMain.on(
   'mt::response-file-move-to',
-  async (e, { id, pathname }: { id: string; pathname: string }) => {
+  async(e, { id, pathname }: { id: string; pathname: string }) => {
     const win = BrowserWindow.fromWebContents(e.sender)
     if (!win) {
       return
@@ -563,7 +566,7 @@ ipcMain.on(
   }
 )
 
-ipcMain.on('mt::ask-for-open-project-in-sidebar', async (e) => {
+ipcMain.on('mt::ask-for-open-project-in-sidebar', async(e) => {
   const win = BrowserWindow.fromWebContents(e.sender)
   if (!win) {
     return
@@ -600,7 +603,7 @@ ipcMain.on('mt::format-link-click', (e, { data, dirname }: FormatLinkPayload) =>
     return
   }
 
-  const rawUrl = data.href || data.text!
+  const rawUrl = data.href || data.text || ''
   const urlCandidate = rawUrl.replace(/^<(.+)>$/, '$1') // Replace any <> CommonMark #489
   if (urlCandidate === rawUrl) {
     // No <> found, no spaces should be allowed
@@ -680,7 +683,7 @@ export const exportFile = (win: Win, type: string): void => {
   }
 }
 
-export const importFile = async (win: BrowserWindow | null): Promise<void> => {
+export const importFile = async(win: BrowserWindow | null): Promise<void> => {
   if (!win) {
     return
   }
@@ -716,7 +719,7 @@ export const openFileOrFolder = (win: BrowserWindow, pathname: string): void => 
   ipcMain.emit('app-open-file-by-id', win.id, pathname)
 }
 
-export const openFolder = async (win: BrowserWindow | null): Promise<void> => {
+export const openFolder = async(win: BrowserWindow | null): Promise<void> => {
   if (!win) {
     return
   }
@@ -729,7 +732,7 @@ export const openFolder = async (win: BrowserWindow | null): Promise<void> => {
   }
 }
 
-export const openFile = async (win: BrowserWindow | null): Promise<void> => {
+export const openFile = async(win: BrowserWindow | null): Promise<void> => {
   if (!win) {
     return
   }

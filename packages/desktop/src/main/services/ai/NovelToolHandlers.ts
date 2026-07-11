@@ -904,6 +904,7 @@ const savePlan = async(
     created: true,
     planId: relative,
     path: relative,
+    planSaved: { path: relative },
     note:
       'Plan file created — keep it CURRENT with update_plan as the conversation evolves. ' +
       'The writer can open and edit this file too. When the plan is settled, call ' +
@@ -927,7 +928,7 @@ const updatePlan = async(
   const existing = await readTextSafe(target)
   const existingTitle = /^#\s+(.+)$/m.exec(existing)?.[1]?.trim() ?? 'Plan'
   await fsPromises.writeFile(target, `# ${title ?? existingTitle}\n\n${plan}\n`, 'utf8')
-  return { updated: true, planId }
+  return { updated: true, planId, planSaved: { path: planId } }
 }
 
 const listPlans = async(

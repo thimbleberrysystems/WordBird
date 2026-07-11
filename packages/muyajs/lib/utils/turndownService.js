@@ -17,7 +17,7 @@ export const usePluginAddRules = (turndownService, keeps) => {
   turndownService.addRule('paragraph', {
     filter: 'p',
 
-    replacement: function (content, node) {
+    replacement: function(content, node) {
       const isTaskListItemParagraph =
         node.previousElementSibling && node.previousElementSibling.tagName === 'INPUT'
 
@@ -28,7 +28,7 @@ export const usePluginAddRules = (turndownService, keeps) => {
   turndownService.addRule('listItem', {
     filter: 'li',
 
-    replacement: function (content, node, options) {
+    replacement: function(content, node, options) {
       content = content
         .replace(/^\n+/, '') // remove leading newlines
         .replace(/\n+$/, '\n') // replace trailing newlines with just a single one

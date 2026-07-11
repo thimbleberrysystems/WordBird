@@ -271,6 +271,84 @@ describe('mid-run steering', () => {
   })
 })
 
+describe('per-agent pause/resume', () => {
+  it('freezes one worker at its boundary; resume releases it to finish', async() => {
+    let calls = 0
+    const model = {
+      bindTools() {
+        return this
+      },
+      async invoke(): Promise<AIMessage> {
+        calls += 1
+        if (calls === 1) {
+          return new AIMessage({
+            content: '',
+            tool_calls: [
+              {
+                id: 'w1',
+                name: 'spawn_agents',
+                args: { agents: [{ role: 'explorer', task: 'look around' }] }
+              }
+            ]
+          })
+        }
+        if (calls === 2) return new AIMessage('worker findings')
+        return new AIMessage('final answer')
+      }
+    }
+
+    let pausedAgentId: string | null = null
+    const orchestrator: Orchestrator = new Orchestrator({
+      modelFactory: () => model as never,
+      tools: [],
+      callbacks: {
+        emitActivity: () => {},
+        requestApproval: async() => true,
+        emitAgentStatus: (status) => {
+          // Freeze the worker the moment it registers as running.
+          if (status.status === 'running' && !pausedAgentId) {
+            pausedAgentId = status.agentId
+            orchestrator.pauseAgent(status.agentId)
+          }
+        }
+      }
+    })
+    orchestrator.setMode('auto')
+    const graph = orchestrator.buildGraph() as unknown as InvokableGraph
+
+    const turn = graph.invoke(
+      { messages: [new HumanMessage('go')] },
+      { configurable: { thread_id: 'pa1' }, recursionLimit: 12 }
+    )
+
+    // The worker's own gate holds it before its first model call.
+    await sleep(40)
+    expect(calls).toBe(1)
+    expect(pausedAgentId).not.toBeNull()
+
+    expect(orchestrator.resumeAgent(pausedAgentId as unknown as string)).toBe(true)
+    const result = await turn
+    const toolMsg = result.messages.find((m) => m.getType() === 'tool')
+    expect(String(toolMsg?.content)).toContain('worker findings')
+  })
+
+  it('returns false for unknown agent ids', () => {
+    const orchestrator = makeOrchestrator(new ScriptedModel([]))
+    expect(orchestrator.pauseAgent('nope')).toBe(false)
+    expect(orchestrator.resumeAgent('nope')).toBe(false)
+  })
+})
+
+describe('supervisor step budget', () => {
+  it('every mode leaves headroom for direct tool rounds (plan mode included)', () => {
+    const orchestrator = makeOrchestrator(new ScriptedModel([]))
+    for (const mode of ['plan', 'ask', 'auto', 'full-auto'] as const) {
+      orchestrator.setMode(mode)
+      expect(orchestrator.recursionLimit(), mode).toBeGreaterThanOrEqual(24)
+    }
+  })
+})
+
 describe('in-wave worker resurrection', () => {
   const failingThenGoodModel = (approvalLog: string[], mode: 'auto' | 'ask', approve: boolean) => {
     let calls = 0

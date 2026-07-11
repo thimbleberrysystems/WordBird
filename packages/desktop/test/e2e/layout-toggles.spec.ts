@@ -17,7 +17,7 @@ const waitForVisibilityFlip = (page: Page, selector: string, wasVisible: boolean
   )
 
 // Helper to hide the AI panel for layout tests
-const hideAiPanel = async (page: Page) => {
+const hideAiPanel = async(page: Page) => {
   // Check if AI panel is visible
   const aiPanelVisible = await page.evaluate(() => !!document.querySelector('.right-prompt'))
   if (aiPanelVisible) {
@@ -34,17 +34,17 @@ test.describe('Layout panel toggles', () => {
   let app: ElectronApplication
   let page: Page
 
-  test.beforeAll(async () => {
+  test.beforeAll(async() => {
     const launched = await launchWithMarkdown('# Layout\n\n## Section A\n\n## Section B\n')
     app = launched.app
     page = launched.page
   })
 
-  test.afterAll(async () => {
+  test.afterAll(async() => {
     if (app) await app.close()
   })
 
-  test('Sidebar toggle changes .side-bar visibility', async () => {
+  test('Sidebar toggle changes .side-bar visibility', async() => {
     const sideBar = page.locator('.side-bar')
     const initial = await sideBar.isVisible()
     await clickMenuById(app, 'sideBarMenuItem')
@@ -54,7 +54,7 @@ test.describe('Layout panel toggles', () => {
     await clickMenuById(app, 'sideBarMenuItem')
   })
 
-  test('Tab bar toggle flips .editor-tabs visibility', async () => {
+  test('Tab bar toggle flips .editor-tabs visibility', async() => {
     const tabBar = page.locator('.editor-tabs')
     const initial = await tabBar.isVisible()
     await clickMenuById(app, 'tabBarMenuItem')
@@ -64,7 +64,7 @@ test.describe('Layout panel toggles', () => {
     await clickMenuById(app, 'tabBarMenuItem')
   })
 
-  test('TOC menu toggles ToC panel without throwing', async () => {
+  test('TOC menu toggles ToC panel without throwing', async() => {
     // Ensure sidebar is visible so TOC has somewhere to render.
     const sideBar = page.locator('.side-bar')
     if (!(await sideBar.isVisible())) {
@@ -89,7 +89,7 @@ test.describe('Layout panel toggles', () => {
   // sidebar collapses to its 45px icon strip (rightColumn=''). The store's
   // `sideBarWidth` is clamped to ≥220, so the editor's max-width must come
   // from the *effective* sidebar width, not the raw store value.
-  test('Editor fills width after collapsing sidebar to icon strip', async () => {
+  test('Editor fills width after collapsing sidebar to icon strip', async() => {
     // Ensure sidebar is visible.
     const sideBar = page.locator('.side-bar')
     if (!(await sideBar.isVisible())) {

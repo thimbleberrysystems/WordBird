@@ -134,7 +134,7 @@ export default [
       'packages/muyajs/**/*.mjs',
       'packages/muyajs/**/*.cjs',
       'packages/desktop/src/renderer/src/assets/symbolIcon/**/*.js',
-      'eslint.config.js'
+      'eslint.config.mjs'
     ],
     plugins: {
       html: pluginHtml
@@ -172,11 +172,16 @@ export default [
     ignores: ['node_modules', 'packages/muyajs/dist/**/*', 'packages/muyajs/webpack.config.js']
   },
 
-  // 7. Test files: add Vitest globals (covers both .js and .ts specs)
+  // 7. Test files: add Vitest globals (covers both .js and .ts specs).
+  // Non-null assertions are idiomatic in specs — the test fails loudly if
+  // the assumption breaks, which is exactly what a test should do.
   {
     files: ['packages/desktop/test/**/*.js', 'packages/desktop/test/**/*.ts'],
     languageOptions: {
       globals: { ...globals.vitest }
+    },
+    rules: {
+      '@typescript-eslint/no-non-null-assertion': 'off'
     }
   },
 

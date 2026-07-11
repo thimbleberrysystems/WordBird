@@ -315,10 +315,11 @@ export class StructureService {
 
     // Discover new files and append them (top level, sorted by name).
     const discovered = await this.scan(root, structure.flavor)
+    const reconciled = structure
     const appendNew = (units: INovelUnit[]): void => {
       for (const unit of units) {
         if (unit.path && !knownPaths.has(unit.path)) {
-          structure!.units.push({ ...unit, children: undefined })
+          reconciled.units.push({ ...unit, children: undefined })
         }
         if (unit.children) appendNew(unit.children)
       }
@@ -380,14 +381,15 @@ export class StructureService {
 
         if (subDirs.length > 0) {
           // top = part containing chapters
+          const partChildren: INovelUnit[] = []
           const part: INovelUnit = {
             id: generateUnitId(),
             type: 'part',
             title: titleFromFilename(top),
-            children: []
+            children: partChildren
           }
           for (const sub of subDirs) {
-            part.children!.push({
+            partChildren.push({
               id: generateUnitId(),
               type: 'chapter',
               title: titleFromFilename(sub),
@@ -395,7 +397,7 @@ export class StructureService {
             })
           }
           // Loose scenes directly under a part directory
-          part.children!.push(...(await sceneUnitsOf(topDir, topRel)))
+          partChildren.push(...(await sceneUnitsOf(topDir, topRel)))
           units.push(part)
         } else {
           // top = chapter containing scenes

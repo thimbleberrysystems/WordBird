@@ -33,25 +33,25 @@ const safeTime = (v: number | undefined): number => (v !== undefined && isFinite
 
 const makeFileComparator =
   (sortBy: string, sortOrder: string) =>
-  (a: TreeFile, b: TreeFile): number => {
-    let result: number
-    if (sortBy === 'created') {
-      const aTime =
+    (a: TreeFile, b: TreeFile): number => {
+      let result: number
+      if (sortBy === 'created') {
+        const aTime =
         a.birthTime instanceof Date ? a.birthTime.getTime() : safeTime(Number(a.birthTime))
-      const bTime =
+        const bTime =
         b.birthTime instanceof Date ? b.birthTime.getTime() : safeTime(Number(b.birthTime))
-      result = aTime - bTime
-    } else if (sortBy === 'modified') {
-      result = safeTime(a.mtimeMs) - safeTime(b.mtimeMs)
-    } else {
-      result = naturalCompare(a.name, b.name)
-    }
-    const ordered = sortOrder === 'desc' ? -result : result
-    if (ordered !== 0) return ordered
+        result = aTime - bTime
+      } else if (sortBy === 'modified') {
+        result = safeTime(a.mtimeMs) - safeTime(b.mtimeMs)
+      } else {
+        result = naturalCompare(a.name, b.name)
+      }
+      const ordered = sortOrder === 'desc' ? -result : result
+      if (ordered !== 0) return ordered
     // Stable tie-breaker: natural name, then full pathname
-    const byName = naturalCompare(a.name, b.name)
-    return byName !== 0 ? byName : a.pathname.localeCompare(b.pathname)
-  }
+      const byName = naturalCompare(a.name, b.name)
+      return byName !== 0 ? byName : a.pathname.localeCompare(b.pathname)
+    }
 
 /**
  * Return all sub-directories relative to the root directory.
@@ -67,10 +67,10 @@ const getSubdirectoriesFromRoot = (rootPath: string, pathname: string): string[]
 /**
  * Add a new file to the tree list.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 export const addFile = (
   tree: TreeFolder,
-  file: any,
+  file: Omit<TreeFile, 'id'>,
   sortBy: string = 'title',
   sortOrder: string = 'asc'
 ): void => {

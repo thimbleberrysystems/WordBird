@@ -11,17 +11,17 @@ test.describe('Check Launch WordBird', () => {
   let app: ElectronApplication
   let page: Page
 
-  test.beforeAll(async () => {
+  test.beforeAll(async() => {
     const { app: electronApp, page: firstPage } = await launchElectron()
     app = electronApp
     page = firstPage
   })
 
-  test.afterAll(async () => {
+  test.afterAll(async() => {
     await app.close()
   })
 
-  test('Empty WordBird', async () => {
+  test('Empty WordBird', async() => {
     const title = await page.title()
     expect(APP_TITLE_REGEX.test(title)).toBeTruthy()
   })
