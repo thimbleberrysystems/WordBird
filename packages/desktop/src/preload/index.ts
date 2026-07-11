@@ -32,6 +32,7 @@ import type {
   IAgentEditProposal,
   IAgentActivityEvent,
   IAgentApprovalRequest,
+  IContextUsage,
   AgentPermissionMode
 } from '@shared/types/langgraph'
 
@@ -295,6 +296,11 @@ const aiAPI = {
     const subscription = (_e: unknown, request: IAgentApprovalRequest) => handler(request)
     ipcRenderer.on('mt::ai:approval-request', subscription)
     return () => ipcRenderer.removeListener('mt::ai:approval-request', subscription)
+  },
+  onContextUsage: (handler: (usage: IContextUsage) => void) => {
+    const subscription = (_e: unknown, usage: IContextUsage) => handler(usage)
+    ipcRenderer.on('mt::ai:context-usage', subscription)
+    return () => ipcRenderer.removeListener('mt::ai:context-usage', subscription)
   },
   fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) =>
     invoke('mt::ai:fetch-models', provider, apiKey, baseUrl),

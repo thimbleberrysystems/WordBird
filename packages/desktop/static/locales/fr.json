@@ -1508,7 +1508,9 @@
     "errorExplainGeneric": "Biscuit n’a pas pu terminer la requête. Réessayer aide souvent ; les détails techniques sont ci-dessous.",
     "errorDetails": "Détails techniques",
     "openSettings": "Ouvrir les réglages IA",
-    "stopped": "Arrêté."
+    "stopped": "Arrêté.",
+    "contextTip": "Mémoire de conversation remplie à {percent} % — Biscuit condense automatiquement les anciens échanges quand elle se remplit.",
+    "compacting": "Condensation de la conversation antérieure…"
   },
   "review": {
     "pendingOne": "1 modification en attente",

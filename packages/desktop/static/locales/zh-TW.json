@@ -1516,7 +1516,9 @@
     "errorExplainGeneric": "Biscuit 未能完成該請求。重試通常有效；技術細節見下方。",
     "errorDetails": "技術細節",
     "openSettings": "開啟 AI 設定",
-    "stopped": "已停止。"
+    "stopped": "已停止。",
+    "contextTip": "對話記憶已用 {percent}% —— 快滿時 Biscuit 會自動壓縮較早的對話。",
+    "compacting": "正在壓縮較早的對話…"
   },
   "review": {
     "pendingOne": "1 處待處理編輯",

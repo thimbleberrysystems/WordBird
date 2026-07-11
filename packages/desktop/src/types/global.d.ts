@@ -26,6 +26,7 @@ import type {
   IAgentEditProposal,
   IAgentActivityEvent,
   IAgentApprovalRequest,
+  IContextUsage,
   AgentPermissionMode
 } from '@shared/types/langgraph'
 import type {
@@ -167,6 +168,7 @@ declare global {
       approve: (approvalId: string, approved: boolean) => Promise<{ handled: boolean }>
       onActivity: (handler: (event: IAgentActivityEvent) => void) => () => void
       onApprovalRequest: (handler: (request: IAgentApprovalRequest) => void) => () => void
+      onContextUsage: (handler: (usage: IContextUsage) => void) => () => void
       fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) => Promise<string[]>
       pullModel: (model: string, baseUrl?: string) => Promise<{ success: boolean }>
       onPullProgress: (

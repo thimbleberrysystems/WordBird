@@ -1506,7 +1506,9 @@
     "errorExplainGeneric": "Biscuit konnte die Anfrage nicht abschließen. Ein neuer Versuch hilft oft; die technischen Details stehen unten.",
     "errorDetails": "Technische Details",
     "openSettings": "KI-Einstellungen öffnen",
-    "stopped": "Gestoppt."
+    "stopped": "Gestoppt.",
+    "contextTip": "Gesprächsspeicher zu {percent} % voll — Biscuit verdichtet ältere Beiträge automatisch, wenn er sich füllt.",
+    "compacting": "Frühere Unterhaltung wird verdichtet…"
   },
   "review": {
     "pendingOne": "1 ausstehende Änderung",

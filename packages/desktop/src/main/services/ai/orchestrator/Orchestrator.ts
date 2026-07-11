@@ -21,11 +21,23 @@ import crypto from 'crypto'
 import log from 'electron-log'
 import { z } from 'zod'
 import { tool } from '@langchain/core/tools'
-import { AIMessage, SystemMessage, ToolMessage, HumanMessage } from '@langchain/core/messages'
+import {
+  AIMessage,
+  SystemMessage,
+  ToolMessage,
+  HumanMessage,
+  RemoveMessage
+} from '@langchain/core/messages'
 import type { BaseMessage } from '@langchain/core/messages'
 import type { Runnable } from '@langchain/core/runnables'
 import type { DynamicStructuredTool } from '@langchain/core/tools'
-import { StateGraph, MessagesAnnotation, END, START } from '@langchain/langgraph'
+import {
+  StateGraph,
+  MessagesAnnotation,
+  END,
+  START,
+  REMOVE_ALL_MESSAGES
+} from '@langchain/langgraph'
 import type { BaseCheckpointSaver } from '@langchain/langgraph'
 import { AGENT_ROLES, MODE_BUDGETS, isAgentRole } from './roles'
 import type {
@@ -33,7 +45,8 @@ import type {
   AgentRole,
   IAgentActivityEvent,
   IAgentApprovalRequest,
-  IAgentSpawnRequest
+  IAgentSpawnRequest,
+  IContextUsage
 } from '../../../../shared/types/langgraph'
 
 export interface OrchestratorCallbacks {
@@ -41,6 +54,8 @@ export interface OrchestratorCallbacks {
   requestApproval: (request: IAgentApprovalRequest) => Promise<boolean>
   /** Compact per-turn project grounding (outline + book summary + issues). */
   buildBrief?: () => Promise<string>
+  /** Context-window pressure updates, drives the ring indicator in the UI. */
+  emitContextUsage?: (usage: IContextUsage) => void
 }
 
 // ---- Context budgeting -------------------------------------------------
@@ -68,6 +83,62 @@ const clipContent = (message: BaseMessage): BaseMessage => {
   }
   return message
 }
+
+// Compaction: when the thread crosses this share of the budget, the
+// oldest turns are summarized INTO the thread (a durable rewrite) instead
+// of being silently dropped by the trim safety net.
+const COMPACT_TRIGGER_RATIO = 0.8
+// How much recent conversation survives compaction verbatim.
+const COMPACT_RETAIN_CHARS = 24000
+export const COMPACT_MARKER = '[CONVERSATION SO FAR — condensed]'
+
+export const historyChars = (messages: BaseMessage[]): number =>
+  messages.reduce((sum, m) => sum + contentLength(m), 0)
+
+/**
+ * Split the thread for compaction: everything before the retained tail is
+ * summarized; the tail survives verbatim. The tail never starts on a
+ * ToolMessage (orphaned tool results are API errors on most providers).
+ * Returns null when there is nothing worth compacting.
+ */
+export const splitForCompaction = (
+  messages: BaseMessage[],
+  retainChars = COMPACT_RETAIN_CHARS
+): { old: BaseMessage[]; tail: BaseMessage[] } | null => {
+  let tailStart = messages.length
+  let tailSize = 0
+  while (tailStart > 0 && tailSize + contentLength(messages[tailStart - 1]) <= retainChars) {
+    tailStart -= 1
+    tailSize += contentLength(messages[tailStart])
+  }
+  // Don't let the tail open with orphaned tool results.
+  while (tailStart < messages.length && messages[tailStart] instanceof ToolMessage) {
+    tailStart += 1
+  }
+  if (tailStart <= 0) return null
+  return { old: messages.slice(0, tailStart), tail: messages.slice(tailStart) }
+}
+
+const renderForSummary = (messages: BaseMessage[]): string =>
+  messages
+    .map((m) => {
+      const kind = m.getType?.() ?? 'message'
+      const text =
+        typeof m.content === 'string' ? m.content : JSON.stringify(m.content ?? '')
+      return `${kind}: ${text.slice(0, 2000)}`
+    })
+    .join('\n---\n')
+
+const COMPACT_PROMPT =
+  'You are compacting the memory of a long working conversation between a ' +
+  'novelist and Biscuit, their AI writing companion. Write a dense briefing ' +
+  '(under 350 words) that preserves everything a future turn needs:\n' +
+  '- decisions made and the writer\'s stated preferences\n' +
+  '- story facts established or changed (characters, plot, canon)\n' +
+  '- work completed (edits proposed/applied, files touched, unit ids)\n' +
+  '- tasks still pending or promised\n' +
+  '- unresolved questions\n' +
+  'Write it as plain prose/bullets. Do not add commentary or preamble.'
 
 /**
  * Fit the conversation into the character budget: keep the most recent
@@ -226,6 +297,70 @@ export class Orchestrator {
     return this._allTools.filter((t) => names.includes(t.name))
   }
 
+  private _emitUsage(usedChars: number, compacting: boolean): void {
+    this._callbacks.emitContextUsage?.({
+      usedChars,
+      budgetChars: HISTORY_CHAR_BUDGET,
+      ratio: Math.min(1, usedChars / HISTORY_CHAR_BUDGET),
+      compacting
+    })
+  }
+
+  /**
+   * Durable compaction: summarize the oldest turns into one condensed
+   * message and rewrite the checkpointed thread as [summary, ...tail].
+   * Returns the state update, or null when compaction isn't needed or
+   * the summarization call fails (the trim safety net still applies).
+   */
+  private async _compact(
+    messages: BaseMessage[],
+    signal?: AbortSignal
+  ): Promise<BaseMessage[] | null> {
+    const split = splitForCompaction(messages)
+    if (!split || split.old.length === 0) return null
+
+    this._activity('status', 'Condensing earlier conversation…')
+    this._emitUsage(historyChars(messages), true)
+
+    try {
+      const model = this._modelFactory()
+      const response = (await model.invoke(
+        [
+          new SystemMessage(COMPACT_PROMPT),
+          new HumanMessage(renderForSummary(split.old))
+        ],
+        { signal } as never
+      )) as BaseMessage
+      const summaryText =
+        typeof response.content === 'string'
+          ? response.content
+          : JSON.stringify(response.content ?? '')
+      if (!summaryText.trim()) return null
+
+      // Carry forward the previous condensation if the tail-side summary
+      // marker was itself about to be compacted away — it is part of `old`
+      // and therefore already folded into the new summary by the model.
+      const summary = new HumanMessage({
+        content: `${COMPACT_MARKER}\n${summaryText.trim().slice(0, 4000)}`
+      })
+
+      log.info(
+        `[orchestrator] Compacted ${split.old.length} messages ` +
+        `(${historyChars(split.old)} chars) into ${summaryText.length} chars`
+      )
+      // REMOVE_ALL_MESSAGES clears the thread; the reducer then re-appends
+      // in order, giving a clean [summary, ...tail] history.
+      return [
+        new RemoveMessage({ id: REMOVE_ALL_MESSAGES }),
+        summary,
+        ...split.tail
+      ]
+    } catch (error) {
+      log.warn('[orchestrator] Compaction failed, falling back to trim:', error)
+      return null
+    }
+  }
+
   /** Build a transient ReAct worker for one role. */
   private _buildWorker(role: AgentRole): { graph: Runnable; toolCount: number } {
     const definition = AGENT_ROLES[role]
@@ -363,6 +498,24 @@ export class Orchestrator {
       supervisorTools.length && model.bindTools ? model.bindTools(supervisorTools) : model
 
     const workflow = new StateGraph(MessagesAnnotation)
+      .addNode('housekeeping', async(state, config) => {
+        // Runs once per user turn, before the supervisor: report context
+        // pressure and, past the threshold, durably compact the thread.
+        const used = historyChars(state.messages)
+        if (used > HISTORY_CHAR_BUDGET * COMPACT_TRIGGER_RATIO) {
+          const update = await this._compact(
+            state.messages,
+            config?.signal as AbortSignal | undefined
+          )
+          if (update) {
+            const after = update.filter((m) => !(m instanceof RemoveMessage))
+            this._emitUsage(historyChars(after), false)
+            return { messages: update }
+          }
+        }
+        this._emitUsage(used, false)
+        return { messages: [] }
+      })
       .addNode('supervisor', async(state, config) => {
         // Grounding + budgeting, fresh every call and never persisted:
         // the system prompt carries the project brief, and the accumulated
@@ -412,7 +565,8 @@ export class Orchestrator {
         }
         return { messages: results }
       })
-      .addEdge(START, 'supervisor')
+      .addEdge(START, 'housekeeping')
+      .addEdge('housekeeping', 'supervisor')
       .addConditionalEdges(
         'supervisor',
         (state) => {
@@ -488,10 +642,13 @@ export class Orchestrator {
       .join('\n\n')
   }
 
-  /** Supervisor step ceiling: each wave costs 2 steps (supervisor + actions). */
+  /**
+   * Supervisor step ceiling: each wave costs 2 steps (supervisor +
+   * actions), plus the per-turn housekeeping step.
+   */
   recursionLimit(): number {
     const budget = MODE_BUDGETS[this._mode]
-    return Math.max(6, budget.maxWaves * 2 + 6)
+    return Math.max(8, budget.maxWaves * 2 + 8)
   }
 
   static isKnownRole(role: string): boolean {

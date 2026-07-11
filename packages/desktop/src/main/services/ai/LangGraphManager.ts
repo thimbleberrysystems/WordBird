@@ -317,7 +317,10 @@ export class LangGraphManager {
           requestApproval: (request) => this._requestApproval(request),
           // Per-turn project grounding: outline + book summary + open
           // continuity issues, shared by supervisor and workers.
-          buildBrief: () => contextBuilder.buildProjectBrief(getActiveAgentProjectRoot())
+          buildBrief: () => contextBuilder.buildProjectBrief(getActiveAgentProjectRoot()),
+          emitContextUsage: (usage) => {
+            this._getMainWindow()?.webContents.send('mt::ai:context-usage', usage)
+          }
         },
         checkpointer: this._checkpointer ?? undefined
       })

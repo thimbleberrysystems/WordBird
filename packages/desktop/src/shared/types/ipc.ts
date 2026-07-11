@@ -29,6 +29,7 @@ import type {
   IAgentEditProposal,
   IAgentActivityEvent,
   IAgentApprovalRequest,
+  IContextUsage,
   AgentPermissionMode
 } from './langgraph'
 import type {
@@ -325,6 +326,7 @@ export interface IpcMainEventChannels {
   ]
   'mt::ai:activity': [event: IAgentActivityEvent]
   'mt::ai:approval-request': [request: IAgentApprovalRequest]
+  'mt::ai:context-usage': [usage: IContextUsage]
   'mt::about-dialog': []
   'mt::ask-for-close': []
   'mt::bootstrap-editor': [config: BootstrapEditorConfig]

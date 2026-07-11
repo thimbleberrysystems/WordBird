@@ -1506,7 +1506,9 @@
     "errorExplainGeneric": "Biscuit no pudo completar la solicitud. Reintentar suele ayudar; los detalles técnicos están abajo.",
     "errorDetails": "Detalles técnicos",
     "openSettings": "Abrir ajustes de IA",
-    "stopped": "Detenido."
+    "stopped": "Detenido.",
+    "contextTip": "Memoria de conversación al {percent}% — Biscuit condensa los turnos antiguos automáticamente cuando se llena.",
+    "compacting": "Condensando la conversación anterior…"
   },
   "review": {
     "pendingOne": "1 edición pendiente",

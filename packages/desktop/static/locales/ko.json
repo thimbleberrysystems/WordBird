@@ -1508,7 +1508,9 @@
     "errorExplainGeneric": "Biscuit이 요청을 완료하지 못했습니다. 다시 시도하면 해결되는 경우가 많습니다. 기술적 세부 정보는 아래에 있습니다.",
     "errorDetails": "기술적 세부 정보",
     "openSettings": "AI 설정 열기",
-    "stopped": "중지됨."
+    "stopped": "중지됨.",
+    "contextTip": "대화 메모리 {percent}% 사용 중 — 가득 차면 Biscuit이 오래된 대화를 자동으로 요약합니다.",
+    "compacting": "이전 대화를 요약하는 중…"
   },
   "review": {
     "pendingOne": "대기 중인 편집 1개",

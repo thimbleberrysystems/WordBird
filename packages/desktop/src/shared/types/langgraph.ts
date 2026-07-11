@@ -120,3 +120,13 @@ export interface IAgentApprovalRequest {
   summary: string
   spawns: IAgentSpawnRequest[]
 }
+
+/** Context-window pressure for the ring indicator in the Biscuit panel. */
+export interface IContextUsage {
+  usedChars: number
+  budgetChars: number
+  /** 0..1 — share of the conversation budget in use. */
+  ratio: number
+  /** True while old turns are being condensed. */
+  compacting: boolean
+}

@@ -1508,7 +1508,9 @@
     "errorExplainGeneric": "O Biscuit não conseguiu concluir a solicitação. Tentar novamente costuma ajudar; os detalhes técnicos estão abaixo.",
     "errorDetails": "Detalhes técnicos",
     "openSettings": "Abrir configurações de IA",
-    "stopped": "Interrompido."
+    "stopped": "Interrompido.",
+    "contextTip": "Memória da conversa {percent}% cheia — o Biscuit condensa automaticamente os turnos antigos quando ela enche.",
+    "compacting": "Condensando a conversa anterior…"
   },
   "review": {
     "pendingOne": "1 edição pendente",

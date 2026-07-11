@@ -1507,7 +1507,9 @@
     "errorExplainGeneric": "Biscuit 未能完成该请求。重试通常有效；技术细节见下方。",
     "errorDetails": "技术细节",
     "openSettings": "打开 AI 设置",
-    "stopped": "已停止。"
+    "stopped": "已停止。",
+    "contextTip": "对话记忆已用 {percent}% —— 快满时 Biscuit 会自动压缩较早的对话。",
+    "compacting": "正在压缩较早的对话…"
   },
   "review": {
     "pendingOne": "1 处待处理编辑",

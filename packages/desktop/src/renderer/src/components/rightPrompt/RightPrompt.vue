@@ -202,15 +202,47 @@
           />
         </div>
         <!-- Autonomy mode line (Claude-CLI style): shift+tab cycles -->
-        <div
-          class="mode-line"
-          :class="`mode-line--${mode}`"
-          :title="currentModeInfo.hint()"
-          @click="cycleMode"
-        >
-          <span class="mode-symbol">{{ currentModeInfo.symbol }}</span>
-          <span class="mode-name">{{ currentModeInfo.label() }}</span>
-          <span class="mode-cycle-hint">{{ t('biscuit.modeCycleHint') }}</span>
+        <div class="mode-line-row">
+          <div
+            class="mode-line"
+            :class="`mode-line--${mode}`"
+            :title="currentModeInfo.hint()"
+            @click="cycleMode"
+          >
+            <span class="mode-symbol">{{ currentModeInfo.symbol }}</span>
+            <span class="mode-name">{{ currentModeInfo.label() }}</span>
+            <span class="mode-cycle-hint">{{ t('biscuit.modeCycleHint') }}</span>
+          </div>
+
+          <!-- Context ring (GH-Copilot style): fills as the conversation
+               approaches the point where Biscuit condenses old turns. -->
+          <div
+            v-if="contextUsage"
+            class="context-ring"
+            :class="{ compacting: contextUsage.compacting }"
+            :title="contextRingTip"
+          >
+            <svg
+              viewBox="0 0 16 16"
+              width="14"
+              height="14"
+            >
+              <circle
+                class="ring-track"
+                cx="8"
+                cy="8"
+                r="6.5"
+              />
+              <circle
+                class="ring-fill"
+                :class="contextRingLevel"
+                cx="8"
+                cy="8"
+                r="6.5"
+                :stroke-dasharray="`${ringDash} ${ringCircumference}`"
+              />
+            </svg>
+          </div>
         </div>
         <div class="prompt-input-actions">
           <el-button
@@ -264,6 +296,7 @@ import type {
   ILangGraphMessage,
   IAgentActivityEvent,
   IAgentApprovalRequest,
+  IContextUsage,
   AgentPermissionMode
 } from '@shared/types/langgraph'
 
@@ -330,6 +363,7 @@ onBeforeUnmount(() => {
   stopResizing()
   unsubActivity?.()
   unsubApproval?.()
+  unsubUsage?.()
 })
 
 // Chat entries: plain conversation messages, plus structured info for
@@ -419,6 +453,31 @@ watch(aiIsConnected, (connected) => {
   if (connected) setMode(mode.value)
 })
 
+// ---- Context ring (fills as the conversation nears compaction) ----
+const contextUsage = ref<IContextUsage | null>(null)
+
+const ringCircumference = 2 * Math.PI * 6.5
+
+const ringDash = computed(() =>
+  contextUsage.value ? Math.max(0.5, contextUsage.value.ratio * ringCircumference) : 0
+)
+
+// Green-ish → amber → red as the budget fills; compaction fires at ~80%.
+const contextRingLevel = computed(() => {
+  const ratio = contextUsage.value?.ratio ?? 0
+  if (ratio >= 0.75) return 'level-high'
+  if (ratio >= 0.5) return 'level-mid'
+  return 'level-low'
+})
+
+const contextRingTip = computed(() => {
+  if (!contextUsage.value) return ''
+  if (contextUsage.value.compacting) return t('biscuit.compacting')
+  return t('biscuit.contextTip', {
+    percent: Math.round(contextUsage.value.ratio * 100)
+  })
+})
+
 // ---- Activity feed + approvals ----
 const activity = ref<IAgentActivityEvent[]>([])
 const pendingApproval = ref<IAgentApprovalRequest | null>(null)
@@ -427,6 +486,7 @@ const visibleActivity = computed(() => activity.value.slice(-8))
 
 let unsubActivity: (() => void) | null = null
 let unsubApproval: (() => void) | null = null
+let unsubUsage: (() => void) | null = null
 
 onMounted(() => {
   if (aiIsConnected.value) setMode(mode.value)
@@ -442,6 +502,9 @@ onMounted(() => {
   })
   unsubApproval = window.electron.ai.onApprovalRequest((request) => {
     pendingApproval.value = request
+  })
+  unsubUsage = window.electron.ai.onContextUsage((usage) => {
+    contextUsage.value = usage
   })
 })
 
@@ -528,6 +591,7 @@ const newConversation = async (): Promise<void> => {
   aiMessages.value = []
   activity.value = []
   pendingApproval.value = null
+  contextUsage.value = null
   currentId.value = ''
   persistHistory()
 }
@@ -837,7 +901,14 @@ async function sendMessage (): Promise<void> {
   text-align: center;
 }
 
-/* Claude-CLI-style mode line under the prompt. */
+/* Claude-CLI-style mode line under the prompt, ring on the right. */
+.mode-line-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .mode-line {
   display: flex;
   align-items: center;
@@ -847,9 +918,56 @@ async function sendMessage (): Promise<void> {
   cursor: pointer;
   user-select: none;
   color: var(--color-secondary, #909399);
+  min-width: 0;
   &:hover .mode-cycle-hint {
     opacity: 1;
   }
+}
+
+/* Context ring: quiet at rest, amber past half, red near compaction,
+   pulsing while old turns are being condensed. */
+.context-ring {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0 4px;
+  cursor: help;
+}
+
+.context-ring svg {
+  transform: rotate(-90deg);
+}
+
+.ring-track {
+  fill: none;
+  stroke: var(--itemBgColor, rgba(128, 128, 128, 0.2));
+  stroke-width: 2.5;
+}
+
+.ring-fill {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.4s ease, stroke 0.4s ease;
+  &.level-low {
+    stroke: var(--iconColor, #909399);
+  }
+  &.level-mid {
+    stroke: #e6a23c;
+  }
+  &.level-high {
+    stroke: #f56c6c;
+  }
+}
+
+.context-ring.compacting svg {
+  animation: ring-pulse 1.2s infinite ease-in-out;
+}
+
+@keyframes ring-pulse {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
 }
 
 .mode-symbol {

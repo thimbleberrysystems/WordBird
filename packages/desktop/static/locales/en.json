@@ -1506,7 +1506,9 @@
     "errorExplainGeneric": "Biscuit couldn’t finish that request. Trying again often helps; the technical details are below.",
     "errorDetails": "Technical details",
     "openSettings": "Open AI Settings",
-    "stopped": "Stopped."
+    "stopped": "Stopped.",
+    "contextTip": "Conversation memory {percent}% full — Biscuit condenses older turns automatically when it fills up.",
+    "compacting": "Condensing earlier conversation…"
   },
   "review": {
     "pendingOne": "1 pending edit",

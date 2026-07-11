@@ -1508,7 +1508,9 @@
     "errorExplainGeneric": "Biscuitはリクエストを完了できませんでした。再試行で解決することが多いです。技術的な詳細は下にあります。",
     "errorDetails": "技術的な詳細",
     "openSettings": "AI設定を開く",
-    "stopped": "停止しました。"
+    "stopped": "停止しました。",
+    "contextTip": "会話メモリ使用率 {percent}% — いっぱいになると、Biscuitが古いやり取りを自動で要約します。",
+    "compacting": "以前の会話を要約中…"
   },
   "review": {
     "pendingOne": "保留中の編集 1件",
