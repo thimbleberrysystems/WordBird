@@ -171,6 +171,73 @@ describe('propose_new_file', () => {
   })
 })
 
+describe('file management (Copilot-style)', () => {
+  it('creates folders and refuses internal ones', async() => {
+    const result = (await run('create_folder', { path: 'notes/act-two' })) as {
+      created: boolean
+    }
+    expect(result.created).toBe(true)
+    expect(fs.statSync(path.join(root, 'notes/act-two')).isDirectory()).toBe(true)
+    await expect(run('create_folder', { path: '.wordbird/x' })).rejects.toThrow(/off limits/)
+  })
+
+  it('moves a loose file with a protective snapshot', async() => {
+    write('notes/old.md', 'ideas')
+    const result = (await run('move_file', {
+      from: 'notes/old.md',
+      to: 'notes/archive/ideas.md',
+      reason: 'tidying'
+    })) as { moved: boolean; manifestUpdated: boolean }
+    expect(result.moved).toBe(true)
+    expect(result.manifestUpdated).toBe(false)
+    expect(fs.existsSync(path.join(root, 'notes/archive/ideas.md'))).toBe(true)
+    expect(fs.existsSync(path.join(root, 'notes/old.md'))).toBe(false)
+  })
+
+  it('moving a binder-backed file updates the structure manifest', async() => {
+    const before = await structureService.loadReconciled(root)
+    const scene = before.units[0].children![0]
+    expect(scene.path).toContain('opening.md')
+
+    const result = (await run('move_file', {
+      from: scene.path as string,
+      to: 'manuscript/chapter-one/renamed-opening.md',
+      reason: 'renaming'
+    })) as { manifestUpdated: boolean }
+    expect(result.manifestUpdated).toBe(true)
+
+    const after = await structureService.loadReconciled(root)
+    const moved = after.units[0].children!.find((s) => s.id === scene.id)
+    expect(moved?.path?.replace(/\\/g, '/')).toBe('manuscript/chapter-one/renamed-opening.md')
+    // No duplicate discovered as a "new" file, no dropped unit.
+    expect(after.units[0].children!.length).toBe(before.units[0].children!.length)
+  })
+
+  it('refuses to move onto an existing file', async() => {
+    write('notes/a.md', 'a')
+    write('notes/b.md', 'b')
+    await expect(
+      run('move_file', { from: 'notes/a.md', to: 'notes/b.md', reason: 'x' })
+    ).rejects.toThrow(/already exists/)
+  })
+
+  it('deletes loose files but refuses binder-backed ones', async() => {
+    write('notes/dead-draft.md', 'obsolete')
+    const result = (await run('delete_file', {
+      path: 'notes/dead-draft.md',
+      reason: 'obsolete'
+    })) as { deleted: boolean }
+    expect(result.deleted).toBe(true)
+    expect(fs.existsSync(path.join(root, 'notes/dead-draft.md'))).toBe(false)
+
+    const structure = await structureService.loadReconciled(root)
+    const scene = structure.units[0].children![0]
+    await expect(
+      run('delete_file', { path: scene.path as string, reason: 'x' })
+    ).rejects.toThrow(/delete_unit/)
+  })
+})
+
 describe('wiki language sanitizer', () => {
   it('accepts real language codes and defaults to en', () => {
     expect(sanitizeWikiLang(undefined)).toBe('en')

@@ -654,6 +654,112 @@ const proposeNewFile = async(
   }
 }
 
+// ---- file management (Copilot-style: folders, move/rename, delete) ----
+
+const INTERNAL_TOP_DIRS = new Set(['.wordbird', '.git'])
+
+const assertNotInternal = (root: string, filePath: string): string => {
+  const rel = path.relative(root, filePath)
+  if (INTERNAL_TOP_DIRS.has(rel.split(path.sep)[0])) {
+    throw new Error('Internal directories (.wordbird, .git) are off limits.')
+  }
+  return rel
+}
+
+/** The binder unit (if any) whose backing file is this path. */
+const findUnitByPath = async(
+  root: string,
+  relativePath: string
+): Promise<INovelUnit | null> => {
+  const structure = await structureService.loadReconciled(root)
+  const normalized = relativePath.replace(/\\/g, '/')
+  const leaf = collectLeaves(structure.units).find(
+    (u) => (u.path ?? '').replace(/\\/g, '/') === normalized
+  )
+  return leaf ?? null
+}
+
+const createFolder = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const target = str(args, 'path')
+  const dirPath = resolveInside(root, target)
+  const rel = assertNotInternal(root, dirPath)
+  await fsPromises.mkdir(dirPath, { recursive: true })
+  return { created: true, path: rel }
+}
+
+const moveFile = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const from = str(args, 'from')
+  const to = str(args, 'to')
+  const reason = str(args, 'reason')
+
+  const srcPath = resolveInside(root, from)
+  const destPath = resolveInside(root, to)
+  const srcRel = assertNotInternal(root, srcPath)
+  const destRel = assertNotInternal(root, destPath)
+
+  if (!fs.existsSync(srcPath)) throw new Error(`No such file: ${srcRel}`)
+  if (!fs.statSync(srcPath).isFile()) throw new Error(`${srcRel} is not a file.`)
+  if (fs.existsSync(destPath)) throw new Error(`${destRel} already exists.`)
+
+  // Identify the binder unit BEFORE moving — after the rename a reconcile
+  // would prune it (file gone) and re-discover the destination as a stranger.
+  const unit = await findUnitByPath(root, srcRel)
+
+  await snapshotService.snapshot(root, `Before moving ${srcRel} → ${destRel} — ${reason}`, true)
+  await fsPromises.mkdir(path.dirname(destPath), { recursive: true })
+  await fsPromises.rename(srcPath, destPath)
+
+  // Keep the binder manifest consistent: a moved scene keeps its unit.
+  let manifestUpdated = false
+  if (unit) {
+    // Raw load — reconciling here would prune the unit before we fix it.
+    const structure = await structureService.load(root)
+    const found = structure ? findUnit(structure.units, unit.id) : null
+    if (structure && found) {
+      found.unit.path = destRel
+      await structureService.save(root, structure)
+      manifestUpdated = true
+    }
+  }
+  return { moved: true, from: srcRel, to: destRel, manifestUpdated, snapshotTaken: true }
+}
+
+const deleteFile = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const target = str(args, 'path')
+  const reason = str(args, 'reason')
+
+  const filePath = resolveInside(root, target)
+  const rel = assertNotInternal(root, filePath)
+  if (!fs.existsSync(filePath)) throw new Error(`No such file: ${rel}`)
+  if (!fs.statSync(filePath).isFile()) {
+    throw new Error(`${rel} is not a file — folders are only removed when emptied.`)
+  }
+
+  const unit = await findUnitByPath(root, rel)
+  if (unit) {
+    throw new Error(
+      `${rel} backs the binder unit "${unit.title}" — use delete_unit (${unit.id}) instead ` +
+      'so the manifest stays consistent.'
+    )
+  }
+
+  await snapshotService.snapshot(root, `Before deleting ${rel} — ${reason}`, true)
+  await fsPromises.unlink(filePath)
+  return { deleted: true, path: rel, snapshotTaken: true }
+}
+
 // ---- file discovery ----
 
 const LIST_IGNORE = new Set(['.git', 'node_modules', 'exports'])
@@ -904,6 +1010,9 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('resolve_continuity_issue', resolveContinuityIssue)
   service.registerHandler('list_files', listFiles)
   service.registerHandler('propose_new_file', proposeNewFile)
+  service.registerHandler('create_folder', createFolder)
+  service.registerHandler('move_file', moveFile)
+  service.registerHandler('delete_file', deleteFile)
   service.registerHandler('delete_unit', deleteUnit)
   service.registerHandler('start_revision', startRevision)
   service.registerHandler('get_revision', getRevision)

@@ -337,6 +337,60 @@
       }
     },
     {
+      "id": "create_folder",
+      "name": "create_folder",
+      "displayName": "Create folder",
+      "description": "Create a folder inside the project (e.g. notes/act-two-research). Files can also create their parent folders implicitly via propose_new_file.",
+      "handler": "create_folder",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "Project-relative folder path." }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "id": "move_file",
+      "name": "move_file",
+      "displayName": "Move / rename file",
+      "description": "Move or rename a file inside the project. A project snapshot is taken first, and if the file backs a binder scene/chapter the manifest is updated automatically so the binder stays intact.",
+      "handler": "move_file",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "renderer",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "from": { "type": "string", "description": "Current project-relative path." },
+          "to": { "type": "string", "description": "New project-relative path." },
+          "reason": { "type": "string", "description": "Why this move/rename." }
+        },
+        "required": ["from", "to", "reason"]
+      }
+    },
+    {
+      "id": "delete_file",
+      "name": "delete_file",
+      "displayName": "Delete file",
+      "description": "Delete a NON-manuscript file (old notes, dead drafts) after a protective snapshot. Files that back binder units are refused — use delete_unit for those so the manifest stays consistent.",
+      "handler": "delete_file",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "renderer",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "Project-relative file path." },
+          "reason": { "type": "string", "description": "Why this file is being removed." }
+        },
+        "required": ["path", "reason"]
+      }
+    },
+    {
       "id": "delete_unit",
       "name": "delete_unit",
       "displayName": "Delete scene/chapter",

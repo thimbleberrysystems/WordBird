@@ -91,6 +91,9 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'update_unit_meta',
       'update_summary',
       'delete_unit',
+      'create_folder',
+      'move_file',
+      'delete_file',
       'dictionary_lookup',
       'mark_revision_unit'
     ]
