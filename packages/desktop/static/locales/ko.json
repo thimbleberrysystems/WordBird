@@ -1435,7 +1435,12 @@
     "deleteConfirm": "\"{title}\"과(와) 해당 파일을 삭제할까요? 스냅숏으로 되돌릴 수 있습니다.",
     "compile": "컴파일",
     "compiled": "원고가 {path}에 저장되었습니다",
-    "empty": "아직 아무것도 없습니다. 챕터를 추가해 시작하세요."
+    "empty": "아직 아무것도 없습니다. 챕터를 추가해 시작하세요.",
+    "setTargetTip": "클릭하여 원고 목표 단어 수 설정",
+    "targetTitle": "원고 목표",
+    "targetPrompt": "목표 단어 수는 몇 개인가요? 비워 두면 목표가 제거됩니다.",
+    "targetInvalid": "숫자만 입력",
+    "targetTip": "목표 단어 수의 {percent}%"
   },
   "history": {
     "title": "기록",
@@ -1545,7 +1550,17 @@
     "pausedShort": "일시정지됨",
     "thinkingShort": "생각 중…",
     "idle": "대기",
-    "agentsRunning": "{count}개 실행 중"
+    "agentsRunning": "{count}개 실행 중",
+    "welcomeTitle": "안녕하세요, Biscuit입니다 🐦",
+    "welcomeSub": "당신의 집필 동반자. 구상, 집필, 퇴고 — 당신이 창작하는 동안 소설 전체의 일관성을 지킵니다.",
+    "welcomeConnect": "AI 모델을 연결해 주세요 — 로컬(Ollama)이든 클라우드든 자유롭게 선택하세요.",
+    "welcomeConfigure": "모델 연결…",
+    "starterBrainstorm": "다음 소설의 전제를 브레인스토밍해 줘",
+    "starterStatus": "지금 이야기가 어디까지 왔는지 요약해 줘",
+    "starterContinuity": "원고의 연속성 문제를 점검해 줘",
+    "welcomeModeHint": "팁: Shift+Tab으로 자율성 전환 — Plan은 안전한 구상, Auto는 맡기기.",
+    "stopFirst": "먼저 실행 중인 작업을 중지(■)한 뒤 대화를 전환하세요.",
+    "deleteConversationConfirm": "대화 “{title}”을(를) 삭제할까요? 되돌릴 수 없습니다."
   },
   "review": {
     "pendingOne": "대기 중인 편집 1개",

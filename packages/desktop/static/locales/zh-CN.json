@@ -1434,7 +1434,12 @@
     "deleteConfirm": "删除“{title}”及其文件？可通过快照恢复。",
     "compile": "编译",
     "compiled": "书稿已输出到 {path}",
-    "empty": "这里还没有内容——添加一个章节开始吧。"
+    "empty": "这里还没有内容——添加一个章节开始吧。",
+    "setTargetTip": "点击设置书稿目标字数",
+    "targetTitle": "书稿目标",
+    "targetPrompt": "目标字数是多少？留空则移除目标。",
+    "targetInvalid": "仅限数字",
+    "targetTip": "已完成目标字数的 {percent}%"
   },
   "history": {
     "title": "历史",
@@ -1544,7 +1549,17 @@
     "pausedShort": "已暂停",
     "thinkingShort": "思考中…",
     "idle": "空闲",
-    "agentsRunning": "{count} 个运行中"
+    "agentsRunning": "{count} 个运行中",
+    "welcomeTitle": "你好，我是 Biscuit 🐦",
+    "welcomeSub": "你的写作伙伴。构思、起草、修改 — 你尽情创作，我来保持整部小说的连贯。",
+    "welcomeConnect": "连接一个 AI 模型来唤醒我 — 本地（Ollama）或云端，由你选择。",
+    "welcomeConfigure": "连接模型…",
+    "starterBrainstorm": "为我的下一部小说头脑风暴一个前提",
+    "starterStatus": "总结一下故事现在的进展",
+    "starterContinuity": "检查书稿中的连贯性问题",
+    "welcomeModeHint": "提示：Shift+Tab 切换我的自主程度 — Plan 安全构思，Auto 放手让我干。",
+    "stopFirst": "请先停止当前运行（■），再切换对话。",
+    "deleteConversationConfirm": "删除对话“{title}”？此操作无法撤销。"
   },
   "review": {
     "pendingOne": "1 处待处理编辑",

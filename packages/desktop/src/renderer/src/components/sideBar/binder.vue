@@ -2,7 +2,24 @@
   <div class="binder">
     <div class="binder-header">
       <span class="binder-title">{{ t('binder.title') }}</span>
-      <span class="binder-total">{{ totalLabel }}</span>
+      <span
+        class="binder-total"
+        :class="{ 'has-target': wordTarget > 0 }"
+        :title="t('binder.setTargetTip')"
+        @click="editTarget"
+      >{{ totalLabel }}</span>
+    </div>
+    <!-- Scrivener-style manuscript target: thin progress bar under the header -->
+    <div
+      v-if="wordTarget > 0"
+      class="binder-target-bar"
+      :title="targetTip"
+    >
+      <div
+        class="binder-target-fill"
+        :class="{ done: targetRatio >= 1 }"
+        :style="{ width: `${Math.min(100, targetRatio * 100)}%` }"
+      />
     </div>
 
     <div class="binder-toolbar">
@@ -83,10 +100,52 @@ const layoutStore = useLayoutStore()
 const { structure, flavor, totalWordCount } = storeToRefs(novelStore)
 const compiling = ref(false)
 
+// ---- Manuscript word target (per project, writer-set) ----
+const targetKey = computed(() => `wordbird-target:${projectStore.currentProjectPath ?? ''}`)
+const wordTarget = ref(0)
+
+const loadTarget = (): void => {
+  wordTarget.value = Number(localStorage.getItem(targetKey.value)) || 0
+}
+
+const targetRatio = computed(() =>
+  wordTarget.value > 0 ? totalWordCount.value / wordTarget.value : 0
+)
+
+const fmtCount = (count: number): string =>
+  count >= 1000 ? `${(count / 1000).toFixed(1)}k` : String(count)
+
 const totalLabel = computed(() => {
-  const count = totalWordCount.value
-  return count >= 1000 ? `${(count / 1000).toFixed(1)}k ${t('binder.words')}` : `${count} ${t('binder.words')}`
+  if (wordTarget.value > 0) {
+    return `${fmtCount(totalWordCount.value)} / ${fmtCount(wordTarget.value)} ${t('binder.words')}`
+  }
+  return `${fmtCount(totalWordCount.value)} ${t('binder.words')}`
 })
+
+const targetTip = computed(() =>
+  t('binder.targetTip', { percent: String(Math.round(targetRatio.value * 100)) })
+)
+
+const editTarget = async (): Promise<void> => {
+  let value: string
+  try {
+    const result = await ElMessageBox.prompt(t('binder.targetPrompt'), t('binder.targetTitle'), {
+      inputValue: wordTarget.value > 0 ? String(wordTarget.value) : '',
+      inputPattern: /^\d*$/,
+      inputErrorMessage: t('binder.targetInvalid')
+    })
+    value = result.value
+  } catch {
+    return // cancelled
+  }
+  const parsed = Number(value) || 0
+  wordTarget.value = parsed
+  if (parsed > 0) {
+    localStorage.setItem(targetKey.value, String(parsed))
+  } else {
+    localStorage.removeItem(targetKey.value)
+  }
+}
 
 // Which top-level "add" buttons make sense per flavor.
 const showAddPart = computed(() => flavor.value === 'chapters-scenes')
@@ -97,12 +156,14 @@ const showAddScene = computed(() => flavor.value === 'scene-pool')
 
 onMounted(() => {
   novelStore.refresh()
+  loadTarget()
 })
 
 watch(
   () => projectStore.currentProjectPath,
   () => {
     novelStore.refresh()
+    loadTarget()
   }
 )
 
@@ -216,6 +277,33 @@ const handleCompile = async (): Promise<void> => {
 .binder-total {
   font-size: 11px;
   color: var(--iconColor);
+  cursor: pointer;
+  &:hover {
+    color: var(--themeColor, #409eff);
+  }
+}
+
+.binder-total.has-target {
+  color: var(--sideBarColor);
+}
+
+.binder-target-bar {
+  height: 3px;
+  margin: 0 8px 6px;
+  border-radius: 2px;
+  background: var(--itemBgColor, rgba(128, 128, 128, 0.2));
+  overflow: hidden;
+}
+
+.binder-target-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--themeColor, #409eff);
+  transition: width 0.4s ease;
+}
+
+.binder-target-fill.done {
+  background: #67c23a;
 }
 
 .binder-toolbar {

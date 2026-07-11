@@ -1435,7 +1435,12 @@
     "deleteConfirm": "Supprimer « {title} » et ses fichiers ? Un instantané peut les restaurer.",
     "compile": "Compiler",
     "compiled": "Manuscrit compilé vers {path}",
-    "empty": "Rien ici pour l’instant — ajoutez un chapitre pour commencer."
+    "empty": "Rien ici pour l’instant — ajoutez un chapitre pour commencer.",
+    "setTargetTip": "Cliquez pour définir un objectif de mots du manuscrit",
+    "targetTitle": "Objectif du manuscrit",
+    "targetPrompt": "Combien de mots visez-vous ? Laissez vide pour retirer l’objectif.",
+    "targetInvalid": "Chiffres uniquement",
+    "targetTip": "{percent}% de votre objectif de mots"
   },
   "history": {
     "title": "Historique",
@@ -1545,7 +1550,17 @@
     "pausedShort": "en pause",
     "thinkingShort": "réfléchit…",
     "idle": "inactif",
-    "agentsRunning": "{count} en cours"
+    "agentsRunning": "{count} en cours",
+    "welcomeTitle": "Bonjour, je suis Biscuit 🐦",
+    "welcomeSub": "Votre compagnon d’écriture. Idéation, rédaction, révision — je garde tout le roman cohérent pendant que vous créez.",
+    "welcomeConnect": "Connectez un modèle d’IA pour me donner vie — local (Ollama) ou cloud, à vous de choisir.",
+    "welcomeConfigure": "Connecter un modèle…",
+    "starterBrainstorm": "Imaginer une prémisse pour mon prochain roman",
+    "starterStatus": "Résumer où en est l’histoire actuellement",
+    "starterContinuity": "Vérifier la continuité du manuscrit",
+    "welcomeModeHint": "Astuce : Shift+Tab change mon autonomie — Plan pour réfléchir en sécurité, Auto pour me laisser travailler.",
+    "stopFirst": "Arrêtez d’abord l’exécution en cours (■), puis changez de conversation.",
+    "deleteConversationConfirm": "Supprimer la conversation « {title} » ? Cette action est irréversible."
   },
   "review": {
     "pendingOne": "1 modification en attente",

@@ -130,6 +130,41 @@
       ref="promptBody"
       class="prompt-body"
     >
+      <!-- First-open onboarding: what Biscuit is, how to start, and — when
+           no model is connected — the one action that unblocks everything. -->
+      <div
+        v-if="aiMessages.length === 0 && !sending"
+        class="biscuit-welcome"
+      >
+        <div class="welcome-title">
+          {{ t('biscuit.welcomeTitle') }}
+        </div>
+        <p class="welcome-sub">
+          {{ aiIsConnected ? t('biscuit.welcomeSub') : t('biscuit.welcomeConnect') }}
+        </p>
+        <el-button
+          v-if="!aiIsConnected"
+          type="primary"
+          size="small"
+          @click="openAiSettings"
+        >
+          {{ t('biscuit.welcomeConfigure') }}
+        </el-button>
+        <template v-else>
+          <button
+            v-for="(starter, i) in starterPrompts"
+            :key="i"
+            class="welcome-suggestion"
+            @click="userInput = starter()"
+          >
+            {{ starter() }}
+          </button>
+        </template>
+        <p class="welcome-hint">
+          {{ t('biscuit.welcomeModeHint') }}
+        </p>
+      </div>
+
       <template
         v-for="(message, index) in aiMessages"
         :key="index"
@@ -324,7 +359,7 @@
 
 <script setup lang="ts">
 import { ref, nextTick, computed, onBeforeUnmount, onMounted, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '../../store/preferences'
 import { useLayoutStore } from '../../store/layout'
@@ -854,6 +889,12 @@ const writeTranscript = async (snapshot: ChatEntry[]): Promise<void> => {
 watch(aiMessages, saveCurrent, { deep: true })
 
 const newConversation = async (): Promise<void> => {
+  // Switching threads mid-run would interleave two conversations in the
+  // durable thread — stop the run first, explicitly.
+  if (sending.value) {
+    ElMessage.info(t('biscuit.stopFirst'))
+    return
+  }
   saveCurrent()
   try {
     await window.electron.ai.resetThread()
@@ -873,6 +914,10 @@ const newConversation = async (): Promise<void> => {
 const loadConversation = async (id: string): Promise<void> => {
   historyVisible.value = false
   if (id === currentId.value) return
+  if (sending.value) {
+    ElMessage.info(t('biscuit.stopFirst'))
+    return
+  }
   saveCurrent()
   const conv = conversations.value.find((c) => c.id === id)
   if (!conv) return
@@ -892,7 +937,16 @@ const loadConversation = async (id: string): Promise<void> => {
   if (promptBody.value) promptBody.value.scrollTop = promptBody.value.scrollHeight
 }
 
-const deleteConversation = (id: string): void => {
+const deleteConversation = async (id: string): Promise<void> => {
+  const conv = conversations.value.find((c) => c.id === id)
+  try {
+    await ElMessageBox.confirm(
+      t('biscuit.deleteConversationConfirm', { title: conv?.title ?? '' }),
+      { type: 'warning', confirmButtonText: t('biscuit.deleteTip') }
+    )
+  } catch {
+    return // writer cancelled
+  }
   conversations.value = conversations.value.filter((c) => c.id !== id)
   if (id === currentId.value) {
     aiMessages.value = []
@@ -900,6 +954,14 @@ const deleteConversation = (id: string): void => {
   }
   persistHistory()
 }
+
+// Starter prompts shown on the welcome card — they fill the input so the
+// writer can edit before sending (never auto-send).
+const starterPrompts: Array<() => string> = [
+  () => t('biscuit.starterBrainstorm'),
+  () => t('biscuit.starterStatus'),
+  () => t('biscuit.starterContinuity')
+]
 
 // A selection action from the editor: put the request in the input and
 // send immediately when connected (otherwise leave it for the writer).
@@ -1413,6 +1475,53 @@ async function sendMessage (): Promise<void> {
   flex-direction: column;
   gap: var(--spacing-4);
   background: var(--editorBgColor);
+}
+
+/* First-open onboarding card */
+.biscuit-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: auto 12px;
+  text-align: center;
+}
+
+.welcome-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--editorColor, #303133);
+}
+
+.welcome-sub {
+  font-size: 0.8rem;
+  color: var(--iconColor, #909399);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.welcome-suggestion {
+  font: inherit;
+  font-size: 0.78rem;
+  width: 100%;
+  text-align: left;
+  padding: 7px 10px;
+  border: 1px solid var(--itemBgColor, rgba(128, 128, 128, 0.25));
+  border-radius: 8px;
+  background: transparent;
+  color: var(--editorColor, #303133);
+  cursor: pointer;
+  &:hover {
+    border-color: var(--themeColor, #409eff);
+    color: var(--themeColor, #409eff);
+  }
+}
+
+.welcome-hint {
+  font-size: 0.7rem;
+  color: var(--iconColor, #909399);
+  opacity: 0.8;
+  margin: 4px 0 0;
 }
 
 .message {

@@ -1433,7 +1433,12 @@
     "deleteConfirm": "Delete \"{title}\" and its files? A snapshot can bring it back.",
     "compile": "Compile",
     "compiled": "Manuscript compiled to {path}",
-    "empty": "Nothing here yet — add a chapter to begin."
+    "empty": "Nothing here yet — add a chapter to begin.",
+    "setTargetTip": "Click to set a manuscript word target",
+    "targetTitle": "Manuscript target",
+    "targetPrompt": "How many words are you aiming for? Leave empty to remove the target.",
+    "targetInvalid": "Numbers only",
+    "targetTip": "{percent}% of your word target"
   },
   "history": {
     "title": "History",
@@ -1543,7 +1548,17 @@
     "pausedShort": "paused",
     "thinkingShort": "thinking…",
     "idle": "idle",
-    "agentsRunning": "{count} running"
+    "agentsRunning": "{count} running",
+    "welcomeTitle": "Hi, I’m Biscuit 🐦",
+    "welcomeSub": "Your writing companion. Brainstorm, draft, revise — I keep the whole novel coherent while you create.",
+    "welcomeConnect": "Connect an AI model to bring me to life — local (Ollama) or cloud, your choice.",
+    "welcomeConfigure": "Connect a model…",
+    "starterBrainstorm": "Brainstorm a premise for my next novel",
+    "starterStatus": "Summarize where the story stands right now",
+    "starterContinuity": "Check the manuscript for continuity problems",
+    "welcomeModeHint": "Tip: Shift+Tab cycles my autonomy — Plan to brainstorm safely, Auto to let me work.",
+    "stopFirst": "Stop the current run first (■), then switch conversations.",
+    "deleteConversationConfirm": "Delete the conversation “{title}”? This cannot be undone."
   },
   "review": {
     "pendingOne": "1 pending edit",

@@ -1435,7 +1435,12 @@
     "deleteConfirm": "「{title}」とそのファイルを削除しますか？スナップショットから復元できます。",
     "compile": "コンパイル",
     "compiled": "原稿を {path} に出力しました",
-    "empty": "まだ何もありません。章を追加して始めましょう。"
+    "empty": "まだ何もありません。章を追加して始めましょう。",
+    "setTargetTip": "クリックして原稿の目標語数を設定",
+    "targetTitle": "原稿の目標",
+    "targetPrompt": "目標語数はいくつですか？空欄で目標を解除します。",
+    "targetInvalid": "数字のみ",
+    "targetTip": "目標語数の {percent}%"
   },
   "history": {
     "title": "履歴",
@@ -1545,7 +1550,17 @@
     "pausedShort": "一時停止中",
     "thinkingShort": "考え中…",
     "idle": "待機中",
-    "agentsRunning": "{count} 件実行中"
+    "agentsRunning": "{count} 件実行中",
+    "welcomeTitle": "こんにちは、Biscuit です 🐦",
+    "welcomeSub": "あなたの執筆パートナー。構想・執筆・推敲 — あなたが創作する間、小説全体の一貫性を保ちます。",
+    "welcomeConnect": "AI モデルを接続してください — ローカル（Ollama）でもクラウドでも選べます。",
+    "welcomeConfigure": "モデルを接続…",
+    "starterBrainstorm": "次の小説の構想をブレインストーミングして",
+    "starterStatus": "物語の現状をまとめて",
+    "starterContinuity": "原稿の整合性の問題をチェックして",
+    "welcomeModeHint": "ヒント: Shift+Tab で自律性を切替 — Plan で安全に構想、Auto で作業を任せる。",
+    "stopFirst": "まず実行中の処理を停止（■）してから会話を切り替えてください。",
+    "deleteConversationConfirm": "会話「{title}」を削除しますか？この操作は取り消せません。"
   },
   "review": {
     "pendingOne": "保留中の編集 1件",

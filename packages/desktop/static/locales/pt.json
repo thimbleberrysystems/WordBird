@@ -1435,7 +1435,12 @@
     "deleteConfirm": "Excluir \"{title}\" e seus arquivos? Um instantâneo pode trazê-los de volta.",
     "compile": "Compilar",
     "compiled": "Manuscrito compilado em {path}",
-    "empty": "Nada aqui ainda — adicione um capítulo para começar."
+    "empty": "Nada aqui ainda — adicione um capítulo para começar.",
+    "setTargetTip": "Clique para definir uma meta de palavras do manuscrito",
+    "targetTitle": "Meta do manuscrito",
+    "targetPrompt": "Quantas palavras você pretende alcançar? Deixe vazio para remover a meta.",
+    "targetInvalid": "Apenas números",
+    "targetTip": "{percent}% da sua meta de palavras"
   },
   "history": {
     "title": "Histórico",
@@ -1545,7 +1550,17 @@
     "pausedShort": "pausado",
     "thinkingShort": "pensando…",
     "idle": "ocioso",
-    "agentsRunning": "{count} em execução"
+    "agentsRunning": "{count} em execução",
+    "welcomeTitle": "Olá, sou o Biscuit 🐦",
+    "welcomeSub": "Seu companheiro de escrita. Idealize, rascunhe, revise — eu mantenho o romance inteiro coerente enquanto você cria.",
+    "welcomeConnect": "Conecte um modelo de IA para me dar vida — local (Ollama) ou na nuvem, você escolhe.",
+    "welcomeConfigure": "Conectar um modelo…",
+    "starterBrainstorm": "Fazer um brainstorm de premissa para meu próximo romance",
+    "starterStatus": "Resumir onde a história está agora",
+    "starterContinuity": "Verificar problemas de continuidade no manuscrito",
+    "welcomeModeHint": "Dica: Shift+Tab alterna minha autonomia — Plan para idealizar com segurança, Auto para me deixar trabalhar.",
+    "stopFirst": "Pare a execução atual primeiro (■) e depois troque de conversa.",
+    "deleteConversationConfirm": "Excluir a conversa “{title}”? Isso não pode ser desfeito."
   },
   "review": {
     "pendingOne": "1 edição pendente",

@@ -1433,7 +1433,12 @@
     "deleteConfirm": "„{title}“ und zugehörige Dateien löschen? Ein Schnappschuss kann sie zurückbringen.",
     "compile": "Zusammenstellen",
     "compiled": "Manuskript erstellt unter {path}",
-    "empty": "Noch nichts hier — füge ein Kapitel hinzu."
+    "empty": "Noch nichts hier — füge ein Kapitel hinzu.",
+    "setTargetTip": "Klicken, um ein Wortziel für das Manuskript zu setzen",
+    "targetTitle": "Manuskript-Ziel",
+    "targetPrompt": "Wie viele Wörter strebst du an? Leer lassen, um das Ziel zu entfernen.",
+    "targetInvalid": "Nur Zahlen",
+    "targetTip": "{percent}% deines Wortziels"
   },
   "history": {
     "title": "Verlauf",
@@ -1543,7 +1548,17 @@
     "pausedShort": "pausiert",
     "thinkingShort": "denkt…",
     "idle": "inaktiv",
-    "agentsRunning": "{count} aktiv"
+    "agentsRunning": "{count} aktiv",
+    "welcomeTitle": "Hallo, ich bin Biscuit 🐦",
+    "welcomeSub": "Dein Schreibbegleiter. Brainstormen, entwerfen, überarbeiten — ich halte den ganzen Roman kohärent, während du erschaffst.",
+    "welcomeConnect": "Verbinde ein KI-Modell, um mich zum Leben zu erwecken — lokal (Ollama) oder Cloud, deine Wahl.",
+    "welcomeConfigure": "Modell verbinden…",
+    "starterBrainstorm": "Brainstorme eine Prämisse für meinen nächsten Roman",
+    "starterStatus": "Fasse zusammen, wo die Geschichte gerade steht",
+    "starterContinuity": "Prüfe das Manuskript auf Kontinuitätsprobleme",
+    "welcomeModeHint": "Tipp: Shift+Tab wechselt meine Autonomie — Plan zum sicheren Brainstormen, Auto zum Arbeitenlassen.",
+    "stopFirst": "Stoppe zuerst den laufenden Durchlauf (■), dann wechsle die Unterhaltung.",
+    "deleteConversationConfirm": "Unterhaltung „{title}“ löschen? Das kann nicht rückgängig gemacht werden."
   },
   "review": {
     "pendingOne": "1 ausstehende Änderung",
