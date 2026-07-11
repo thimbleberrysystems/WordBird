@@ -1530,7 +1530,20 @@
     "agentsTitle": "智慧代理",
     "cancelAgent": "取消該代理",
     "activityLog": "活動日誌",
-    "usageTip": "權杖 — 本輪：▼{tin} ▲{tout} · 工作階段：▼{sin} ▲{sout}（{calls} 次呼叫）"
+    "usageTip": "權杖 — 本輪：▼{tin} ▲{tout} · 工作階段：▼{sin} ▲{sout}（{calls} 次呼叫）",
+    "pause": "暫停",
+    "resume": "繼續",
+    "steer": "插話",
+    "pausedNote": "已暫停 — 代理將在下一步停住。準備好後點擊繼續。",
+    "retryAgent": "重試該任務",
+    "retryMessage": "重試該任務：{task}",
+    "condenseHint": "點擊立即壓縮。",
+    "condensed": "對話已壓縮。",
+    "nothingToCondense": "暫時沒有可壓縮的內容。",
+    "exportTranscript": "匯出對話記錄…",
+    "exported": "對話記錄已儲存到 {path}",
+    "exportedClipboard": "對話記錄已複製到剪貼簿。",
+    "usageCost": "≈ 本工作階段 {cost}（估算）"
   },
   "review": {
     "pendingOne": "1 處待處理編輯",

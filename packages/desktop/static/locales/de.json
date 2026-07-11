@@ -1520,7 +1520,20 @@
     "agentsTitle": "Agenten",
     "cancelAgent": "Diesen Agenten abbrechen",
     "activityLog": "Aktivitätsprotokoll",
-    "usageTip": "Tokens — dieser Zug: ▼{tin} ▲{tout} · Sitzung: ▼{sin} ▲{sout} in {calls} Aufrufen"
+    "usageTip": "Tokens — dieser Zug: ▼{tin} ▲{tout} · Sitzung: ▼{sin} ▲{sout} in {calls} Aufrufen",
+    "pause": "Pause",
+    "resume": "Fortsetzen",
+    "steer": "Lenken",
+    "pausedNote": "Pausiert — Agenten halten am nächsten Schritt. Bei Bedarf fortsetzen.",
+    "retryAgent": "Aufgabe wiederholen",
+    "retryMessage": "Diese Aufgabe wiederholen: {task}",
+    "condenseHint": "Klicken zum sofortigen Verdichten.",
+    "condensed": "Unterhaltung verdichtet.",
+    "nothingToCondense": "Noch nichts zu verdichten.",
+    "exportTranscript": "Transkript exportieren…",
+    "exported": "Transkript gespeichert unter {path}",
+    "exportedClipboard": "Transkript in die Zwischenablage kopiert.",
+    "usageCost": "≈ {cost} diese Sitzung (geschätzt)"
   },
   "review": {
     "pendingOne": "1 ausstehende Änderung",

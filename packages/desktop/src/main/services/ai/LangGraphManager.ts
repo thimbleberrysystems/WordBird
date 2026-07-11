@@ -143,6 +143,48 @@ export class LangGraphManager {
     return this._orchestrator?.cancelAgent(agentId) ?? false
   }
 
+  // ---- Pause / resume / steering / manual compaction ----
+  private _steeringQueue: string[] = []
+  private _turnRunning = false
+
+  private _emitRunState(): void {
+    const state = !this._turnRunning
+      ? 'idle'
+      : this._orchestrator?.isPaused
+        ? 'paused'
+        : 'running'
+    this._getMainWindow()?.webContents.send('mt::ai:run-state', { state })
+  }
+
+  pause(): boolean {
+    if (!this._orchestrator || !this._turnRunning) return false
+    this._orchestrator.pause()
+    this._emitRunState()
+    return true
+  }
+
+  resume(): boolean {
+    if (!this._orchestrator) return false
+    this._orchestrator.resumeFromPause()
+    this._emitRunState()
+    return true
+  }
+
+  /** Queue a mid-run writer note; drained at the next supervisor boundary. */
+  steer(text: string): boolean {
+    if (!text.trim()) return false
+    this._steeringQueue.push(text.trim())
+    return true
+  }
+
+  async compactNow(): Promise<{ compacted: boolean; repaired: number; busy?: boolean }> {
+    if (this._turnRunning) return { compacted: false, repaired: 0, busy: true }
+    if (!this._orchestrator || !this._agent || !this._threadId) {
+      return { compacted: false, repaired: 0 }
+    }
+    return this._orchestrator.compactThread(this._agent as never, this._threadId)
+  }
+
   flushCheckpoints(): void {
     this._checkpointer?.flush()
   }
@@ -332,7 +374,8 @@ export class LangGraphManager {
           },
           emitAgentStatus: (status) => {
             this._getMainWindow()?.webContents.send('mt::ai:agent-status', status)
-          }
+          },
+          drainSteering: () => this._steeringQueue.splice(0)
         },
         checkpointer: this._checkpointer ?? undefined
       })
@@ -517,16 +560,27 @@ export class LangGraphManager {
 
     const langchainMessages = outgoing.map(toLangchain)
 
-    const response = await this._agent!.invoke(
-      { messages: langchainMessages },
-      {
-        signal,
-        recursionLimit: this._orchestrator.recursionLimit(),
-        ...(this._checkpointer && this._threadId
-          ? { configurable: { thread_id: this._threadId } }
-          : {})
-      }
-    )
+    this._turnRunning = true
+    this._emitRunState()
+    let response: unknown
+    try {
+      response = await this._agent!.invoke(
+        { messages: langchainMessages },
+        {
+          signal,
+          recursionLimit: this._orchestrator.recursionLimit(),
+          ...(this._checkpointer && this._threadId
+            ? { configurable: { thread_id: this._threadId } }
+            : {})
+        }
+      )
+    } finally {
+      this._turnRunning = false
+      // A pause must never outlive its turn — the next turn starts unfrozen.
+      this._orchestrator?.resumeFromPause()
+      this._steeringQueue = []
+      this._emitRunState()
+    }
     const content = this._extractResponseContent(response)
 
     return {

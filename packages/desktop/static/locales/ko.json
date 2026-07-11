@@ -1522,7 +1522,20 @@
     "agentsTitle": "에이전트",
     "cancelAgent": "이 에이전트 취소",
     "activityLog": "활동 로그",
-    "usageTip": "토큰 — 이번 턴: ▼{tin} ▲{tout} · 세션: ▼{sin} ▲{sout} ({calls}회 호출)"
+    "usageTip": "토큰 — 이번 턴: ▼{tin} ▲{tout} · 세션: ▼{sin} ▲{sout} ({calls}회 호출)",
+    "pause": "일시정지",
+    "resume": "재개",
+    "steer": "지시",
+    "pausedNote": "일시정지됨 — 에이전트는 다음 단계에서 대기합니다. 준비되면 재개하세요.",
+    "retryAgent": "이 작업 재시도",
+    "retryMessage": "이 작업 재시도: {task}",
+    "condenseHint": "클릭하면 지금 요약합니다.",
+    "condensed": "대화를 요약했습니다.",
+    "nothingToCondense": "아직 요약할 내용이 없습니다.",
+    "exportTranscript": "대화 내보내기…",
+    "exported": "대화를 {path}에 저장했습니다",
+    "exportedClipboard": "대화를 클립보드에 복사했습니다.",
+    "usageCost": "≈ 이 세션 {cost} (추정)"
   },
   "review": {
     "pendingOne": "대기 중인 편집 1개",

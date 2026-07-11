@@ -1520,7 +1520,20 @@
     "agentsTitle": "Agents",
     "cancelAgent": "Cancel this agent",
     "activityLog": "Activity log",
-    "usageTip": "Tokens — this turn: ▼{tin} ▲{tout} · session: ▼{sin} ▲{sout} in {calls} calls"
+    "usageTip": "Tokens — this turn: ▼{tin} ▲{tout} · session: ▼{sin} ▲{sout} in {calls} calls",
+    "pause": "Pause",
+    "resume": "Resume",
+    "steer": "Steer",
+    "pausedNote": "Paused — agents hold at their next step. Resume when ready.",
+    "retryAgent": "Retry this task",
+    "retryMessage": "Retry this task: {task}",
+    "condenseHint": "Click to condense now.",
+    "condensed": "Conversation condensed.",
+    "nothingToCondense": "Nothing to condense yet.",
+    "exportTranscript": "Export transcript…",
+    "exported": "Transcript saved to {path}",
+    "exportedClipboard": "Transcript copied to clipboard.",
+    "usageCost": "≈ {cost} this session (est.)"
   },
   "review": {
     "pendingOne": "1 pending edit",

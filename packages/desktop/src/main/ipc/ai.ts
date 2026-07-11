@@ -82,6 +82,22 @@ export const registerAIHandlers = (): void => {
     return { cancelled: langGraphManager.cancelAgent(agentId) }
   })
 
+  ipcMain.handle('mt::ai:pause', async() => {
+    return { paused: langGraphManager.pause() }
+  })
+
+  ipcMain.handle('mt::ai:resume', async() => {
+    return { resumed: langGraphManager.resume() }
+  })
+
+  ipcMain.handle('mt::ai:steer', async(_e, text: string) => {
+    return { queued: langGraphManager.steer(text) }
+  })
+
+  ipcMain.handle('mt::ai:compact-now', async() => {
+    return langGraphManager.compactNow()
+  })
+
   // Durable agent threads: make sure buffered checkpoints reach disk.
   app.on('will-quit', () => {
     langGraphManager.flushCheckpoints()

@@ -1520,7 +1520,20 @@
     "agentsTitle": "Agentes",
     "cancelAgent": "Cancelar este agente",
     "activityLog": "Registro de actividad",
-    "usageTip": "Tokens — este turno: ▼{tin} ▲{tout} · sesión: ▼{sin} ▲{sout} en {calls} llamadas"
+    "usageTip": "Tokens — este turno: ▼{tin} ▲{tout} · sesión: ▼{sin} ▲{sout} en {calls} llamadas",
+    "pause": "Pausar",
+    "resume": "Reanudar",
+    "steer": "Dirigir",
+    "pausedNote": "En pausa: los agentes se detienen en su próximo paso. Reanuda cuando quieras.",
+    "retryAgent": "Reintentar esta tarea",
+    "retryMessage": "Reintentar esta tarea: {task}",
+    "condenseHint": "Haz clic para condensar ahora.",
+    "condensed": "Conversación condensada.",
+    "nothingToCondense": "Aún no hay nada que condensar.",
+    "exportTranscript": "Exportar transcripción…",
+    "exported": "Transcripción guardada en {path}",
+    "exportedClipboard": "Transcripción copiada al portapapeles.",
+    "usageCost": "≈ {cost} esta sesión (est.)"
   },
   "review": {
     "pendingOne": "1 edición pendiente",

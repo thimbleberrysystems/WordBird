@@ -63,6 +63,8 @@ export interface OrchestratorCallbacks {
   emitTokenUsage?: (usage: ITokenUsageUpdate) => void
   /** Live per-agent status updates, drives the agent panel. */
   emitAgentStatus?: (status: IAgentStatus) => void
+  /** Mid-run writer notes, drained at each supervisor boundary. */
+  drainSteering?: () => string[]
 }
 
 // ---- Token accounting -------------------------------------------------
@@ -120,6 +122,97 @@ export const previewArgs = (args: unknown): string => {
     return text.length > 80 ? text.slice(0, 80) + '…' : text
   } catch {
     return ''
+  }
+}
+
+// ---- Interrupt safety --------------------------------------------------
+
+export const INTERRUPTED_TOOL_NOTE =
+  '[interrupted — this action never completed; re-run it if still needed]'
+
+/**
+ * Repair a thread whose run was interrupted between supersteps: any
+ * AIMessage tool_call without a matching ToolMessage would make the next
+ * provider request invalid (dangling tool_use → 400 on Anthropic/OpenAI).
+ * Synthetic ToolMessages are inserted DIRECTLY AFTER the calling message
+ * (and any of its real results) so ordering stays provider-legal.
+ */
+export const repairDanglingToolCalls = (
+  messages: BaseMessage[]
+): { messages: BaseMessage[]; repaired: number } => {
+  const answered = new Set<string>()
+  for (const message of messages) {
+    if (message instanceof ToolMessage && message.tool_call_id) {
+      answered.add(message.tool_call_id)
+    }
+  }
+
+  let repaired = 0
+  const output: BaseMessage[] = []
+  for (let i = 0; i < messages.length; i++) {
+    const message = messages[i]
+    output.push(message)
+    if (!(message instanceof AIMessage) || !(message.tool_calls?.length)) continue
+
+    const missing = message.tool_calls.filter((c) => c.id && !answered.has(c.id))
+    if (missing.length === 0) continue
+
+    // Skip past this call's real ToolMessages before inserting synthetics.
+    while (i + 1 < messages.length && messages[i + 1] instanceof ToolMessage) {
+      i += 1
+      output.push(messages[i])
+    }
+    for (const call of missing) {
+      output.push(
+        new ToolMessage({ content: INTERRUPTED_TOOL_NOTE, tool_call_id: call.id as string })
+      )
+      repaired += 1
+    }
+  }
+  return { messages: output, repaired }
+}
+
+/**
+ * Boundary-based pause: an in-flight LLM call cannot be halted, so the
+ * gate is awaited at every step boundary (before model calls and tool
+ * executions). Stop/cancel signals win over a paused gate instantly.
+ */
+export class PauseGate {
+  private _paused = false
+  private _waiters: Array<() => void> = []
+
+  get paused(): boolean {
+    return this._paused
+  }
+
+  pause(): void {
+    this._paused = true
+  }
+
+  resume(): void {
+    this._paused = false
+    const waiters = this._waiters
+    this._waiters = []
+    for (const wake of waiters) wake()
+  }
+
+  /** Resolves immediately when not paused; while paused, waits for resume
+   * or rejects on abort so Stop/cancel are never blocked by a pause. */
+  wait(signal?: AbortSignal): Promise<void> {
+    if (!this._paused) return Promise.resolve()
+    if (signal?.aborted) return Promise.reject(new Error('Aborted while paused'))
+    return new Promise<void>((resolve, reject) => {
+      const onAbort = (): void => {
+        this._waiters = this._waiters.filter((w) => w !== wake)
+        reject(new Error('Aborted while paused'))
+      }
+      const wake = (): void => {
+        signal?.removeEventListener('abort', onAbort)
+        resolve()
+      }
+      this._waiters.push(wake)
+      signal?.addEventListener('abort', onAbort, { once: true })
+    })
   }
 }
 
@@ -289,6 +382,10 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'reviewable diffs — never claim changes happened without spawning an agent that proposed them.\n' +
   '- After results return, either spawn another wave (if genuinely needed) or reply to the writer ' +
   'in warm, plain language. Do not mention roles, waves, or tool names to the writer.\n' +
+  '- Messages marked "[Writer, mid-run]" arrived while you were working — they take precedence ' +
+  'over earlier instructions when they conflict; adjust course immediately.\n' +
+  '- Tool results reading "[interrupted…]" mean a previous run was stopped mid-action: nothing ' +
+  'was completed for that call. Re-run it if the writer still wants it.\n' +
   '\nSWEEPING REVISIONS (removing a character, changing a timeline, renaming across the book):\n' +
   '- Never wing a book-wide change. Run the revision workflow:\n' +
   '  1) INTERVIEW the writer first: exactly what changes; every name/alias involved; who ' +
@@ -382,6 +479,21 @@ export class Orchestrator {
   resetSessionUsage(): void {
     this._turnUsage = emptyTally()
     this._sessionUsage = emptyTally()
+  }
+
+  // ---- Pause gate (boundary-based; see PauseGate) ----
+  private _pauseGate = new PauseGate()
+
+  pause(): void {
+    this._pauseGate.pause()
+  }
+
+  resumeFromPause(): void {
+    this._pauseGate.resume()
+  }
+
+  get isPaused(): boolean {
+    return this._pauseGate.paused
   }
 
   // ---- Live agent registry (per-agent cancel) ----
@@ -514,16 +626,18 @@ export class Orchestrator {
     const toolMap = new Map(tools.map((t) => [t.name, t]))
 
     const workflow = new StateGraph(MessagesAnnotation)
-      .addNode('agent', async(state) => {
+      .addNode('agent', async(state, config) => {
+        await this._pauseGate.wait(config?.signal as AbortSignal | undefined)
         const response = await bound.invoke(state.messages)
         this._recordUsage(role, response as BaseMessage)
         return { messages: [response] }
       })
-      .addNode('tools', async(state) => {
+      .addNode('tools', async(state, config) => {
         const last = state.messages[state.messages.length - 1] as AIMessage
         const calls = last.tool_calls ?? []
         const results: ToolMessage[] = []
         for (const call of calls) {
+          await this._pauseGate.wait(config?.signal as AbortSignal | undefined)
           const toolImpl = toolMap.get(call.name)
           let content: string
           try {
@@ -686,16 +800,27 @@ export class Orchestrator {
 
     const workflow = new StateGraph(MessagesAnnotation)
       .addNode('housekeeping', async(state, config) => {
-        // Runs once per user turn, before the supervisor: reset the turn
-        // token tally, report context pressure and, past the threshold,
-        // durably compact the thread.
+        // Runs once per user turn, before the supervisor: honor pause,
+        // REPAIR any interrupted prior run (dangling tool_calls corrupt
+        // the thread for every provider), reset the turn token tally,
+        // then report context pressure / compact past the threshold.
+        const signal = config?.signal as AbortSignal | undefined
+        await this._pauseGate.wait(signal)
         this._beginTurnUsage()
-        const used = historyChars(state.messages)
-        if (used > HISTORY_CHAR_BUDGET * COMPACT_TRIGGER_RATIO) {
-          const update = await this._compact(
-            state.messages,
-            config?.signal as AbortSignal | undefined
+
+        const { messages: repairedMessages, repaired } = repairDanglingToolCalls(state.messages)
+        if (repaired > 0) {
+          this._activity(
+            'status',
+            'Recovered from an interrupted run',
+            `${repaired} unfinished action${repaired > 1 ? 's' : ''} marked as interrupted`
           )
+          log.info(`[orchestrator] Repaired ${repaired} dangling tool call(s) on entry`)
+        }
+
+        const used = historyChars(repairedMessages)
+        if (used > HISTORY_CHAR_BUDGET * COMPACT_TRIGGER_RATIO) {
+          const update = await this._compact(repairedMessages, signal)
           if (update) {
             const after = update.filter((m) => !(m instanceof RemoveMessage))
             this._emitUsage(historyChars(after), false)
@@ -703,9 +828,21 @@ export class Orchestrator {
           }
         }
         this._emitUsage(used, false)
+        if (repaired > 0) {
+          return { messages: [new RemoveMessage({ id: REMOVE_ALL_MESSAGES }), ...repairedMessages] }
+        }
         return { messages: [] }
       })
       .addNode('supervisor', async(state, config) => {
+        await this._pauseGate.wait(config?.signal as AbortSignal | undefined)
+
+        // Mid-run steering: writer notes typed while agents work land here,
+        // at the next supervisor boundary — in the model input AND the
+        // persisted thread.
+        const steering = (this._callbacks.drainSteering?.() ?? []).map(
+          (text) => new HumanMessage(`[Writer, mid-run]: ${text}`)
+        )
+
         // Grounding + budgeting, fresh every call and never persisted:
         // the system prompt carries the project brief, and the accumulated
         // thread is windowed to the character budget.
@@ -718,10 +855,10 @@ export class Orchestrator {
             ? '\n\n[Note: earlier parts of this long conversation were trimmed for space. ' +
               'Rely on the project brief and tools rather than memory of old turns.]'
             : '')
-        const messages = [new SystemMessage(systemText), ...history]
+        const messages = [new SystemMessage(systemText), ...history, ...steering]
         const response = await bound.invoke(messages, config)
         this._recordUsage('supervisor', response as BaseMessage)
-        return { messages: [response] }
+        return { messages: [...steering, response] }
       })
       .addNode('actions', async(state, config) => {
         const last = state.messages[state.messages.length - 1] as AIMessage
@@ -729,6 +866,7 @@ export class Orchestrator {
         const results: ToolMessage[] = []
 
         for (const call of calls) {
+          await this._pauseGate.wait(config?.signal as AbortSignal | undefined)
           const callId = call.id ?? crypto.randomUUID()
 
           if (call.name === SPAWN_TOOL_NAME) {
@@ -832,6 +970,46 @@ export class Orchestrator {
           `=== ${AGENT_ROLES[spawn.role].displayName} (${spawn.role}) ===\nTask: ${spawn.task}\n\n${results[i]}`
       )
       .join('\n\n')
+  }
+
+  /**
+   * Manual compaction between turns: read the checkpointed thread, run the
+   * same repair+condense pass housekeeping uses, and write it back with
+   * updateState (attributed to the housekeeping node so the reducer applies
+   * it identically).
+   */
+  async compactThread(
+    graph: Runnable,
+    threadId: string
+  ): Promise<{ compacted: boolean; repaired: number }> {
+    const stateful = graph as unknown as {
+      getState: (config: unknown) => Promise<{ values?: { messages?: BaseMessage[] } }>
+      updateState: (config: unknown, values: unknown, asNode?: string) => Promise<unknown>
+    }
+    const config = { configurable: { thread_id: threadId } }
+    const snapshot = await stateful.getState(config)
+    const messages = snapshot?.values?.messages ?? []
+    if (messages.length === 0) return { compacted: false, repaired: 0 }
+
+    const { messages: repairedMessages, repaired } = repairDanglingToolCalls(messages)
+    // Manual trigger ignores the 80% threshold — the writer asked for it —
+    // but still needs enough material beyond the retained tail.
+    const update = await this._compact(repairedMessages)
+    if (update) {
+      await stateful.updateState(config, { messages: update }, 'housekeeping')
+      const after = update.filter((m) => !(m instanceof RemoveMessage))
+      this._emitUsage(historyChars(after), false)
+      return { compacted: true, repaired }
+    }
+    if (repaired > 0) {
+      await stateful.updateState(
+        config,
+        { messages: [new RemoveMessage({ id: REMOVE_ALL_MESSAGES }), ...repairedMessages] },
+        'housekeeping'
+      )
+    }
+    this._emitUsage(historyChars(repairedMessages), false)
+    return { compacted: false, repaired }
   }
 
   /**

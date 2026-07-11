@@ -138,6 +138,13 @@ export interface IpcInvokeChannels {
   'mt::ai:get-mode': { args: []; ret: { mode: AgentPermissionMode } }
   'mt::ai:approve': { args: [approvalId: string, approved: boolean]; ret: { handled: boolean } }
   'mt::ai:cancel-agent': { args: [agentId: string]; ret: { cancelled: boolean } }
+  'mt::ai:pause': { args: []; ret: { paused: boolean } }
+  'mt::ai:resume': { args: []; ret: { resumed: boolean } }
+  'mt::ai:steer': { args: [text: string]; ret: { queued: boolean } }
+  'mt::ai:compact-now': {
+    args: []
+    ret: { compacted: boolean; repaired: number; busy?: boolean }
+  }
   'mt::ai:fetch-models': { args: [AIProvider, string, string?]; ret: string[] }
   'mt::ai:pull-model': { args: [string, string?]; ret: { success: boolean } }
   'mt::project:create': { args: [ProjectCreateArgs?]; ret: ProjectCreateResult }
@@ -334,6 +341,7 @@ export interface IpcMainEventChannels {
   'mt::ai:plan-proposal': [plan: IPlanProposal]
   'mt::ai:token-usage': [usage: ITokenUsageUpdate]
   'mt::ai:agent-status': [status: IAgentStatus]
+  'mt::ai:run-state': [state: { state: 'idle' | 'running' | 'paused' }]
   'mt::about-dialog': []
   'mt::ask-for-close': []
   'mt::bootstrap-editor': [config: BootstrapEditorConfig]

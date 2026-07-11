@@ -43,6 +43,13 @@
             <div class="history-list__title">
               {{ t('biscuit.conversations') }}
             </div>
+            <button
+              class="history-export"
+              :disabled="aiMessages.length === 0"
+              @click="exportTranscript"
+            >
+              {{ t('biscuit.exportTranscript') }}
+            </button>
             <div
               v-for="conv in sortedConversations"
               :key="conv.id"
@@ -166,6 +173,7 @@
         :agents="agentList"
         :activity="activity"
         @cancel="cancelAgent"
+        @retry="retryAgent"
       />
 
       <!-- Thinking Indicator -->
@@ -174,7 +182,7 @@
         class="message message--assistant message--thinking"
       >
         <div class="message__text italic">
-          {{ t('biscuit.thinking') }}
+          {{ runState === 'paused' ? t('biscuit.pausedNote') : t('biscuit.thinking') }}
         </div>
       </div>
     </section>
@@ -219,8 +227,9 @@
           <div
             v-if="contextUsage"
             class="context-ring"
-            :class="{ compacting: contextUsage.compacting }"
+            :class="{ compacting: contextUsage.compacting || manualCompacting, clickable: !sending }"
             :title="contextRingTip"
+            @click="condenseNow"
           >
             <svg
               viewBox="0 0 16 16"
@@ -261,6 +270,22 @@
           </el-button>
 
           <el-button
+            v-if="runState !== 'paused'"
+            size="small"
+            :disabled="runState !== 'running'"
+            @click="pauseRun"
+          >
+            ⏸ {{ t('biscuit.pause') }}
+          </el-button>
+          <el-button
+            v-else
+            size="small"
+            type="warning"
+            @click="resumeRun"
+          >
+            ▶ {{ t('biscuit.resume') }}
+          </el-button>
+          <el-button
             type="danger"
             size="small"
             :disabled="!sending"
@@ -272,10 +297,9 @@
             type="primary"
             size="small"
             :disabled="!aiIsConnected || !userInput.trim()"
-            :loading="sending"
             @click="sendMessage"
           >
-            {{ t('biscuit.send') }}
+            {{ sending ? t('biscuit.steer') : t('biscuit.send') }}
           </el-button>
         </div>
       </div>
@@ -285,13 +309,16 @@
 
 <script setup lang="ts">
 import { ref, nextTick, computed, onBeforeUnmount, onMounted, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '../../store/preferences'
 import { useLayoutStore } from '../../store/layout'
+import { useProjectStore } from '../../store/project'
 import { langGraphService } from '../../services/langgraph'
 import bus from '../../bus'
 import { t } from '../../i18n'
 import { renderChatMarkdown } from '../../util/chatMarkdown'
+import { estimateCostUsd, formatCostUsd } from '../../util/modelPricing'
 import { DArrowRight, Plus, ChatLineSquare, Delete } from '@element-plus/icons-vue'
 import GlobalAgentReview from '../agent/GlobalAgentReview.vue'
 import AgentPanel from './AgentPanel.vue'
@@ -375,6 +402,7 @@ onBeforeUnmount(() => {
   unsubPlan?.()
   unsubTokens?.()
   unsubAgents?.()
+  unsubRunState?.()
   bus.off('biscuit-ask', handleBiscuitAsk)
 })
 
@@ -484,10 +512,10 @@ const contextRingLevel = computed(() => {
 
 const contextRingTip = computed(() => {
   if (!contextUsage.value) return ''
-  if (contextUsage.value.compacting) return t('biscuit.compacting')
+  if (contextUsage.value.compacting || manualCompacting.value) return t('biscuit.compacting')
   return t('biscuit.contextTip', {
     percent: Math.round(contextUsage.value.ratio * 100)
-  })
+  }) + (sending.value ? '' : ` ${t('biscuit.condenseHint')}`)
 })
 
 // ---- Plan approval (Claude-Code-style: plan file → card → mode switch) ----
@@ -513,6 +541,72 @@ const dismissPlan = (): void => {
   pendingPlan.value = null
 }
 
+// ---- Run state (idle / running / paused) ----
+const runState = ref<'idle' | 'running' | 'paused'>('idle')
+
+const pauseRun = async (): Promise<void> => {
+  await window.electron.ai.pause()
+}
+
+const resumeRun = async (): Promise<void> => {
+  await window.electron.ai.resume()
+}
+
+// ---- Manual compaction (click the ring while idle) ----
+const manualCompacting = ref(false)
+
+const condenseNow = async (): Promise<void> => {
+  if (sending.value || manualCompacting.value) return
+  manualCompacting.value = true
+  try {
+    const result = await window.electron.ai.compactNow()
+    if (result.busy) return
+    ElMessage.success(
+      result.compacted ? t('biscuit.condensed') : t('biscuit.nothingToCondense')
+    )
+  } catch {
+    // Not connected — nothing to condense.
+  } finally {
+    manualCompacting.value = false
+  }
+}
+
+// ---- Retry a failed/cancelled agent ----
+const retryAgent = (task: string): void => {
+  const message = t('biscuit.retryMessage', { task })
+  if (sending.value) {
+    steerWith(message)
+  } else {
+    userInput.value = message
+    sendMessage()
+  }
+}
+
+// ---- Transcript export ----
+const exportTranscript = async (): Promise<void> => {
+  historyVisible.value = false
+  const lines: string[] = [`# Biscuit — ${new Date().toISOString().slice(0, 10)}`, '']
+  for (const message of aiMessages.value) {
+    const who = message.role === 'user' ? 'Writer' : message.role === 'error' ? 'Error' : 'Biscuit'
+    lines.push(`## ${who}`, '', message.content, '')
+  }
+  const content = lines.join('\n')
+  const root = useProjectStore().currentProjectPath
+  if (root) {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    const target = window.path.join(root, 'notes', 'transcripts', `chat-${stamp}.md`)
+    try {
+      await window.fileUtils.outputFile(target, content)
+      ElMessage.success(t('biscuit.exported', { path: target }))
+      return
+    } catch {
+      // fall through to clipboard
+    }
+  }
+  window.electron.clipboard.writeText(content)
+  ElMessage.success(t('biscuit.exportedClipboard'))
+}
+
 // ---- Token usage counter ----
 const tokenUsage = ref<ITokenUsageUpdate | null>(null)
 
@@ -525,13 +619,23 @@ const tokenTip = computed(() => {
   const roles = Object.entries(session.byRole)
     .map(([role, u]) => `${role}: ▼${fmtTokens(u.inputTokens)} ▲${fmtTokens(u.outputTokens)} (${u.calls})`)
     .join('\n')
-  return t('biscuit.usageTip', {
+  let base = t('biscuit.usageTip', {
     tin: fmtTokens(turn.inputTokens),
     tout: fmtTokens(turn.outputTokens),
     sin: fmtTokens(session.inputTokens),
     sout: fmtTokens(session.outputTokens),
     calls: session.calls
-  }) + (roles ? `\n${roles}` : '')
+  })
+  // Best-effort cost estimate — cloud models with known prices only.
+  const provider = aiProvider.value
+  if (provider !== 'ollama' && provider !== 'ollama_bundled') {
+    const model = aiConfigs.value[provider]?.model
+    const cost = estimateCostUsd(model, session.inputTokens, session.outputTokens)
+    if (cost !== null) {
+      base += ` · ${t('biscuit.usageCost', { cost: formatCostUsd(cost) })}`
+    }
+  }
+  return base + (roles ? `\n${roles}` : '')
 })
 
 // ---- Live agents (panel with per-agent cancel) ----
@@ -552,6 +656,7 @@ let unsubUsage: (() => void) | null = null
 let unsubPlan: (() => void) | null = null
 let unsubTokens: (() => void) | null = null
 let unsubAgents: (() => void) | null = null
+let unsubRunState: (() => void) | null = null
 
 onMounted(() => {
   if (aiIsConnected.value) setMode(mode.value)
@@ -581,6 +686,9 @@ onMounted(() => {
     const next = new Map(agentMap.value)
     next.set(status.agentId, status)
     agentMap.value = next
+  })
+  unsubRunState = window.electron.ai.onRunState(({ state }) => {
+    runState.value = state
   })
   // Selection actions in the editor route through the normal chat pipeline.
   bus.on('biscuit-ask', handleBiscuitAsk)
@@ -742,9 +850,26 @@ async function stopGeneration (): Promise<void> {
   }
 }
 
+const steerWith = async (text: string): Promise<void> => {
+  const queued = await window.electron.ai.steer(text)
+  if (queued.queued) {
+    aiMessages.value.push({ role: 'user', content: `⤷ ${text}` })
+    await nextTick()
+    if (promptBody.value) promptBody.value.scrollTop = promptBody.value.scrollHeight
+  }
+}
+
 // Send message to AI
 async function sendMessage (): Promise<void> {
-  if (!userInput.value.trim() || !aiIsConnected.value || sending.value) return
+  if (!userInput.value.trim() || !aiIsConnected.value) return
+  // Mid-run: the same button steers — the note reaches the supervisor at
+  // its next step boundary instead of waiting for the turn to finish.
+  if (sending.value) {
+    const text = userInput.value.trim()
+    userInput.value = ''
+    await steerWith(text)
+    return
+  }
 
   const userMessage: ILangGraphMessage = {
     role: 'user',
@@ -951,6 +1076,27 @@ async function sendMessage (): Promise<void> {
   overflow-y: auto;
 }
 
+.history-export {
+  font: inherit;
+  font-size: 0.72rem;
+  text-align: left;
+  padding: 4px 8px;
+  margin-bottom: 4px;
+  border: 1px dashed var(--floatBorderColor, rgba(128, 128, 128, 0.3));
+  border-radius: 6px;
+  background: transparent;
+  color: var(--floatFontColor, #303133);
+  cursor: pointer;
+  &:hover:not(:disabled) {
+    border-color: var(--themeColor, #409eff);
+    color: var(--themeColor, #409eff);
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
 .history-list__title {
   font-size: 0.68rem;
   font-weight: 600;
@@ -1043,6 +1189,10 @@ async function sendMessage (): Promise<void> {
   flex-shrink: 0;
   padding: 0 4px;
   cursor: help;
+}
+
+.context-ring.clickable {
+  cursor: pointer;
 }
 
 .context-ring svg {

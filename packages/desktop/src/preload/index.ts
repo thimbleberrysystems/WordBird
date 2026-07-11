@@ -321,6 +321,16 @@ const aiAPI = {
     return () => ipcRenderer.removeListener('mt::ai:agent-status', subscription)
   },
   cancelAgent: (agentId: string) => invoke('mt::ai:cancel-agent', agentId),
+  pause: () => invoke('mt::ai:pause'),
+  resume: () => invoke('mt::ai:resume'),
+  steer: (text: string) => invoke('mt::ai:steer', text),
+  compactNow: () => invoke('mt::ai:compact-now'),
+  onRunState: (handler: (state: { state: 'idle' | 'running' | 'paused' }) => void) => {
+    const subscription = (_e: unknown, state: { state: 'idle' | 'running' | 'paused' }) =>
+      handler(state)
+    ipcRenderer.on('mt::ai:run-state', subscription)
+    return () => ipcRenderer.removeListener('mt::ai:run-state', subscription)
+  },
   fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) =>
     invoke('mt::ai:fetch-models', provider, apiKey, baseUrl),
   pullModel: (model: string, baseUrl?: string) => invoke('mt::ai:pull-model', model, baseUrl),

@@ -29,6 +29,14 @@
       >
         ✕
       </button>
+      <button
+        v-else-if="agent.status === 'failed' || agent.status === 'cancelled'"
+        class="agent-retry"
+        :title="t('biscuit.retryAgent')"
+        @click="$emit('retry', agent.task)"
+      >
+        ↻
+      </button>
     </div>
 
     <details
@@ -62,7 +70,10 @@ defineProps<{
   activity: IAgentActivityEvent[]
 }>()
 
-defineEmits<{ (e: 'cancel', agentId: string): void }>()
+defineEmits<{
+  (e: 'cancel', agentId: string): void
+  (e: 'retry', task: string): void
+}>()
 
 const roleName = (role: AgentRole): string => AGENT_ROLE_NAMES[role] ?? role
 
@@ -156,6 +167,20 @@ const elapsed = (agent: IAgentStatus): string => {
   font-size: 0.68rem;
   color: var(--iconColor, #909399);
   flex-shrink: 0;
+}
+
+.agent-retry {
+  font: inherit;
+  font-size: 0.78rem;
+  border: none;
+  background: transparent;
+  color: var(--iconColor, #909399);
+  cursor: pointer;
+  padding: 0 3px;
+  flex-shrink: 0;
+  &:hover {
+    color: var(--themeColor, #409eff);
+  }
 }
 
 .agent-cancel {

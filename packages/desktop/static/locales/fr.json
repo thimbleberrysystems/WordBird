@@ -1522,7 +1522,20 @@
     "agentsTitle": "Agents",
     "cancelAgent": "Annuler cet agent",
     "activityLog": "Journal d’activité",
-    "usageTip": "Jetons — ce tour : ▼{tin} ▲{tout} · session : ▼{sin} ▲{sout} en {calls} appels"
+    "usageTip": "Jetons — ce tour : ▼{tin} ▲{tout} · session : ▼{sin} ▲{sout} en {calls} appels",
+    "pause": "Pause",
+    "resume": "Reprendre",
+    "steer": "Orienter",
+    "pausedNote": "En pause — les agents s’arrêtent à la prochaine étape. Reprenez quand vous voulez.",
+    "retryAgent": "Réessayer cette tâche",
+    "retryMessage": "Réessayer cette tâche : {task}",
+    "condenseHint": "Cliquez pour condenser maintenant.",
+    "condensed": "Conversation condensée.",
+    "nothingToCondense": "Rien à condenser pour l’instant.",
+    "exportTranscript": "Exporter la transcription…",
+    "exported": "Transcription enregistrée dans {path}",
+    "exportedClipboard": "Transcription copiée dans le presse-papiers.",
+    "usageCost": "≈ {cost} cette session (est.)"
   },
   "review": {
     "pendingOne": "1 modification en attente",

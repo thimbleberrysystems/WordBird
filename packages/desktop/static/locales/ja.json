@@ -1522,7 +1522,20 @@
     "agentsTitle": "エージェント",
     "cancelAgent": "このエージェントを中止",
     "activityLog": "活動ログ",
-    "usageTip": "トークン — 今回: ▼{tin} ▲{tout} · セッション: ▼{sin} ▲{sout}（{calls}回の呼び出し）"
+    "usageTip": "トークン — 今回: ▼{tin} ▲{tout} · セッション: ▼{sin} ▲{sout}（{calls}回の呼び出し）",
+    "pause": "一時停止",
+    "resume": "再開",
+    "steer": "指示",
+    "pausedNote": "一時停止中 — エージェントは次のステップで待機します。準備ができたら再開してください。",
+    "retryAgent": "このタスクを再試行",
+    "retryMessage": "このタスクを再試行: {task}",
+    "condenseHint": "クリックで今すぐ要約。",
+    "condensed": "会話を要約しました。",
+    "nothingToCondense": "まだ要約するものがありません。",
+    "exportTranscript": "書き起こしをエクスポート…",
+    "exported": "書き起こしを {path} に保存しました",
+    "exportedClipboard": "書き起こしをクリップボードにコピーしました。",
+    "usageCost": "≈ このセッション {cost}（概算）"
   },
   "review": {
     "pendingOne": "保留中の編集 1件",

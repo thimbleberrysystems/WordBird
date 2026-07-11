@@ -1521,7 +1521,20 @@
     "agentsTitle": "智能体",
     "cancelAgent": "取消该智能体",
     "activityLog": "活动日志",
-    "usageTip": "令牌 — 本轮：▼{tin} ▲{tout} · 会话：▼{sin} ▲{sout}（{calls} 次调用）"
+    "usageTip": "令牌 — 本轮：▼{tin} ▲{tout} · 会话：▼{sin} ▲{sout}（{calls} 次调用）",
+    "pause": "暂停",
+    "resume": "继续",
+    "steer": "插话",
+    "pausedNote": "已暂停 — 智能体将在下一步停住。准备好后点击继续。",
+    "retryAgent": "重试该任务",
+    "retryMessage": "重试该任务：{task}",
+    "condenseHint": "点击立即压缩。",
+    "condensed": "对话已压缩。",
+    "nothingToCondense": "暂时没有可压缩的内容。",
+    "exportTranscript": "导出对话记录…",
+    "exported": "对话记录已保存到 {path}",
+    "exportedClipboard": "对话记录已复制到剪贴板。",
+    "usageCost": "≈ 本会话 {cost}（估算）"
   },
   "review": {
     "pendingOne": "1 处待处理编辑",

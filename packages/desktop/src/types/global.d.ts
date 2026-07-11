@@ -176,6 +176,13 @@ declare global {
       onTokenUsage: (handler: (usage: ITokenUsageUpdate) => void) => () => void
       onAgentStatus: (handler: (status: IAgentStatus) => void) => () => void
       cancelAgent: (agentId: string) => Promise<{ cancelled: boolean }>
+      pause: () => Promise<{ paused: boolean }>
+      resume: () => Promise<{ resumed: boolean }>
+      steer: (text: string) => Promise<{ queued: boolean }>
+      compactNow: () => Promise<{ compacted: boolean; repaired: number; busy?: boolean }>
+      onRunState: (
+        handler: (state: { state: 'idle' | 'running' | 'paused' }) => void
+      ) => () => void
       fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) => Promise<string[]>
       pullModel: (model: string, baseUrl?: string) => Promise<{ success: boolean }>
       onPullProgress: (
