@@ -273,6 +273,124 @@
       }
     },
     {
+      "id": "list_files",
+      "name": "list_files",
+      "displayName": "List project files",
+      "description": "List every file in the project (or a subdirectory) with sizes — notes, research, imports, anything not in the binder. Use this to discover material before reading it.",
+      "handler": "list_files",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "dir": { "type": "string", "description": "Project-relative directory to list (omit for the whole project)." }
+        }
+      }
+    },
+    {
+      "id": "list_continuity_issues",
+      "name": "list_continuity_issues",
+      "displayName": "List continuity issues",
+      "description": "Read all OPEN continuity issues (contradictions, timeline problems, dangling setups) with their ids and affected files. Check this before auditing so you don't re-report known problems.",
+      "handler": "list_continuity_issues",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": { "type": "object", "properties": {} }
+    },
+    {
+      "id": "resolve_continuity_issue",
+      "name": "resolve_continuity_issue",
+      "displayName": "Resolve continuity issue",
+      "description": "Mark a continuity issue resolved AFTER verifying the conflict no longer exists in the prose (quote the fixed passage in your resolution note). Never resolve an issue you haven't verified.",
+      "handler": "resolve_continuity_issue",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "renderer",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "issueId": { "type": "string", "description": "Issue id from list_continuity_issues." },
+          "resolution": { "type": "string", "description": "How it was verified fixed, with evidence." }
+        },
+        "required": ["issueId", "resolution"]
+      }
+    },
+    {
+      "id": "delete_unit",
+      "name": "delete_unit",
+      "displayName": "Delete scene/chapter",
+      "description": "Remove a unit from the binder (and its files, by default). A project snapshot is taken automatically first so the writer can rewind. Use only when the writer asked for a cut or a restructure requires it.",
+      "handler": "delete_unit",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "renderer",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "unitId": { "type": "string", "description": "Unit id from list_structure." },
+          "deleteFiles": { "type": "boolean", "description": "Also delete the backing files (default true)." },
+          "reason": { "type": "string", "description": "Why this unit is being removed." }
+        },
+        "required": ["unitId", "reason"]
+      }
+    },
+    {
+      "id": "wiki_search",
+      "name": "wiki_search",
+      "displayName": "Search Wikipedia",
+      "description": "Search Wikipedia for articles (any language edition). More reliable than general web search for history, geography, science, and biography. Follow up with wiki_read.",
+      "handler": "wiki_search",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Topic to search for." },
+          "lang": { "type": "string", "description": "Wikipedia language code, e.g. en, de, ja (default en)." },
+          "maxResults": { "type": "integer", "description": "Max results, up to 10 (default 5)." }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "id": "wiki_read",
+      "name": "wiki_read",
+      "displayName": "Read Wikipedia article",
+      "description": "Read a Wikipedia article as plain text by its exact title (from wiki_search). Cite the returned URL when saving findings to bible/research/.",
+      "handler": "wiki_read",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "description": "Exact article title." },
+          "lang": { "type": "string", "description": "Wikipedia language code (default en)." }
+        },
+        "required": ["title"]
+      }
+    },
+    {
+      "id": "dictionary_lookup",
+      "name": "dictionary_lookup",
+      "displayName": "Dictionary & thesaurus",
+      "description": "Look up an English word: definitions by part of speech, synonyms, and antonyms. Use when polishing word choice or checking that a word means what the prose needs it to mean.",
+      "handler": "dictionary_lookup",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "word": { "type": "string", "description": "A single English word." }
+        },
+        "required": ["word"]
+      }
+    },
+    {
       "id": "snapshot_project",
       "name": "snapshot_project",
       "displayName": "Snapshot project",

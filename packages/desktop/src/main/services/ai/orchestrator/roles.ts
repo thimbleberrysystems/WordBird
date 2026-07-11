@@ -22,7 +22,9 @@ const READ_TOOLS = [
   'read_summary',
   'search_manuscript',
   'read_bible',
-  'read_project_file'
+  'read_project_file',
+  'list_files',
+  'list_continuity_issues'
 ]
 
 export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
@@ -45,11 +47,13 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
     activityLabel: 'Researching online',
     systemPrompt:
       'You are a Researcher sub-agent inside WordBird, a novel-writing app. ' +
-      'Your job: research ONE topic on the internet for the novelist. Use web_search, ' +
-      'then web_fetch the most promising results. Cross-check at least two sources when ' +
-      'facts matter. Finish with a concise brief of findings, each with its source URL. ' +
-      'Never invent sources. If the web tools fail, say so plainly.',
-    allowedTools: ['web_search', 'web_fetch', 'read_bible']
+      'Your job: research ONE topic on the internet for the novelist. ' +
+      'Prefer wiki_search + wiki_read for history, geography, science, and biography — ' +
+      'structured and citable; use web_search + web_fetch for everything else. ' +
+      'Cross-check at least two sources when facts matter. Finish with a concise brief ' +
+      'of findings, each with its source URL. Never invent sources. If the web tools ' +
+      'fail, say so plainly.',
+    allowedTools: ['web_search', 'web_fetch', 'wiki_search', 'wiki_read', 'read_bible']
   },
   drafter: {
     role: 'drafter',
@@ -69,7 +73,9 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'propose_new_unit',
       'propose_bible_update',
       'update_unit_meta',
-      'update_summary'
+      'update_summary',
+      'delete_unit',
+      'dictionary_lookup'
     ]
   },
   auditor: {
@@ -81,9 +87,11 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'Your job: check ONE aspect of the manuscript for contradictions against the story ' +
       'bible and itself (facts, timeline, who-knows-what, geography, physical details). ' +
       'Use search_manuscript to find every relevant mention; verify against read_bible. ' +
+      'Check list_continuity_issues first so you do not re-report known problems, and ' +
+      'resolve_continuity_issue only when you verified in the prose that a conflict is gone. ' +
       'Log each real problem with log_continuity_issue (quote both conflicting passages). ' +
-      'Finish with a short report: issues found, or a clean bill of health.',
-    allowedTools: [...READ_TOOLS, 'log_continuity_issue']
+      'Finish with a short report: issues found/resolved, or a clean bill of health.',
+    allowedTools: [...READ_TOOLS, 'log_continuity_issue', 'resolve_continuity_issue']
   },
   'line-editor': {
     role: 'line-editor',
@@ -94,9 +102,9 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'Your job: polish ONE span of existing prose — rhythm, word choice, clarity, ' +
       'dialogue beats — without changing plot, canon facts, or the author\'s voice. ' +
       'Read the target text and nearby context first, then submit the improved version ' +
-      'via propose_project_file_edit. After proposing, stop calling tools and note the ' +
-      'kinds of changes you made.',
-    allowedTools: [...READ_TOOLS, 'propose_project_file_edit']
+      'via propose_project_file_edit. Use dictionary_lookup when weighing word choice. ' +
+      'After proposing, stop calling tools and note the kinds of changes you made.',
+    allowedTools: [...READ_TOOLS, 'propose_project_file_edit', 'dictionary_lookup']
   }
 }
 

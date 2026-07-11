@@ -513,6 +513,111 @@ const logContinuityIssue = async(
   return { logged: true, issueId: issue.id, openIssues }
 }
 
+// ---- file discovery ----
+
+const LIST_IGNORE = new Set(['.git', 'node_modules', 'exports'])
+const MAX_LISTED_FILES = 500
+
+const listFiles = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const subdir = optStr(args, 'dir')
+  const startDir = subdir ? resolveInside(root, subdir) : root
+
+  const files: Array<{ path: string; size: number }> = []
+  let truncated = false
+
+  const walk = async(dir: string): Promise<void> => {
+    if (files.length >= MAX_LISTED_FILES) {
+      truncated = true
+      return
+    }
+    let entries: fs.Dirent[]
+    try {
+      entries = await fsPromises.readdir(dir, { withFileTypes: true })
+    } catch {
+      return
+    }
+    for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+      if (files.length >= MAX_LISTED_FILES) {
+        truncated = true
+        return
+      }
+      const full = path.join(dir, entry.name)
+      const rel = path.relative(root, full)
+      if (entry.isDirectory()) {
+        if (LIST_IGNORE.has(entry.name)) continue
+        // .wordbird internals stay hidden except the agent-facing state dirs.
+        if (entry.name === '.wordbird') continue
+        if (entry.name.startsWith('.') && entry.name !== '.wordbird') continue
+        await walk(full)
+      } else if (entry.isFile() && !entry.name.startsWith('.')) {
+        let size = 0
+        try {
+          size = (await fsPromises.stat(full)).size
+        } catch {
+          // stat raced a delete — keep size 0
+        }
+        files.push({ path: rel, size })
+      }
+    }
+  }
+  await walk(startDir)
+  return { dir: subdir ?? '.', files, truncated }
+}
+
+// ---- continuity read/resolve (logging lives above) ----
+
+const listContinuityIssues = async(
+  _args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const issues = await continuityService.list(root)
+  return {
+    open: issues.filter((i) => i.status === 'open'),
+    resolvedCount: issues.filter((i) => i.status === 'resolved').length
+  }
+}
+
+const resolveContinuityIssue = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const issueId = str(args, 'issueId')
+  const resolution = str(args, 'resolution')
+  const resolved = await continuityService.resolve(root, issueId)
+  if (!resolved) {
+    throw new Error(`No continuity issue with id ${issueId}. Use list_continuity_issues.`)
+  }
+  return { resolved: true, issueId, resolution }
+}
+
+// ---- unit deletion (snapshot-protected) ----
+
+const deleteUnit = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const unitId = str(args, 'unitId')
+  const deleteFiles = optBool(args, 'deleteFiles') ?? true
+  const reason = str(args, 'reason')
+
+  const structure = await structureService.loadReconciled(root)
+  const found = findUnit(structure.units, unitId)
+  if (!found) throw new Error(`No unit with id ${unitId}. Use list_structure to see ids.`)
+
+  // Deleting prose is the one destructive tool — always snapshot first so
+  // the writer can rewind it from History.
+  await snapshotService.snapshot(root, `Before deleting "${found.unit.title}" — ${reason}`, true)
+  await structureService.deleteUnit(root, structure, unitId, deleteFiles)
+  return { deleted: true, unitId, title: found.unit.title, snapshotTaken: true }
+}
+
 // ---- snapshots ----
 
 const snapshotProject = async(
@@ -537,5 +642,9 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('update_summary', updateSummary)
   service.registerHandler('read_summary', readSummary)
   service.registerHandler('log_continuity_issue', logContinuityIssue)
+  service.registerHandler('list_continuity_issues', listContinuityIssues)
+  service.registerHandler('resolve_continuity_issue', resolveContinuityIssue)
+  service.registerHandler('list_files', listFiles)
+  service.registerHandler('delete_unit', deleteUnit)
   service.registerHandler('snapshot_project', snapshotProject)
 }

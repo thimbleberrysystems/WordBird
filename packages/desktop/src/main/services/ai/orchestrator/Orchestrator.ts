@@ -177,7 +177,14 @@ interface BindableModel extends Runnable {
   bindTools?: (tools: unknown[]) => Runnable
 }
 
-const SUPERVISOR_TOOL_NAMES = ['list_structure', 'read_summary', 'search_manuscript', 'read_bible']
+const SUPERVISOR_TOOL_NAMES = [
+  'list_structure',
+  'read_summary',
+  'search_manuscript',
+  'read_bible',
+  'list_files',
+  'list_continuity_issues'
+]
 
 const SPAWN_TOOL_NAME = 'spawn_agents'
 
