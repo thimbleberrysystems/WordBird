@@ -138,6 +138,39 @@ describe('delete_unit', () => {
   })
 })
 
+describe('propose_new_file', () => {
+  it('proposes a brand-new file through the review pipeline', async() => {
+    const result = (await run('propose_new_file', {
+      path: 'notes/research-questions.md',
+      content: '# Questions\n\n- How fast was a telegraph?',
+      reason: 'Collecting research questions'
+    })) as { edit: { filePath: string; newContent: string }; oldContent: string }
+
+    expect(result.oldContent).toBe('')
+    expect(result.edit.filePath).toBe(path.join('notes', 'research-questions.md'))
+    expect(result.edit.newContent).toContain('telegraph')
+    // Parent directory is ready for apply time; the file itself is NOT
+    // written — that happens only when the writer accepts the diff.
+    expect(fs.existsSync(path.join(root, 'notes'))).toBe(true)
+    expect(fs.existsSync(path.join(root, 'notes/research-questions.md'))).toBe(false)
+  })
+
+  it('refuses existing files, internal dirs, and odd extensions', async() => {
+    await expect(
+      run('propose_new_file', { path: 'manuscript/chapter-one/opening.md', content: 'x' })
+    ).rejects.toThrow(/already exists/)
+    await expect(
+      run('propose_new_file', { path: '.wordbird/evil.md', content: 'x' })
+    ).rejects.toThrow(/internal/)
+    await expect(
+      run('propose_new_file', { path: 'notes/script.sh', content: 'x' })
+    ).rejects.toThrow(/must be/)
+    await expect(
+      run('propose_new_file', { path: '../outside.md', content: 'x' })
+    ).rejects.toThrow(/outside/)
+  })
+})
+
 describe('wiki language sanitizer', () => {
   it('accepts real language codes and defaults to en', () => {
     expect(sanitizeWikiLang(undefined)).toBe('en')

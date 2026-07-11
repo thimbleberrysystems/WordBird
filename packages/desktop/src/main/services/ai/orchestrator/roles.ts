@@ -85,6 +85,7 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
     allowedTools: [
       ...READ_TOOLS,
       'propose_project_file_edit',
+      'propose_new_file',
       'propose_new_unit',
       'propose_bible_update',
       'update_unit_meta',

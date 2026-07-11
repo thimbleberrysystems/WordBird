@@ -318,6 +318,25 @@
       }
     },
     {
+      "id": "propose_new_file",
+      "name": "propose_new_file",
+      "displayName": "Create new file",
+      "description": "Propose a brand-new markdown/text file anywhere in the project (notes, research docs, outlines, todo lists). For scenes/chapters use propose_new_unit; for bible pages use propose_bible_update. Goes through user review like every write.",
+      "handler": "propose_new_file",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "renderer",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "Project-relative path ending in .md/.txt, e.g. notes/research-questions.md." },
+          "content": { "type": "string", "description": "Full content of the new file." },
+          "reason": { "type": "string", "description": "Why this file is being created." }
+        },
+        "required": ["path", "content"]
+      }
+    },
+    {
       "id": "delete_unit",
       "name": "delete_unit",
       "displayName": "Delete scene/chapter",

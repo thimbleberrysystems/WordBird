@@ -613,6 +613,47 @@ const logContinuityIssue = async(
   return { logged: true, issueId: issue.id, openIssues }
 }
 
+// ---- new file proposal (generic — notes, research docs, todo lists) ----
+
+const NEW_FILE_EXT_RE = /\.(md|markdown|txt)$/i
+
+const proposeNewFile = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const target = str(args, 'path')
+  const content = str(args, 'content')
+  const reason = optStr(args, 'reason')
+
+  const filePath = resolveInside(root, target)
+  const rel = path.relative(root, filePath)
+  if (rel.split(path.sep)[0] === '.wordbird' || rel.split(path.sep)[0] === '.git') {
+    throw new Error('New files cannot be created inside internal directories.')
+  }
+  if (!NEW_FILE_EXT_RE.test(filePath)) {
+    throw new Error('New files must be .md, .markdown, or .txt.')
+  }
+  if (fs.existsSync(filePath)) {
+    throw new Error(
+      `${rel} already exists — use propose_project_file_edit to change it.`
+    )
+  }
+  // Parent directory must exist by apply time; create it now.
+  await fsPromises.mkdir(path.dirname(filePath), { recursive: true })
+
+  return {
+    edit: {
+      id: crypto.randomUUID(),
+      filePath: rel,
+      newContent: content,
+      reason: reason ?? `New file: ${rel}`
+    },
+    oldContent: '',
+    originalPath: filePath
+  }
+}
+
 // ---- file discovery ----
 
 const LIST_IGNORE = new Set(['.git', 'node_modules', 'exports'])
@@ -862,6 +903,7 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('list_continuity_issues', listContinuityIssues)
   service.registerHandler('resolve_continuity_issue', resolveContinuityIssue)
   service.registerHandler('list_files', listFiles)
+  service.registerHandler('propose_new_file', proposeNewFile)
   service.registerHandler('delete_unit', deleteUnit)
   service.registerHandler('start_revision', startRevision)
   service.registerHandler('get_revision', getRevision)
