@@ -31,6 +31,8 @@ import type {
   INovelCompileOptions,
   INovelStructureResult,
   INovelCompileResult,
+  ISnapshotListResult,
+  ISnapshotActionResult,
   ProjectFlavor
 } from '@shared/types/novel'
 
@@ -144,6 +146,9 @@ declare global {
         deleteFiles: boolean
       ) => Promise<INovelStructureResult>
       compile: (root: string, options?: INovelCompileOptions) => Promise<INovelCompileResult>
+      snapshot: (root: string, message: string) => Promise<ISnapshotActionResult>
+      listSnapshots: (root: string, limit?: number) => Promise<ISnapshotListResult>
+      restoreSnapshot: (root: string, snapshotId: string) => Promise<ISnapshotActionResult>
     }
     ai: {
       connect: (config: IAIConfig) => Promise<void>

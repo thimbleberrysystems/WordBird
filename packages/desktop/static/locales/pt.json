@@ -292,7 +292,8 @@
       "toc": "Índice",
       "biscuit": "Biscuit",
       "settings": "Configurações",
-      "binder": "Manuscrito"
+      "binder": "Manuscrito",
+      "history": "Histórico"
     }
   },
   "commandPalette": {
@@ -1434,5 +1435,17 @@
     "compile": "Compilar",
     "compiled": "Manuscrito compilado em {path}",
     "empty": "Nada aqui ainda — adicione um capítulo para começar."
+  },
+  "history": {
+    "title": "Histórico",
+    "placeholder": "Dê um nome a este momento…",
+    "take": "Salvar",
+    "auto": "auto",
+    "defaultMessage": "Instantâneo",
+    "nothingToSave": "Nada mudou desde o último instantâneo.",
+    "restore": "Retroceder",
+    "restoreConfirm": "Retroceder todo o projeto para \"{message}\"? Seu estado atual é salvo primeiro.",
+    "restored": "Retrocedido para \"{message}\"",
+    "empty": "Ainda não há instantâneos. Salve um para poder voltar a este momento."
   }
 }

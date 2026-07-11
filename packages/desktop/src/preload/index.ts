@@ -263,7 +263,11 @@ const novelAPI = {
   deleteUnit: (root: string, unitId: string, deleteFiles: boolean) =>
     invoke('mt::novel:delete-unit', root, unitId, deleteFiles),
   compile: (root: string, options?: INovelCompileOptions) =>
-    invoke('mt::novel:compile', root, options)
+    invoke('mt::novel:compile', root, options),
+  snapshot: (root: string, message: string) => invoke('mt::novel:snapshot', root, message),
+  listSnapshots: (root: string, limit?: number) => invoke('mt::novel:snapshots', root, limit),
+  restoreSnapshot: (root: string, snapshotId: string) =>
+    invoke('mt::novel:restore-snapshot', root, snapshotId)
 }
 
 const aiAPI = {

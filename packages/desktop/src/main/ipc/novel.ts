@@ -11,6 +11,7 @@ import path from 'path'
 import log from 'electron-log'
 import { isValidProjectPath } from '../filesystem/markdown'
 import { structureService } from '../services/novel/StructureService'
+import { snapshotService } from '../services/novel/SnapshotService'
 import type {
   INovelStructure,
   INovelCreateUnitPayload,
@@ -18,6 +19,8 @@ import type {
   INovelCompileOptions,
   INovelStructureResult,
   INovelCompileResult,
+  ISnapshotListResult,
+  ISnapshotActionResult,
   ProjectFlavor
 } from '../../shared/types/novel'
 
@@ -120,6 +123,54 @@ export const registerNovelHandlers = (): void => {
       return withStructure(root, async(safeRoot, structure) => {
         await structureService.deleteUnit(safeRoot, structure, unitId, deleteFiles)
       })
+    }
+  )
+
+  ipcMain.handle(
+    'mt::novel:snapshot',
+    async(_e, root: string, message: string): Promise<ISnapshotActionResult> => {
+      const safeRoot = guardRoot(root)
+      if (!safeRoot) return { ok: false, error: 'Not a valid WordBird project' }
+      try {
+        const id = await snapshotService.snapshot(safeRoot, message)
+        return { ok: true, id: id ?? undefined }
+      } catch (error) {
+        const message_ = error instanceof Error ? error.message : String(error)
+        log.error('[novel] snapshot failed:', error)
+        return { ok: false, error: message_ }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'mt::novel:snapshots',
+    async(_e, root: string, limit?: number): Promise<ISnapshotListResult> => {
+      const safeRoot = guardRoot(root)
+      if (!safeRoot) return { ok: false, error: 'Not a valid WordBird project' }
+      try {
+        const snapshots = await snapshotService.list(safeRoot, limit)
+        return { ok: true, snapshots }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        log.error('[novel] snapshots list failed:', error)
+        return { ok: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'mt::novel:restore-snapshot',
+    async(_e, root: string, snapshotId: string): Promise<ISnapshotActionResult> => {
+      const safeRoot = guardRoot(root)
+      if (!safeRoot) return { ok: false, error: 'Not a valid WordBird project' }
+      try {
+        const id = await snapshotService.restore(safeRoot, snapshotId)
+        return { ok: true, id: id ?? undefined }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        log.error('[novel] restore-snapshot failed:', error)
+        return { ok: false, error: message }
+      }
     }
   )
 

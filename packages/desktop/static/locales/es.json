@@ -291,7 +291,8 @@
       "toc": "Tabla de Contenidos",
       "biscuit": "Biscuit",
       "settings": "Configuración",
-      "binder": "Manuscrito"
+      "binder": "Manuscrito",
+      "history": "Historial"
     }
   },
   "commandPalette": {
@@ -1432,5 +1433,17 @@
     "compile": "Compilar",
     "compiled": "Manuscrito compilado en {path}",
     "empty": "Aún no hay nada; añade un capítulo para empezar."
+  },
+  "history": {
+    "title": "Historial",
+    "placeholder": "Nombra este momento…",
+    "take": "Guardar",
+    "auto": "auto",
+    "defaultMessage": "Instantánea",
+    "nothingToSave": "Nada ha cambiado desde la última instantánea.",
+    "restore": "Rebobinar",
+    "restoreConfirm": "¿Rebobinar todo el proyecto a «{message}»? Tu estado actual se guarda primero.",
+    "restored": "Rebobinado a «{message}»",
+    "empty": "Aún no hay instantáneas. Guarda una para poder volver a este momento."
   }
 }

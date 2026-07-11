@@ -292,7 +292,8 @@
       "toc": "目錄",
       "biscuit": "Biscuit",
       "settings": "設定",
-      "binder": "書稿"
+      "binder": "書稿",
+      "history": "歷史"
     }
   },
   "commandPalette": {
@@ -1442,5 +1443,17 @@
     "compile": "編譯",
     "compiled": "書稿已輸出到 {path}",
     "empty": "這裡還沒有內容——新增一個章節開始吧。"
+  },
+  "history": {
+    "title": "歷史",
+    "placeholder": "為這一刻命名…",
+    "take": "儲存",
+    "auto": "自動",
+    "defaultMessage": "快照",
+    "nothingToSave": "自上次快照以來沒有任何變更。",
+    "restore": "回溯",
+    "restoreConfirm": "將整個專案回溯到「{message}」？目前狀態會先儲存，隨時可以回來。",
+    "restored": "已回溯到「{message}」",
+    "empty": "還沒有快照。儲存一個，之後就能隨時回到此刻。"
   }
 }

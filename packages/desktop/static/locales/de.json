@@ -291,7 +291,8 @@
       "toc": "Inhaltsverzeichnis",
       "biscuit": "Biscuit",
       "settings": "Einstellungen",
-      "binder": "Manuskript"
+      "binder": "Manuskript",
+      "history": "Verlauf"
     }
   },
   "commandPalette": {
@@ -1432,5 +1433,17 @@
     "compile": "Zusammenstellen",
     "compiled": "Manuskript erstellt unter {path}",
     "empty": "Noch nichts hier — füge ein Kapitel hinzu."
+  },
+  "history": {
+    "title": "Verlauf",
+    "placeholder": "Diesen Moment benennen…",
+    "take": "Speichern",
+    "auto": "auto",
+    "defaultMessage": "Schnappschuss",
+    "nothingToSave": "Seit dem letzten Schnappschuss hat sich nichts geändert.",
+    "restore": "Zurückspulen",
+    "restoreConfirm": "Das gesamte Projekt auf „{message}“ zurücksetzen? Der aktuelle Stand wird zuerst gesichert.",
+    "restored": "Zurückgesetzt auf „{message}“",
+    "empty": "Noch keine Schnappschüsse. Speichere einen, um zu diesem Moment zurückkehren zu können."
   }
 }

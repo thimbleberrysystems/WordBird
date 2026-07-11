@@ -7,6 +7,7 @@ import * as git from 'isomorphic-git'
 import { isDirectory2 } from 'common/filesystem'
 import { isValidProjectPath } from '../filesystem/markdown'
 import { structureService } from '../services/novel/StructureService'
+import { snapshotService } from '../services/novel/SnapshotService'
 import type {
   ProjectCreateArgs,
   ProjectLoadArgs
@@ -52,7 +53,9 @@ const COMMON_FOLDERS = [
 
 const COMMON_FILES: Record<string, string> = {
   'bible/README.md': BIBLE_README,
-  'README.md': '# {{name}}\n\nA novel written with WordBird.'
+  'README.md': '# {{name}}\n\nA novel written with WordBird.',
+  // Compiled output is derived — keep it out of snapshots.
+  '.gitignore': 'exports/\n'
 }
 
 const FLAVOR_TEMPLATES: Record<
@@ -143,9 +146,10 @@ export const registerProjectHandlers = (): void => {
         log.warn('Initial structure manifest creation failed:', structureErr)
       }
 
-      // Phase 3: Initialize git repository
+      // Phase 3: Initialize git repository + first snapshot
       try {
         await git.init({ fs, dir: location })
+        await snapshotService.snapshot(location, 'Project created')
       } catch (gitErr) {
         log.warn('Git initialization failed:', gitErr)
       }

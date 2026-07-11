@@ -291,7 +291,8 @@
       "toc": "Table of Contents",
       "biscuit": "Biscuit",
       "settings": "Settings",
-      "binder": "Manuscript"
+      "binder": "Manuscript",
+      "history": "History"
     }
   },
   "commandPalette": {
@@ -1432,5 +1433,17 @@
     "compile": "Compile",
     "compiled": "Manuscript compiled to {path}",
     "empty": "Nothing here yet — add a chapter to begin."
+  },
+  "history": {
+    "title": "History",
+    "placeholder": "Name this moment…",
+    "take": "Save",
+    "auto": "auto",
+    "defaultMessage": "Snapshot",
+    "nothingToSave": "Nothing has changed since the last snapshot.",
+    "restore": "Rewind",
+    "restoreConfirm": "Rewind the whole project to \"{message}\"? Your current state is saved first, so you can always come back.",
+    "restored": "Rewound to \"{message}\"",
+    "empty": "No snapshots yet. Save one to make this moment easy to return to."
   }
 }

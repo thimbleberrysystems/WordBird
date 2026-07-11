@@ -48,6 +48,8 @@ import type {
   INovelCompileOptions,
   INovelStructureResult,
   INovelCompileResult,
+  ISnapshotListResult,
+  ISnapshotActionResult,
   ProjectFlavor
 } from './novel'
 
@@ -153,6 +155,12 @@ export interface IpcInvokeChannels {
   'mt::novel:compile': {
     args: [root: string, options?: INovelCompileOptions]
     ret: INovelCompileResult
+  }
+  'mt::novel:snapshot': { args: [root: string, message: string]; ret: ISnapshotActionResult }
+  'mt::novel:snapshots': { args: [root: string, limit?: number]; ret: ISnapshotListResult }
+  'mt::novel:restore-snapshot': {
+    args: [root: string, snapshotId: string]
+    ret: ISnapshotActionResult
   }
   'mt::uploader::upload': { args: [req: unknown]; ret: unknown }
   'mt::win::is-fullscreen': { args: []; ret: boolean }

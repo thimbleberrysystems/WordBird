@@ -292,7 +292,8 @@
       "toc": "目录",
       "biscuit": "Biscuit",
       "settings": "设置",
-      "binder": "书稿"
+      "binder": "书稿",
+      "history": "历史"
     }
   },
   "commandPalette": {
@@ -1433,5 +1434,17 @@
     "compile": "编译",
     "compiled": "书稿已输出到 {path}",
     "empty": "这里还没有内容——添加一个章节开始吧。"
+  },
+  "history": {
+    "title": "历史",
+    "placeholder": "为这一刻命名…",
+    "take": "保存",
+    "auto": "自动",
+    "defaultMessage": "快照",
+    "nothingToSave": "自上次快照以来没有任何更改。",
+    "restore": "回退",
+    "restoreConfirm": "将整个项目回退到“{message}”？当前状态会先保存，随时可以回来。",
+    "restored": "已回退到“{message}”",
+    "empty": "还没有快照。保存一个，之后就能随时回到此刻。"
   }
 }

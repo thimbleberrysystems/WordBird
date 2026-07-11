@@ -292,7 +292,8 @@
       "toc": "Table des matières",
       "biscuit": "Biscuit",
       "settings": "Paramètres",
-      "binder": "Manuscrit"
+      "binder": "Manuscrit",
+      "history": "Historique"
     }
   },
   "commandPalette": {
@@ -1434,5 +1435,17 @@
     "compile": "Compiler",
     "compiled": "Manuscrit compilé vers {path}",
     "empty": "Rien ici pour l’instant — ajoutez un chapitre pour commencer."
+  },
+  "history": {
+    "title": "Historique",
+    "placeholder": "Nommez ce moment…",
+    "take": "Enregistrer",
+    "auto": "auto",
+    "defaultMessage": "Instantané",
+    "nothingToSave": "Rien n’a changé depuis le dernier instantané.",
+    "restore": "Rembobiner",
+    "restoreConfirm": "Rembobiner tout le projet vers « {message} » ? Votre état actuel est d’abord sauvegardé.",
+    "restored": "Rembobiné vers « {message} »",
+    "empty": "Aucun instantané pour l’instant. Enregistrez-en un pour pouvoir revenir à ce moment."
   }
 }

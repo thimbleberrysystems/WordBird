@@ -292,7 +292,8 @@
       "toc": "목차",
       "biscuit": "Biscuit",
       "settings": "설정",
-      "binder": "원고"
+      "binder": "원고",
+      "history": "기록"
     }
   },
   "commandPalette": {
@@ -1434,5 +1435,17 @@
     "compile": "컴파일",
     "compiled": "원고가 {path}에 저장되었습니다",
     "empty": "아직 아무것도 없습니다. 챕터를 추가해 시작하세요."
+  },
+  "history": {
+    "title": "기록",
+    "placeholder": "이 순간에 이름 붙이기…",
+    "take": "저장",
+    "auto": "자동",
+    "defaultMessage": "스냅숏",
+    "nothingToSave": "마지막 스냅숏 이후 변경 사항이 없습니다.",
+    "restore": "되감기",
+    "restoreConfirm": "프로젝트 전체를 \"{message}\"(으)로 되감을까요? 현재 상태가 먼저 저장됩니다.",
+    "restored": "\"{message}\"(으)로 되감았습니다",
+    "empty": "아직 스냅숏이 없습니다. 저장해 두면 언제든 이 순간으로 돌아올 수 있습니다."
   }
 }
