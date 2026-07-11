@@ -134,7 +134,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: marktext-${{ matrix.name }}
+          name: wordbird-${{ matrix.name }}
           retention-days: 7
           if-no-files-found: error
           path: |
@@ -193,7 +193,7 @@ jobs:
             echo "## ⚠️ Note for macOS users"
             echo "Builds are unsigned (no Apple Developer ID). After dragging WordBird into Applications, clear the quarantine flag once:"
             echo '```'
-            echo 'xattr -cr /Applications/marktext.app'
+            echo 'xattr -cr /Applications/WordBird.app'
             echo '```'
             echo ""
             echo "## Verifying downloads"

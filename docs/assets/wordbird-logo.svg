@@ -1,86 +1,80 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1A3A6B"/>
-      <stop offset="100%" stop-color="#2E6DB4"/>
-    </linearGradient>
-    <linearGradient id="wingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#2058A8"/>
-      <stop offset="100%" stop-color="#4A90D9"/>
-    </linearGradient>
-    <linearGradient id="quillGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#F5A623"/>
-      <stop offset="100%" stop-color="#E8732A"/>
-    </linearGradient>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#F0F4FF"/>
-      <stop offset="100%" stop-color="#DCE8FF"/>
+      <stop offset="0%" stop-color="#BDE3FF"/>
+      <stop offset="100%" stop-color="#7CC4F8"/>
+    </linearGradient>
+    <linearGradient id="headGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFE95C"/>
+      <stop offset="100%" stop-color="#FFD21F"/>
+    </linearGradient>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFDF3D"/>
+      <stop offset="100%" stop-color="#FFC712"/>
     </linearGradient>
   </defs>
 
-  <!-- Rounded square background -->
+  <!-- Rounded-square app background -->
   <rect x="0" y="0" width="512" height="512" rx="110" ry="110" fill="url(#bgGrad)"/>
 
-  <!-- ── Tail quill feathers (behind body) ── -->
-  <!-- Outermost quill — long graceful sweep, amber -->
-  <path d="M 185 310
-             Q 130 350  90 420
-             Q 105 390 120 360
-             Q 140 325 160 305 Z"
-        fill="url(#quillGrad)" opacity="0.55"/>
-  <!-- Mid quill -->
-  <path d="M 195 305
-             Q 148 338  118 400
-             Q 132 372 148 344
-             Q 166 316 188 300 Z"
-        fill="url(#quillGrad)" opacity="0.75"/>
-  <!-- Inner quill — shortest, richest -->
-  <path d="M 205 298
-             Q 168 325 148 378
-             Q 160 352 176 330
-             Q 192 310 208 295 Z"
-        fill="url(#quillGrad)"/>
+  <!-- ══ Body (small, under the big head — classic cartoon canary) ══ -->
+  <ellipse cx="256" cy="408" rx="92" ry="70" fill="url(#bodyGrad)" stroke="#B07C00" stroke-width="7"/>
 
-  <!-- ── Wing — sweeping upward arc ── -->
-  <path d="M 240 265
-             Q 200 185  145 130
-             Q 170 160  210 210
-             Q 235 240  248 268 Z"
-        fill="url(#wingGrad)" opacity="0.7"/>
-  <path d="M 255 258
-             Q 215 165  170 105
-             Q 200 145  235 200
-             Q 252 230  260 260 Z"
-        fill="url(#wingGrad)" opacity="0.88"/>
-  <!-- Primary wing feathers — bold sweep -->
-  <path d="M 262 252
-             Q 242 155  210 88
-             Q 238 135  255 195
-             Q 265 230  268 255 Z"
-        fill="url(#bodyGrad)"/>
+  <!-- Wings -->
+  <path d="M 172 380 Q 128 400 130 445 Q 165 440 188 415 Q 180 395 172 380 Z"
+        fill="#FFD21F" stroke="#B07C00" stroke-width="6"/>
+  <path d="M 340 380 Q 384 400 382 445 Q 347 440 324 415 Q 332 395 340 380 Z"
+        fill="#FFD21F" stroke="#B07C00" stroke-width="6"/>
 
-  <!-- ── Body ── -->
-  <ellipse cx="295" cy="300" rx="95" ry="62"
-           fill="url(#bodyGrad)"
-           transform="rotate(-18 295 300)"/>
+  <!-- Tummy patch -->
+  <ellipse cx="256" cy="422" rx="52" ry="42" fill="#FFF3B0"/>
 
-  <!-- ── Head ── -->
-  <circle cx="366" cy="226" r="66" fill="url(#bodyGrad)"/>
+  <!-- ══ Big round head ══ -->
+  <circle cx="256" cy="212" r="158" fill="url(#headGrad)" stroke="#B07C00" stroke-width="8"/>
 
-  <!-- Beak -->
-  <path d="M 424 228  Q 472 210  428 252 Z" fill="url(#quillGrad)"/>
+  <!-- Three head feathers -->
+  <path d="M 236 58 Q 228 22 244 6 Q 250 34 252 56 Z" fill="#FFD21F" stroke="#B07C00" stroke-width="5"/>
+  <path d="M 256 54 Q 258 16 276 2 Q 274 32 268 56 Z" fill="#FFE95C" stroke="#B07C00" stroke-width="5"/>
+  <path d="M 274 60 Q 288 28 308 22 Q 296 50 282 66 Z" fill="#FFD21F" stroke="#B07C00" stroke-width="5"/>
 
-  <!-- Eye -->
-  <circle cx="384" cy="212" r="13" fill="white"/>
-  <circle cx="386" cy="213" r="7"  fill="#0D1B3E"/>
-  <circle cx="389" cy="210" r="3"  fill="white"/>
+  <!-- ══ Huge cartoon eyes ══ -->
+  <ellipse cx="206" cy="196" rx="52" ry="68" fill="#FFFFFF" stroke="#333333" stroke-width="7"/>
+  <ellipse cx="306" cy="196" rx="52" ry="68" fill="#FFFFFF" stroke="#333333" stroke-width="7"/>
+  <!-- Irises -->
+  <circle cx="218" cy="210" r="25" fill="#3D8BE8"/>
+  <circle cx="294" cy="210" r="25" fill="#3D8BE8"/>
+  <!-- Pupils -->
+  <circle cx="221" cy="212" r="12" fill="#1A1A1A"/>
+  <circle cx="291" cy="212" r="12" fill="#1A1A1A"/>
+  <!-- Eye sparkles -->
+  <circle cx="226" cy="200" r="7" fill="#FFFFFF"/>
+  <circle cx="300" cy="200" r="7" fill="#FFFFFF"/>
+  <circle cx="212" cy="222" r="4" fill="#FFFFFF" opacity="0.8"/>
+  <circle cx="286" cy="222" r="4" fill="#FFFFFF" opacity="0.8"/>
 
-  <!-- ── Breast / belly highlight ── -->
-  <ellipse cx="330" cy="318" rx="58" ry="36"
-           fill="#3D7CC9" opacity="0.35"
-           transform="rotate(-18 330 318)"/>
+  <!-- Cheerful eyebrows -->
+  <path d="M 168 118 Q 208 100 244 114" fill="none" stroke="#B07C00" stroke-width="9" stroke-linecap="round"/>
+  <path d="M 268 114 Q 304 100 344 118" fill="none" stroke="#B07C00" stroke-width="9" stroke-linecap="round"/>
 
-  <!-- ── Ink-stroke tail tip (quill nib) ── -->
-  <path d="M 89 422  Q 82 440  96 435  Q 106 430 110 418  Q 100 422 89 422 Z"
-        fill="#C8580A" opacity="0.9"/>
+  <!-- Blush cheeks -->
+  <ellipse cx="152" cy="258" rx="24" ry="15" fill="#FFAD7A" opacity="0.75"/>
+  <ellipse cx="360" cy="258" rx="24" ry="15" fill="#FFAD7A" opacity="0.75"/>
+
+  <!-- ══ Smiling orange beak ══ -->
+  <path d="M 216 278 Q 256 256 296 278 Q 287 310 256 314 Q 225 310 216 278 Z"
+        fill="#FF9E2C" stroke="#C96A10" stroke-width="7"/>
+  <path d="M 220 282 Q 256 298 292 282" fill="none" stroke="#C96A10" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- ══ Quill pen held by the right wing (the writer's bird) ══ -->
+  <g transform="rotate(-30 420 420)">
+    <rect x="413" y="360" width="13" height="92" rx="6" fill="#F5F9FF" stroke="#8FB4D9" stroke-width="5"/>
+    <path d="M 419 356 Q 400 318 419 288 Q 438 318 419 356 Z" fill="#FF7A59" stroke="#C94F2E" stroke-width="5"/>
+    <path d="M 415 456 L 419 474 L 424 456 Z" fill="#3D6B9E"/>
+  </g>
+
+  <!-- Feet peeking out -->
+  <path d="M 216 470 q -8 14 -20 16 M 216 470 q 2 16 -4 22 M 216 470 q 12 12 10 22"
+        fill="none" stroke="#FF9E2C" stroke-width="9" stroke-linecap="round"/>
+  <path d="M 296 470 q 8 14 20 16 M 296 470 q -2 16 4 22 M 296 470 q -12 12 -10 22"
+        fill="none" stroke="#FF9E2C" stroke-width="9" stroke-linecap="round"/>
 </svg>
