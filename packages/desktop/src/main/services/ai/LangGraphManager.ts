@@ -27,6 +27,7 @@ import { registerBuiltInAgentToolHandlers } from './AgentToolHandlers'
 import { getActiveAgentProjectRoot, setAgentToolAccessor } from './AgentProjectRootResolver'
 import { FileCheckpointSaver } from './FileCheckpointSaver'
 import { Orchestrator } from './orchestrator/Orchestrator'
+import { contextBuilder } from './ContextBuilder'
 import type Accessor from '../../app/accessor'
 
 const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000
@@ -313,7 +314,10 @@ export class LangGraphManager {
           emitActivity: (event) => {
             this._getMainWindow()?.webContents.send('mt::ai:activity', event)
           },
-          requestApproval: (request) => this._requestApproval(request)
+          requestApproval: (request) => this._requestApproval(request),
+          // Per-turn project grounding: outline + book summary + open
+          // continuity issues, shared by supervisor and workers.
+          buildBrief: () => contextBuilder.buildProjectBrief(getActiveAgentProjectRoot())
         },
         checkpointer: this._checkpointer ?? undefined
       })

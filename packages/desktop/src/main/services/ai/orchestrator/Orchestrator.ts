@@ -39,6 +39,62 @@ import type {
 export interface OrchestratorCallbacks {
   emitActivity: (event: IAgentActivityEvent) => void
   requestApproval: (request: IAgentApprovalRequest) => Promise<boolean>
+  /** Compact per-turn project grounding (outline + book summary + issues). */
+  buildBrief?: () => Promise<string>
+}
+
+// ---- Context budgeting -------------------------------------------------
+// Thread state accumulates every turn and tool result; without a window
+// the model input grows unboundedly on a long project. Budgets are in
+// characters (~4 chars/token): generous enough for continuity, small
+// enough to never blow a context window.
+const HISTORY_CHAR_BUDGET = 60000
+const SINGLE_MESSAGE_CHAR_CAP = 16000
+const WORKER_RESULT_CHAR_CAP = 8000
+
+const contentLength = (message: BaseMessage): number => {
+  const c = message.content
+  return typeof c === 'string' ? c.length : JSON.stringify(c ?? '').length
+}
+
+const clipContent = (message: BaseMessage): BaseMessage => {
+  if (typeof message.content !== 'string') return message
+  if (message.content.length <= SINGLE_MESSAGE_CHAR_CAP) return message
+  const clipped =
+    message.content.slice(0, SINGLE_MESSAGE_CHAR_CAP) +
+    `\n…[${message.content.length - SINGLE_MESSAGE_CHAR_CAP} characters trimmed]`
+  if (message instanceof ToolMessage) {
+    return new ToolMessage({ content: clipped, tool_call_id: message.tool_call_id })
+  }
+  return message
+}
+
+/**
+ * Fit the conversation into the character budget: keep the most recent
+ * messages whole (oversized tool results clipped), drop the oldest, and
+ * report whether anything was elided so the caller can note it in the
+ * system prompt. The window never starts on a ToolMessage — an orphaned
+ * tool result without its calling AIMessage is an API error on most
+ * providers.
+ */
+export const trimHistory = (
+  messages: BaseMessage[],
+  budget = HISTORY_CHAR_BUDGET
+): { messages: BaseMessage[]; trimmed: boolean } => {
+  const clipped = messages.map(clipContent)
+  let total = clipped.reduce((sum, m) => sum + contentLength(m), 0)
+  if (total <= budget) return { messages: clipped, trimmed: false }
+
+  let start = 0
+  while (start < clipped.length - 1 && total > budget) {
+    total -= contentLength(clipped[start])
+    start += 1
+  }
+  // Never lead with orphaned tool results.
+  while (start < clipped.length - 1 && clipped[start] instanceof ToolMessage) {
+    start += 1
+  }
+  return { messages: clipped.slice(start), trimmed: true }
 }
 
 export interface OrchestratorRunOptions {
@@ -82,11 +138,20 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   '- Answer directly (or with your own read tools) when the request is simple.\n' +
   `- For anything needing legwork, call ${SPAWN_TOOL_NAME} with up to ${maxWorkers} agents per wave; ` +
   'independent tasks belong in ONE wave so they run in parallel.\n' +
-  '- Give each agent complete, self-contained instructions: what to do, where to look, what to return.\n' +
+  '- Give each agent complete, self-contained instructions: what to do, where to look, what to ' +
+  'return. Include relevant unit ids/paths from the project brief so they start oriented.\n' +
   '- Prose/bible changes are made by drafter or line-editor agents and always reach the writer as ' +
   'reviewable diffs — never claim changes happened without spawning an agent that proposed them.\n' +
   '- After results return, either spawn another wave (if genuinely needed) or reply to the writer ' +
   'in warm, plain language. Do not mention roles, waves, or tool names to the writer.\n' +
+  '\nTHE NOVEL IS THE SOURCE OF TRUTH:\n' +
+  '- bible/ is established canon. Anything that touches characters, places, or plot must be checked ' +
+  'against it (read_bible) before writing or claiming facts. Pages marked locked are immutable.\n' +
+  '- Never assert where something appears in the manuscript without search_manuscript evidence.\n' +
+  '- Prefer summaries (read_summary) over full prose to orient; read full units only when the task ' +
+  'demands the actual text. Have summaries refreshed (update_summary) after prose changes.\n' +
+  '- Before sweeping multi-file changes, have an agent take snapshot_project so the writer can rewind.\n' +
+  '- New canon discovered while working should be recorded via a drafter with propose_bible_update.\n' +
   (mode === 'plan'
     ? '\nPLAN MODE IS ACTIVE: do NOT call any tools. Instead, reply with a short numbered plan of ' +
       'what you would do — which specialists you would spawn and what each would be asked. ' +
@@ -121,6 +186,24 @@ export class Orchestrator {
 
   setMode(mode: AgentPermissionMode): void {
     this._mode = mode
+  }
+
+  // The project brief is rebuilt at most once per few seconds: the
+  // supervisor and every parallel worker in the same turn share one build.
+  private _briefCache: { value: string; at: number } | null = null
+
+  private async _getBrief(): Promise<string> {
+    if (!this._callbacks.buildBrief) return ''
+    if (this._briefCache && Date.now() - this._briefCache.at < 5000) {
+      return this._briefCache.value
+    }
+    try {
+      const value = await this._callbacks.buildBrief()
+      this._briefCache = { value, at: Date.now() }
+      return value
+    } catch {
+      return ''
+    }
   }
 
   private _activity(
@@ -200,15 +283,26 @@ export class Orchestrator {
     this._activity('agent-start', `${definition.displayName}: ${definition.activityLabel}`, spawn.task, spawn.role)
     try {
       const { graph } = this._buildWorker(spawn.role)
+      // Workers are context-isolated (they never see the conversation), but
+      // they share the same compact project grounding as the supervisor so
+      // they start oriented instead of re-discovering the novel via tools.
+      const brief = await this._getBrief()
+      const systemText = definition.systemPrompt + (brief ? `\n\n${brief}` : '')
       const result = (await graph.invoke(
         {
-          messages: [new SystemMessage(definition.systemPrompt), new HumanMessage(spawn.task)]
+          messages: [new SystemMessage(systemText), new HumanMessage(spawn.task)]
         },
         { recursionLimit, signal } as never
       )) as { messages: BaseMessage[] }
       const last = result.messages[result.messages.length - 1]
-      const content =
+      let content =
         typeof last?.content === 'string' ? last.content : JSON.stringify(last?.content ?? '')
+      // Worker reports persist in thread state — keep them bounded.
+      if (content.length > WORKER_RESULT_CHAR_CAP) {
+        content =
+          content.slice(0, WORKER_RESULT_CHAR_CAP) +
+          `\n…[report truncated at ${WORKER_RESULT_CHAR_CAP} characters]`
+      }
       this._activity('agent-done', `${definition.displayName} finished`, undefined, spawn.role)
       return content || '(no result)'
     } catch (error) {
@@ -270,10 +364,19 @@ export class Orchestrator {
 
     const workflow = new StateGraph(MessagesAnnotation)
       .addNode('supervisor', async(state, config) => {
-        const messages = [
-          new SystemMessage(buildSupervisorPrompt(mode, budget.maxWorkersPerWave)),
-          ...state.messages
-        ]
+        // Grounding + budgeting, fresh every call and never persisted:
+        // the system prompt carries the project brief, and the accumulated
+        // thread is windowed to the character budget.
+        const brief = await this._getBrief()
+        const { messages: history, trimmed } = trimHistory(state.messages)
+        const systemText =
+          buildSupervisorPrompt(mode, budget.maxWorkersPerWave) +
+          (brief ? `\n\n${brief}` : '') +
+          (trimmed
+            ? '\n\n[Note: earlier parts of this long conversation were trimmed for space. ' +
+              'Rely on the project brief and tools rather than memory of old turns.]'
+            : '')
+        const messages = [new SystemMessage(systemText), ...history]
         const response = await bound.invoke(messages, config)
         return { messages: [response] }
       })

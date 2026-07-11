@@ -27,6 +27,24 @@ const execFileAsync = promisify(execFile)
 
 const MAX_SEARCH_MATCHES = 200
 const MAX_FILE_BYTES = 2 * 1024 * 1024
+// Context budget: a single tool result must never be able to blow the
+// model's window (2 MB of prose is ~500k tokens). Reads are capped and
+// truncation is announced so the agent can narrow with line ranges.
+const MAX_TOOL_OUTPUT_CHARS = 24000
+const MAX_SYNOPSIS_CHARS = 200
+
+const capForContext = (
+  text: string,
+  hint: string
+): { text: string; truncated: boolean } => {
+  if (text.length <= MAX_TOOL_OUTPUT_CHARS) return { text, truncated: false }
+  return {
+    text:
+      text.slice(0, MAX_TOOL_OUTPUT_CHARS) +
+      `\n…[truncated ${text.length - MAX_TOOL_OUTPUT_CHARS} characters — ${hint}]`,
+    truncated: true
+  }
+}
 
 // ---- shared arg helpers (kept local to avoid circular imports) ----
 
@@ -118,7 +136,10 @@ const toSummaryNode = (unit: INovelUnit): UnitSummaryNode => ({
   path: unit.path,
   status: unit.status,
   pov: unit.pov,
-  synopsis: unit.synopsis,
+  // On a 1000-scene novel, full synopses would dominate the context.
+  synopsis: unit.synopsis && unit.synopsis.length > MAX_SYNOPSIS_CHARS
+    ? unit.synopsis.slice(0, MAX_SYNOPSIS_CHARS) + '…'
+    : unit.synopsis,
   wordCount: unit.wordCount,
   children: unit.children?.map(toSummaryNode)
 })
@@ -151,12 +172,17 @@ const readUnit = async(
     const content = await readTextSafe(resolveInside(root, leaf.path as string))
     parts.push(leaves.length > 1 ? `<<scene: ${leaf.title}>>\n${content}` : content)
   }
+  const capped = capForContext(
+    parts.join('\n\n'),
+    'read individual scenes by unit id, or use read_project_file with start/end line ranges'
+  )
   return {
     unitId,
     title: found.unit.title,
     type: found.unit.type,
     paths: leaves.map((l) => l.path),
-    content: parts.join('\n\n')
+    content: capped.text,
+    truncated: capped.truncated
   }
 }
 
@@ -326,7 +352,11 @@ const readBible = async(
 
   if (target) {
     const filePath = resolveInside(root, target, 'bible')
-    return { path: target, content: await readTextSafe(filePath) }
+    const capped = capForContext(
+      await readTextSafe(filePath),
+      'use read_project_file with start/end line ranges for the rest'
+    )
+    return { path: target, content: capped.text, truncated: capped.truncated }
   }
 
   const files = await listFilesRecursive(path.join(root, 'bible'), 'bible')

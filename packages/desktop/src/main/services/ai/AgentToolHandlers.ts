@@ -136,6 +136,10 @@ const replaceLineRange = (
   return [...lines.slice(0, startIdx), ...replacementLines, ...lines.slice(endIdx)].join('\n')
 }
 
+// A single tool result must not be able to blow the model's context
+// window; truncation is announced so the agent narrows with start/end.
+const MAX_READ_OUTPUT_CHARS = 24000
+
 const readAgentFile = async(
   args: Record<string, unknown>,
   context: AgentToolContext
@@ -147,16 +151,28 @@ const readAgentFile = async(
   const content = await readTextFile(filePath)
   const range = normalizeLineRange(content, start, end)
 
+  let selected =
+    content.length === 0
+      ? ''
+      : content.split('\n').slice(range.startLine - 1, range.endLine).join('\n')
+  let truncated = false
+  if (selected.length > MAX_READ_OUTPUT_CHARS) {
+    selected =
+      selected.slice(0, MAX_READ_OUTPUT_CHARS) +
+      `\n…[truncated ${selected.length - MAX_READ_OUTPUT_CHARS} characters — request a ` +
+      'narrower start/end line range to read the rest]'
+    truncated = true
+  }
+
   return {
     path: relativePath,
     projectRoot,
     filePath,
-    content:
-      content.length === 0
-        ? ''
-        : content.split('\n').slice(range.startLine - 1, range.endLine).join('\n'),
+    content: selected,
     start: range.start,
-    end: range.end
+    end: range.end,
+    totalLines: content.length === 0 ? 0 : content.split('\n').length,
+    truncated
   }
 }
 
