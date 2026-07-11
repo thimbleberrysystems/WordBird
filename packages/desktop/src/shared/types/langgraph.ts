@@ -87,3 +87,36 @@ export interface IBlockDiffState {
   editId: string
   changeType: 'modified' | 'added' | 'removed'
 }
+
+/**
+ * Claude-Code-style autonomy modes governing what the orchestrator may do
+ * without asking:
+ *  - plan      : describe intended agents/edits; execute nothing.
+ *  - ask       : cheap reads run freely; asks before spawning sub-agents.
+ *  - auto      : spawns and works freely within budget; edits still reviewed.
+ *  - full-auto : long-horizon runs with larger budgets; edits still reviewed.
+ */
+export type AgentPermissionMode = 'plan' | 'ask' | 'auto' | 'full-auto'
+
+export type AgentRole = 'explorer' | 'researcher' | 'drafter' | 'auditor' | 'line-editor'
+
+export interface IAgentSpawnRequest {
+  role: AgentRole
+  task: string
+}
+
+/** Plain-language activity feed events shown in the Biscuit panel. */
+export interface IAgentActivityEvent {
+  id: string
+  ts: number
+  kind: 'status' | 'spawn' | 'agent-start' | 'agent-done' | 'tool' | 'plan' | 'approval'
+  role?: AgentRole
+  label: string
+  detail?: string
+}
+
+export interface IAgentApprovalRequest {
+  id: string
+  summary: string
+  spawns: IAgentSpawnRequest[]
+}

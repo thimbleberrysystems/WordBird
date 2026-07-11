@@ -8,17 +8,16 @@ import { ChatAnthropic } from '@langchain/anthropic'
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
 import { ChatOllama } from '@langchain/ollama'
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
-import type { Runnable } from '@langchain/core/runnables'
 import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages'
-import { StateGraph, MessagesAnnotation } from '@langchain/langgraph'
-import { ToolNode, toolsCondition } from '@langchain/langgraph/prebuilt'
 import type {
   IAIConfig,
   ILangGraphMessage,
   ILangGraphResponse,
   IAgentToolCall,
   IAgentToolResult,
-  IAgentApplyEditRequest
+  IAgentApplyEditRequest,
+  IAgentApprovalRequest,
+  AgentPermissionMode
 } from '../../../shared/types/langgraph'
 import type { AIProvider } from '../../../shared/constants/ai'
 import { PROVIDER_BASE_URLS, PROVIDER_DEFAULT_MODELS } from '../../../shared/constants/ai'
@@ -27,7 +26,10 @@ import { AgentToolService, AgentToolPackLoader } from './AgentToolService'
 import { registerBuiltInAgentToolHandlers } from './AgentToolHandlers'
 import { getActiveAgentProjectRoot, setAgentToolAccessor } from './AgentProjectRootResolver'
 import { FileCheckpointSaver } from './FileCheckpointSaver'
+import { Orchestrator } from './orchestrator/Orchestrator'
 import type Accessor from '../../app/accessor'
+
+const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000
 
 type CompiledAgent = {
   invoke: (
@@ -40,31 +42,6 @@ type CompiledAgent = {
   ) => Promise<unknown>
 }
 
-const buildBiscuitSystemPrompt = (toolDescriptions: string): string =>
-  'You are Biscuit, the AI writing companion inside WordBird, a novel-writing app. ' +
-  'You help a novelist brainstorm, draft, refine, and extend their book while never ' +
-  'contradicting established canon.\n\n' +
-  'THE PROJECT:\n' +
-  '- The manuscript is an ordered tree of parts/chapters/scenes (the binder). ' +
-  'Use list_structure to orient yourself and read_unit / read_summary to read at the right level.\n' +
-  '- bible/ is the story bible: characters, places, plot threads, and research. ' +
-  'It is canon. Consult it (read_bible) BEFORE writing or editing prose, and record new ' +
-  'canon with propose_bible_update. Save web research to bible/research/ with source URLs.\n' +
-  '- Use search_manuscript to find every place something appears before you claim or change it.\n' +
-  '- Keep summaries fresh with update_summary after prose changes; log contradictions you ' +
-  'notice with log_continuity_issue; take snapshot_project before sweeping changes.\n\n' +
-  'You have access to these tools:\n\n' +
-  toolDescriptions +
-  '\n\nCRITICAL INSTRUCTIONS:\n' +
-  '1. To write or modify prose or bible pages, use the propose_* tools — never claim to have ' +
-  'written something without calling a tool.\n' +
-  '2. ALWAYS read existing content (read_unit / read_project_file / read_bible) before proposing changes.\n' +
-  '3. After you propose an edit, IMMEDIATELY STOP calling tools and give a short natural-language summary.\n' +
-  '4. NEVER call tools again after proposing an edit — the user reviews the diff and applies it.\n' +
-  '5. Match the manuscript\'s voice, tense, and point of view when drafting prose.\n\n' +
-  'Example response after proposing an edit:\n' +
-  '"I\'ve drafted the tavern scene. It\'s ready for your review — accept or discard the changes inline."'
-
 export class LangGraphManager {
   private _agent: CompiledAgent | null = null
   private _currentProvider: AIProvider | null = null
@@ -75,6 +52,43 @@ export class LangGraphManager {
   private _editProposed: boolean = false
   private _checkpointer: FileCheckpointSaver | null = null
   private _threadId: string | null = null
+  private _orchestrator: Orchestrator | null = null
+  private _permissionMode: AgentPermissionMode = 'ask'
+  private _pendingApprovals = new Map<
+    string,
+    { resolve: (approved: boolean) => void; timer: NodeJS.Timeout }
+  >()
+
+  get permissionMode(): AgentPermissionMode {
+    return this._permissionMode
+  }
+
+  setPermissionMode(mode: AgentPermissionMode): void {
+    this._permissionMode = mode
+    this._orchestrator?.setMode(mode)
+  }
+
+  resolveApproval(approvalId: string, approved: boolean): boolean {
+    const pending = this._pendingApprovals.get(approvalId)
+    if (!pending) return false
+    clearTimeout(pending.timer)
+    this._pendingApprovals.delete(approvalId)
+    pending.resolve(approved)
+    return true
+  }
+
+  private _requestApproval(request: IAgentApprovalRequest): Promise<boolean> {
+    const mainWindow = this._getMainWindow()
+    if (!mainWindow) return Promise.resolve(false)
+    mainWindow.webContents.send('mt::ai:approval-request', request)
+    return new Promise<boolean>((resolve) => {
+      const timer = setTimeout(() => {
+        this._pendingApprovals.delete(request.id)
+        resolve(false)
+      }, APPROVAL_TIMEOUT_MS)
+      this._pendingApprovals.set(request.id, { resolve, timer })
+    })
+  }
 
   /**
    * Durable agent state lives inside the project (`.wordbird/agent-state/`,
@@ -227,12 +241,22 @@ export class LangGraphManager {
       )
       this._threadId = this._loadOrCreateThreadId()
 
-      const modelClient = this._createChatModel(config)
-      const tools = this._agentToolService.getLangChainTools()
-      const modelWithTools =
-        tools.length && modelClient.bindTools ? modelClient.bindTools(tools) : modelClient
-
-      this._agent = this._buildGraph(modelWithTools as Runnable, tools)
+      // Dynamic orchestrator: the supervisor spawns role-scoped sub-agents
+      // at runtime (see orchestrator/). The model factory creates a fresh
+      // client per graph so workers and supervisor never share bind state.
+      this._orchestrator = new Orchestrator({
+        modelFactory: () => this._createChatModel(config) as never,
+        tools: this._agentToolService.getLangChainTools(),
+        callbacks: {
+          emitActivity: (event) => {
+            this._getMainWindow()?.webContents.send('mt::ai:activity', event)
+          },
+          requestApproval: (request) => this._requestApproval(request)
+        },
+        checkpointer: this._checkpointer ?? undefined
+      })
+      this._orchestrator.setMode(this._permissionMode)
+      this._agent = this._orchestrator.buildGraph() as unknown as CompiledAgent
     } catch (error) {
       log.error('[LangGraphMain] Connect error details:', error)
       this.disconnect()
@@ -244,12 +268,16 @@ export class LangGraphManager {
   disconnect(): void {
     this._checkpointer?.flush()
     this._agent = null
+    this._orchestrator = null
     this._currentProvider = null
     this._currentModel = null
     this._systemPromptAdded = false
     this._editProposed = false
     this._checkpointer = null
     this._threadId = null
+    for (const [id] of this._pendingApprovals) {
+      this.resolveApproval(id, false)
+    }
   }
 
   async fetchModels(provider: AIProvider, apiKey: string, baseUrl?: string): Promise<string[]> {
@@ -367,9 +395,13 @@ export class LangGraphManager {
     messages: ILangGraphMessage[],
     signal?: AbortSignal
   ): Promise<ILangGraphResponse> {
-    if (!this._agent) {
+    if (!this._orchestrator) {
       throw new Error('Not connected to any AI provider')
     }
+    // Rebuild per turn: the compiled graph bakes in the permission mode,
+    // which the writer can change between messages. Compilation is cheap.
+    this._orchestrator.setMode(this._permissionMode)
+    this._agent = this._orchestrator.buildGraph() as unknown as CompiledAgent
 
     const toLangchain = (msg: ILangGraphMessage): HumanMessage | AIMessage | SystemMessage => {
       switch (msg.role) {
@@ -405,16 +437,6 @@ export class LangGraphManager {
 
     const langchainMessages = outgoing.map(toLangchain)
 
-    const hasSystemMessage = langchainMessages.some((m) => m instanceof SystemMessage)
-    if (!hasSystemMessage && !this._systemPromptAdded && !threadHasState) {
-      const toolDefinitions = this._agentToolService.getDefinitions()
-      const toolDescriptions = toolDefinitions
-        .map((t) => `${t.name}: ${t.description}`)
-        .join('\n')
-      langchainMessages.unshift(new SystemMessage(buildBiscuitSystemPrompt(toolDescriptions)))
-      this._systemPromptAdded = true
-    }
-
     if (this._editProposed) {
       langchainMessages.unshift(new SystemMessage(
         'IMPORTANT: An edit has already been proposed. Do NOT call any tools. ' +
@@ -422,11 +444,11 @@ export class LangGraphManager {
       ))
     }
 
-    const response = await this._agent.invoke(
+    const response = await this._agent!.invoke(
       { messages: langchainMessages },
       {
         signal,
-        recursionLimit: 10,
+        recursionLimit: this._orchestrator.recursionLimit(),
         ...(this._checkpointer && this._threadId
           ? { configurable: { thread_id: this._threadId } }
           : {})
@@ -492,29 +514,6 @@ export class LangGraphManager {
       default:
         throw new Error(`Unsupported provider: ${provider}`)
     }
-  }
-
-  private _buildGraph(model: Runnable, tools: unknown[]): CompiledAgent {
-    const toolNode = new ToolNode(tools as never)
-
-    log.debug(`[LangGraphMain] Building graph with ${tools.length} tools`)
-
-    const workflow = new StateGraph(MessagesAnnotation)
-      .addNode('agent', async(state) => {
-        const response = await model.invoke(state.messages)
-        return { messages: [response] }
-      })
-      .addNode('tools', toolNode)
-      .addEdge('__start__', 'agent')
-      .addConditionalEdges('agent', toolsCondition, {
-        tools: 'tools',
-        __end__: '__end__'
-      })
-      .addEdge('tools', 'agent')
-
-    return workflow.compile({
-      checkpointer: this._checkpointer ?? undefined
-    }) as unknown as CompiledAgent
   }
 
   private _extractResponseContent(response: unknown): string {

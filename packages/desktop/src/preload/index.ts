@@ -29,7 +29,10 @@ import type {
   IAgentToolCall,
   IAgentToolResult,
   IAgentApplyEditRequest,
-  IAgentEditProposal
+  IAgentEditProposal,
+  IAgentActivityEvent,
+  IAgentApprovalRequest,
+  AgentPermissionMode
 } from '@shared/types/langgraph'
 
 import type {
@@ -276,6 +279,20 @@ const aiAPI = {
   sendMessage: (messages: ILangGraphMessage[]) => invoke('mt::ai:send-message', messages),
   abort: () => invoke('mt::ai:abort'),
   resetThread: () => invoke('mt::ai:reset-thread'),
+  setMode: (mode: AgentPermissionMode) => invoke('mt::ai:set-mode', mode),
+  getMode: () => invoke('mt::ai:get-mode'),
+  approve: (approvalId: string, approved: boolean) =>
+    invoke('mt::ai:approve', approvalId, approved),
+  onActivity: (handler: (event: IAgentActivityEvent) => void) => {
+    const subscription = (_e: unknown, event: IAgentActivityEvent) => handler(event)
+    ipcRenderer.on('mt::ai:activity', subscription)
+    return () => ipcRenderer.removeListener('mt::ai:activity', subscription)
+  },
+  onApprovalRequest: (handler: (request: IAgentApprovalRequest) => void) => {
+    const subscription = (_e: unknown, request: IAgentApprovalRequest) => handler(request)
+    ipcRenderer.on('mt::ai:approval-request', subscription)
+    return () => ipcRenderer.removeListener('mt::ai:approval-request', subscription)
+  },
   fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) =>
     invoke('mt::ai:fetch-models', provider, apiKey, baseUrl),
   pullModel: (model: string, baseUrl?: string) => invoke('mt::ai:pull-model', model, baseUrl),

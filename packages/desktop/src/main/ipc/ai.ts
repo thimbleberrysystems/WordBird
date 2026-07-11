@@ -8,7 +8,8 @@ import type {
   ILangGraphMessage,
   IAgentToolCall,
   IAgentToolResult,
-  IAgentApplyEditRequest
+  IAgentApplyEditRequest,
+  AgentPermissionMode
 } from '../../shared/types/langgraph'
 
 export const registerAIHandlers = (): void => {
@@ -51,6 +52,21 @@ export const registerAIHandlers = (): void => {
 
   ipcMain.handle('mt::ai:reset-thread', async() => {
     return { threadId: langGraphManager.resetThread() }
+  })
+
+  ipcMain.handle('mt::ai:set-mode', async(_e, mode: AgentPermissionMode) => {
+    if (mode === 'plan' || mode === 'ask' || mode === 'auto' || mode === 'full-auto') {
+      langGraphManager.setPermissionMode(mode)
+    }
+    return { mode: langGraphManager.permissionMode }
+  })
+
+  ipcMain.handle('mt::ai:get-mode', async() => {
+    return { mode: langGraphManager.permissionMode }
+  })
+
+  ipcMain.handle('mt::ai:approve', async(_e, approvalId: string, approved: boolean) => {
+    return { handled: langGraphManager.resolveApproval(approvalId, approved) }
   })
 
   // Durable agent threads: make sure buffered checkpoints reach disk.

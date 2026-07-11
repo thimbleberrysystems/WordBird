@@ -23,7 +23,10 @@ import type {
   IAgentToolCall,
   IAgentToolResult,
   IAgentApplyEditRequest,
-  IAgentEditProposal
+  IAgentEditProposal,
+  IAgentActivityEvent,
+  IAgentApprovalRequest,
+  AgentPermissionMode
 } from '@shared/types/langgraph'
 import type {
   INovelCreateUnitPayload,
@@ -156,6 +159,11 @@ declare global {
       sendMessage: (messages: ILangGraphMessage[]) => Promise<ILangGraphResponse>
       abort: () => Promise<void>
       resetThread: () => Promise<{ threadId: string }>
+      setMode: (mode: AgentPermissionMode) => Promise<{ mode: AgentPermissionMode }>
+      getMode: () => Promise<{ mode: AgentPermissionMode }>
+      approve: (approvalId: string, approved: boolean) => Promise<{ handled: boolean }>
+      onActivity: (handler: (event: IAgentActivityEvent) => void) => () => void
+      onApprovalRequest: (handler: (request: IAgentApprovalRequest) => void) => () => void
       fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) => Promise<string[]>
       pullModel: (model: string, baseUrl?: string) => Promise<{ success: boolean }>
       onPullProgress: (

@@ -26,7 +26,10 @@ import type {
   IAgentToolCall,
   IAgentToolResult,
   IAgentApplyEditRequest,
-  IAgentEditProposal
+  IAgentEditProposal,
+  IAgentActivityEvent,
+  IAgentApprovalRequest,
+  AgentPermissionMode
 } from './langgraph'
 import type {
   MarkdownDocument,
@@ -126,6 +129,9 @@ export interface IpcInvokeChannels {
   'mt::ai:apply-edit-in-renderer': { args: [IAgentApplyEditRequest]; ret: { ok: boolean; error?: string } }
   'mt::ai:abort': { args: []; ret: { success: boolean } }
   'mt::ai:reset-thread': { args: []; ret: { threadId: string } }
+  'mt::ai:set-mode': { args: [mode: AgentPermissionMode]; ret: { mode: AgentPermissionMode } }
+  'mt::ai:get-mode': { args: []; ret: { mode: AgentPermissionMode } }
+  'mt::ai:approve': { args: [approvalId: string, approved: boolean]; ret: { handled: boolean } }
   'mt::ai:fetch-models': { args: [AIProvider, string, string?]; ret: string[] }
   'mt::ai:pull-model': { args: [string, string?]; ret: { success: boolean } }
   'mt::project:create': { args: [ProjectCreateArgs?]; ret: ProjectCreateResult }
@@ -311,6 +317,8 @@ export interface IpcMainEventChannels {
   'mt::ai:edit-proposal': [
     proposal: { edit: IAgentEditProposal; oldContent: string; originalPath: string }
   ]
+  'mt::ai:activity': [event: IAgentActivityEvent]
+  'mt::ai:approval-request': [request: IAgentApprovalRequest]
   'mt::about-dialog': []
   'mt::ask-for-close': []
   'mt::bootstrap-editor': [config: BootstrapEditorConfig]
