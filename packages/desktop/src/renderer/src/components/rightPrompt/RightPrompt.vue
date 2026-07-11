@@ -23,7 +23,34 @@
       <div class="prompt-title">
         Biscuit
       </div>
+      <div class="header-actions">
+        <el-tooltip
+          content="Start a fresh conversation"
+          placement="bottom"
+        >
+          <el-icon
+            class="header-action"
+            @click="newConversation"
+          >
+            <CirclePlus />
+          </el-icon>
+        </el-tooltip>
+      </div>
     </header>
+
+    <!-- Autonomy mode selector (Claude-Code style) -->
+    <div class="mode-selector">
+      <button
+        v-for="m in MODES"
+        :key="m.id"
+        class="mode-chip"
+        :class="{ active: mode === m.id }"
+        :title="m.hint"
+        @click="setMode(m.id)"
+      >
+        {{ m.label }}
+      </button>
+    </div>
 
     <section
       ref="promptBody"
@@ -36,6 +63,51 @@
       >
         <div class="message__text">
           {{ message.content }}
+        </div>
+      </div>
+
+      <!-- Approval request card (ask mode) -->
+      <div
+        v-if="pendingApproval"
+        class="approval-card"
+      >
+        <div class="approval-title">
+          Biscuit would like to send out:
+        </div>
+        <div class="approval-summary">
+          {{ pendingApproval.summary }}
+        </div>
+        <div class="approval-actions">
+          <el-button
+            size="small"
+            @click="respondApproval(false)"
+          >
+            Not now
+          </el-button>
+          <el-button
+            size="small"
+            type="primary"
+            @click="respondApproval(true)"
+          >
+            Go ahead
+          </el-button>
+        </div>
+      </div>
+
+      <!-- Live activity feed (plain-language agent monitor) -->
+      <div
+        v-if="sending && activity.length > 0"
+        class="activity-feed"
+      >
+        <div
+          v-for="item in visibleActivity"
+          :key="item.id"
+          class="activity-item"
+          :class="`activity--${item.kind}`"
+          :title="item.detail"
+        >
+          <span class="activity-dot" />
+          <span class="activity-label">{{ item.label }}</span>
         </div>
       </div>
 
@@ -102,16 +174,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed, onBeforeUnmount } from 'vue'
+import { ref, nextTick, computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '../../store/preferences'
 import { useLayoutStore } from '../../store/layout'
 import { langGraphService } from '../../services/langgraph'
-import { DArrowRight } from '@element-plus/icons-vue'
+import { DArrowRight, CirclePlus } from '@element-plus/icons-vue'
 import GlobalAgentReview from '../agent/GlobalAgentReview.vue'
-import {
-  type ILangGraphMessage
+import type {
+  ILangGraphMessage,
+  IAgentActivityEvent,
+  IAgentApprovalRequest,
+  AgentPermissionMode
 } from '@shared/types/langgraph'
 
 // Store
@@ -175,6 +250,8 @@ const togglePanel = () => {
 
 onBeforeUnmount(() => {
   stopResizing()
+  unsubActivity?.()
+  unsubApproval?.()
 })
 
 // Reactive state
@@ -182,6 +259,73 @@ const promptBody = ref<HTMLElement | null>(null)
 const userInput = ref('')
 const sending = ref(false)
 const aiMessages = ref<ILangGraphMessage[]>([])
+
+// ---- Autonomy mode (Claude-Code style) ----
+const MODES: Array<{ id: AgentPermissionMode; label: string; hint: string }> = [
+  { id: 'plan', label: 'Plan', hint: 'Biscuit describes what it would do — nothing runs.' },
+  { id: 'ask', label: 'Ask', hint: 'Biscuit asks before sending out helpers.' },
+  { id: 'auto', label: 'Auto', hint: 'Biscuit works freely; you review every change.' },
+  { id: 'full-auto', label: 'Max', hint: 'Long tasks, bigger budgets; changes still reviewed.' }
+]
+const mode = ref<AgentPermissionMode>(
+  (localStorage.getItem('biscuit-mode') as AgentPermissionMode) || 'ask'
+)
+
+const setMode = async (m: AgentPermissionMode): Promise<void> => {
+  mode.value = m
+  localStorage.setItem('biscuit-mode', m)
+  try {
+    await window.electron.ai.setMode(m)
+  } catch {
+    // Not connected yet — pushed again after connect.
+  }
+}
+
+// Push the persisted mode down to main once connected.
+watch(aiIsConnected, (connected) => {
+  if (connected) setMode(mode.value)
+})
+
+// ---- Activity feed + approvals ----
+const activity = ref<IAgentActivityEvent[]>([])
+const pendingApproval = ref<IAgentApprovalRequest | null>(null)
+
+const visibleActivity = computed(() => activity.value.slice(-8))
+
+let unsubActivity: (() => void) | null = null
+let unsubApproval: (() => void) | null = null
+
+onMounted(() => {
+  if (aiIsConnected.value) setMode(mode.value)
+  unsubActivity = window.electron.ai.onActivity(async (event) => {
+    activity.value.push(event)
+    if (activity.value.length > 200) activity.value.splice(0, 100)
+    await nextTick()
+    if (promptBody.value) promptBody.value.scrollTop = promptBody.value.scrollHeight
+  })
+  unsubApproval = window.electron.ai.onApprovalRequest((request) => {
+    pendingApproval.value = request
+  })
+})
+
+const respondApproval = async (approved: boolean): Promise<void> => {
+  const request = pendingApproval.value
+  pendingApproval.value = null
+  if (request) {
+    await window.electron.ai.approve(request.id, approved)
+  }
+}
+
+const newConversation = async (): Promise<void> => {
+  try {
+    await window.electron.ai.resetThread()
+  } catch {
+    // Not connected — clear the local transcript anyway.
+  }
+  aiMessages.value = []
+  activity.value = []
+  pendingApproval.value = null
+}
 
 // Open settings window to AI page
 function openAiSettings (): void {
@@ -209,6 +353,7 @@ async function sendMessage (): Promise<void> {
   aiMessages.value.push(userMessage)
   userInput.value = ''
   sending.value = true
+  activity.value = []
 
   await nextTick()
   if (promptBody.value) {
@@ -346,6 +491,127 @@ async function sendMessage (): Promise<void> {
   border-radius: 12px;
   background: rgba(64, 158, 255, 0.05);
   line-height: normal;
+}
+
+.header-actions {
+  position: absolute;
+  right: var(--spacing-4);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 6px;
+}
+
+.header-action {
+  cursor: pointer;
+  color: var(--color-secondary, #909399);
+  &:hover {
+    color: var(--color-primary, #409eff);
+  }
+}
+
+.mode-selector {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  padding: 4px var(--spacing-4) 6px;
+  background: var(--editorBgColor);
+}
+
+.mode-chip {
+  font: inherit;
+  font-size: 0.7rem;
+  padding: 2px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.25));
+  background: transparent;
+  color: var(--color-secondary, #909399);
+  cursor: pointer;
+  transition: all 0.15s;
+  &:hover {
+    border-color: var(--color-primary, #409eff);
+    color: var(--color-primary, #409eff);
+  }
+  &.active {
+    border-color: var(--color-primary, #409eff);
+    background: rgba(64, 158, 255, 0.1);
+    color: var(--color-primary, #409eff);
+    font-weight: 600;
+  }
+}
+
+.approval-card {
+  border: 1px solid var(--color-primary, #409eff);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(64, 158, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.approval-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary, #409eff);
+}
+
+.approval-summary {
+  font-size: 0.78rem;
+  color: var(--color-text, #303133);
+  white-space: pre-wrap;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.approval-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.activity-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 10px;
+  border-left: 2px solid var(--color-border, rgba(128, 128, 128, 0.25));
+  margin: 0 4px;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--color-secondary, #909399);
+}
+
+.activity-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-secondary, #909399);
+  flex-shrink: 0;
+}
+
+.activity--spawn .activity-dot,
+.activity--agent-start .activity-dot {
+  background: var(--color-primary, #409eff);
+}
+
+.activity--agent-done .activity-dot {
+  background: #67c23a;
+}
+
+.activity--approval .activity-dot {
+  background: #e6a23c;
+}
+
+.activity-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .prompt-body {
