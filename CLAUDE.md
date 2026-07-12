@@ -311,9 +311,13 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   checkpointer under `.wordbird/agent-state/` (excluded from snapshots).
 
 ### Safety model
-Prose/bible changes are ALWAYS review-gated (`propose_*` tools → edit
-proposal → renderer diff queue). Structural/file operations are direct but
-auto-snapshot first. `.wordbird/` and `.git/` are untouchable by tools.
+Prose/bible changes always flow through `propose_*` tools → edit proposal.
+In plan/ask modes they wait in the renderer diff review queue; in auto/
+full-auto the renderer applies them automatically after taking a project
+snapshot (the whole batch is one Rewind away). Structural/file operations
+are direct but auto-snapshot first. Every manual save also records a
+snapshot; history is bounded by the snapshotHistoryLimit preference
+(coalescing, 0 = unlimited). `.wordbird/` and `.git/` are untouchable by tools.
 Locked bible pages (`locked: true` front matter) are immutable to agents.
 Plans live in `plans/` (writer-editable); `propose_plan` raises the approval
 card that switches modes and starts execution.
