@@ -1438,7 +1438,8 @@
     "targetTitle": "Manuscript target",
     "targetPrompt": "How many words are you aiming for? Leave empty to remove the target.",
     "targetInvalid": "Numbers only",
-    "targetTip": "{percent}% of your word target"
+    "targetTip": "{percent}% of your word target",
+    "todayTip": "Words written today"
   },
   "history": {
     "title": "History",
@@ -1471,7 +1472,11 @@
   "continuity": {
     "title": "Continuity",
     "resolve": "Mark resolved",
-    "empty": "No open continuity issues. Biscuit files anything it finds here."
+    "empty": "No open continuity issues. Biscuit files anything it finds here.",
+    "revisions": "Revisions",
+    "analyzing": "Mapping impact…",
+    "executing": "In progress",
+    "revisionProgress": "{done} of {total} scenes updated"
   },
   "biscuit": {
     "placeholder": "Greetings! I'm Biscuit. Bring the ink and your wildest ideas, and let's bring them to life.",
@@ -1558,7 +1563,9 @@
     "starterContinuity": "Check the manuscript for continuity problems",
     "welcomeModeHint": "Tip: Shift+Tab cycles my autonomy — Plan to brainstorm safely, Auto to let me work.",
     "stopFirst": "Stop the current run first (■), then switch conversations.",
-    "deleteConversationConfirm": "Delete the conversation “{title}”? This cannot be undone."
+    "deleteConversationConfirm": "Delete the conversation “{title}”? This cannot be undone.",
+    "approvalCountdown": "Auto-declines in {time}",
+    "approvalTimedOut": "The approval request timed out and was declined."
   },
   "review": {
     "pendingOne": "1 pending edit",

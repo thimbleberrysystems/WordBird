@@ -222,6 +222,12 @@
         <div class="approval-summary">
           {{ pendingApproval.summary }}
         </div>
+        <div
+          v-if="approvalTimeLeft"
+          class="approval-countdown"
+        >
+          {{ t('biscuit.approvalCountdown', { time: approvalTimeLeft }) }}
+        </div>
         <div class="approval-actions">
           <el-button
             size="small"
@@ -359,7 +365,7 @@
 
 <script setup lang="ts">
 import { ref, nextTick, computed, onBeforeUnmount, onMounted, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '../../store/preferences'
 import { useLayoutStore } from '../../store/layout'
@@ -369,7 +375,12 @@ import { langGraphService } from '../../services/langgraph'
 import bus from '../../bus'
 import { t } from '../../i18n'
 import { renderChatMarkdown } from '../../util/chatMarkdown'
-import { estimateCostUsd, formatCostUsd } from '../../util/modelPricing'
+import { useBiscuitUsage } from '../../composables/useBiscuitUsage'
+import {
+  useConversationHistory,
+  type ChatEntry,
+  type ErrorInfo
+} from '../../composables/useConversationHistory'
 import { DArrowRight, Plus, ChatLineSquare, Delete, Operation } from '@element-plus/icons-vue'
 import GlobalAgentReview from '../agent/GlobalAgentReview.vue'
 import AgentTree from './AgentTree.vue'
@@ -379,9 +390,7 @@ import type {
   ILangGraphMessage,
   IAgentActivityEvent,
   IAgentApprovalRequest,
-  IContextUsage,
   IPlanProposal,
-  ITokenUsageUpdate,
   IAgentStatus,
   AgentPermissionMode
 } from '@shared/types/langgraph'
@@ -455,19 +464,9 @@ onBeforeUnmount(() => {
   unsubTokens?.()
   unsubAgents?.()
   unsubRunState?.()
+  if (approvalTimer) clearInterval(approvalTimer)
   bus.off('biscuit-ask', handleBiscuitAsk)
 })
-
-// Chat entries: plain conversation messages, plus structured info for
-// error cards (friendly title/explanation wrapped around the raw detail).
-interface ErrorInfo {
-  title: string
-  explanation: string
-  showSettings?: boolean
-}
-interface ChatEntry extends ILangGraphMessage {
-  errorInfo?: ErrorInfo
-}
 
 // Reactive state
 const promptBody = ref<HTMLElement | null>(null)
@@ -545,31 +544,6 @@ watch(aiIsConnected, (connected) => {
   if (connected) setMode(mode.value)
 })
 
-// ---- Context ring (fills as the conversation nears compaction) ----
-const contextUsage = ref<IContextUsage | null>(null)
-
-const ringCircumference = 2 * Math.PI * 6.5
-
-const ringDash = computed(() =>
-  contextUsage.value ? Math.max(0.5, contextUsage.value.ratio * ringCircumference) : 0
-)
-
-// Green-ish → amber → red as the budget fills; compaction fires at ~80%.
-const contextRingLevel = computed(() => {
-  const ratio = contextUsage.value?.ratio ?? 0
-  if (ratio >= 0.75) return 'level-high'
-  if (ratio >= 0.5) return 'level-mid'
-  return 'level-low'
-})
-
-const contextRingTip = computed(() => {
-  if (!contextUsage.value) return ''
-  if (contextUsage.value.compacting || manualCompacting.value) return t('biscuit.compacting')
-  return t('biscuit.contextTip', {
-    percent: Math.round(contextUsage.value.ratio * 100)
-  }) + (sending.value ? '' : ` ${t('biscuit.condenseHint')}`)
-})
-
 // ---- Plan approval (Claude-Code-style: plan file → card → mode switch) ----
 const pendingPlan = ref<IPlanProposal | null>(null)
 
@@ -604,25 +578,6 @@ const resumeRun = async (): Promise<void> => {
   await window.electron.ai.resume()
 }
 
-// ---- Manual compaction (click the ring while idle) ----
-const manualCompacting = ref(false)
-
-const condenseNow = async (): Promise<void> => {
-  if (sending.value || manualCompacting.value) return
-  manualCompacting.value = true
-  try {
-    const result = await window.electron.ai.compactNow()
-    if (result.busy) return
-    ElMessage.success(
-      result.compacted ? t('biscuit.condensed') : t('biscuit.nothingToCondense')
-    )
-  } catch {
-    // Not connected — nothing to condense.
-  } finally {
-    manualCompacting.value = false
-  }
-}
-
 // ---- Live plan file → main editor ----
 const openPlanInEditor = (relativePath: string): void => {
   const root = useProjectStore().currentProjectPath
@@ -652,62 +607,6 @@ const retryAgent = (task: string): void => {
   }
 }
 
-// ---- Transcript export ----
-const exportTranscript = async (): Promise<void> => {
-  historyVisible.value = false
-  const lines: string[] = [`# Biscuit — ${new Date().toISOString().slice(0, 10)}`, '']
-  for (const message of aiMessages.value) {
-    const who = message.role === 'user' ? 'Writer' : message.role === 'error' ? 'Error' : 'Biscuit'
-    lines.push(`## ${who}`, '', message.content, '')
-  }
-  const content = lines.join('\n')
-  const root = useProjectStore().currentProjectPath
-  if (root) {
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
-    const target = window.path.join(root, 'notes', 'transcripts', `chat-${stamp}.md`)
-    try {
-      await window.fileUtils.outputFile(target, content)
-      ElMessage.success(t('biscuit.exported', { path: target }))
-      return
-    } catch {
-      // fall through to clipboard
-    }
-  }
-  window.electron.clipboard.writeText(content)
-  ElMessage.success(t('biscuit.exportedClipboard'))
-}
-
-// ---- Token usage counter ----
-const tokenUsage = ref<ITokenUsageUpdate | null>(null)
-
-const fmtTokens = (n: number): string =>
-  n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)
-
-const tokenTip = computed(() => {
-  if (!tokenUsage.value) return ''
-  const { turn, session } = tokenUsage.value
-  const roles = Object.entries(session.byRole)
-    .map(([role, u]) => `${role}: ▼${fmtTokens(u.inputTokens)} ▲${fmtTokens(u.outputTokens)} (${u.calls})`)
-    .join('\n')
-  let base = t('biscuit.usageTip', {
-    tin: fmtTokens(turn.inputTokens),
-    tout: fmtTokens(turn.outputTokens),
-    sin: fmtTokens(session.inputTokens),
-    sout: fmtTokens(session.outputTokens),
-    calls: session.calls
-  })
-  // Best-effort cost estimate — cloud models with known prices only.
-  const provider = aiProvider.value
-  if (provider !== 'ollama' && provider !== 'ollama_bundled') {
-    const model = aiConfigs.value[provider]?.model
-    const cost = estimateCostUsd(model, session.inputTokens, session.outputTokens)
-    if (cost !== null) {
-      base += ` · ${t('biscuit.usageCost', { cost: formatCostUsd(cost) })}`
-    }
-  }
-  return base + (roles ? `\n${roles}` : '')
-})
-
 // ---- Live agents (header tree with per-agent pause / kill) ----
 const agentMap = ref(new Map<string, IAgentStatus>())
 const agentList = computed(() => Array.from(agentMap.value.values()))
@@ -732,6 +631,78 @@ const resumeAgentRow = async (agentId: string): Promise<void> => {
 const activity = ref<IAgentActivityEvent[]>([])
 const pendingApproval = ref<IAgentApprovalRequest | null>(null)
 
+// ---- Usage indicators (token counter + context ring) ----
+const {
+  tokenUsage,
+  contextUsage,
+  manualCompacting,
+  ringCircumference,
+  ringDash,
+  contextRingLevel,
+  contextRingTip,
+  tokenTip,
+  fmtTokens,
+  condenseNow
+} = useBiscuitUsage({ sending })
+
+// ---- Conversation history (localStorage + project transcript mirror) ----
+const {
+  currentId,
+  historyVisible,
+  sortedConversations,
+  initialize: initializeHistory,
+  newConversation,
+  loadConversation,
+  deleteConversation,
+  exportTranscript
+} = useConversationHistory({
+  aiMessages,
+  isBusy: () => sending.value,
+  onSwitch: () => {
+    activity.value = []
+    agentMap.value = new Map()
+    pendingApproval.value = null
+    contextUsage.value = null
+    tokenUsage.value = null
+  },
+  afterLoad: async () => {
+    await nextTick()
+    if (promptBody.value) promptBody.value.scrollTop = promptBody.value.scrollHeight
+  }
+})
+
+// Countdown to main's auto-decline deadline; the card dismisses itself
+// when it lapses so a stale card can never sit around looking answerable.
+const approvalNow = ref(Date.now())
+let approvalTimer: ReturnType<typeof setInterval> | null = null
+
+const approvalTimeLeft = computed(() => {
+  const expiresAt = pendingApproval.value?.expiresAt
+  if (!expiresAt) return ''
+  const seconds = Math.max(0, Math.floor((expiresAt - approvalNow.value) / 1000))
+  const m = Math.floor(seconds / 60)
+  const sec = String(seconds % 60).padStart(2, '0')
+  return `${m}:${sec}`
+})
+
+watch(pendingApproval, (request) => {
+  if (approvalTimer) {
+    clearInterval(approvalTimer)
+    approvalTimer = null
+  }
+  if (!request?.expiresAt) return
+  approvalNow.value = Date.now()
+  approvalTimer = setInterval(() => {
+    approvalNow.value = Date.now()
+    const expiresAt = pendingApproval.value?.expiresAt
+    if (expiresAt && Date.now() >= expiresAt) {
+      // Main has already treated this as declined.
+      pendingApproval.value = null
+      ElMessage.info(t('biscuit.approvalTimedOut'))
+    }
+  }, 1000)
+})
+
 let unsubActivity: (() => void) | null = null
 let unsubApproval: (() => void) | null = null
 let unsubUsage: (() => void) | null = null
@@ -743,10 +714,7 @@ let unsubRunState: (() => void) | null = null
 
 onMounted(() => {
   if (aiIsConnected.value) setMode(mode.value)
-  // Restore the last open conversation so a renderer reload doesn't lose it.
-  loadHistory()
-  const current = conversations.value.find((c) => c.id === currentId.value)
-  if (current) aiMessages.value = JSON.parse(JSON.stringify(current.messages))
+  initializeHistory()
   unsubActivity = window.electron.ai.onActivity(async (event) => {
     activity.value.push(event)
     if (activity.value.length > 200) activity.value.splice(0, 100)
@@ -790,169 +758,6 @@ const respondApproval = async (approved: boolean): Promise<void> => {
   if (request) {
     await window.electron.ai.approve(request.id, approved)
   }
-}
-
-// ---- Conversation history (renderer-local, persisted in localStorage) ----
-interface StoredConversation {
-  id: string
-  title: string
-  messages: ChatEntry[]
-  updatedAt: number
-}
-
-const HISTORY_KEY = 'biscuit-conversations'
-const CURRENT_KEY = 'biscuit-current-conversation'
-
-const conversations = ref<StoredConversation[]>([])
-const currentId = ref<string>('')
-const historyVisible = ref(false)
-
-const sortedConversations = computed(() =>
-  [...conversations.value].sort((a, b) => b.updatedAt - a.updatedAt)
-)
-
-const loadHistory = (): void => {
-  try {
-    const raw = localStorage.getItem(HISTORY_KEY)
-    conversations.value = raw ? (JSON.parse(raw) as StoredConversation[]) : []
-  } catch {
-    conversations.value = []
-  }
-  currentId.value = localStorage.getItem(CURRENT_KEY) || ''
-}
-
-const persistHistory = (): void => {
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(conversations.value))
-  localStorage.setItem(CURRENT_KEY, currentId.value)
-}
-
-const deriveTitle = (messages: ChatEntry[]): string => {
-  const firstUser = messages.find((m) => m.role === 'user')
-  const text = firstUser?.content?.trim() || 'New conversation'
-  return text.length > 40 ? text.slice(0, 40) + '…' : text
-}
-
-// Save the live transcript into the current conversation entry (creating one
-// on the first message). Called whenever aiMessages changes.
-const saveCurrent = (): void => {
-  if (aiMessages.value.length === 0) return
-  if (!currentId.value) currentId.value = `conv-${Date.now()}`
-  const snapshot = JSON.parse(JSON.stringify(aiMessages.value)) as ChatEntry[]
-  const existing = conversations.value.find((c) => c.id === currentId.value)
-  if (existing) {
-    existing.messages = snapshot
-    existing.title = deriveTitle(snapshot)
-    existing.updatedAt = Date.now()
-  } else {
-    conversations.value.push({
-      id: currentId.value,
-      title: deriveTitle(snapshot),
-      messages: snapshot,
-      updatedAt: Date.now()
-    })
-  }
-  persistHistory()
-  scheduleTranscriptWrite(snapshot)
-}
-
-// Durable transcripts: every conversation is mirrored into the project at
-// .wordbird/transcripts/<id>.md — snapshot-versioned and, crucially,
-// searchable by the agents (search_manuscript reaches .wordbird except
-// agent-state), so decisions made in past chats stay discoverable.
-let transcriptTimer: ReturnType<typeof setTimeout> | null = null
-const scheduleTranscriptWrite = (snapshot: ChatEntry[]): void => {
-  if (transcriptTimer) clearTimeout(transcriptTimer)
-  transcriptTimer = setTimeout(() => {
-    transcriptTimer = null
-    writeTranscript(snapshot)
-  }, 2000)
-}
-
-const writeTranscript = async (snapshot: ChatEntry[]): Promise<void> => {
-  const root = useProjectStore().currentProjectPath
-  if (!root || !currentId.value) return
-  const lines: string[] = [`# ${deriveTitle(snapshot)}`, '']
-  for (const message of snapshot) {
-    if (message.role === 'error' || message.role === 'stopped') continue
-    const who = message.role === 'user' ? 'Writer' : 'Biscuit'
-    lines.push(`## ${who}`, '', message.content, '')
-  }
-  const target = window.path.join(root, '.wordbird', 'transcripts', `${currentId.value}.md`)
-  try {
-    await window.fileUtils.outputFile(target, lines.join('\n'))
-  } catch {
-    // Transcript mirroring is best-effort; the localStorage copy remains.
-  }
-}
-
-// Persist the transcript as it grows (assistant replies, errors, etc.).
-watch(aiMessages, saveCurrent, { deep: true })
-
-const newConversation = async (): Promise<void> => {
-  // Switching threads mid-run would interleave two conversations in the
-  // durable thread — stop the run first, explicitly.
-  if (sending.value) {
-    ElMessage.info(t('biscuit.stopFirst'))
-    return
-  }
-  saveCurrent()
-  try {
-    await window.electron.ai.resetThread()
-  } catch {
-    // Not connected — clear the local transcript anyway.
-  }
-  aiMessages.value = []
-  activity.value = []
-  agentMap.value = new Map()
-  pendingApproval.value = null
-  contextUsage.value = null
-  tokenUsage.value = null
-  currentId.value = ''
-  persistHistory()
-}
-
-const loadConversation = async (id: string): Promise<void> => {
-  historyVisible.value = false
-  if (id === currentId.value) return
-  if (sending.value) {
-    ElMessage.info(t('biscuit.stopFirst'))
-    return
-  }
-  saveCurrent()
-  const conv = conversations.value.find((c) => c.id === id)
-  if (!conv) return
-  // Start a fresh main-process thread; the transcript is replayed as context
-  // on the next send.
-  try {
-    await window.electron.ai.resetThread()
-  } catch {
-    // ignore — not connected
-  }
-  aiMessages.value = JSON.parse(JSON.stringify(conv.messages)) as ChatEntry[]
-  activity.value = []
-  pendingApproval.value = null
-  currentId.value = id
-  persistHistory()
-  await nextTick()
-  if (promptBody.value) promptBody.value.scrollTop = promptBody.value.scrollHeight
-}
-
-const deleteConversation = async (id: string): Promise<void> => {
-  const conv = conversations.value.find((c) => c.id === id)
-  try {
-    await ElMessageBox.confirm(
-      t('biscuit.deleteConversationConfirm', { title: conv?.title ?? '' }),
-      { type: 'warning', confirmButtonText: t('biscuit.deleteTip') }
-    )
-  } catch {
-    return // writer cancelled
-  }
-  conversations.value = conversations.value.filter((c) => c.id !== id)
-  if (id === currentId.value) {
-    aiMessages.value = []
-    currentId.value = ''
-  }
-  persistHistory()
 }
 
 // Starter prompts shown on the welcome card — they fill the input so the
@@ -1451,6 +1256,12 @@ async function sendMessage (): Promise<void> {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-primary, #409eff);
+}
+
+.approval-countdown {
+  font-size: 0.68rem;
+  color: var(--iconColor, #909399);
+  margin-top: 4px;
 }
 
 .approval-summary {

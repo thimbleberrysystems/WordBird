@@ -1448,7 +1448,8 @@
     "targetTitle": "書稿目標",
     "targetPrompt": "目標字數是多少？留空則移除目標。",
     "targetInvalid": "僅限數字",
-    "targetTip": "已完成目標字數的 {percent}%"
+    "targetTip": "已完成目標字數的 {percent}%",
+    "todayTip": "今日寫作字數"
   },
   "history": {
     "title": "歷史",
@@ -1481,7 +1482,11 @@
   "continuity": {
     "title": "連貫性",
     "resolve": "標記為已解決",
-    "empty": "沒有未解決的連貫性問題。Biscuit 發現的問題會記錄在這裡。"
+    "empty": "沒有未解決的連貫性問題。Biscuit 發現的問題會記錄在這裡。",
+    "revisions": "修訂",
+    "analyzing": "正在分析影響…",
+    "executing": "進行中",
+    "revisionProgress": "已更新 {done}/{total} 個場景"
   },
   "biscuit": {
     "placeholder": "你好！我是 Biscuit。帶上墨水和你最大膽的想法，我們一起讓它們成真。",
@@ -1568,7 +1573,9 @@
     "starterContinuity": "檢查書稿中的連貫性問題",
     "welcomeModeHint": "提示：Shift+Tab 切換我的自主程度 — Plan 安全構思，Auto 放手讓我做。",
     "stopFirst": "請先停止目前執行（■），再切換對話。",
-    "deleteConversationConfirm": "刪除對話「{title}」？此操作無法復原。"
+    "deleteConversationConfirm": "刪除對話「{title}」？此操作無法復原。",
+    "approvalCountdown": "{time} 後自動拒絕",
+    "approvalTimedOut": "核准請求已逾時並被拒絕。"
   },
   "review": {
     "pendingOne": "1 處待處理編輯",

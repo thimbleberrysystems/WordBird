@@ -61,6 +61,59 @@ export const slugify = (title: string): string => {
 
 export const generateUnitId = (): string => crypto.randomUUID()
 
+/** Sum of leaf word counts across the whole binder tree. */
+export const totalWords = (units: INovelUnit[]): number => {
+  let total = 0
+  for (const unit of units) {
+    if (unit.children) total += totalWords(unit.children)
+    else if (unit.wordCount) total += unit.wordCount
+  }
+  return total
+}
+
+const localDateKey = (date: Date): string => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+interface IDailyStats {
+  days: Record<string, { start: number; last: number }>
+}
+
+/**
+ * Session progress: `.wordbird/stats.json` records the manuscript total at
+ * the first sighting of each (local) day, so the binder can show "words
+ * written today". Best-effort — a stats failure never blocks the binder.
+ */
+export const updateDailyWordStats = async(
+  root: string,
+  currentTotal: number
+): Promise<number | undefined> => {
+  const statsPath = path.join(root, '.wordbird', 'stats.json')
+  const today = localDateKey(new Date())
+  let stats: IDailyStats = { days: {} }
+  try {
+    const parsed = JSON.parse(await fsPromises.readFile(statsPath, 'utf8')) as IDailyStats
+    if (parsed && typeof parsed.days === 'object' && parsed.days) stats = parsed
+  } catch {
+    // First run — start fresh.
+  }
+  let day = stats.days[today]
+  if (!day) {
+    day = { start: currentTotal, last: currentTotal }
+    stats.days[today] = day
+  }
+  day.last = currentTotal
+  try {
+    await fsPromises.writeFile(statsPath, JSON.stringify(stats, null, 2), 'utf8')
+  } catch {
+    return undefined
+  }
+  return day.start
+}
+
 export interface UnitLookup {
   unit: INovelUnit
   parent: INovelUnit | null

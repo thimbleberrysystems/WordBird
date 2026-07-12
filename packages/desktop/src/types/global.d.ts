@@ -41,6 +41,7 @@ import type {
   ISnapshotListResult,
   ISnapshotActionResult,
   IContinuityListResult,
+  IRevisionListResult,
   ProjectFlavor
 } from '@shared/types/novel'
 
@@ -158,6 +159,7 @@ declare global {
       listSnapshots: (root: string, limit?: number) => Promise<ISnapshotListResult>
       restoreSnapshot: (root: string, snapshotId: string) => Promise<ISnapshotActionResult>
       continuityIssues: (root: string) => Promise<IContinuityListResult>
+      listRevisions: (root: string) => Promise<IRevisionListResult>
       resolveIssue: (root: string, issueId: string) => Promise<{ ok: boolean; error?: string }>
     }
     ai: {

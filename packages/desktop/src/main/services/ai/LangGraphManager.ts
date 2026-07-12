@@ -80,7 +80,11 @@ export class LangGraphManager {
   private _requestApproval(request: IAgentApprovalRequest): Promise<boolean> {
     const mainWindow = this._getMainWindow()
     if (!mainWindow) return Promise.resolve(false)
-    mainWindow.webContents.send('mt::ai:approval-request', request)
+    // The renderer counts down to the same deadline main enforces below.
+    mainWindow.webContents.send('mt::ai:approval-request', {
+      ...request,
+      expiresAt: Date.now() + APPROVAL_TIMEOUT_MS
+    })
     return new Promise<boolean>((resolve) => {
       const timer = setTimeout(() => {
         this._pendingApprovals.delete(request.id)

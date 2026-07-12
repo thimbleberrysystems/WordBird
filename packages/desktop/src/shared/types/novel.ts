@@ -146,6 +146,14 @@ export interface INovelCompileResult {
 export interface INovelStructureResult {
   ok: boolean
   structure?: INovelStructure
+  /** Manuscript total at the first load of today — drives "written today". */
+  todayStart?: number
+  error?: string
+}
+
+export interface IRevisionListResult {
+  ok: boolean
+  revisions?: IRevision[]
   error?: string
 }
 

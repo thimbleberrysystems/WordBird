@@ -273,6 +273,7 @@ const novelAPI = {
   restoreSnapshot: (root: string, snapshotId: string) =>
     invoke('mt::novel:restore-snapshot', root, snapshotId),
   continuityIssues: (root: string) => invoke('mt::novel:continuity-issues', root),
+  listRevisions: (root: string) => invoke('mt::novel:list-revisions', root),
   resolveIssue: (root: string, issueId: string) =>
     invoke('mt::novel:resolve-issue', root, issueId)
 }

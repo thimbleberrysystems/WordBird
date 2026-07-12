@@ -22,6 +22,8 @@ export type NovelViewMode = 'page' | 'corkboard' | 'outline' | 'timeline'
 
 export const useNovelStore = defineStore('novel', () => {
   const structure = ref<INovelStructure | null>(null)
+  /** Manuscript total at today's first load — "written today" baseline. */
+  const todayStart = ref<number | null>(null)
   const loading = ref(false)
   const lastError = ref<string | null>(null)
   /** Editor-area view: the prose page, the corkboard, or the outline table. */
@@ -48,10 +50,12 @@ export const useNovelStore = defineStore('novel', () => {
   const applyResult = (result: {
     ok: boolean
     structure?: INovelStructure
+    todayStart?: number
     error?: string
   }): boolean => {
     if (result.ok && result.structure) {
       structure.value = result.structure
+      if (typeof result.todayStart === 'number') todayStart.value = result.todayStart
       lastError.value = null
       return true
     }
@@ -134,6 +138,7 @@ export const useNovelStore = defineStore('novel', () => {
     lastError,
     flavor,
     totalWordCount,
+    todayStart,
     viewMode,
     setViewMode,
     refresh,

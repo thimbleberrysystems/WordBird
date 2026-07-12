@@ -3,6 +3,12 @@
     <div class="binder-header">
       <span class="binder-title">{{ t('binder.title') }}</span>
       <span
+        v-if="todayWords !== 0"
+        class="binder-today"
+        :class="{ negative: todayWords < 0 }"
+        :title="t('binder.todayTip')"
+      >{{ todayLabel }}</span>
+      <span
         class="binder-total"
         :class="{ 'has-target': wordTarget > 0 }"
         :title="t('binder.setTargetTip')"
@@ -97,7 +103,7 @@ const novelStore = useNovelStore()
 const projectStore = useProjectStore()
 const layoutStore = useLayoutStore()
 
-const { structure, flavor, totalWordCount } = storeToRefs(novelStore)
+const { structure, flavor, totalWordCount, todayStart } = storeToRefs(novelStore)
 const compiling = ref(false)
 
 // ---- Manuscript word target (per project, writer-set) ----
@@ -107,6 +113,15 @@ const wordTarget = ref(0)
 const loadTarget = (): void => {
   wordTarget.value = Number(localStorage.getItem(targetKey.value)) || 0
 }
+
+// ---- Words written today (baseline recorded main-side per local day) ----
+const todayWords = computed(() =>
+  todayStart.value === null ? 0 : totalWordCount.value - todayStart.value
+)
+
+const todayLabel = computed(() =>
+  `${todayWords.value > 0 ? '+' : ''}${fmtCount(todayWords.value)}`
+)
 
 const targetRatio = computed(() =>
   wordTarget.value > 0 ? totalWordCount.value / wordTarget.value : 0
@@ -285,6 +300,16 @@ const handleCompile = async (): Promise<void> => {
 
 .binder-total.has-target {
   color: var(--sideBarColor);
+}
+
+.binder-today {
+  font-size: 11px;
+  font-weight: 600;
+  color: #67c23a;
+}
+
+.binder-today.negative {
+  color: #e6a23c;
 }
 
 .binder-target-bar {

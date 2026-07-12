@@ -1440,7 +1440,8 @@
     "targetTitle": "原稿の目標",
     "targetPrompt": "目標語数はいくつですか？空欄で目標を解除します。",
     "targetInvalid": "数字のみ",
-    "targetTip": "目標語数の {percent}%"
+    "targetTip": "目標語数の {percent}%",
+    "todayTip": "今日書いた語数"
   },
   "history": {
     "title": "履歴",
@@ -1473,7 +1474,11 @@
   "continuity": {
     "title": "整合性",
     "resolve": "解決済みにする",
-    "empty": "未解決の整合性の問題はありません。Biscuitが見つけたものはここに記録されます。"
+    "empty": "未解決の整合性の問題はありません。Biscuitが見つけたものはここに記録されます。",
+    "revisions": "改稿",
+    "analyzing": "影響を分析中…",
+    "executing": "進行中",
+    "revisionProgress": "{total} シーン中 {done} 件更新済み"
   },
   "biscuit": {
     "placeholder": "こんにちは！Biscuitです。インクと大胆なアイデアを持ってきて、一緒に形にしましょう。",
@@ -1560,7 +1565,9 @@
     "starterContinuity": "原稿の整合性の問題をチェックして",
     "welcomeModeHint": "ヒント: Shift+Tab で自律性を切替 — Plan で安全に構想、Auto で作業を任せる。",
     "stopFirst": "まず実行中の処理を停止（■）してから会話を切り替えてください。",
-    "deleteConversationConfirm": "会話「{title}」を削除しますか？この操作は取り消せません。"
+    "deleteConversationConfirm": "会話「{title}」を削除しますか？この操作は取り消せません。",
+    "approvalCountdown": "{time} 後に自動的に拒否されます",
+    "approvalTimedOut": "承認リクエストは期限切れになり、拒否されました。"
   },
   "review": {
     "pendingOne": "保留中の編集 1件",

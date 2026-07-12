@@ -8,6 +8,47 @@
       >{{ openIssues.length }}</span>
     </div>
 
+    <!-- Active sweeping revisions ("remove Marcus") with per-unit progress.
+         Agents work the map across turns; the writer watches it here. -->
+    <div
+      v-if="activeRevisions.length > 0"
+      class="revision-list"
+    >
+      <div class="revision-section-title">
+        {{ t('continuity.revisions') }}
+      </div>
+      <div
+        v-for="revision in activeRevisions"
+        :key="revision.id"
+        class="revision-item"
+      >
+        <div class="revision-top">
+          <span class="revision-title">{{ revision.title }}</span>
+          <span class="revision-status">
+            {{ revision.status === 'analyzing' ? t('continuity.analyzing') : t('continuity.executing') }}
+          </span>
+        </div>
+        <div
+          class="revision-bar"
+          :title="t('continuity.revisionProgress', {
+            done: String(progressOf(revision).done),
+            total: String(progressOf(revision).total)
+          })"
+        >
+          <div
+            class="revision-fill"
+            :style="{ width: `${progressPercent(revision)}%` }"
+          />
+        </div>
+        <div class="revision-count">
+          {{ t('continuity.revisionProgress', {
+            done: String(progressOf(revision).done),
+            total: String(progressOf(revision).total)
+          }) }}
+        </div>
+      </div>
+    </div>
+
     <div class="issue-list">
       <div
         v-for="issue in openIssues"
@@ -58,12 +99,29 @@ import { Check } from '@element-plus/icons-vue'
 import { useProjectStore } from '@/store/project'
 import { useLayoutStore } from '@/store/layout'
 import { t } from '../../i18n'
-import type { IContinuityIssue } from '@shared/types/novel'
+import type { IContinuityIssue, IRevision } from '@shared/types/novel'
 
 const projectStore = useProjectStore()
 const layoutStore = useLayoutStore()
 
 const issues = ref<IContinuityIssue[]>([])
+const revisions = ref<IRevision[]>([])
+
+const activeRevisions = computed(() =>
+  revisions.value.filter((r) => r.status === 'analyzing' || r.status === 'executing')
+)
+
+const progressOf = (revision: IRevision): { done: number; total: number } => {
+  const done = revision.entries.filter(
+    (e) => e.status === 'done' || e.status === 'skipped'
+  ).length
+  return { done, total: revision.entries.length }
+}
+
+const progressPercent = (revision: IRevision): number => {
+  const { done, total } = progressOf(revision)
+  return total > 0 ? Math.round((done / total) * 100) : 0
+}
 
 const openIssues = computed(() =>
   [...issues.value.filter((i) => i.status === 'open')].sort((a, b) => {
@@ -76,10 +134,13 @@ const refresh = async (): Promise<void> => {
   const root = projectStore.currentProjectPath
   if (!root) {
     issues.value = []
+    revisions.value = []
     return
   }
   const result = await window.electron.novel.continuityIssues(root)
   issues.value = result.ok && result.issues ? result.issues : []
+  const revisionResult = await window.electron.novel.listRevisions(root)
+  revisions.value = revisionResult.ok && revisionResult.revisions ? revisionResult.revisions : []
 }
 
 onMounted(refresh)
@@ -209,6 +270,65 @@ const resolve = async (issue: IContinuityIssue): Promise<void> => {
 .continuity-empty {
   padding: 16px 12px;
   font-size: 12px;
+  color: var(--iconColor);
+}
+.revision-list {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--itemBgColor);
+}
+
+.revision-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--iconColor);
+  margin-bottom: 6px;
+}
+
+.revision-item {
+  margin-bottom: 8px;
+}
+
+.revision-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.revision-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--sideBarColor);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.revision-status {
+  font-size: 10px;
+  color: var(--iconColor);
+  flex-shrink: 0;
+}
+
+.revision-bar {
+  height: 3px;
+  margin: 5px 0 3px;
+  border-radius: 2px;
+  background: var(--itemBgColor, rgba(128, 128, 128, 0.2));
+  overflow: hidden;
+}
+
+.revision-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--themeColor, #409eff);
+  transition: width 0.4s ease;
+}
+
+.revision-count {
+  font-size: 10px;
   color: var(--iconColor);
 }
 </style>

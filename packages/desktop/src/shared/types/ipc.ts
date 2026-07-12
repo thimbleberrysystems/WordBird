@@ -58,6 +58,7 @@ import type {
   ISnapshotListResult,
   ISnapshotActionResult,
   IContinuityListResult,
+  IRevisionListResult,
   ProjectFlavor
 } from './novel'
 
@@ -180,6 +181,7 @@ export interface IpcInvokeChannels {
   }
   'mt::novel:snapshot': { args: [root: string, message: string]; ret: ISnapshotActionResult }
   'mt::novel:continuity-issues': { args: [root: string]; ret: IContinuityListResult }
+  'mt::novel:list-revisions': { args: [root: string]; ret: IRevisionListResult }
   'mt::novel:resolve-issue': {
     args: [root: string, issueId: string]
     ret: { ok: boolean; error?: string }

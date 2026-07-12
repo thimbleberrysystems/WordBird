@@ -1440,7 +1440,8 @@
     "targetTitle": "Objectif du manuscrit",
     "targetPrompt": "Combien de mots visez-vous ? Laissez vide pour retirer l’objectif.",
     "targetInvalid": "Chiffres uniquement",
-    "targetTip": "{percent}% de votre objectif de mots"
+    "targetTip": "{percent}% de votre objectif de mots",
+    "todayTip": "Mots écrits aujourd’hui"
   },
   "history": {
     "title": "Historique",
@@ -1473,7 +1474,11 @@
   "continuity": {
     "title": "Continuité",
     "resolve": "Marquer résolu",
-    "empty": "Aucun problème de continuité ouvert. Biscuit consignera ici ce qu’il trouve."
+    "empty": "Aucun problème de continuité ouvert. Biscuit consignera ici ce qu’il trouve.",
+    "revisions": "Révisions",
+    "analyzing": "Cartographie de l’impact…",
+    "executing": "En cours",
+    "revisionProgress": "{done} scènes sur {total} mises à jour"
   },
   "biscuit": {
     "placeholder": "Bonjour ! Je suis Biscuit. Apportez l’encre et vos idées les plus folles, donnons-leur vie.",
@@ -1560,7 +1565,9 @@
     "starterContinuity": "Vérifier la continuité du manuscrit",
     "welcomeModeHint": "Astuce : Shift+Tab change mon autonomie — Plan pour réfléchir en sécurité, Auto pour me laisser travailler.",
     "stopFirst": "Arrêtez d’abord l’exécution en cours (■), puis changez de conversation.",
-    "deleteConversationConfirm": "Supprimer la conversation « {title} » ? Cette action est irréversible."
+    "deleteConversationConfirm": "Supprimer la conversation « {title} » ? Cette action est irréversible.",
+    "approvalCountdown": "Refus automatique dans {time}",
+    "approvalTimedOut": "La demande d’approbation a expiré et a été refusée."
   },
   "review": {
     "pendingOne": "1 modification en attente",

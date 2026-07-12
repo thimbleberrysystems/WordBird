@@ -1438,7 +1438,8 @@
     "targetTitle": "Manuskript-Ziel",
     "targetPrompt": "Wie viele Wörter strebst du an? Leer lassen, um das Ziel zu entfernen.",
     "targetInvalid": "Nur Zahlen",
-    "targetTip": "{percent}% deines Wortziels"
+    "targetTip": "{percent}% deines Wortziels",
+    "todayTip": "Heute geschriebene Wörter"
   },
   "history": {
     "title": "Verlauf",
@@ -1471,7 +1472,11 @@
   "continuity": {
     "title": "Kontinuität",
     "resolve": "Als gelöst markieren",
-    "empty": "Keine offenen Kontinuitätsprobleme. Biscuit trägt hier ein, was es findet."
+    "empty": "Keine offenen Kontinuitätsprobleme. Biscuit trägt hier ein, was es findet.",
+    "revisions": "Überarbeitungen",
+    "analyzing": "Auswirkungen werden erfasst…",
+    "executing": "In Arbeit",
+    "revisionProgress": "{done} von {total} Szenen aktualisiert"
   },
   "biscuit": {
     "placeholder": "Hallo! Ich bin Biscuit. Bring Tinte und deine wildesten Ideen mit — wir erwecken sie zum Leben.",
@@ -1558,7 +1563,9 @@
     "starterContinuity": "Prüfe das Manuskript auf Kontinuitätsprobleme",
     "welcomeModeHint": "Tipp: Shift+Tab wechselt meine Autonomie — Plan zum sicheren Brainstormen, Auto zum Arbeitenlassen.",
     "stopFirst": "Stoppe zuerst den laufenden Durchlauf (■), dann wechsle die Unterhaltung.",
-    "deleteConversationConfirm": "Unterhaltung „{title}“ löschen? Das kann nicht rückgängig gemacht werden."
+    "deleteConversationConfirm": "Unterhaltung „{title}“ löschen? Das kann nicht rückgängig gemacht werden.",
+    "approvalCountdown": "Wird in {time} automatisch abgelehnt",
+    "approvalTimedOut": "Die Freigabeanfrage ist abgelaufen und wurde abgelehnt."
   },
   "review": {
     "pendingOne": "1 ausstehende Änderung",

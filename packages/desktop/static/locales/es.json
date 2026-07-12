@@ -1438,7 +1438,8 @@
     "targetTitle": "Objetivo del manuscrito",
     "targetPrompt": "¿Cuántas palabras quieres alcanzar? Deja vacío para quitar el objetivo.",
     "targetInvalid": "Solo números",
-    "targetTip": "{percent}% de tu objetivo de palabras"
+    "targetTip": "{percent}% de tu objetivo de palabras",
+    "todayTip": "Palabras escritas hoy"
   },
   "history": {
     "title": "Historial",
@@ -1471,7 +1472,11 @@
   "continuity": {
     "title": "Continuidad",
     "resolve": "Marcar resuelto",
-    "empty": "Sin problemas de continuidad abiertos. Biscuit anotará aquí lo que encuentre."
+    "empty": "Sin problemas de continuidad abiertos. Biscuit anotará aquí lo que encuentre.",
+    "revisions": "Revisiones",
+    "analyzing": "Mapeando el impacto…",
+    "executing": "En curso",
+    "revisionProgress": "{done} de {total} escenas actualizadas"
   },
   "biscuit": {
     "placeholder": "¡Hola! Soy Biscuit. Trae la tinta y tus ideas más locas, y les daremos vida.",
@@ -1558,7 +1563,9 @@
     "starterContinuity": "Revisa el manuscrito en busca de problemas de continuidad",
     "welcomeModeHint": "Consejo: Shift+Tab cambia mi autonomía — Plan para idear con seguridad, Auto para dejarme trabajar.",
     "stopFirst": "Detén primero la ejecución actual (■) y luego cambia de conversación.",
-    "deleteConversationConfirm": "¿Eliminar la conversación «{title}»? Esto no se puede deshacer."
+    "deleteConversationConfirm": "¿Eliminar la conversación «{title}»? Esto no se puede deshacer.",
+    "approvalCountdown": "Se rechaza automáticamente en {time}",
+    "approvalTimedOut": "La solicitud de aprobación caducó y fue rechazada."
   },
   "review": {
     "pendingOne": "1 edición pendiente",

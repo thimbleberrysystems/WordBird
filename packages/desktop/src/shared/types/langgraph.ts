@@ -125,6 +125,8 @@ export interface IAgentApprovalRequest {
   id: string
   summary: string
   spawns: IAgentSpawnRequest[]
+  /** Epoch ms when main auto-declines — drives the card's countdown. */
+  expiresAt?: number
 }
 
 /**
