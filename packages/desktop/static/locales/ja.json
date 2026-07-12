@@ -1481,7 +1481,7 @@
     "revisionProgress": "{total} シーン中 {done} 件更新済み"
   },
   "biscuit": {
-    "placeholder": "こんにちは！Biscuitです。インクと大胆なアイデアを持ってきて、一緒に形にしましょう。",
+    "placeholder": "あなたの執筆パートナー。構想・執筆・推敲 — あなたが創作する間、小説全体の一貫性を保ちます。",
     "thinking": "落としてくれたパンくずを分析中...",
     "newChat": "新規",
     "newChatTip": "新しい会話",
@@ -1557,7 +1557,6 @@
     "idle": "待機中",
     "agentsRunning": "{count} 件実行中",
     "welcomeTitle": "こんにちは、Biscuit です 🐦",
-    "welcomeSub": "あなたの執筆パートナー。構想・執筆・推敲 — あなたが創作する間、小説全体の一貫性を保ちます。",
     "welcomeConnect": "AI モデルを接続してください — ローカル（Ollama）でもクラウドでも選べます。",
     "welcomeConfigure": "モデルを接続…",
     "starterBrainstorm": "次の小説の構想をブレインストーミングして",

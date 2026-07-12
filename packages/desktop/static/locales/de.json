@@ -1479,7 +1479,7 @@
     "revisionProgress": "{done} von {total} Szenen aktualisiert"
   },
   "biscuit": {
-    "placeholder": "Hallo! Ich bin Biscuit. Bring Tinte und deine wildesten Ideen mit — wir erwecken sie zum Leben.",
+    "placeholder": "Dein Schreibbegleiter. Brainstormen, entwerfen, überarbeiten — ich halte den ganzen Roman kohärent, während du erschaffst.",
     "thinking": "Analysiere die Krümel, die du gerade fallen gelassen hast...",
     "newChat": "Neu",
     "newChatTip": "Neue Unterhaltung",
@@ -1555,7 +1555,6 @@
     "idle": "inaktiv",
     "agentsRunning": "{count} aktiv",
     "welcomeTitle": "Hallo, ich bin Biscuit 🐦",
-    "welcomeSub": "Dein Schreibbegleiter. Brainstormen, entwerfen, überarbeiten — ich halte den ganzen Roman kohärent, während du erschaffst.",
     "welcomeConnect": "Verbinde ein KI-Modell, um mich zum Leben zu erwecken — lokal (Ollama) oder Cloud, deine Wahl.",
     "welcomeConfigure": "Modell verbinden…",
     "starterBrainstorm": "Brainstorme eine Prämisse für meinen nächsten Roman",

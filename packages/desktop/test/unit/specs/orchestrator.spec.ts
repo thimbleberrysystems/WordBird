@@ -370,3 +370,54 @@ describe('Orchestrator', () => {
     expect(String(toolMsg?.content)).toContain('No valid agents')
   })
 })
+
+describe('supervisor tool binding', () => {
+  const namedTools = [
+    'propose_new_unit',
+    'propose_new_file',
+    'propose_project_file_edit',
+    'list_structure'
+  ].map((name) =>
+    tool(async() => 'ok', { name, description: name, schema: z.object({}) })
+  )
+
+  const buildAndCapture = (mode: 'plan' | 'ask' | 'auto'): string[] => {
+    let bound: string[] = []
+    const model = {
+      bindTools(tools: Array<{ name: string }>) {
+        bound = tools.map((t) => t.name)
+        return this
+      },
+      async invoke(): Promise<AIMessage> {
+        return new AIMessage('unused')
+      }
+    }
+    const orchestrator = new Orchestrator({
+      modelFactory: () => model as never,
+      tools: namedTools as never,
+      callbacks: { emitActivity: () => {}, requestApproval: async() => true }
+    })
+    orchestrator.setMode(mode)
+    orchestrator.buildGraph()
+    return bound
+  }
+
+  it('binds review-gated write tools directly in execution modes', () => {
+    for (const mode of ['ask', 'auto'] as const) {
+      const bound = buildAndCapture(mode)
+      expect(bound).toContain('spawn_agents')
+      expect(bound).toContain('propose_new_unit')
+      expect(bound).toContain('propose_new_file')
+      expect(bound).toContain('propose_project_file_edit')
+    }
+  })
+
+  it('plan mode binds NO write tools and no spawning — mechanically, not just by prompt', () => {
+    const bound = buildAndCapture('plan')
+    expect(bound).not.toContain('spawn_agents')
+    expect(bound).not.toContain('propose_new_unit')
+    expect(bound).not.toContain('propose_new_file')
+    expect(bound).not.toContain('propose_project_file_edit')
+    expect(bound).toContain('list_structure')
+  })
+})

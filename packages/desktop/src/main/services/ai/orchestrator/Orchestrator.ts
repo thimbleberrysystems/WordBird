@@ -349,6 +349,13 @@ const SUPERVISOR_TOOL_NAMES = [
   'propose_plan'
 ]
 
+// Review-gated write tools the supervisor may use DIRECTLY (outside plan
+// mode) for small, single-target writes. Every one of these lands in the
+// writer's diff/review queue — the supervisor still cannot change anything
+// silently. Without these, models that fail to orchestrate a drafter
+// degrade to pasting prose into the chat and asking the writer to copy it.
+const SUPERVISOR_WRITE_TOOL_NAMES = ['propose_new_unit', 'propose_new_file', 'propose_project_file_edit']
+
 const SPAWN_TOOL_NAME = 'spawn_agents'
 
 const spawnSchema = z.object({
@@ -381,8 +388,15 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'independent tasks belong in ONE wave so they run in parallel.\n' +
   '- Give each agent complete, self-contained instructions: what to do, where to look, what to ' +
   'return. Include relevant unit ids/paths from the project brief so they start oriented.\n' +
-  '- Prose/bible changes are made by drafter or line-editor agents and always reach the writer as ' +
-  'reviewable diffs — never claim changes happened without spawning an agent that proposed them.\n' +
+  '- PROSE BELONGS IN FILES, NEVER IN CHAT. When the writer asks you to write or save ' +
+  'anything (a scene, a chapter, notes), you MUST produce it through a tool: spawn a ' +
+  'drafter for substantial or multi-scene work, or for one small piece call ' +
+  'propose_new_unit (a new scene/chapter in the manuscript), propose_new_file (any other ' +
+  'project file), or propose_project_file_edit (changing an existing file) yourself. ' +
+  'Pasting the text into chat and telling the writer to copy it into a file is a failure ' +
+  '— they will see your proposal as a reviewable diff and accept it with one click.\n' +
+  '- Prose/bible changes always reach the writer as reviewable diffs — never claim a ' +
+  'change happened without a tool call that proposed it.\n' +
   '- After results return, either spawn another wave (if genuinely needed) or reply to the writer ' +
   'in warm, plain language. Do not mention roles, waves, or tool names to the writer.\n' +
   '- Messages marked "[Writer, mid-run]" arrived while you were working — they take precedence ' +
@@ -879,7 +893,10 @@ export class Orchestrator {
 
     const supervisorTools = [
       ...(mode === 'plan' ? [] : [spawnTool]),
-      ...this._toolsByName(SUPERVISOR_TOOL_NAMES)
+      ...this._toolsByName(SUPERVISOR_TOOL_NAMES),
+      // Plan mode binds no write tools at all — the prompt promise that
+      // nothing can change must hold mechanically, not just rhetorically.
+      ...(mode === 'plan' ? [] : this._toolsByName(SUPERVISOR_WRITE_TOOL_NAMES))
     ]
     const supervisorToolMap = new Map(supervisorTools.map((t) => [t.name, t]))
 

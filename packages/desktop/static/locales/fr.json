@@ -1481,7 +1481,7 @@
     "revisionProgress": "{done} scènes sur {total} mises à jour"
   },
   "biscuit": {
-    "placeholder": "Bonjour ! Je suis Biscuit. Apportez l’encre et vos idées les plus folles, donnons-leur vie.",
+    "placeholder": "Votre compagnon d’écriture. Idéation, rédaction, révision — je garde tout le roman cohérent pendant que vous créez.",
     "thinking": "J’analyse les miettes que vous venez de laisser...",
     "newChat": "Nouveau",
     "newChatTip": "Nouvelle conversation",
@@ -1557,7 +1557,6 @@
     "idle": "inactif",
     "agentsRunning": "{count} en cours",
     "welcomeTitle": "Bonjour, je suis Biscuit 🐦",
-    "welcomeSub": "Votre compagnon d’écriture. Idéation, rédaction, révision — je garde tout le roman cohérent pendant que vous créez.",
     "welcomeConnect": "Connectez un modèle d’IA pour me donner vie — local (Ollama) ou cloud, à vous de choisir.",
     "welcomeConfigure": "Connecter un modèle…",
     "starterBrainstorm": "Imaginer une prémisse pour mon prochain roman",

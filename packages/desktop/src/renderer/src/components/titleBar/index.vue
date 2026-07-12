@@ -79,7 +79,6 @@
             <span class="text-center-vertical">
               {{ `${HASH[show].short} ${wordCount[show]}` }}
             </span>
-            <span class="app-name-inline">WordBird</span>
           </div>
         </el-tooltip>
       </div>
@@ -358,13 +357,6 @@ img {
   margin-top: 1px;
   vertical-align: top;
 }
-.app-name-inline {
-  margin-left: 40px;
-  font-weight: bold;
-  color: var(--color-primary, #409eff);
-  white-space: nowrap;
-}
-
 .title {
   padding: 0 142px 0 0;
   height: 100%;

@@ -1481,7 +1481,7 @@
     "revisionProgress": "{total}개 장면 중 {done}개 업데이트됨"
   },
   "biscuit": {
-    "placeholder": "안녕하세요! 저는 Biscuit입니다. 잉크와 가장 대담한 아이디어를 가져오세요. 함께 실현해 봅시다.",
+    "placeholder": "당신의 집필 동반자. 구상, 집필, 퇴고 — 당신이 창작하는 동안 소설 전체의 일관성을 지킵니다.",
     "thinking": "방금 떨어뜨린 빵 부스러기를 분석하는 중...",
     "newChat": "새로",
     "newChatTip": "새 대화",
@@ -1557,7 +1557,6 @@
     "idle": "대기",
     "agentsRunning": "{count}개 실행 중",
     "welcomeTitle": "안녕하세요, Biscuit입니다 🐦",
-    "welcomeSub": "당신의 집필 동반자. 구상, 집필, 퇴고 — 당신이 창작하는 동안 소설 전체의 일관성을 지킵니다.",
     "welcomeConnect": "AI 모델을 연결해 주세요 — 로컬(Ollama)이든 클라우드든 자유롭게 선택하세요.",
     "welcomeConfigure": "모델 연결…",
     "starterBrainstorm": "다음 소설의 전제를 브레인스토밍해 줘",

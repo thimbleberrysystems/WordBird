@@ -139,8 +139,11 @@
         <div class="welcome-title">
           {{ t('biscuit.welcomeTitle') }}
         </div>
-        <p class="welcome-sub">
-          {{ aiIsConnected ? t('biscuit.welcomeSub') : t('biscuit.welcomeConnect') }}
+        <p
+          v-if="!aiIsConnected"
+          class="welcome-sub"
+        >
+          {{ t('biscuit.welcomeConnect') }}
         </p>
         <el-button
           v-if="!aiIsConnected"
@@ -155,7 +158,7 @@
             v-for="(starter, i) in starterPrompts"
             :key="i"
             class="welcome-suggestion"
-            @click="userInput = starter()"
+            @click="sendStarter(starter())"
           >
             {{ starter() }}
           </button>
@@ -651,6 +654,7 @@ const {
   historyVisible,
   sortedConversations,
   initialize: initializeHistory,
+  claimFreshThreadIfNeeded,
   newConversation,
   loadConversation,
   deleteConversation,
@@ -760,13 +764,17 @@ const respondApproval = async (approved: boolean): Promise<void> => {
   }
 }
 
-// Starter prompts shown on the welcome card — they fill the input so the
-// writer can edit before sending (never auto-send).
+// Starter prompts on the welcome card — one click sends them.
 const starterPrompts: Array<() => string> = [
   () => t('biscuit.starterBrainstorm'),
   () => t('biscuit.starterStatus'),
   () => t('biscuit.starterContinuity')
 ]
+
+const sendStarter = (text: string): void => {
+  userInput.value = text
+  sendMessage()
+}
 
 // A selection action from the editor: put the request in the input and
 // send immediately when connected (otherwise leave it for the writer).
@@ -815,6 +823,9 @@ const steerWith = async (text: string): Promise<void> => {
 // Send message to AI
 async function sendMessage (): Promise<void> {
   if (!userInput.value.trim() || !aiIsConnected.value) return
+  // A window that opened fresh detaches from the previous durable thread
+  // the moment it actually starts chatting.
+  await claimFreshThreadIfNeeded()
   // Mid-run: the same button steers — the note reaches the supervisor at
   // its next step boundary instead of waiting for the turn to finish.
   if (sending.value) {

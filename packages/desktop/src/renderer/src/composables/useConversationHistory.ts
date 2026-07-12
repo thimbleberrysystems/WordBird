@@ -35,6 +35,9 @@ export interface StoredConversation {
 
 const HISTORY_KEY = 'biscuit-conversations'
 const CURRENT_KEY = 'biscuit-current-conversation'
+// sessionStorage is per-window: a reload keeps it, File → New Window and a
+// fresh app launch start without it. That distinction drives initialize().
+const WINDOW_KEY = 'biscuit-window-conversation'
 
 export interface ConversationHistory {
   conversations: Ref<StoredConversation[]>
@@ -42,6 +45,8 @@ export interface ConversationHistory {
   historyVisible: Ref<boolean>
   sortedConversations: ComputedRef<StoredConversation[]>
   initialize: () => void
+  /** Reset the main-side thread once, iff this window started fresh. */
+  claimFreshThreadIfNeeded: () => Promise<void>
   saveCurrent: () => void
   newConversation: () => Promise<void>
   loadConversation: (id: string) => Promise<void>
@@ -77,16 +82,44 @@ export const useConversationHistory = (options: {
     currentId.value = localStorage.getItem(CURRENT_KEY) || ''
   }
 
-  /** Restore the last open conversation so a renderer reload doesn't lose it. */
+  // Fresh windows must not silently continue the durable thread another
+  // window (or session) was using — reset it lazily on the first send.
+  let needsFreshThread = false
+
+  /**
+   * Reloads restore this window's own conversation (claimed in
+   * sessionStorage); a brand-new window or app launch starts with a clean
+   * chat — earlier conversations stay one click away in the history list.
+   */
   const initialize = (): void => {
     loadHistory()
-    const current = conversations.value.find((c) => c.id === currentId.value)
-    if (current) aiMessages.value = JSON.parse(JSON.stringify(current.messages)) as ChatEntry[]
+    const claimed = sessionStorage.getItem(WINDOW_KEY)
+    if (claimed === null) {
+      currentId.value = ''
+      aiMessages.value = []
+      needsFreshThread = true
+    } else {
+      currentId.value = claimed
+      const current = conversations.value.find((c) => c.id === claimed)
+      if (current) aiMessages.value = JSON.parse(JSON.stringify(current.messages)) as ChatEntry[]
+    }
+    sessionStorage.setItem(WINDOW_KEY, currentId.value)
+  }
+
+  const claimFreshThreadIfNeeded = async(): Promise<void> => {
+    if (!needsFreshThread) return
+    needsFreshThread = false
+    try {
+      await window.electron.ai.resetThread()
+    } catch {
+      // Not connected yet — the thread will be fresh on connect anyway.
+    }
   }
 
   const persistHistory = (): void => {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(conversations.value))
     localStorage.setItem(CURRENT_KEY, currentId.value)
+    sessionStorage.setItem(WINDOW_KEY, currentId.value)
   }
 
   const deriveTitle = (messages: ChatEntry[]): string => {
@@ -159,6 +192,7 @@ export const useConversationHistory = (options: {
       return
     }
     saveCurrent()
+    needsFreshThread = false
     try {
       await window.electron.ai.resetThread()
     } catch {
@@ -182,6 +216,7 @@ export const useConversationHistory = (options: {
     if (!conv) return
     // Start a fresh main-process thread; the transcript is replayed as
     // context on the next send.
+    needsFreshThread = false
     try {
       await window.electron.ai.resetThread()
     } catch {
@@ -243,6 +278,7 @@ export const useConversationHistory = (options: {
     historyVisible,
     sortedConversations,
     initialize,
+    claimFreshThreadIfNeeded,
     saveCurrent,
     newConversation,
     loadConversation,

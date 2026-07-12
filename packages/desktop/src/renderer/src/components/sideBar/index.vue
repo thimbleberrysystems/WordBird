@@ -26,16 +26,20 @@
           <component :is="c.icon" />
         </li>
       </ul>
-      <ul class="bottom">
-        <li
-          v-for="(c, index) of sideBarBottomIcons"
-          :key="index"
-          :title="c.name()"
-          @click="handleLeftBottomClick(c.id)"
-        >
-          <component :is="c.icon" />
-        </li>
-      </ul>
+      <div class="left-column-bottom">
+        <!-- Wordmark, rotated to spend the rail's idle vertical space. -->
+        <span class="brand-vertical">WordBird</span>
+        <ul class="bottom">
+          <li
+            v-for="(c, index) of sideBarBottomIcons"
+            :key="index"
+            :title="c.name()"
+            @click="handleLeftBottomClick(c.id)"
+          >
+            <component :is="c.icon" />
+          </li>
+        </ul>
+      </div>
     </div>
     <div
       v-show="rightColumn"
@@ -213,6 +217,25 @@ const handleExpandClick = () => {
   justify-content: space-around;
   align-items: center;
   cursor: pointer;
+}
+
+.left-column-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-vertical {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--iconColor);
+  opacity: 0.75;
+  user-select: none;
+  white-space: nowrap;
 }
 
 .left-column ul > li > svg {

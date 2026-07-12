@@ -1479,7 +1479,7 @@
     "revisionProgress": "{done} of {total} scenes updated"
   },
   "biscuit": {
-    "placeholder": "Greetings! I'm Biscuit. Bring the ink and your wildest ideas, and let's bring them to life.",
+    "placeholder": "Your writing companion. Brainstorm, draft, revise — I keep the whole novel coherent while you create.",
     "thinking": "Analyzing the crumbs you just dropped...",
     "newChat": "New",
     "newChatTip": "New conversation",
@@ -1555,7 +1555,6 @@
     "idle": "idle",
     "agentsRunning": "{count} running",
     "welcomeTitle": "Hi, I’m Biscuit 🐦",
-    "welcomeSub": "Your writing companion. Brainstorm, draft, revise — I keep the whole novel coherent while you create.",
     "welcomeConnect": "Connect an AI model to bring me to life — local (Ollama) or cloud, your choice.",
     "welcomeConfigure": "Connect a model…",
     "starterBrainstorm": "Brainstorm a premise for my next novel",

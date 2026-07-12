@@ -1489,7 +1489,7 @@
     "revisionProgress": "已更新 {done}/{total} 個場景"
   },
   "biscuit": {
-    "placeholder": "你好！我是 Biscuit。帶上墨水和你最大膽的想法，我們一起讓它們成真。",
+    "placeholder": "你的寫作夥伴。構思、起草、修改 — 你盡情創作，我來保持整部小說的連貫。",
     "thinking": "正在分析你剛剛落下的麵包屑...",
     "newChat": "新增",
     "newChatTip": "新對話",
@@ -1565,7 +1565,6 @@
     "idle": "閒置",
     "agentsRunning": "{count} 個執行中",
     "welcomeTitle": "你好，我是 Biscuit 🐦",
-    "welcomeSub": "你的寫作夥伴。構思、起草、修改 — 你盡情創作，我來保持整部小說的連貫。",
     "welcomeConnect": "連接一個 AI 模型來喚醒我 — 本機（Ollama）或雲端，由你選擇。",
     "welcomeConfigure": "連接模型…",
     "starterBrainstorm": "為我的下一部小說腦力激盪一個前提",
