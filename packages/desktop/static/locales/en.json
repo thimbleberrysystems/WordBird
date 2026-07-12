@@ -1444,7 +1444,11 @@
     "targetPrompt": "How many words are you aiming for? Leave empty to remove the target.",
     "targetInvalid": "Numbers only",
     "targetTip": "{percent}% of your word target",
-    "todayTip": "Words written today"
+    "todayTip": "Words written today",
+    "save": "Save",
+    "saveTip": "Save every open file and record a snapshot in History",
+    "saveSnapshotMessage": "Manual save",
+    "saved": "Project saved — snapshot recorded in History."
   },
   "history": {
     "title": "History",

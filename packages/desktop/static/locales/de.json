@@ -1444,7 +1444,11 @@
     "targetPrompt": "Wie viele Wörter strebst du an? Leer lassen, um das Ziel zu entfernen.",
     "targetInvalid": "Nur Zahlen",
     "targetTip": "{percent}% deines Wortziels",
-    "todayTip": "Heute geschriebene Wörter"
+    "todayTip": "Heute geschriebene Wörter",
+    "save": "Speichern",
+    "saveTip": "Alle offenen Dateien speichern und einen Schnappschuss im Verlauf aufzeichnen",
+    "saveSnapshotMessage": "Manuelle Speicherung",
+    "saved": "Projekt gespeichert — Schnappschuss im Verlauf aufgezeichnet."
   },
   "history": {
     "title": "Verlauf",

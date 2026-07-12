@@ -1446,7 +1446,11 @@
     "targetPrompt": "Quantas palavras você pretende alcançar? Deixe vazio para remover a meta.",
     "targetInvalid": "Apenas números",
     "targetTip": "{percent}% da sua meta de palavras",
-    "todayTip": "Palavras escritas hoje"
+    "todayTip": "Palavras escritas hoje",
+    "save": "Salvar",
+    "saveTip": "Salva todos os arquivos abertos e registra um instantâneo no Histórico",
+    "saveSnapshotMessage": "Salvamento manual",
+    "saved": "Projeto salvo — instantâneo registrado no Histórico."
   },
   "history": {
     "title": "Histórico",

@@ -1445,7 +1445,11 @@
     "targetPrompt": "目标字数是多少？留空则移除目标。",
     "targetInvalid": "仅限数字",
     "targetTip": "已完成目标字数的 {percent}%",
-    "todayTip": "今日写作字数"
+    "todayTip": "今日写作字数",
+    "save": "保存",
+    "saveTip": "保存所有打开的文件，并在历史中记录快照",
+    "saveSnapshotMessage": "手动保存",
+    "saved": "项目已保存 — 快照已记录到历史。"
   },
   "history": {
     "title": "历史",

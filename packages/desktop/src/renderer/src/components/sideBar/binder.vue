@@ -56,6 +56,15 @@
       <el-button
         size="small"
         text
+        :loading="savingAll"
+        :title="t('binder.saveTip')"
+        @click="handleSaveAll"
+      >
+        {{ t('binder.save') }}
+      </el-button>
+      <el-button
+        size="small"
+        text
         :loading="compiling"
         @click="handleCompile"
       >
@@ -94,6 +103,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import BinderNode from './binderNode.vue'
 import { useNovelStore } from '@/store/novel'
+import { useEditorStore } from '@/store/editor'
 import { useProjectStore } from '@/store/project'
 import { useLayoutStore } from '@/store/layout'
 import { t } from '../../i18n'
@@ -251,6 +261,31 @@ const handleRootDrop = async (event: DragEvent): Promise<void> => {
     newParentId: null,
     index: structure.value.units.length
   })
+}
+
+// Project-level save: flush every dirty tab to disk (each save records its
+// own auto snapshot), then take one explicit snapshot so this moment is
+// marked in History even when nothing was dirty.
+const savingAll = ref(false)
+const handleSaveAll = async (): Promise<void> => {
+  if (savingAll.value) return
+  savingAll.value = true
+  try {
+    useEditorStore().ASK_FOR_SAVE_ALL(false)
+    // Saves land asynchronously via main — give them a beat before the
+    // explicit snapshot so it captures the flushed state.
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    const root = projectStore.currentProjectPath
+    if (root) {
+      await window.electron.novel.snapshot(root, t('binder.saveSnapshotMessage'))
+    }
+    ElMessage.success(t('binder.saved'))
+    novelStore.refresh()
+  } catch {
+    // Saving is main's job; the snapshot is best-effort.
+  } finally {
+    savingAll.value = false
+  }
 }
 
 const handleCompile = async (): Promise<void> => {

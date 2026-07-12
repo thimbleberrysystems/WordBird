@@ -1446,7 +1446,11 @@
     "targetPrompt": "Combien de mots visez-vous ? Laissez vide pour retirer l’objectif.",
     "targetInvalid": "Chiffres uniquement",
     "targetTip": "{percent}% de votre objectif de mots",
-    "todayTip": "Mots écrits aujourd’hui"
+    "todayTip": "Mots écrits aujourd’hui",
+    "save": "Enregistrer",
+    "saveTip": "Enregistrer tous les fichiers ouverts et consigner un instantané dans l’Historique",
+    "saveSnapshotMessage": "Enregistrement manuel",
+    "saved": "Projet enregistré — instantané consigné dans l’Historique."
   },
   "history": {
     "title": "Historique",

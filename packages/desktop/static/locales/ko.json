@@ -1446,7 +1446,11 @@
     "targetPrompt": "목표 단어 수는 몇 개인가요? 비워 두면 목표가 제거됩니다.",
     "targetInvalid": "숫자만 입력",
     "targetTip": "목표 단어 수의 {percent}%",
-    "todayTip": "오늘 쓴 단어 수"
+    "todayTip": "오늘 쓴 단어 수",
+    "save": "저장",
+    "saveTip": "열려 있는 모든 파일을 저장하고 히스토리에 스냅샷을 기록",
+    "saveSnapshotMessage": "수동 저장",
+    "saved": "프로젝트 저장됨 — 히스토리에 스냅샷이 기록되었습니다."
   },
   "history": {
     "title": "기록",

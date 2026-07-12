@@ -1444,7 +1444,11 @@
     "targetPrompt": "¿Cuántas palabras quieres alcanzar? Deja vacío para quitar el objetivo.",
     "targetInvalid": "Solo números",
     "targetTip": "{percent}% de tu objetivo de palabras",
-    "todayTip": "Palabras escritas hoy"
+    "todayTip": "Palabras escritas hoy",
+    "save": "Guardar",
+    "saveTip": "Guarda todos los archivos abiertos y registra una instantánea en el Historial",
+    "saveSnapshotMessage": "Guardado manual",
+    "saved": "Proyecto guardado — instantánea registrada en el Historial."
   },
   "history": {
     "title": "Historial",
