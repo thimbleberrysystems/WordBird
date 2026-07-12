@@ -12,7 +12,9 @@ import {
 } from 'electron'
 import log from 'electron-log'
 import { MARKDOWN_EXTENSIONS, isMarkdownFile } from 'common/filesystem/paths'
+import fs from 'fs'
 import { checkUpdates, userSetting } from './marktext'
+import { snapshotService } from '../../services/novel/SnapshotService'
 import { showTabBar } from './view'
 import { COMMANDS } from '../../commands'
 import type { CommandManager } from '../../commands'
@@ -217,6 +219,7 @@ const handleResponseForSave = async(
         ipcMain.emit('window-file-saved', win.id, filePath)
         win.webContents.send('mt::tab-saved', id, mtimeMs)
       }
+      recordSaveSnapshot(targetPath)
       return id
     })
     .catch((err: unknown) => {
@@ -224,6 +227,30 @@ const handleResponseForSave = async(
       const msg = err instanceof Error ? err.message : String(err)
       win.webContents.send('mt::tab-save-failure', id, msg)
     })
+}
+
+/**
+ * Every save is a snapshot: walk up from the saved file to the WordBird
+ * project root (marker: .wordbird/project.json) and record an auto
+ * snapshot. Fire-and-forget — versioning must never block or fail a save.
+ */
+const recordSaveSnapshot = (filePath: string): void => {
+  try {
+    let dir = path.dirname(path.resolve(filePath))
+    for (let depth = 0; depth < 12; depth++) {
+      if (fs.existsSync(path.join(dir, '.wordbird', 'project.json'))) {
+        snapshotService
+          .snapshot(dir, `Save: ${path.basename(filePath)}`, true)
+          .catch((error) => log.debug('[save-snapshot] skipped:', error))
+        return
+      }
+      const parent = path.dirname(dir)
+      if (parent === dir) return
+      dir = parent
+    }
+  } catch {
+    // Never let versioning interfere with saving.
+  }
 }
 
 const showUnsavedFilesMessage = async(
@@ -397,6 +424,7 @@ ipcMain.on(
             ipcMain.emit('window-file-saved', win.id, filePath)
             win.webContents.send('mt::tab-saved', id)
           }
+          recordSaveSnapshot(targetPath)
         })
         .catch((err: unknown) => {
           log.error('Error while save as:', err)

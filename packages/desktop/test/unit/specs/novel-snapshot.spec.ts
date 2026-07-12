@@ -106,3 +106,88 @@ describe('SnapshotService', () => {
     )
   })
 })
+
+describe('history coalescing', () => {
+  it('squashes snapshots beyond the limit into a baseline and keeps content intact', async() => {
+    // 8 snapshots, each changing the file.
+    for (let i = 1; i <= 8; i++) {
+      // Unique length per revision — same-length rapid writes can defeat
+      // git's stat cache and record nothing.
+      write('chapter-one.md', `Draft version ${i}. ${'#'.repeat(i)}`)
+      await service.snapshot(root, `Rev ${i}`)
+    }
+    const before = await service.list(root)
+    expect(before).toHaveLength(8)
+
+    const result = await service.coalesce(root, 3)
+    expect(result?.squashed).toBe(5)
+
+    const after = await service.list(root)
+    // Newest 3 kept + 1 baseline commit.
+    expect(after).toHaveLength(4)
+    expect(after[0].message).toBe('Rev 8')
+    expect(after[1].message).toBe('Rev 7')
+    expect(after[2].message).toBe('Rev 6')
+    expect(after[3].message).toMatch(/Coalesced 5 earlier snapshots/)
+    expect(after[3].auto).toBe(true)
+
+    // Restoring a kept snapshot still yields the right content.
+    await service.restore(root, after[2].id)
+    expect(read('chapter-one.md')).toBe(`Draft version 6. ${'#'.repeat(6)}`)
+
+    // The baseline preserves the newest squashed snapshot's content (Rev 5).
+    await service.restore(root, (await service.list(root)).find((s) =>
+      s.message.includes('Coalesced')
+    )!.id)
+    expect(read('chapter-one.md')).toBe(`Draft version 5. ${'#'.repeat(5)}`)
+  })
+
+  it('is a no-op when under the limit or when limit is unlimited (0)', async() => {
+    write('chapter-one.md', 'One.')
+    await service.snapshot(root, 'Only')
+    expect(await service.coalesce(root, 5)).toBeNull()
+    expect(await service.coalesce(root, 0)).toBeNull()
+    expect(await service.list(root)).toHaveLength(1)
+  })
+
+  it('prunes unreachable objects so coalescing reclaims space', async() => {
+    for (let i = 1; i <= 6; i++) {
+      write('chapter-one.md', `Padding content ${'x'.repeat(500 + i)} v${i}`)
+      await service.snapshot(root, `Rev ${i}`)
+    }
+    const objectsDir = path.join(root, '.git', 'objects')
+    const countObjects = (): number => {
+      let total = 0
+      for (const shard of fs.readdirSync(objectsDir)) {
+        if (shard.length !== 2) continue
+        total += fs.readdirSync(path.join(objectsDir, shard)).length
+      }
+      return total
+    }
+    const beforeCount = countObjects()
+    await service.coalesce(root, 2)
+    expect(countObjects()).toBeLessThan(beforeCount)
+
+    // History still fully functional after pruning.
+    const snapshots = await service.list(root)
+    expect(snapshots[0].message).toBe('Rev 6')
+    await service.restore(root, snapshots[1].id)
+    expect(read('chapter-one.md')).toContain('v5')
+  })
+
+  it('auto-coalesces once snapshots exceed limit plus slack', async() => {
+    service.setHistoryLimit(3)
+    try {
+      // 3 + 50 slack + 1 = 54 snapshots trips the automatic pass.
+      for (let i = 1; i <= 54; i++) {
+        write('chapter-one.md', `v${i} ${'#'.repeat(i)}`)
+        await service.snapshot(root, `Rev ${i}`)
+      }
+      const after = await service.list(root)
+      expect(after.length).toBe(4) // newest 3 + baseline
+      expect(after[0].message).toBe('Rev 54')
+    } finally {
+      service.setHistoryLimit(1000)
+    }
+  })
+})

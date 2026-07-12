@@ -573,6 +573,10 @@
           "korean": "한국어",
           "portuguese": "Português"
         }
+      },
+      "snapshotLimit": {
+        "description": "Limit des Schnappschuss-Verlaufs",
+        "notes": "Jede Speicherung und KI-Änderung wird versioniert. Über dieses Limit hinaus werden ältere Schnappschüsse zu einer Basis zusammengefasst. 0 behält alles für immer."
       }
     },
     "editor": {
@@ -1565,7 +1569,8 @@
     "stopFirst": "Stoppe zuerst den laufenden Durchlauf (■), dann wechsle die Unterhaltung.",
     "deleteConversationConfirm": "Unterhaltung „{title}“ löschen? Das kann nicht rückgängig gemacht werden.",
     "approvalCountdown": "Wird in {time} automatisch abgelehnt",
-    "approvalTimedOut": "Die Freigabeanfrage ist abgelaufen und wurde abgelehnt."
+    "approvalTimedOut": "Die Freigabeanfrage ist abgelaufen und wurde abgelehnt.",
+    "autoApplied": "{count} Änderung(en) übernommen — Schnappschuss gespeichert, jederzeit im Verlauf zurückspulbar."
   },
   "review": {
     "pendingOne": "1 ausstehende Änderung",
@@ -1574,5 +1579,10 @@
     "discardAll": "Alle verwerfen",
     "applyOne": "Diese Änderung übernehmen",
     "discardOne": "Diese Änderung verwerfen"
+  },
+  "titleBar": {
+    "save": "Speichern",
+    "saveTip": "Speichern (Strg+S) — jede Speicherung wird ein Schnappschuss im Verlauf",
+    "saved": "Alle Änderungen gespeichert"
   }
 }

@@ -367,6 +367,20 @@ async function snapshotBeforeApply (label: string): Promise<void> {
   }
 }
 
+// Auto-mode edits arrive in bursts (one proposal per tool call) — coalesce
+// a burst into ONE apply-all (and therefore one pre-apply snapshot).
+let autoApplyTimer: ReturnType<typeof setTimeout> | null = null
+function scheduleAutoApply (): void {
+  if (autoApplyTimer) clearTimeout(autoApplyTimer)
+  autoApplyTimer = setTimeout(async () => {
+    autoApplyTimer = null
+    const count = agentStore.pendingCount
+    if (count === 0) return
+    await handleAgentApplyAll()
+    ElMessage.success(t('biscuit.autoApplied', { count: String(count) }))
+  }, 400)
+}
+
 async function handleAgentApplyAll (): Promise<void> {
   await snapshotBeforeApply('Before applying Biscuit\'s edits')
   // The open file's edit goes through the editor (in-memory + save); every
@@ -1501,6 +1515,16 @@ onMounted(() => {
     if (!editor.value || !currentFile.value) return
 
     agentStore.addPendingEdit(proposal.edit, proposal.oldContent, proposal.originalPath)
+
+    // Auto / full-auto: the writer chose speed over per-edit review — apply
+    // automatically. Safety comes from the snapshot handleAgentApplyAll
+    // takes before writing, so the whole batch is one Rewind away. Ask and
+    // plan modes keep the review gate.
+    const mode = localStorage.getItem('biscuit-mode')
+    if (mode === 'auto' || mode === 'full-auto') {
+      scheduleAutoApply()
+      return
+    }
 
     const proposalPath = proposal.edit.filePath || ''
     const currentPath = currentFile.value.filename || currentFile.value.pathname || ''

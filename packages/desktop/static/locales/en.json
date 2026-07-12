@@ -572,6 +572,10 @@
           "korean": "한국어",
           "portuguese": "Português"
         }
+      },
+      "snapshotLimit": {
+        "description": "Snapshot history limit",
+        "notes": "Every save and AI edit is versioned. Beyond this many snapshots, older ones are coalesced into a baseline to save space. 0 keeps everything forever."
       }
     },
     "editor": {
@@ -1565,7 +1569,8 @@
     "stopFirst": "Stop the current run first (■), then switch conversations.",
     "deleteConversationConfirm": "Delete the conversation “{title}”? This cannot be undone.",
     "approvalCountdown": "Auto-declines in {time}",
-    "approvalTimedOut": "The approval request timed out and was declined."
+    "approvalTimedOut": "The approval request timed out and was declined.",
+    "autoApplied": "{count} edit(s) applied — snapshot saved, rewind from History anytime."
   },
   "review": {
     "pendingOne": "1 pending edit",
@@ -1574,5 +1579,10 @@
     "discardAll": "Discard All",
     "applyOne": "Apply this edit",
     "discardOne": "Discard this edit"
+  },
+  "titleBar": {
+    "save": "Save",
+    "saveTip": "Save (Ctrl+S) — every save becomes a snapshot in History",
+    "saved": "All changes saved"
   }
 }

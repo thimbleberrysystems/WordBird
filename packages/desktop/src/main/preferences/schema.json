@@ -12,7 +12,10 @@
   },
   "titleBarStyle": {
     "description": "General--The title bar style (Windows and Linux system only).",
-    "enum": ["custom", "native"],
+    "enum": [
+      "custom",
+      "native"
+    ],
     "default": "custom"
   },
   "openFilesInNewWindow": {
@@ -44,13 +47,20 @@
   },
   "fileSortBy": {
     "description": "General--Sort files in opened folder by created time, modified time and title.",
-    "enum": ["modified", "created", "title"],
+    "enum": [
+      "modified",
+      "created",
+      "title"
+    ],
     "default": "modified"
   },
   "fileSortOrder": {
     "description": "General--Sort order for files in opened folders: ascending or descending.",
     "type": "string",
-    "enum": ["asc", "desc"],
+    "enum": [
+      "asc",
+      "desc"
+    ],
     "default": "asc"
   },
   "lastOpenedFolder": {
@@ -59,7 +69,12 @@
   },
   "startUpAction": {
     "description": "General--The action after WordBird startup, open the last opened folder, open the specified folder or blank page",
-    "enum": ["folder", "openLastFolder", "blank", "restoreAll"],
+    "enum": [
+      "folder",
+      "openLastFolder",
+      "blank",
+      "restoreAll"
+    ],
     "default": "restoreAll"
   },
   "defaultDirectoryToOpen": {
@@ -142,7 +157,11 @@
   },
   "endOfLine": {
     "description": "Editor--The newline character used at the end of each line. The default value is default, which selects your operating system's default newline character.",
-    "enum": ["default", "lf", "crlf"],
+    "enum": [
+      "default",
+      "lf",
+      "crlf"
+    ],
     "default": "default"
   },
   "defaultEncoding": {
@@ -195,11 +214,19 @@
   "trimTrailingNewline": {
     "description": "Editor--The trim trailing newline option.",
     "default": 2,
-    "enum": [0, 1, 2, 3]
+    "enum": [
+      0,
+      1,
+      2,
+      3
+    ]
   },
   "textDirection": {
     "description": "Editor--The writing text direction",
-    "enum": ["ltr", "rtl"],
+    "enum": [
+      "ltr",
+      "rtl"
+    ],
     "default": "ltr"
   },
   "hideQuickInsertHint": {
@@ -229,17 +256,27 @@
   },
   "bulletListMarker": {
     "description": "Markdown--The marker used in bullet list",
-    "enum": ["-", "*", "+"],
+    "enum": [
+      "-",
+      "*",
+      "+"
+    ],
     "default": "-"
   },
   "orderListDelimiter": {
     "description": "Markdown--The dilimiter used in order list",
-    "enum": [".", ")"],
+    "enum": [
+      ".",
+      ")"
+    ],
     "default": "."
   },
   "preferHeadingStyle": {
     "description": "Markdown--The preferred heading style in WordBird",
-    "enum": ["atx", "setext"],
+    "enum": [
+      "atx",
+      "setext"
+    ],
     "default": "atx"
   },
   "tabSize": {
@@ -249,12 +286,24 @@
   },
   "listIndentation": {
     "description": "Markdown--Select the indent of list",
-    "enum": ["dfm", "tab", 1, 2, 3, 4],
+    "enum": [
+      "dfm",
+      "tab",
+      1,
+      2,
+      3,
+      4
+    ],
     "default": 1
   },
   "frontmatterType": {
     "description": "Markdown--The frontmatter type",
-    "enum": ["-", "+", ";", "{"],
+    "enum": [
+      "-",
+      "+",
+      ";",
+      "{"
+    ],
     "default": "-"
   },
   "superSubScript": {
@@ -279,7 +328,10 @@
   },
   "sequenceTheme": {
     "description": "Markdown--Sequence diagram theme",
-    "enum": ["hand", "simple"],
+    "enum": [
+      "hand",
+      "simple"
+    ],
     "default": "hand"
   },
   "theme": {
@@ -330,7 +382,11 @@
   },
   "imageInsertAction": {
     "description": "Image--The default behavior after insert image from local folder",
-    "enum": ["upload", "folder", "path"],
+    "enum": [
+      "upload",
+      "folder",
+      "path"
+    ],
     "default": "path"
   },
   "imagePreferRelativeDirectory": {
@@ -340,7 +396,10 @@
   },
   "imageRelativeDirectoryBase": {
     "description": "Image--Where relative images are copied.",
-    "enum": ["file", "folder"],
+    "enum": [
+      "file",
+      "folder"
+    ],
     "default": "file"
   },
   "imageRelativeDirectoryName": {
@@ -411,12 +470,39 @@
     "description": "AI--The configurations for each AI provider.--internal",
     "type": "object",
     "default": {
-      "openai": { "apiKey": "", "model": "gpt-4o" },
-      "anthropic": { "apiKey": "", "model": "claude-3-5-sonnet-latest" },
-      "google": { "apiKey": "", "model": "gemini-1.5-pro" },
-      "ollama": { "apiKey": "ollama", "baseUrl": "http://127.0.0.1:11434", "model": "llama3" },
-      "ollama_bundled": { "apiKey": "ollama", "baseUrl": "http://127.0.0.1:11434", "model": "llama3" },
-      "openrouter": { "apiKey": "", "baseUrl": "https://openrouter.ai/api/v1", "model": "openai/gpt-4o" }
+      "openai": {
+        "apiKey": "",
+        "model": "gpt-4o"
+      },
+      "anthropic": {
+        "apiKey": "",
+        "model": "claude-3-5-sonnet-latest"
+      },
+      "google": {
+        "apiKey": "",
+        "model": "gemini-1.5-pro"
+      },
+      "ollama": {
+        "apiKey": "ollama",
+        "baseUrl": "http://127.0.0.1:11434",
+        "model": "llama3"
+      },
+      "ollama_bundled": {
+        "apiKey": "ollama",
+        "baseUrl": "http://127.0.0.1:11434",
+        "model": "llama3"
+      },
+      "openrouter": {
+        "apiKey": "",
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "model": "openai/gpt-4o"
+      }
     }
+  },
+  "snapshotHistoryLimit": {
+    "description": "General--Maximum snapshots kept in History before older ones are coalesced into a baseline (0 keeps everything forever).",
+    "type": "number",
+    "minimum": 0,
+    "default": 1000
   }
 }

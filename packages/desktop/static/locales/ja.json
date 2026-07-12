@@ -574,6 +574,10 @@
           "korean": "한국어",
           "portuguese": "Português"
         }
+      },
+      "snapshotLimit": {
+        "description": "スナップショット履歴の上限",
+        "notes": "保存と AI 編集はすべてバージョン管理されます。この数を超えると、古いスナップショットはベースラインに統合されます。0 ですべて永久保持。"
       }
     },
     "editor": {
@@ -1567,7 +1571,8 @@
     "stopFirst": "まず実行中の処理を停止（■）してから会話を切り替えてください。",
     "deleteConversationConfirm": "会話「{title}」を削除しますか？この操作は取り消せません。",
     "approvalCountdown": "{time} 後に自動的に拒否されます",
-    "approvalTimedOut": "承認リクエストは期限切れになり、拒否されました。"
+    "approvalTimedOut": "承認リクエストは期限切れになり、拒否されました。",
+    "autoApplied": "{count} 件の編集を適用 — スナップショット保存済み。いつでも履歴から巻き戻せます。"
   },
   "review": {
     "pendingOne": "保留中の編集 1件",
@@ -1576,5 +1581,10 @@
     "discardAll": "すべて破棄",
     "applyOne": "この編集を適用",
     "discardOne": "この編集を破棄"
+  },
+  "titleBar": {
+    "save": "保存",
+    "saveTip": "保存 (Ctrl+S) — 保存のたびに履歴のスナップショットになります",
+    "saved": "すべての変更を保存済み"
   }
 }

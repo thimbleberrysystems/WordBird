@@ -574,6 +574,10 @@
           "korean": "한국어",
           "portuguese": "Português"
         }
+      },
+      "snapshotLimit": {
+        "description": "Limite do histórico de instantâneos",
+        "notes": "Cada salvamento e edição da IA é versionado. Além desse número, instantâneos antigos são combinados em uma base para economizar espaço. 0 mantém tudo para sempre."
       }
     },
     "editor": {
@@ -1567,7 +1571,8 @@
     "stopFirst": "Pare a execução atual primeiro (■) e depois troque de conversa.",
     "deleteConversationConfirm": "Excluir a conversa “{title}”? Isso não pode ser desfeito.",
     "approvalCountdown": "Recusa automática em {time}",
-    "approvalTimedOut": "A solicitação de aprovação expirou e foi recusada."
+    "approvalTimedOut": "A solicitação de aprovação expirou e foi recusada.",
+    "autoApplied": "{count} edição(ões) aplicadas — instantâneo salvo, retroceda pelo Histórico quando quiser."
   },
   "review": {
     "pendingOne": "1 edição pendente",
@@ -1576,5 +1581,10 @@
     "discardAll": "Descartar tudo",
     "applyOne": "Aplicar esta edição",
     "discardOne": "Descartar esta edição"
+  },
+  "titleBar": {
+    "save": "Salvar",
+    "saveTip": "Salvar (Ctrl+S) — cada salvamento vira um instantâneo no Histórico",
+    "saved": "Todas as alterações salvas"
   }
 }

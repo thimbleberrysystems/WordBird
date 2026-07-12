@@ -574,6 +574,10 @@
           "korean": "한국어",
           "portuguese": "Português"
         }
+      },
+      "snapshotLimit": {
+        "description": "快照歷史上限",
+        "notes": "每次儲存和 AI 編輯都會留版本。超過該數量後，較舊的快照會合併為基線以節省空間。0 表示永久保留全部。"
       }
     },
     "editor": {
@@ -1575,7 +1579,8 @@
     "stopFirst": "請先停止目前執行（■），再切換對話。",
     "deleteConversationConfirm": "刪除對話「{title}」？此操作無法復原。",
     "approvalCountdown": "{time} 後自動拒絕",
-    "approvalTimedOut": "核准請求已逾時並被拒絕。"
+    "approvalTimedOut": "核准請求已逾時並被拒絕。",
+    "autoApplied": "已套用 {count} 處編輯 — 快照已儲存，可隨時從歷史倒回。"
   },
   "review": {
     "pendingOne": "1 處待處理編輯",
@@ -1584,5 +1589,10 @@
     "discardAll": "全部捨棄",
     "applyOne": "套用此編輯",
     "discardOne": "捨棄此編輯"
+  },
+  "titleBar": {
+    "save": "儲存",
+    "saveTip": "儲存 (Ctrl+S) — 每次儲存都會成為歷史中的快照",
+    "saved": "所有變更已儲存"
   }
 }

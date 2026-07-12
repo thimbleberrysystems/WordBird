@@ -54,6 +54,18 @@
         >
           <span class="text-center-vertical">&#9776;</span>
         </div>
+        <!-- Always-visible save: same path as Ctrl+S. Every save is also
+             recorded as a snapshot in History. -->
+        <button
+          v-if="filename"
+          class="save-button title-no-drag"
+          :class="{ dirty: !isSaved }"
+          :disabled="isSaved"
+          :title="isSaved ? t('titleBar.saved') : t('titleBar.saveTip')"
+          @click.stop="handleSaveClick"
+        >
+          <span class="text-center-vertical">{{ isSaved ? '✓' : t('titleBar.save') }}</span>
+        </button>
         <el-tooltip
           v-if="wordCount"
           class="item"
@@ -147,6 +159,7 @@ import { minimizePath, restorePath, maximizePath, closePath } from '../../assets
 import { PATH_SEPARATOR } from '../../config'
 import { isOsx as isOsxPlatform } from '@/util'
 import { useEditorStore } from '@/store/editor'
+import bus from '@/bus'
 import { useI18n } from 'vue-i18n'
 import { ArrowRight } from '@element-plus/icons-vue'
 import type { FileWordCount } from '@shared/types/files'
@@ -250,6 +263,10 @@ watch([() => props.filename, () => props.project?.name], updateDocumentTitle, {
   immediate: true,
   flush: 'post'
 })
+
+const handleSaveClick = (): void => {
+  bus.emit('mt::editor-ask-file-save')
+}
 
 const handleWordClick = () => {
   const ITEMS = ['word', 'paragraph', 'character', 'all'] as const
@@ -430,6 +447,31 @@ div.title > span {
   & .item {
     margin-right: 10px;
   }
+}
+
+.save-button {
+  font: inherit;
+  font-size: 12px;
+  height: 100%;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  color: var(--titleBarColor, var(--editorColor));
+  cursor: pointer;
+  opacity: 0.55;
+  &:hover:not(:disabled) {
+    opacity: 1;
+    color: var(--themeColor, #409eff);
+  }
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.save-button.dirty {
+  opacity: 1;
+  color: var(--themeColor, #409eff);
+  font-weight: 600;
 }
 
 .word-count {

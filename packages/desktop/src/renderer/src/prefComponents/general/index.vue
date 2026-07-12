@@ -22,6 +22,12 @@
           :step="100"
           :on-change="(value) => onSelectChange('autoSaveDelay', value)"
         />
+        <text-box
+          :description="t('preferences.general.snapshotLimit.description')"
+          :notes="t('preferences.general.snapshotLimit.notes')"
+          :input="String(snapshotHistoryLimit)"
+          :on-change="(value) => onSelectChange('snapshotHistoryLimit', Math.max(0, Number(value) || 0))"
+        />
       </template>
     </compound>
 
@@ -149,6 +155,7 @@ const preferenceStore = usePreferencesStore()
 const {
   autoSave,
   autoSaveDelay,
+  snapshotHistoryLimit,
   titleBarStyle,
   openFilesInNewWindow,
   openFolderInNewWindow,

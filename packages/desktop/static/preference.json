@@ -15,7 +15,6 @@
   "lastOpenedFolder": "",
   "treePathExcludePatterns": [],
   "language": "en",
-
   "editorFontFamily": "Open Sans",
   "fontSize": 16,
   "lineHeight": 1.6,
@@ -25,7 +24,6 @@
   "trimUnnecessaryCodeBlockEmptyLines": true,
   "wrapCodeBlocks": false,
   "editorLineWidth": "",
-
   "autoPairBracket": true,
   "autoPairMarkdownSyntax": true,
   "autoPairQuote": true,
@@ -42,7 +40,6 @@
   "imageRelativeDirectoryName": "assets",
   "hideLinkPopup": false,
   "autoCheck": false,
-
   "preferLooseListItem": true,
   "bulletListMarker": "-",
   "orderListDelimiter": ".",
@@ -55,40 +52,48 @@
   "isHtmlEnabled": true,
   "isGitlabCompatibilityEnabled": false,
   "sequenceTheme": "hand",
-
   "theme": "light",
   "followSystemTheme": true,
   "lightModeTheme": "light",
   "darkModeTheme": "dark",
   "customCss": "",
-
   "spellcheckerEnabled": false,
   "spellcheckerNoUnderline": false,
   "spellcheckerLanguage": "en-US",
-
   "sideBarVisibility": false,
   "tabBarVisibility": false,
   "sourceCodeModeEnabled": false,
   "openedFilesInSidebar": true,
-
   "searchExclusions": [],
   "searchMaxFileSize": "",
   "searchIncludeHidden": false,
   "searchNoIgnore": false,
   "searchFollowSymlinks": true,
-
   "watcherUsePolling": false,
-
   "aiProvider": "openai",
   "aiConfigs": {
-    "openai": { "apiKey": "", "model": "gpt-4o" },
-    "anthropic": { "apiKey": "", "model": "claude-3-5-sonnet-latest" },
-    "google": { "apiKey": "", "model": "gemini-1.5-pro" },
-    "ollama": { "apiKey": "ollama", "baseUrl": "http://127.0.0.1:11434", "model": "llama3" },
+    "openai": {
+      "apiKey": "",
+      "model": "gpt-4o"
+    },
+    "anthropic": {
+      "apiKey": "",
+      "model": "claude-3-5-sonnet-latest"
+    },
+    "google": {
+      "apiKey": "",
+      "model": "gemini-1.5-pro"
+    },
+    "ollama": {
+      "apiKey": "ollama",
+      "baseUrl": "http://127.0.0.1:11434",
+      "model": "llama3"
+    },
     "openrouter": {
       "apiKey": "",
       "baseUrl": "https://openrouter.ai/api/v1",
       "model": "openai/gpt-4o"
     }
-  }
+  },
+  "snapshotHistoryLimit": 1000
 }

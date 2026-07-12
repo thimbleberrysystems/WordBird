@@ -574,6 +574,10 @@
           "korean": "한국어",
           "portuguese": "Português"
         }
+      },
+      "snapshotLimit": {
+        "description": "快照历史上限",
+        "notes": "每次保存和 AI 编辑都会留版本。超过该数量后，较旧的快照会合并为基线以节省空间。0 表示永久保留全部。"
       }
     },
     "editor": {
@@ -1566,7 +1570,8 @@
     "stopFirst": "请先停止当前运行（■），再切换对话。",
     "deleteConversationConfirm": "删除对话“{title}”？此操作无法撤销。",
     "approvalCountdown": "{time} 后自动拒绝",
-    "approvalTimedOut": "审批请求已超时并被拒绝。"
+    "approvalTimedOut": "审批请求已超时并被拒绝。",
+    "autoApplied": "已应用 {count} 处编辑 — 快照已保存，可随时从历史回退。"
   },
   "review": {
     "pendingOne": "1 处待处理编辑",
@@ -1575,5 +1580,10 @@
     "discardAll": "全部放弃",
     "applyOne": "应用此编辑",
     "discardOne": "放弃此编辑"
+  },
+  "titleBar": {
+    "save": "保存",
+    "saveTip": "保存 (Ctrl+S) — 每次保存都会成为历史中的快照",
+    "saved": "所有更改已保存"
   }
 }

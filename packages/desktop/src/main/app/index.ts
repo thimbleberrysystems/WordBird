@@ -3,6 +3,7 @@ import fsPromises from 'fs/promises'
 import { exec } from 'child_process'
 import dayjs from 'dayjs'
 import log from 'electron-log'
+import { snapshotService } from '../services/novel/SnapshotService'
 import { app, BrowserWindow, clipboard, dialog, nativeTheme, shell, ipcMain } from 'electron'
 import type { BrowserWindowConstructorOptions } from 'electron'
 import { isChildOfDirectory } from 'common/filesystem/paths'
@@ -283,8 +284,14 @@ class App {
       selectTheme(newTheme)
     }
 
+    // Snapshot history bound follows the preference, at boot and on change.
+    snapshotService.setHistoryLimit(Number(preferences.getItem('snapshotHistoryLimit') ?? 1000))
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ipcMain.on('broadcast-preferences-changed', (change: any) => {
+      if (change.snapshotHistoryLimit !== undefined) {
+        snapshotService.setHistoryLimit(Number(change.snapshotHistoryLimit))
+      }
       const nextPreferences = {
         ...preferences.getAll(),
         ...change

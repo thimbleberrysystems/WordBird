@@ -574,6 +574,10 @@
           "korean": "한국어",
           "portuguese": "Português"
         }
+      },
+      "snapshotLimit": {
+        "description": "스냅샷 히스토리 한도",
+        "notes": "모든 저장과 AI 편집이 버전 관리됩니다. 이 수를 초과하면 오래된 스냅샷이 기준선으로 합쳐집니다. 0은 모두 영구 보관."
       }
     },
     "editor": {
@@ -1567,7 +1571,8 @@
     "stopFirst": "먼저 실행 중인 작업을 중지(■)한 뒤 대화를 전환하세요.",
     "deleteConversationConfirm": "대화 “{title}”을(를) 삭제할까요? 되돌릴 수 없습니다.",
     "approvalCountdown": "{time} 후 자동 거절됩니다",
-    "approvalTimedOut": "승인 요청이 시간 초과되어 거절되었습니다."
+    "approvalTimedOut": "승인 요청이 시간 초과되어 거절되었습니다.",
+    "autoApplied": "{count}개 편집 적용됨 — 스냅샷 저장됨, 언제든 히스토리에서 되돌릴 수 있습니다."
   },
   "review": {
     "pendingOne": "대기 중인 편집 1개",
@@ -1576,5 +1581,10 @@
     "discardAll": "모두 취소",
     "applyOne": "이 편집 적용",
     "discardOne": "이 편집 취소"
+  },
+  "titleBar": {
+    "save": "저장",
+    "saveTip": "저장 (Ctrl+S) — 저장할 때마다 히스토리의 스냅샷이 됩니다",
+    "saved": "모든 변경 사항 저장됨"
   }
 }

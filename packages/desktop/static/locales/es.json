@@ -573,6 +573,10 @@
           "korean": "한국어",
           "portuguese": "Português"
         }
+      },
+      "snapshotLimit": {
+        "description": "Límite del historial de instantáneas",
+        "notes": "Cada guardado y edición de la IA se versiona. Más allá de este número, las instantáneas antiguas se fusionan en una base para ahorrar espacio. 0 lo conserva todo para siempre."
       }
     },
     "editor": {
@@ -1565,7 +1569,8 @@
     "stopFirst": "Detén primero la ejecución actual (■) y luego cambia de conversación.",
     "deleteConversationConfirm": "¿Eliminar la conversación «{title}»? Esto no se puede deshacer.",
     "approvalCountdown": "Se rechaza automáticamente en {time}",
-    "approvalTimedOut": "La solicitud de aprobación caducó y fue rechazada."
+    "approvalTimedOut": "La solicitud de aprobación caducó y fue rechazada.",
+    "autoApplied": "{count} edición(es) aplicadas — instantánea guardada, rebobina desde el Historial cuando quieras."
   },
   "review": {
     "pendingOne": "1 edición pendiente",
@@ -1574,5 +1579,10 @@
     "discardAll": "Descartar todo",
     "applyOne": "Aplicar esta edición",
     "discardOne": "Descartar esta edición"
+  },
+  "titleBar": {
+    "save": "Guardar",
+    "saveTip": "Guardar (Ctrl+S) — cada guardado se convierte en una instantánea en el Historial",
+    "saved": "Todos los cambios guardados"
   }
 }

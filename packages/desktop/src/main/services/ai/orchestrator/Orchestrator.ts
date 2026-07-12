@@ -10,8 +10,9 @@
  *
  * Autonomy is governed by a Claude-Code-style permission mode:
  * plan (describe, never execute), ask (approval before each wave),
- * auto / full-auto (budgeted free rein). Every mode keeps prose edits
- * inside the review pipeline — workers can only PROPOSE edits.
+ * auto / full-auto (budgeted free rein). Workers can only PROPOSE edits;
+ * ask mode holds proposals in the writer's review queue, while auto and
+ * full-auto apply them immediately after a safety snapshot (rewindable).
  *
  * The supervisor graph is compiled with the durable checkpointer, so a
  * long orchestration survives an app restart and resumes on its thread.
@@ -446,7 +447,13 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
       'Shift+Tab (the mode line under the chat box) switches modes.\n'
     : '') +
   (mode === 'ask'
-    ? '\nASK MODE IS ACTIVE: the writer approves each spawn wave. Keep waves small and purposeful.\n'
+    ? '\nASK MODE IS ACTIVE: the writer approves each spawn wave, and every proposed edit ' +
+      'waits in their review queue as a diff until they accept it.\n'
+    : '') +
+  (mode === 'auto' || mode === 'full-auto'
+    ? '\nAUTO MODE IS ACTIVE: proposed edits are applied to the manuscript automatically ' +
+      'after a safety snapshot. When you report changes, say they are APPLIED (and ' +
+      'rewindable from History) — do not tell the writer to review or accept anything.\n'
     : '')
 
 export class Orchestrator {

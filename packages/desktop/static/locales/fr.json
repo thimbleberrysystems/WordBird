@@ -574,6 +574,10 @@
           "korean": "한국어",
           "portuguese": "Português"
         }
+      },
+      "snapshotLimit": {
+        "description": "Limite de l’historique des instantanés",
+        "notes": "Chaque enregistrement et modification de l’IA est versionné. Au-delà de cette limite, les anciens instantanés sont fusionnés en une base pour économiser l’espace. 0 conserve tout pour toujours."
       }
     },
     "editor": {
@@ -1567,7 +1571,8 @@
     "stopFirst": "Arrêtez d’abord l’exécution en cours (■), puis changez de conversation.",
     "deleteConversationConfirm": "Supprimer la conversation « {title} » ? Cette action est irréversible.",
     "approvalCountdown": "Refus automatique dans {time}",
-    "approvalTimedOut": "La demande d’approbation a expiré et a été refusée."
+    "approvalTimedOut": "La demande d’approbation a expiré et a été refusée.",
+    "autoApplied": "{count} modification(s) appliquée(s) — instantané enregistré, rembobinez depuis l’Historique à tout moment."
   },
   "review": {
     "pendingOne": "1 modification en attente",
@@ -1576,5 +1581,10 @@
     "discardAll": "Tout rejeter",
     "applyOne": "Appliquer cette modification",
     "discardOne": "Rejeter cette modification"
+  },
+  "titleBar": {
+    "save": "Enregistrer",
+    "saveTip": "Enregistrer (Ctrl+S) — chaque enregistrement devient un instantané dans l’Historique",
+    "saved": "Toutes les modifications enregistrées"
   }
 }
