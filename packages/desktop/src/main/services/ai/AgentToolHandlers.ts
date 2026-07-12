@@ -208,9 +208,34 @@ const proposeProjectFileEdit = async(
   }
 }
 
+const askWriter = async(args: Record<string, unknown>): Promise<unknown> => {
+  const question = typeof args.question === 'string' ? args.question.trim() : ''
+  const rawOptions = Array.isArray(args.options) ? args.options : []
+  const options = rawOptions
+    .map((o) => {
+      const item = o as { label?: unknown; description?: unknown }
+      return {
+        label: typeof item.label === 'string' ? item.label.trim() : '',
+        description: typeof item.description === 'string' ? item.description : undefined
+      }
+    })
+    .filter((o) => o.label)
+  if (!question || options.length < 2) {
+    throw new Error('ask_writer needs a question and at least 2 options with labels.')
+  }
+  return {
+    writerQuestion: {
+      id: crypto.randomUUID(),
+      question,
+      options: options.slice(0, 6)
+    }
+  }
+}
+
 export const registerBuiltInAgentToolHandlers = (service: AgentToolService): void => {
   service.registerHandler('read_project_file', readAgentFile)
   service.registerHandler('propose_project_file_edit', proposeProjectFileEdit)
+  service.registerHandler('ask_writer', askWriter)
   registerNovelAgentToolHandlers(service)
   registerWebAgentToolHandlers(service)
 }

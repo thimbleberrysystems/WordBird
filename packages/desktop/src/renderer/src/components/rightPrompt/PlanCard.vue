@@ -21,7 +21,7 @@
       </el-button>
       <el-button
         size="small"
-        @click="$emit('approve', 'ask')"
+        @click="$emit('approve', 'approvals')"
       >
         {{ t('biscuit.planApproveAsk') }}
       </el-button>
@@ -43,7 +43,7 @@ import type { IPlanProposal } from '@shared/types/langgraph'
 
 defineProps<{ plan: IPlanProposal }>()
 defineEmits<{
-  (e: 'approve', mode: 'ask' | 'auto'): void
+  (e: 'approve', mode: 'approvals' | 'auto'): void
   (e: 'dismiss'): void
 }>()
 </script>

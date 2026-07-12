@@ -342,7 +342,7 @@ describe('per-agent pause/resume', () => {
 describe('supervisor step budget', () => {
   it('every mode leaves headroom for direct tool rounds (plan mode included)', () => {
     const orchestrator = makeOrchestrator(new ScriptedModel([]))
-    for (const mode of ['plan', 'ask', 'auto', 'full-auto'] as const) {
+    for (const mode of ['ask', 'approvals', 'auto'] as const) {
       orchestrator.setMode(mode)
       expect(orchestrator.recursionLimit(), mode).toBeGreaterThanOrEqual(24)
     }
@@ -350,7 +350,7 @@ describe('supervisor step budget', () => {
 })
 
 describe('in-wave worker resurrection', () => {
-  const failingThenGoodModel = (approvalLog: string[], mode: 'auto' | 'ask', approve: boolean) => {
+  const failingThenGoodModel = (approvalLog: string[], mode: 'auto' | 'approvals', approve: boolean) => {
     let calls = 0
     const model = {
       bindTools() {
@@ -371,8 +371,7 @@ describe('in-wave worker resurrection', () => {
           })
         }
         if (calls === 2) throw new Error('provider hiccup')
-        if (calls === 3 && mode === 'auto') return new AIMessage('second attempt worked')
-        if (calls === 3) return approve ? new AIMessage('second attempt worked') : new AIMessage('final answer')
+        if (calls === 3) return new AIMessage('second attempt worked')
         return new AIMessage('final answer')
       }
     }
@@ -407,19 +406,17 @@ describe('in-wave worker resurrection', () => {
     expect(approvals).toHaveLength(0)
   })
 
-  it('ask mode requests approval before resurrecting; decline keeps the failure', async() => {
+  it('approvals mode retries automatically too — no approval card involved', async() => {
     const approvals: string[] = []
-    const orchestrator = failingThenGoodModel(approvals, 'ask', false)
+    const orchestrator = failingThenGoodModel(approvals, 'approvals', true)
     const graph = orchestrator.buildGraph() as unknown as InvokableGraph
     const result = await graph.invoke(
       { messages: [new HumanMessage('go')] },
       { configurable: { thread_id: 'r2' }, recursionLimit: 12 }
     )
-    // Two approvals: the spawn wave itself, then the retry offer.
-    expect(approvals.length).toBeGreaterThanOrEqual(2)
-    expect(approvals.some((a) => a.includes('failed and can be retried'))).toBe(true)
+    expect(approvals).toHaveLength(0)
     const toolMsg = result.messages.find((m) => m.getType() === 'tool')
-    expect(String(toolMsg?.content)).toContain('failed: provider hiccup')
+    expect(String(toolMsg?.content)).toContain('second attempt worked')
   })
 })
 

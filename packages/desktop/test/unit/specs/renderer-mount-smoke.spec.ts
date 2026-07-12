@@ -40,6 +40,7 @@ beforeAll(() => {
       onContextUsage: vi.fn(unsub),
       onPlanProposal: vi.fn(unsub),
       onPlanSaved: vi.fn(unsub),
+      onWriterQuestion: vi.fn(unsub),
       onTokenUsage: vi.fn(unsub),
       onAgentStatus: vi.fn(unsub),
       onRunState: vi.fn(unsub),

@@ -8,11 +8,10 @@
  * independent ReAct subgraphs with role-scoped toolsets; their results
  * flow back to the supervisor, which spawns again or answers.
  *
- * Autonomy is governed by a Claude-Code-style permission mode:
- * plan (describe, never execute), ask (approval before each wave),
- * auto / full-auto (budgeted free rein). Workers can only PROPOSE edits;
- * ask mode holds proposals in the writer's review queue, while auto and
- * full-auto apply them immediately after a safety snapshot (rewindable).
+ * Three autonomy modes: 'ask' (read-only research/exploration — no write
+ * tools exist), 'approvals' (default — all tools, every proposed edit
+ * waits in the writer's review queue), and 'auto' (all tools, edits apply
+ * automatically after a safety snapshot). Workers can only PROPOSE edits.
  *
  * The supervisor graph is compiled with the durable checkpointer, so a
  * long orchestration survives an app restart and resumes on its thread.
@@ -40,7 +39,7 @@ import {
   REMOVE_ALL_MESSAGES
 } from '@langchain/langgraph'
 import type { BaseCheckpointSaver } from '@langchain/langgraph'
-import { AGENT_ROLES, MODE_BUDGETS, PROJECT_CONVENTIONS, isAgentRole } from './roles'
+import { AGENT_ROLES, MODE_BUDGETS, PROJECT_CONVENTIONS, READONLY_ROLES, READONLY_WORKER_TOOLS, isAgentRole } from './roles'
 import type {
   AgentPermissionMode,
   AgentRole,
@@ -348,7 +347,7 @@ const SUPERVISOR_TOOL_NAMES = [
   'update_plan',
   'list_plans',
   'propose_plan',
-  'set_writing_method'
+  'ask_writer'
 ]
 
 // Review-gated write tools the supervisor may use DIRECTLY (outside plan
@@ -356,7 +355,12 @@ const SUPERVISOR_TOOL_NAMES = [
 // writer's diff/review queue — the supervisor still cannot change anything
 // silently. Without these, models that fail to orchestrate a drafter
 // degrade to pasting prose into the chat and asking the writer to copy it.
-const SUPERVISOR_WRITE_TOOL_NAMES = ['propose_new_unit', 'propose_new_file', 'propose_project_file_edit']
+const SUPERVISOR_WRITE_TOOL_NAMES = [
+  'propose_new_unit',
+  'propose_new_file',
+  'propose_project_file_edit',
+  'set_writing_method'
+]
 
 const SPAWN_TOOL_NAME = 'spawn_agents'
 
@@ -405,6 +409,10 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'change happened without a tool call that proposed it.\n' +
   '- After results return, either spawn another wave (if genuinely needed) or reply to the writer ' +
   'in warm, plain language. Do not mention roles, waves, or tool names to the writer.\n' +
+  '- QUESTIONS WITH CHOICES go through ask_writer (a card with buttons + a free-form ' +
+  'field): use it whenever the answers are enumerable — genre, tone, POV, picking between ' +
+  'premises, yes/no forks. One question per card, your recommendation FIRST, then end ' +
+  'your turn. Never write a markdown table or bullet-wall of questions.\n' +
   '- Messages marked "[Writer, mid-run]" arrived while you were working — they take precedence ' +
   'over earlier instructions when they conflict; adjust course immediately.\n' +
   '- Tool results reading "[interrupted…]" mean a previous run was stopped mid-action: nothing ' +
@@ -486,35 +494,29 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'demands the actual text. Have summaries refreshed (update_summary) after prose changes.\n' +
   '- Before sweeping multi-file changes, have an agent take snapshot_project so the writer can rewind.\n' +
   '- New canon discovered while working should be recorded via a drafter with propose_bible_update.\n' +
-  (mode === 'plan'
-    ? '\nPLAN MODE IS ACTIVE: you may use read tools to analyze, but you cannot spawn agents ' +
-      'and no prose, scenes, or bible pages can change. Your one writable surface is the LIVE ' +
-      'PLAN FILE in plans/:\n' +
-      '- Check list_plans first: continue an existing plan for this task, or save_plan a new ' +
-      'one IN YOUR FIRST REPLY — capture whatever is known so far BEFORE asking any ' +
-      'questions (a new task means a new plan file; the file is the conversation\'s ' +
-      'memory and the writer watches it grow).\n' +
-      '- Keep the file current with update_plan as each exchange refines the idea — the ' +
-      'writer can open plans/<file>.md in the editor and edit it themselves, so re-read it ' +
-      '(read_project_file) before updating and fold their edits in, never clobber them.\n' +
-      '- When the plan is settled, call propose_plan — the writer gets an approval card; ' +
-      'approving switches them to an execution mode and you will be asked to carry it out. ' +
-      'Then STOP and wait.\n' +
-      '- If the writer asks you to write anything else, explain Plan mode blocks it and that ' +
-      'Shift+Tab (the mode line under the chat box) switches modes.\n'
-    : '') +
+  '\nLIVE PLANS (any mode): for multi-step endeavors keep a plan file in plans/ — ' +
+  'save_plan early, update_plan as the conversation refines it (the writer can edit the ' +
+  'file too: re-read before updating, never clobber), and propose_plan when it is settled ' +
+  'so the writer green-lights execution with one click.\n' +
   (mode === 'ask'
-    ? '\nASK MODE IS ACTIVE: the writer approves each spawn wave, and every proposed edit ' +
-      'waits in their review queue as a diff until they accept it.\n'
-    : '') +
-  (mode === 'auto' || mode === 'full-auto'
-    ? '\nAUTO MODE IS ACTIVE: proposed edits are applied to the manuscript automatically ' +
-      'after a safety snapshot. When you report changes, say they are APPLIED (and ' +
-      'rewindable from History) — do not tell the writer to review or accept anything.\n'
-    : '')
+    ? '\nASK MODE IS ACTIVE (read-only): reading, exploration, and web research are ' +
+      'unrestricted — spawn researcher/explorer agents freely. But NOTHING can be edited: ' +
+      'you have no prose/bible/structure tools in this mode, so NEVER claim you wrote, ' +
+      'created, or proposed anything — such a claim would be false. Your one writable ' +
+      'surface is the LIVE PLAN FILE in plans/. If the writer asks you to WRITE: fold ' +
+      'their intent into the plan and propose_plan it — the approval card is their ' +
+      'one-click path to an execution mode (or ctrl+shift cycles modes).\n'
+    : mode === 'approvals'
+      ? '\nAPPROVALS MODE IS ACTIVE (default): work freely — every proposed edit waits ' +
+        'in the writer\'s review queue as a diff (per-change and approve-all controls). ' +
+        'Never claim a change is applied; say it awaits their review.\n'
+      : '\nAUTO MODE IS ACTIVE: proposed edits are applied to the manuscript ' +
+        'automatically after a safety snapshot. When you report changes, say they are ' +
+        'APPLIED (and rewindable from History) — do not tell the writer to review or ' +
+        'accept anything.\n')
 
 export class Orchestrator {
-  private _mode: AgentPermissionMode = 'ask'
+  private _mode: AgentPermissionMode = 'approvals'
   private _callbacks: OrchestratorCallbacks
   private _modelFactory: () => BindableModel
   private _allTools: DynamicStructuredTool[]
@@ -728,7 +730,13 @@ export class Orchestrator {
     onToolCall?: (name: string, args: unknown) => void
   ): { graph: Runnable; toolCount: number } {
     const definition = AGENT_ROLES[role]
-    const tools = this._toolsByName(definition.allowedTools)
+    // Ask mode strips every mutating tool from workers — research and
+    // exploration run freely, but nothing can change.
+    const allowed =
+      this._mode === 'ask'
+        ? definition.allowedTools.filter((name) => READONLY_WORKER_TOOLS.includes(name))
+        : definition.allowedTools
+    const tools = this._toolsByName(allowed)
     const model = this._modelFactory()
     const bound = tools.length && model.bindTools ? model.bindTools(tools) : model
     const toolMap = new Map(tools.map((t) => [t.name, t]))
@@ -811,15 +819,6 @@ export class Orchestrator {
     if (!first.failed || signal?.aborted) return first.report
 
     const definition = AGENT_ROLES[spawn.role]
-    if (this._mode === 'ask') {
-      const approved = await this._callbacks.requestApproval({
-        id: crypto.randomUUID(),
-        summary: `${definition.displayName} failed and can be retried:\n${spawn.task}\n\n${first.report}`,
-        spawns: [spawn]
-      })
-      if (!approved) return first.report
-    }
-
     this._activity('status', `Retrying ${definition.displayName}`, spawn.task, spawn.role)
     const second = await this._runWorkerAttempt(spawn, recursionLimit, signal)
     if (second.failed) {
@@ -956,11 +955,11 @@ export class Orchestrator {
     })
 
     const supervisorTools = [
-      ...(mode === 'plan' ? [] : [spawnTool]),
+      spawnTool,
       ...this._toolsByName(SUPERVISOR_TOOL_NAMES),
-      // Plan mode binds no write tools at all — the prompt promise that
-      // nothing can change must hold mechanically, not just rhetorically.
-      ...(mode === 'plan' ? [] : this._toolsByName(SUPERVISOR_WRITE_TOOL_NAMES))
+      // Ask mode is mechanically read-only: no write tools are bound, so a
+      // "nothing can change" promise cannot be broken by a weak model.
+      ...(mode === 'ask' ? [] : this._toolsByName(SUPERVISOR_WRITE_TOOL_NAMES))
     ]
     const supervisorToolMap = new Map(supervisorTools.map((t) => [t.name, t]))
 
@@ -1087,14 +1086,26 @@ export class Orchestrator {
   ): Promise<string> {
     const budget = MODE_BUDGETS[this._mode]
 
-    if (this._mode === 'plan') {
-      this._activity('plan', 'Plan mode: spawning is disabled')
-      return (
-        'PLAN MODE: sub-agents cannot be spawned and nothing can be written. Present your ' +
-        'plan to the writer as a numbered list, and tell them to press Shift+Tab (the mode ' +
-        'line under the chat box) to switch to Ask or Auto when they want it executed — ' +
-        'only the writer can switch the mode.'
-      )
+    let spawnsRequested = this._parseSpawns(args)
+    if (this._mode === 'ask') {
+      const safe = spawnsRequested.filter((spawn) => READONLY_ROLES.includes(spawn.role))
+      const dropped = spawnsRequested.length - safe.length
+      if (safe.length === 0 && spawnsRequested.length > 0) {
+        this._activity('plan', 'Ask mode: only research/exploration agents can run')
+        return (
+          'ASK MODE: only researcher and explorer agents can run (read-only). Drafters, ' +
+          'editors, and plotters need write access — capture the intended work in the plan ' +
+          'file and propose_plan it, so the writer can approve execution in another mode.'
+        )
+      }
+      if (dropped > 0) {
+        this._activity(
+          'plan',
+          `Ask mode: ${dropped} write-capable agent(s) skipped`,
+          'Only researcher/explorer run in ask mode'
+        )
+      }
+      spawnsRequested = safe
     }
 
     const waves = this._countWaves(stateMessages)
@@ -1103,25 +1114,12 @@ export class Orchestrator {
       return `Budget exhausted: this task already used ${budget.maxWaves} spawn waves. Summarize what you have.`
     }
 
-    let spawns = this._parseSpawns(args)
+    let spawns = spawnsRequested
     if (spawns.length === 0) {
       return 'No valid agents were requested. Check the role names and try again.'
     }
     if (spawns.length > budget.maxWorkersPerWave) {
       spawns = spawns.slice(0, budget.maxWorkersPerWave)
-    }
-
-    if (this._mode === 'ask') {
-      this._activity('approval', 'Waiting for your approval', `${spawns.length} agent(s) requested`)
-      const approved = await this._callbacks.requestApproval({
-        id: crypto.randomUUID(),
-        summary: spawns.map((s) => `${AGENT_ROLES[s.role].displayName}: ${s.task}`).join('\n'),
-        spawns
-      })
-      if (!approved) {
-        this._activity('status', 'Spawn declined by writer')
-        return 'The writer declined this wave of agents. Ask what they would like instead.'
-      }
     }
 
     this._activity(

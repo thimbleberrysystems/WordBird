@@ -365,6 +365,13 @@ export interface IpcMainEventChannels {
   'mt::ai:agent-status': [status: IAgentStatus]
   'mt::ai:run-state': [state: { state: 'idle' | 'running' | 'paused' }]
   'mt::ai:plan-saved': [event: { path: string }]
+  'mt::ai:writer-question': [
+    question: {
+      id: string
+      question: string
+      options: Array<{ label: string; description?: string }>
+    }
+  ]
   'mt::ai:approval-resolved': [event: { id: string }]
   'mt::ai:biscuit-reattach': [event: Record<string, never>]
   'mt::ai:connection-state': [

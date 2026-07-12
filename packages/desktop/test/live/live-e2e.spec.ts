@@ -91,10 +91,10 @@ live('3 · writing goes to FILES via review, never chat-paste', () => {
   })
 })
 
-live('4 · plan mode: live plan file, proposal card, no writes', () => {
+live('4 · ask mode: live plan file, proposal card, no writes', () => {
   it('saves a plan file while brainstorming and cannot touch prose', async() => {
     const harness = await make()
-    harness.setMode('plan')
+    harness.setMode('ask')
     await harness.send(
       't-plan',
       'Let’s plan a new subplot where the letter-writer turns out to be Zara’s missing sister. ' +
@@ -107,13 +107,13 @@ live('4 · plan mode: live plan file, proposal card, no writes', () => {
       await harness.send('t-plan', 'Save the plan file now with what we have so far.')
     }
     expect(planFilesOf().length).toBeGreaterThanOrEqual(1)
-    // Plan mode binds no write tools — mechanically nothing can be proposed.
+    // Ask mode binds no write tools — mechanically nothing can be proposed.
     expect(harness.editProposals).toHaveLength(0)
   })
 
   it('propose_plan raises the approval card with the plan content', async() => {
     const harness = await make()
-    harness.setMode('plan')
+    harness.setMode('ask')
     await harness.send(
       't-plan2',
       'Create a plan titled "Sister Reveal" with three numbered steps for introducing ' +
@@ -125,8 +125,8 @@ live('4 · plan mode: live plan file, proposal card, no writes', () => {
   })
 })
 
-live('5 · ask mode: spawning waits for the writer', () => {
-  it('requests approval before running sub-agents, then runs them', async() => {
+live('5 · ask mode: read-only agents run freely, edits stay impossible', () => {
+  it('an explorer runs to completion in ask mode with zero proposals', async() => {
     const harness = await make()
     harness.setMode('ask')
     await harness.send(
@@ -134,22 +134,9 @@ live('5 · ask mode: spawning waits for the writer', () => {
       'Use one explorer sub-agent to inventory the manuscript: list every scene with a ' +
         'one-line description. Spawn the agent to do it.'
     )
-    expect(harness.approvals.length).toBeGreaterThanOrEqual(1)
-    // Approved (harness default) — the agent actually ran to completion.
     const finished = harness.agentStatuses.filter((s) => s.status === 'done')
     expect(finished.length).toBeGreaterThanOrEqual(1)
-  })
-
-  it('a declined wave runs nothing', async() => {
-    const harness = await make({ approve: () => false })
-    harness.setMode('ask')
-    const reply = await harness.send(
-      't-decline',
-      'Spawn one explorer sub-agent to inventory the manuscript scenes.'
-    )
-    expect(harness.approvals.length).toBeGreaterThanOrEqual(1)
-    expect(harness.agentStatuses).toHaveLength(0)
-    expect(reply.length).toBeGreaterThan(0)
+    expect(harness.editProposals).toHaveLength(0)
   })
 })
 
@@ -253,5 +240,16 @@ live('9 · timeline is readable: story-time questions get grounded answers', () 
         'chronologically? Name the scene.'
     )
     expect(reply.toLowerCase()).toContain('letter')
+  })
+})
+
+live('10 · questions arrive as selectable option cards', () => {
+  it('brainstorming asks via ask_writer instead of a question wall', async() => {
+    const harness = await make({ root: createEmptyLiveProject() })
+    harness.setMode('ask')
+    await harness.send('t-card', 'Brainstorm a premise for my next novel.')
+    expect(harness.writerQuestions.length).toBeGreaterThanOrEqual(1)
+    const first = harness.writerQuestions[0]
+    expect(first.options.length).toBeGreaterThanOrEqual(2)
   })
 })

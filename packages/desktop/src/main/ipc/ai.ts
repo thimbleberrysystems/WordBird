@@ -66,7 +66,7 @@ export const registerAIHandlers = (): void => {
   })
 
   ipcMain.handle('mt::ai:set-mode', async(_e, mode: AgentPermissionMode) => {
-    if (mode === 'plan' || mode === 'ask' || mode === 'auto' || mode === 'full-auto') {
+    if (mode === 'ask' || mode === 'approvals' || mode === 'auto') {
       langGraphManager.setPermissionMode(mode)
     }
     return { mode: langGraphManager.permissionMode }

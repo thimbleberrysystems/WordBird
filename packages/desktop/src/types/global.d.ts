@@ -175,6 +175,13 @@ declare global {
       onApprovalRequest: (handler: (request: IAgentApprovalRequest) => void) => () => void
       onContextUsage: (handler: (usage: IContextUsage) => void) => () => void
       onPlanSaved: (handler: (event: { path: string }) => void) => () => void
+      onWriterQuestion: (
+        handler: (question: {
+          id: string
+          question: string
+          options: Array<{ label: string; description?: string }>
+        }) => void
+      ) => () => void
       onPlanProposal: (handler: (plan: IPlanProposal) => void) => () => void
       onTokenUsage: (handler: (usage: ITokenUsageUpdate) => void) => () => void
       onAgentStatus: (handler: (status: IAgentStatus) => void) => () => void

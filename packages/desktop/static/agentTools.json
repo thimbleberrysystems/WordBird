@@ -1063,6 +1063,51 @@
           }
         }
       }
+    },
+    {
+      "id": "ask_writer",
+      "name": "ask_writer",
+      "displayName": "Ask the writer",
+      "description": "Ask the writer ONE question with selectable options — renders as a card with buttons plus a free-form field. Use whenever the choices are enumerable (genre, tone, POV, picking between premises, yes/no forks) instead of writing a wall of questions. Put your recommended option FIRST and mark it. After calling this, END your turn and wait for the answer.",
+      "handler": "ask_writer",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "The single question to ask."
+          },
+          "options": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 6,
+            "description": "2-6 selectable answers, recommended one first.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "description": "Short answer text (becomes the writer's reply)."
+                },
+                "description": {
+                  "type": "string",
+                  "description": "One-line explanation of the option."
+                }
+              },
+              "required": [
+                "label"
+              ]
+            }
+          }
+        },
+        "required": [
+          "question",
+          "options"
+        ]
+      }
     }
   ]
 }

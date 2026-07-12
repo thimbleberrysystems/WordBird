@@ -311,10 +311,15 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   checkpointer under `.wordbird/agent-state/` (excluded from snapshots).
 
 ### Safety model
-Prose/bible changes always flow through `propose_*` tools → edit proposal.
-In plan/ask modes they wait in the renderer diff review queue; in auto/
-full-auto the renderer applies them automatically after taking a project
-snapshot (the whole batch is one Rewind away). Structural/file operations
+Three modes (ctrl+shift cycles; fresh sessions start in approvals):
+`ask` is mechanically read-only (no write tools bound; only researcher/
+explorer workers spawn, stripped to read+web tools; plans/ is the one
+writable surface). Prose/bible changes always flow through `propose_*`
+tools → edit proposal: in `approvals` (default) they wait in the renderer
+diff review queue (per-change + approve-all); in `auto` the renderer
+applies them automatically after taking a project snapshot (the whole
+batch is one Rewind away). Writer questions with enumerable answers go
+through the ask_writer tool → selectable option card in chat. Structural/file operations
 are direct but auto-snapshot first. Every manual save also records a
 snapshot; history is bounded by the snapshotHistoryLimit preference
 (coalescing, 0 = unlimited). `.wordbird/` and `.git/` are untouchable by tools.

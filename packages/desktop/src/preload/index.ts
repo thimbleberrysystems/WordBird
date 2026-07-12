@@ -303,6 +303,24 @@ const aiAPI = {
     ipcRenderer.on('mt::ai:context-usage', subscription)
     return () => ipcRenderer.removeListener('mt::ai:context-usage', subscription)
   },
+  onWriterQuestion: (
+    handler: (question: {
+      id: string
+      question: string
+      options: Array<{ label: string; description?: string }>
+    }) => void
+  ) => {
+    const subscription = (
+      _e: unknown,
+      question: {
+        id: string
+        question: string
+        options: Array<{ label: string; description?: string }>
+      }
+    ) => handler(question)
+    ipcRenderer.on('mt::ai:writer-question', subscription)
+    return () => ipcRenderer.removeListener('mt::ai:writer-question', subscription)
+  },
   onPlanSaved: (handler: (event: { path: string }) => void) => {
     const subscription = (_e: unknown, event: { path: string }) => handler(event)
     ipcRenderer.on('mt::ai:plan-saved', subscription)

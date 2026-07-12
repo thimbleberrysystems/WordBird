@@ -115,9 +115,8 @@ describe('roles catalog', () => {
   })
 
   it('scales budgets with autonomy', () => {
-    expect(MODE_BUDGETS.plan.maxWorkersPerWave).toBe(0)
     expect(MODE_BUDGETS.ask.maxWorkersPerWave).toBeLessThan(MODE_BUDGETS.auto.maxWorkersPerWave)
-    expect(MODE_BUDGETS.auto.maxWaves).toBeLessThan(MODE_BUDGETS['full-auto'].maxWaves)
+    expect(MODE_BUDGETS.ask.maxWaves).toBeLessThan(MODE_BUDGETS.auto.maxWaves)
   })
 })
 
@@ -160,33 +159,34 @@ describe('Orchestrator', () => {
     expect(approvals).toHaveLength(0)
   })
 
-  it('asks for approval in ask mode and respects a decline', async() => {
+  it('spawning never raises approval cards — researchers run freely in ask mode', async() => {
     approveNext = false
     const model = new ScriptedModel([
       spawnCall([{ role: 'researcher', task: 'Research 1880s telegraphy.' }]),
-      new AIMessage('Understood — what would you like instead?')
+      new AIMessage('worker report'),
+      new AIMessage('done')
     ])
     const orchestrator = makeOrchestrator(model)
     orchestrator.setMode('ask')
 
-    const result = await invokeGraph(orchestrator, 'research telegraphy')
-    expect(approvals).toHaveLength(1)
-    expect(approvals[0].spawns[0].role).toBe('researcher')
-
-    const toolMsg = result.messages.find((m) => m.getType?.() === 'tool')
-    expect(String(toolMsg?.content)).toContain('declined')
-    // No worker ever started.
-    expect(activities.some((a) => a.kind === 'agent-start')).toBe(false)
+    await invokeGraph(orchestrator, 'research telegraphy')
+    expect(approvals).toHaveLength(0)
+    expect(activities.some((a) => a.kind === 'agent-start')).toBe(true)
   })
 
-  it('blocks spawning entirely in plan mode', async() => {
-    const model = new ScriptedModel([new AIMessage('PLAN: 1. spawn researcher 2. draft')])
+  it('ask mode refuses write-capable roles with plan guidance', async() => {
+    const model = new ScriptedModel([
+      spawnCall([{ role: 'drafter', task: 'Write the opening scene.' }]),
+      new AIMessage('understood')
+    ])
     const orchestrator = makeOrchestrator(model)
-    orchestrator.setMode('plan')
+    orchestrator.setMode('ask')
 
     const result = await invokeGraph(orchestrator, 'draft chapter 2')
-    const last = result.messages[result.messages.length - 1]
-    expect(String(last.content)).toContain('PLAN')
+    // The refusal reaches the supervisor as the tool result.
+    const toolMsg = result.messages.find((m) => m.getType?.() === 'tool')
+    expect(String(toolMsg?.content)).toContain('ASK MODE')
+    expect(String(toolMsg?.content)).toContain('propose_plan')
     expect(approvals).toHaveLength(0)
     expect(activities.some((a) => a.kind === 'spawn')).toBe(false)
   })
@@ -210,7 +210,6 @@ describe('Orchestrator', () => {
     approveNext = true
 
     const result = await invokeGraph(orchestrator, 'sweep the manuscript')
-    expect(approvals[0].spawns).toHaveLength(MODE_BUDGETS.ask.maxWorkersPerWave)
     const spawnEvent = activities.find((a) => a.kind === 'spawn')
     expect(spawnEvent?.label).toContain(String(MODE_BUDGETS.ask.maxWorkersPerWave))
     const last = result.messages[result.messages.length - 1]
@@ -381,7 +380,7 @@ describe('supervisor tool binding', () => {
     tool(async() => 'ok', { name, description: name, schema: z.object({}) })
   )
 
-  const buildAndCapture = (mode: 'plan' | 'ask' | 'auto'): string[] => {
+  const buildAndCapture = (mode: 'ask' | 'approvals' | 'auto'): string[] => {
     let bound: string[] = []
     const model = {
       bindTools(tools: Array<{ name: string }>) {
@@ -403,7 +402,7 @@ describe('supervisor tool binding', () => {
   }
 
   it('binds review-gated write tools directly in execution modes', () => {
-    for (const mode of ['ask', 'auto'] as const) {
+    for (const mode of ['approvals', 'auto'] as const) {
       const bound = buildAndCapture(mode)
       expect(bound).toContain('spawn_agents')
       expect(bound).toContain('propose_new_unit')
@@ -412,13 +411,23 @@ describe('supervisor tool binding', () => {
     }
   })
 
-  it('plan mode binds NO write tools and no spawning — mechanically, not just by prompt', () => {
-    const bound = buildAndCapture('plan')
-    expect(bound).not.toContain('spawn_agents')
+  it('ask mode binds NO write tools — read-only, mechanically', () => {
+    const bound = buildAndCapture('ask')
+    expect(bound).toContain('spawn_agents') // read-only workers may run
+    expect(bound).toContain('list_structure')
     expect(bound).not.toContain('propose_new_unit')
     expect(bound).not.toContain('propose_new_file')
     expect(bound).not.toContain('propose_project_file_edit')
-    expect(bound).toContain('list_structure')
+    expect(bound).not.toContain('set_writing_method')
+  })
+
+  it('approvals and auto bind the full toolset — they differ only in edit application', () => {
+    for (const mode of ['approvals', 'auto'] as const) {
+      const bound = buildAndCapture(mode)
+      expect(bound, mode).toContain('spawn_agents')
+      expect(bound, mode).toContain('propose_new_unit')
+      expect(bound, mode).toContain('list_structure')
+    }
   })
 })
 

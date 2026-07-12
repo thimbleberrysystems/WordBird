@@ -194,6 +194,7 @@ export interface LiveHarness {
   editProposals: unknown[]
   planProposals: Array<{ id: string; title: string; path: string; content: string }>
   approvals: IAgentApprovalRequest[]
+  writerQuestions: Array<{ question: string; options: Array<{ label: string }> }>
   activity: IAgentActivityEvent[]
   agentStatuses: IAgentStatus[]
   send: (threadId: string, text: string) => Promise<string>
@@ -217,11 +218,15 @@ export const createHarness = async(options?: {
 
   const editProposals: unknown[] = []
   const planProposals: LiveHarness['planProposals'] = []
+  const writerQuestions: Array<{ question: string; options: Array<{ label: string }> }> = []
   service.setEditProposalEmitter((proposal) => {
     editProposals.push(proposal)
   })
   service.setPlanProposalEmitter(({ planProposal }) => {
     planProposals.push(planProposal)
+  })
+  service.setWriterQuestionEmitter(({ writerQuestion }) => {
+    writerQuestions.push(writerQuestion)
   })
 
   const approvals: IAgentApprovalRequest[] = []
@@ -318,6 +323,7 @@ export const createHarness = async(options?: {
     editProposals,
     planProposals,
     approvals,
+    writerQuestions,
     activity,
     agentStatuses,
     send,

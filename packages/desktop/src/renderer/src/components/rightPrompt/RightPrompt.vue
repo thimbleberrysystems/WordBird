@@ -193,6 +193,44 @@
         @dismiss="dismissPlan"
       />
 
+      <!-- Writer question card: selectable options + free-form answer -->
+      <div
+        v-if="pendingQuestion"
+        class="question-card"
+      >
+        <div class="question-card__text">
+          {{ pendingQuestion.question }}
+        </div>
+        <button
+          v-for="(option, i) in pendingQuestion.options"
+          :key="i"
+          class="question-option"
+          :title="option.description"
+          @click="answerQuestion(option.label)"
+        >
+          <span class="question-option__label">{{ option.label }}</span>
+          <span
+            v-if="option.description"
+            class="question-option__desc"
+          >{{ option.description }}</span>
+        </button>
+        <div class="question-freeform">
+          <input
+            v-model="questionFreeform"
+            :placeholder="t('biscuit.questionFreeform')"
+            @keydown.enter.prevent="answerQuestion(questionFreeform)"
+          >
+          <el-button
+            size="small"
+            type="primary"
+            :disabled="!questionFreeform.trim()"
+            @click="answerQuestion(questionFreeform)"
+          >
+            {{ t('biscuit.send') }}
+          </el-button>
+        </div>
+      </div>
+
       <!-- Approval request card (ask mode) -->
       <div
         v-if="pendingApproval"
@@ -247,8 +285,8 @@
             rows="4"
             aria-label="Chat input"
             :placeholder="t('biscuit.placeholder')"
-            @keydown.enter.exact.prevent="sendMessage"
-            @keydown.shift.tab.exact.prevent="cycleMode"
+            @keydown="handleInputKeydown"
+            @keyup="fireModeChord"
           />
         </div>
         <!-- Autonomy mode line (Claude-CLI style): shift+tab cycles -->
@@ -443,6 +481,7 @@ onBeforeUnmount(() => {
   unsubUsage?.()
   unsubPlan?.()
   unsubPlanSaved?.()
+  unsubQuestion?.()
   unsubTokens?.()
   if (approvalTimer) clearInterval(approvalTimer)
   bus.off('biscuit-ask', handleBiscuitAsk)
@@ -491,23 +530,30 @@ const MODES: Array<{
   symbol: string
   hint: () => string
 }> = [
-  { id: 'plan', label: () => t('biscuit.modePlan'), symbol: '⏸', hint: () => t('biscuit.modePlanHint') },
-  { id: 'ask', label: () => t('biscuit.modeAsk'), symbol: '⇥', hint: () => t('biscuit.modeAskHint') },
-  { id: 'auto', label: () => t('biscuit.modeAuto'), symbol: '⏵', hint: () => t('biscuit.modeAutoHint') },
-  { id: 'full-auto', label: () => t('biscuit.modeMax'), symbol: '⏵⏵', hint: () => t('biscuit.modeMaxHint') }
+  { id: 'ask', label: () => t('biscuit.modeAsk'), symbol: '🔍', hint: () => t('biscuit.modeAskHint') },
+  { id: 'approvals', label: () => t('biscuit.modeApprovals'), symbol: '✓?', hint: () => t('biscuit.modeApprovalsHint') },
+  { id: 'auto', label: () => t('biscuit.modeAuto'), symbol: '⏵⏵', hint: () => t('biscuit.modeAutoHint') }
 ]
-// Every fresh session STARTS IN PLAN MODE — brainstorm safely by default;
-// nothing can change until the writer (or an approved plan) escalates.
-// A reload keeps the session's mode (sessionStorage claim), and a detached
-// Biscuit window adopts the current session mode instead of resetting it.
+
+// Legacy persisted values from the four-mode era map onto the three modes:
+// old 'plan' ≈ read-only ask; old 'ask' (spawn-approval) ≈ approvals;
+// 'full-auto' folds into auto.
+const normalizeMode = (value: string | null): AgentPermissionMode => {
+  if (value === 'auto' || value === 'full-auto') return 'auto'
+  if (value === 'plan' || value === 'ask') return value === 'plan' ? 'ask' : 'approvals'
+  if (value === 'approvals') return 'approvals'
+  return 'approvals'
+}
+// Every fresh session starts in APPROVALS mode (the safe default: every
+// edit waits for the writer's OK). A reload keeps the session's mode, and
+// a detached Biscuit window adopts the current session mode.
 const MODE_CLAIM_KEY = 'biscuit-window-mode'
 const initialMode = ((): AgentPermissionMode => {
-  const persisted = localStorage.getItem('biscuit-mode') as AgentPermissionMode | null
   if (props.detached || sessionStorage.getItem(MODE_CLAIM_KEY)) {
-    return persisted || 'plan'
+    return normalizeMode(localStorage.getItem('biscuit-mode'))
   }
-  localStorage.setItem('biscuit-mode', 'plan')
-  return 'plan'
+  localStorage.setItem('biscuit-mode', 'approvals')
+  return 'approvals'
 })()
 sessionStorage.setItem(MODE_CLAIM_KEY, '1')
 const mode = ref<AgentPermissionMode>(initialMode)
@@ -532,6 +578,35 @@ const cycleMode = (): void => {
   setMode(next.id)
 }
 
+// One keydown handler: Enter sends, Shift+Tab cycles, and a bare
+// Ctrl+Shift chord (no third key) arms the mode cycle — disarmed the moment
+// any other key joins so Ctrl+Shift+O etc. never mis-fire; fires on release.
+let modeChordArmed = false
+const handleInputKeydown = (event: KeyboardEvent): void => {
+  if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+    event.preventDefault()
+    sendMessage()
+    return
+  }
+  if (event.key === 'Tab' && event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+    event.preventDefault()
+    cycleMode()
+    return
+  }
+  if ((event.key === 'Shift' && event.ctrlKey) || (event.key === 'Control' && event.shiftKey)) {
+    modeChordArmed = true
+  } else if (event.key !== 'Shift' && event.key !== 'Control') {
+    modeChordArmed = false
+  }
+}
+const fireModeChord = (event: KeyboardEvent): void => {
+  if (!modeChordArmed) return
+  if (event.key === 'Shift' || event.key === 'Control') {
+    modeChordArmed = false
+    cycleMode()
+  }
+}
+
 // Push the persisted mode down to main once connected.
 watch(aiIsConnected, (connected) => {
   if (connected) setMode(mode.value)
@@ -540,7 +615,7 @@ watch(aiIsConnected, (connected) => {
 // ---- Plan approval (Claude-Code-style: plan file → card → mode switch) ----
 const pendingPlan = ref<IPlanProposal | null>(null)
 
-const approvePlan = async (targetMode: 'ask' | 'auto'): Promise<void> => {
+const approvePlan = async (targetMode: 'approvals' | 'auto'): Promise<void> => {
   const plan = pendingPlan.value
   if (!plan) return
   pendingPlan.value = null
@@ -625,6 +700,24 @@ watch(
   }
 )
 
+// ---- Writer questions (selectable option cards) ----
+interface WriterQuestion {
+  id: string
+  question: string
+  options: Array<{ label: string; description?: string }>
+}
+const pendingQuestion = ref<WriterQuestion | null>(null)
+const questionFreeform = ref('')
+
+const answerQuestion = (answer: string): void => {
+  const text = answer.trim()
+  if (!text) return
+  pendingQuestion.value = null
+  questionFreeform.value = ''
+  userInput.value = text
+  sendMessage()
+}
+
 // ---- Approvals ----
 const pendingApproval = ref<IAgentApprovalRequest | null>(null)
 
@@ -659,6 +752,7 @@ const {
   onSwitch: () => {
     agentsStore.clear()
     pendingApproval.value = null
+    pendingQuestion.value = null
     contextUsage.value = null
     tokenUsage.value = null
   },
@@ -705,6 +799,7 @@ let unsubApprovalResolved: (() => void) | null = null
 let unsubUsage: (() => void) | null = null
 let unsubPlan: (() => void) | null = null
 let unsubPlanSaved: (() => void) | null = null
+let unsubQuestion: (() => void) | null = null
 let unsubTokens: (() => void) | null = null
 
 onMounted(() => {
@@ -730,6 +825,9 @@ onMounted(() => {
   // plan take shape (and can edit it) while brainstorming.
   unsubPlanSaved = window.electron.ai.onPlanSaved(({ path: planPath }) => {
     openPlanInEditor(planPath)
+  })
+  unsubQuestion = window.electron.ai.onWriterQuestion((question) => {
+    pendingQuestion.value = question
   })
   unsubTokens = window.electron.ai.onTokenUsage((usage) => {
     tokenUsage.value = usage
@@ -1226,6 +1324,71 @@ async function sendMessage (): Promise<void> {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-primary, #409eff);
+}
+
+.question-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--themeColor, #409eff);
+  border-radius: 10px;
+  background: var(--floatBgColor, transparent);
+}
+
+.question-card__text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--editorColor, #303133);
+  margin-bottom: 2px;
+  white-space: pre-wrap;
+}
+
+.question-option {
+  font: inherit;
+  text-align: left;
+  padding: 6px 10px;
+  border: 1px solid var(--itemBgColor, rgba(128, 128, 128, 0.25));
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  &:hover {
+    border-color: var(--themeColor, #409eff);
+  }
+}
+
+.question-option__label {
+  font-size: 0.8rem;
+  color: var(--editorColor, #303133);
+}
+
+.question-option__desc {
+  font-size: 0.7rem;
+  color: var(--iconColor, #909399);
+}
+
+.question-freeform {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+  & input {
+    flex: 1;
+    font: inherit;
+    font-size: 0.78rem;
+    padding: 5px 8px;
+    border: 1px solid var(--itemBgColor, rgba(128, 128, 128, 0.25));
+    border-radius: 8px;
+    background: transparent;
+    color: var(--editorColor, #303133);
+    outline: none;
+    &:focus {
+      border-color: var(--themeColor, #409eff);
+    }
+  }
 }
 
 .approval-countdown {

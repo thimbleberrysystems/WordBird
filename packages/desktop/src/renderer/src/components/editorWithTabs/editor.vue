@@ -1521,7 +1521,7 @@ onMounted(() => {
     // takes before writing, so the whole batch is one Rewind away. Ask and
     // plan modes keep the review gate.
     const mode = localStorage.getItem('biscuit-mode')
-    if (mode === 'auto' || mode === 'full-auto') {
+    if (mode === 'auto') {
       scheduleAutoApply()
       return
     }

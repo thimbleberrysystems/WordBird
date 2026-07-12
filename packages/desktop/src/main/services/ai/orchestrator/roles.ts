@@ -67,6 +67,22 @@ const REVISION_NOTE =
 
 const withConventions = (prompt: string): string => prompt + PROJECT_CONVENTIONS
 
+/** Roles spawnable in read-only Ask mode (their work is reading, never writing). */
+export const READONLY_ROLES: AgentRole[] = ['researcher', 'explorer']
+
+/**
+ * Tool subset an Ask-mode worker may carry: pure reads plus the web.
+ * Everything that mutates the project is stripped.
+ */
+export const READONLY_WORKER_TOOLS: string[] = [
+  ...READ_TOOLS,
+  'web_search',
+  'web_fetch',
+  'wiki_search',
+  'wiki_read',
+  'dictionary_lookup'
+]
+
 export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
   explorer: {
     role: 'explorer',
@@ -218,8 +234,7 @@ export interface OrchestratorBudget {
 }
 
 export const MODE_BUDGETS: Record<AgentPermissionMode, OrchestratorBudget> = {
-  plan: { maxWorkersPerWave: 0, maxWaves: 0, workerRecursionLimit: 0 },
   ask: { maxWorkersPerWave: 4, maxWaves: 2, workerRecursionLimit: 12 },
-  auto: { maxWorkersPerWave: 6, maxWaves: 3, workerRecursionLimit: 16 },
-  'full-auto': { maxWorkersPerWave: 10, maxWaves: 6, workerRecursionLimit: 24 }
+  approvals: { maxWorkersPerWave: 6, maxWaves: 3, workerRecursionLimit: 16 },
+  auto: { maxWorkersPerWave: 10, maxWaves: 6, workerRecursionLimit: 24 }
 }

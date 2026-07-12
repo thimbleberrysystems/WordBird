@@ -51,6 +51,26 @@ interface PlanSavedPayload {
   planSaved: { path: string }
 }
 
+export interface IWriterQuestion {
+  id: string
+  question: string
+  options: Array<{ label: string; description?: string }>
+}
+
+interface WriterQuestionPayload {
+  writerQuestion: IWriterQuestion
+}
+
+type WriterQuestionEmitter = (payload: WriterQuestionPayload) => void | Promise<void>
+
+const isWriterQuestionPayload = (value: unknown): value is WriterQuestionPayload => {
+  if (!value || typeof value !== 'object') return false
+  const data = (value as Record<string, unknown>).writerQuestion as
+    | Record<string, unknown>
+    | undefined
+  return Boolean(data && data.id && data.question && Array.isArray(data.options))
+}
+
 type PlanSavedEmitter = (event: PlanSavedPayload) => void | Promise<void>
 
 const isPlanSavedPayload = (value: unknown): value is PlanSavedPayload => {
@@ -156,6 +176,7 @@ export class AgentToolService {
   private _editProposalEmitter: EditProposalEmitter | null = null
   private _planProposalEmitter: PlanProposalEmitter | null = null
   private _planSavedEmitter: PlanSavedEmitter | null = null
+  private _writerQuestionEmitter: WriterQuestionEmitter | null = null
 
   setEditProposalEmitter(emitter: EditProposalEmitter): void {
     this._editProposalEmitter = emitter
@@ -167,6 +188,10 @@ export class AgentToolService {
 
   setPlanSavedEmitter(emitter: PlanSavedEmitter): void {
     this._planSavedEmitter = emitter
+  }
+
+  setWriterQuestionEmitter(emitter: WriterQuestionEmitter): void {
+    this._writerQuestionEmitter = emitter
   }
 
   registerHandler(id: string, handler: AgentToolHandler): void {
@@ -262,6 +287,14 @@ export class AgentToolService {
         // written — the writer watches the plan take shape while chatting.
         if (this._planSavedEmitter && isPlanSavedPayload(result)) {
           await this._planSavedEmitter(result)
+        }
+
+        if (this._writerQuestionEmitter && isWriterQuestionPayload(result)) {
+          await this._writerQuestionEmitter(result)
+          return (
+            'Question card shown to the writer with your options (plus a free-form field). ' +
+            'END YOUR TURN NOW — their answer arrives as the next message.'
+          )
         }
 
         if (this._planProposalEmitter && isPlanProposalPayload(result)) {

@@ -89,14 +89,15 @@ export interface IBlockDiffState {
 }
 
 /**
- * Claude-Code-style autonomy modes governing what the orchestrator may do
- * without asking:
- *  - plan      : describe intended agents/edits; execute nothing.
- *  - ask       : cheap reads run freely; asks before spawning sub-agents.
- *  - auto      : spawns and works freely within budget; edits still reviewed.
- *  - full-auto : long-horizon runs with larger budgets; edits still reviewed.
+ * Three autonomy modes:
+ *  - ask       : read-only — agents explore, search, research the web, and
+ *                build context; NOTHING can be edited (plan files excepted).
+ *  - approvals : default — all tools; every proposed edit waits in the
+ *                review queue (per-change and approve-all controls).
+ *  - auto      : all tools; edits apply automatically after a safety
+ *                snapshot (rewindable from History).
  */
-export type AgentPermissionMode = 'plan' | 'ask' | 'auto' | 'full-auto'
+export type AgentPermissionMode = 'ask' | 'approvals' | 'auto'
 
 export type AgentRole =
   | 'explorer'

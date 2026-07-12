@@ -53,7 +53,7 @@ export class LangGraphManager {
   private _checkpointer: FileCheckpointSaver | null = null
   private _threadId: string | null = null
   private _orchestrator: Orchestrator | null = null
-  private _permissionMode: AgentPermissionMode = 'ask'
+  private _permissionMode: AgentPermissionMode = 'approvals'
   private _pendingApprovals = new Map<
     string,
     { resolve: (approved: boolean) => void; timer: NodeJS.Timeout }
@@ -362,6 +362,9 @@ export class LangGraphManager {
       await this._loadToolPacks()
       this._agentToolService.setPlanSavedEmitter(({ planSaved }) => {
         this._broadcast('mt::ai:plan-saved', planSaved)
+      })
+      this._agentToolService.setWriterQuestionEmitter(({ writerQuestion }) => {
+        this._broadcast('mt::ai:writer-question', writerQuestion)
       })
       this._agentToolService.setPlanProposalEmitter(async({ planProposal }) => {
         this._broadcast('mt::ai:plan-proposal', planProposal)

@@ -234,3 +234,84 @@ describe('flexibility prime directive + method playbooks in prompts', () => {
     expect(AGENT_ROLES.auditor.systemPrompt).toContain('`when`')
   })
 })
+
+describe('ask_writer question cards', () => {
+  it('the tool intercepts into a writer-question emitter and tells the model to stop', async() => {
+    const emitted: unknown[] = []
+    service.setWriterQuestionEmitter((p) => {
+      emitted.push(p)
+    })
+    service.setProjectRoot(root)
+    service.loadToolPack({
+      version: 1,
+      enabled: true,
+      source: 'test',
+      tools: [
+        {
+          id: 'ask_writer',
+          name: 'ask_writer',
+          description: 'ask',
+          handler: 'ask_writer',
+          enabled: true,
+          scope: 'project',
+          confirm: 'never',
+          schema: {
+            type: 'object',
+            properties: {
+              question: { type: 'string' },
+              options: { type: 'array', items: { type: 'object' } }
+            },
+            required: ['question', 'options']
+          }
+        }
+      ]
+    })
+    const langChainTool = service.getLangChainTools().find((t) => t.name === 'ask_writer')!
+    const reply = (await langChainTool.invoke({
+      question: 'Which genre?',
+      options: [
+        { label: 'Gothic mystery (recommended)', description: 'Moody, slow-burn dread' },
+        { label: 'Psychological thriller' }
+      ]
+    })) as string
+    expect(emitted).toHaveLength(1)
+    const q = (emitted[0] as { writerQuestion: { question: string; options: unknown[] } })
+      .writerQuestion
+    expect(q.question).toBe('Which genre?')
+    expect(q.options).toHaveLength(2)
+    expect(reply).toContain('END YOUR TURN')
+  })
+
+  it('rejects a question without at least two options', async() => {
+    await expect(run('ask_writer', { question: 'Hmm?', options: [] })).rejects.toThrow(/2 options/)
+  })
+
+  it('supervisor prompt teaches the card and forbids question walls', async() => {
+    const model = {
+      calls: [] as BaseMessage[][],
+      bindTools() {
+        return this
+      },
+      async invoke(messages: BaseMessage[]): Promise<AIMessage> {
+        this.calls.push(messages)
+        return new AIMessage('ok')
+      }
+    }
+    const orchestrator = new Orchestrator({
+      modelFactory: () => model as never,
+      tools: [],
+      callbacks: { emitActivity: () => {}, requestApproval: async() => true }
+    })
+    orchestrator.setMode('approvals')
+    const graph = orchestrator.buildGraph() as unknown as {
+      invoke: (s: unknown, o?: unknown) => Promise<unknown>
+    }
+    await graph.invoke(
+      { messages: [new HumanMessage('hi')] },
+      { configurable: { thread_id: 'q1' }, recursionLimit: 12 }
+    )
+    const system = String(model.calls[0][0].content)
+    expect(system).toContain('ask_writer')
+    expect(system).toContain('bullet-wall of questions')
+  })
+})
