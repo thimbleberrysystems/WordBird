@@ -11,6 +11,26 @@ import { TypedEmitter } from '@shared/types/typedEmitter'
 
 const DATA_CENTER_NAME = 'dataCenter'
 
+// When the OS keyring is unavailable (locked, prompt cancelled, or — the
+// WSL norm — no keyring daemon at all), API keys fall back to the local
+// store, lightly obfuscated. Forgetting the keyring password therefore
+// never locks anyone out of WordBird: worst case the stored keys become
+// unreadable and are re-entered once. The obfuscation is NOT encryption —
+// it only keeps keys from being shoulder-surfed in the JSON file.
+const FALLBACK_SUFFIX = '__insecureFallback'
+
+export const obfuscate = (value: string): string =>
+  Buffer.from(`wb1:${value}`, 'utf8').toString('base64')
+
+export const deobfuscate = (value: string): string | null => {
+  try {
+    const raw = Buffer.from(value, 'base64').toString('utf8')
+    return raw.startsWith('wb1:') ? raw.slice(4) : null
+  } catch {
+    return null
+  }
+}
+
 // No events emitted directly on `this`. ipcMain.emit is used for cross-
 // process broadcasts but those don't fire through this instance.
 type DataCenterEvents = Record<string, unknown[]>
@@ -84,8 +104,15 @@ class DataCenter extends TypedEmitter<DataCenterEvents> {
     const data = this.store.store
     try {
       const encryptData = await Promise.all(
-        encryptKeys.map((key) => {
-          return keytar.getPassword(serviceName, key)
+        encryptKeys.map(async(key) => {
+          try {
+            const secret = await keytar.getPassword(serviceName, key)
+            if (secret !== null) return secret
+          } catch {
+            // Keyring locked or absent — fall through to the local copy.
+          }
+          const fallback = this.store.get(`${key}${FALLBACK_SUFFIX}`) as string | undefined
+          return fallback ? deobfuscate(fallback) : null
         })
       )
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -134,7 +161,17 @@ class DataCenter extends TypedEmitter<DataCenterEvents> {
   getItem(key: string): Promise<any> | any {
     const { encryptKeys, serviceName } = this
     if (encryptKeys.includes(key)) {
-      return keytar.getPassword(serviceName, key)
+      return keytar
+        .getPassword(serviceName, key)
+        .catch((err) => {
+          log.warn(`[dataCenter] Keyring unavailable reading ${key}; trying fallback:`, err)
+          return null
+        })
+        .then((secret) => {
+          if (secret !== null) return secret
+          const fallback = this.store.get(`${key}${FALLBACK_SUFFIX}`) as string | undefined
+          return fallback ? deobfuscate(fallback) : null
+        })
     } else {
       const value = this.store.get(key)
       return Promise.resolve(value)
@@ -150,9 +187,17 @@ class DataCenter extends TypedEmitter<DataCenterEvents> {
     ipcMain.emit('broadcast-user-data-changed', { [key]: value })
     if (encryptKeys.includes(key)) {
       try {
-        return await keytar.setPassword(serviceName, key, value)
+        const result = await keytar.setPassword(serviceName, key, value)
+        // Keyring took it — drop any stale fallback copy.
+        this.store.delete(`${key}${FALLBACK_SUFFIX}`)
+        return result
       } catch (err) {
-        log.error('Keytar error:', err)
+        log.warn(
+          `[dataCenter] Keyring unavailable storing ${key} — using local obfuscated fallback ` +
+            '(re-enterable from AI settings at any time):',
+          err
+        )
+        return this.store.set(`${key}${FALLBACK_SUFFIX}`, obfuscate(String(value)))
       }
     } else {
       return this.store.set(key, value)

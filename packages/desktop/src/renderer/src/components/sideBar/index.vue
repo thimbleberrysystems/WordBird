@@ -264,12 +264,38 @@ const handleExpandClick = () => {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
   font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  color: var(--iconColor);
-  opacity: 0.75;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  /* Etched / letterpress: the glyphs read as pressed into the rail —
+     a dark inner edge on one side, a faint raised highlight on the other.
+     Shadows run on the x-axis because the text itself is vertical. */
+  color: transparent;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.38),
+    rgba(0, 0, 0, 0.22)
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  text-shadow:
+    1px 0 1px rgba(255, 255, 255, 0.18),
+    -1px 0 1px rgba(0, 0, 0, 0.28);
   user-select: none;
   white-space: nowrap;
+}
+
+/* Dark themes: engrave with darker-than-surface ink and a soft light rim. */
+.dark .brand-vertical {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.55),
+    rgba(0, 0, 0, 0.4)
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  text-shadow:
+    1px 0 1px rgba(255, 255, 255, 0.12),
+    -1px 0 1px rgba(0, 0, 0, 0.6);
 }
 
 .left-column ul > li > svg {
