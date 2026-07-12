@@ -359,8 +359,14 @@ const SUPERVISOR_WRITE_TOOL_NAMES = [
   'propose_new_unit',
   'propose_new_file',
   'propose_project_file_edit',
-  'set_writing_method'
+  'set_writing_method',
+  'delete_unit',
+  'delete_file'
 ]
+
+// Deletion is irreversible-feeling even with snapshots: EVERY delete asks
+// the writer first, in every mode — auto mode included.
+const DESTRUCTIVE_TOOLS = ['delete_unit', 'delete_file']
 
 const SPAWN_TOOL_NAME = 'spawn_agents'
 
@@ -409,6 +415,11 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'change happened without a tool call that proposed it.\n' +
   '- After results return, either spawn another wave (if genuinely needed) or reply to the writer ' +
   'in warm, plain language. Do not mention roles, waves, or tool names to the writer.\n' +
+  '- DELETING (delete_unit / delete_file) is available in approvals and auto modes, and ' +
+  'ALWAYS asks the writer to confirm first — every mode, no exceptions — with a ' +
+  'protective snapshot taken before the removal. For "clear everything" requests, ' +
+  'confirm once per deletion; never claim something was deleted before the writer ' +
+  'approved it.\n' +
   '- QUESTIONS WITH CHOICES go through ask_writer (a card with buttons + a free-form ' +
   'field): use it whenever the answers are enumerable — genre, tone, POV, picking between ' +
   'premises, yes/no forks. One question per card, your recommendation FIRST, then end ' +
@@ -654,6 +665,26 @@ export class Orchestrator {
     })
   }
 
+  /**
+   * Writer confirmation for destructive calls. Returns null when approved;
+   * otherwise the refusal text to hand back to the model. Mode-independent:
+   * deletes always ask.
+   */
+  private async _confirmDestructive(name: string, args: unknown): Promise<string | null> {
+    if (!DESTRUCTIVE_TOOLS.includes(name)) return null
+    this._activity('approval', 'Waiting for your approval to delete', previewArgs(args))
+    const approved = await this._callbacks.requestApproval({
+      id: crypto.randomUUID(),
+      summary: `DELETE requested — ${name}: ${previewArgs(args)}`,
+      spawns: []
+    })
+    if (approved) return null
+    this._activity('status', 'Deletion declined by writer')
+    return (
+      'The writer DECLINED this deletion. Do not retry it; ask what they would like instead.'
+    )
+  }
+
   private _toolsByName(names: string[]): DynamicStructuredTool[] {
     return this._allTools.filter((t) => names.includes(t.name))
   }
@@ -762,6 +793,13 @@ export class Orchestrator {
           let content: string
           try {
             if (!toolImpl) throw new Error(`Tool ${call.name} is not available to this agent.`)
+            const refusal = await this._confirmDestructive(call.name, call.args)
+            if (refusal) {
+              results.push(
+                new ToolMessage({ content: refusal, tool_call_id: call.id ?? crypto.randomUUID() })
+              )
+              continue
+            }
             onToolCall?.(call.name, call.args)
             this._activity(
               'tool',
@@ -1052,6 +1090,11 @@ export class Orchestrator {
           let content: string
           try {
             if (!toolImpl) throw new Error(`Unknown tool: ${call.name}`)
+            const refusal = await this._confirmDestructive(call.name, call.args)
+            if (refusal) {
+              results.push(new ToolMessage({ content: refusal, tool_call_id: callId }))
+              continue
+            }
             this._activity('tool', `Biscuit: ${call.name}`, previewArgs(call.args))
             const raw = await (toolImpl as DynamicStructuredTool).invoke(call.args ?? {})
             content = typeof raw === 'string' ? raw : JSON.stringify(raw)

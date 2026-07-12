@@ -450,3 +450,75 @@ describe('supervisor blueprint', () => {
     expect(system).toContain('SPAWN AGENTS')
   })
 })
+
+describe('destructive tools always ask the writer', () => {
+  const deleteTool = tool(async() => 'unit removed', {
+    name: 'delete_unit',
+    description: 'delete a unit',
+    schema: z.object({ unitId: z.string() })
+  })
+
+  const makeDeleting = (approve: boolean, log: string[]) => {
+    const model = new ScriptedModel([
+      new AIMessage({
+        content: '',
+        tool_calls: [{ id: 'd1', name: 'delete_unit', args: { unitId: 'u-123' } }]
+      }),
+      new AIMessage('done')
+    ])
+    return new Orchestrator({
+      modelFactory: () => model as never,
+      tools: [deleteTool],
+      callbacks: {
+        emitActivity: () => {},
+        requestApproval: async(req) => {
+          log.push(req.summary)
+          return approve
+        }
+      }
+    })
+  }
+
+  it('auto mode still asks before deleting; approval runs the tool', async() => {
+    const log: string[] = []
+    const orchestrator = makeDeleting(true, log)
+    orchestrator.setMode('auto')
+    const result = await invokeGraph(orchestrator, 'remove the old scene')
+    expect(log).toHaveLength(1)
+    expect(log[0]).toContain('DELETE requested')
+    const toolMsg = result.messages.find((m) => m.getType?.() === 'tool')
+    expect(String(toolMsg?.content)).toContain('unit removed')
+  })
+
+  it('a declined deletion never executes and tells the model so', async() => {
+    const log: string[] = []
+    const orchestrator = makeDeleting(false, log)
+    orchestrator.setMode('auto')
+    const result = await invokeGraph(orchestrator, 'remove the old scene')
+    expect(log).toHaveLength(1)
+    const toolMsg = result.messages.find((m) => m.getType?.() === 'tool')
+    expect(String(toolMsg?.content)).toContain('DECLINED')
+    expect(String(toolMsg?.content)).not.toContain('unit removed')
+  })
+
+  it('ask mode does not bind delete tools at all', () => {
+    let bound: string[] = []
+    const model = {
+      bindTools(tools: Array<{ name: string }>) {
+        bound = tools.map((t) => t.name)
+        return this
+      },
+      async invoke(): Promise<AIMessage> {
+        return new AIMessage('x')
+      }
+    }
+    const orchestrator = new Orchestrator({
+      modelFactory: () => model as never,
+      tools: [deleteTool],
+      callbacks: { emitActivity: () => {}, requestApproval: async() => true }
+    })
+    orchestrator.setMode('ask')
+    orchestrator.buildGraph()
+    expect(bound).not.toContain('delete_unit')
+  })
+})

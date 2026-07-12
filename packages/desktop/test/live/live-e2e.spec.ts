@@ -253,3 +253,22 @@ live('10 · questions arrive as selectable option cards', () => {
     expect(first.options.length).toBeGreaterThanOrEqual(2)
   })
 })
+
+live('11 · deletes always ask, even in auto mode', () => {
+  it('deleting a scene raises an approval and executes only after consent', async() => {
+    const harness = await make()
+    harness.setMode('auto')
+    await harness.send(
+      't-delete',
+      'Delete the scene about the letter from the manuscript — remove it completely.'
+    )
+    const deleteApprovals = harness.approvals.filter((a) => a.summary.includes('DELETE'))
+    expect(deleteApprovals.length).toBeGreaterThanOrEqual(1)
+
+    const fs = await import('fs')
+    const path = await import('path')
+    expect(fs.existsSync(path.join(harness.root, 'manuscript/chapter-one/the-letter.md'))).toBe(
+      false
+    )
+  })
+})
