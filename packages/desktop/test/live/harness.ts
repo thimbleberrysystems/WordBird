@@ -280,6 +280,14 @@ export const createHarness = async(options?: {
     try {
       const activityBefore = activity.length
       const reply = await invokeTurn(threadId, text)
+      // A collapsing free model can emit degenerate token garbage
+      // (<unk><unk>…) — that's pool failure too, not a product signal.
+      if ((reply.match(/<unk>/g) ?? []).length >= 3) {
+        const next = await failoverModel()
+
+        console.info(`[live-e2e] degenerate output — failing over to ${next}`)
+        return await invokeTurn(threadId, text)
+      }
       // A degraded free pool can also return empty 200s: no content, no
       // tool calls. Treat that like exhaustion and fail over once.
       if (!reply.trim() && activity.length === activityBefore) {

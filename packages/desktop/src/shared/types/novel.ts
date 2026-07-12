@@ -15,6 +15,28 @@
 
 export type ProjectFlavor = 'chapters-scenes' | 'scene-pool' | 'flat'
 
+/** How the writer likes to work — drives which playbook Biscuit runs. */
+export type PlanningStyle = 'outline-first' | 'discovery' | 'hybrid' | 'unset'
+
+/** Story-structure framework; a beat sheet lives at bible/structure.md. */
+export type StructureTemplate =
+  | 'freeform'
+  | 'three-act'
+  | 'save-the-cat'
+  | 'heros-journey'
+  | 'seven-point'
+  | 'romancing-the-beat'
+  | 'unset'
+
+/** Typed view of .wordbird/project.json (see main/services/novel/ProjectMeta). */
+export interface IProjectMeta {
+  name: string
+  createdAt?: string
+  flavor: ProjectFlavor
+  planningStyle?: PlanningStyle
+  structureTemplate?: StructureTemplate
+}
+
 export type NovelUnitType = 'part' | 'chapter' | 'scene'
 
 export type NovelUnitStatus = 'idea' | 'draft' | 'revised' | 'final'

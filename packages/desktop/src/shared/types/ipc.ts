@@ -59,7 +59,9 @@ import type {
   ISnapshotActionResult,
   IContinuityListResult,
   IRevisionListResult,
-  ProjectFlavor
+  ProjectFlavor,
+  PlanningStyle,
+  StructureTemplate
 } from './novel'
 
 export interface ProjectCreateArgs {
@@ -67,6 +69,10 @@ export interface ProjectCreateArgs {
   location?: string
   /** On-disk layout for the new novel project; defaults to 'chapters-scenes'. */
   flavor?: ProjectFlavor
+  /** Writer's planning style (plotter/pantser/hybrid); defaults to 'unset'. */
+  planningStyle?: PlanningStyle
+  /** Structure framework — writes a beat sheet to bible/structure.md. */
+  structureTemplate?: StructureTemplate
 }
 
 export interface ProjectCreateResult {
@@ -302,6 +308,13 @@ export interface IpcSendChannels {
   'mt::window-add-file-path': [windowId: number, filePath: string]
   'mt::window-initialized': []
   'mt::request-bootstrap': []
+  'mt::ai:set-session-context': [
+    context: {
+      viewMode: 'page' | 'corkboard' | 'outline' | 'timeline'
+      currentUnitId?: string
+      currentFile?: string
+    } | null
+  ]
   'mt::window-tab-closed': [pathname: string]
   'mt::window-toggle-always-on-top': []
   'mt::window::drop': [payload: unknown]

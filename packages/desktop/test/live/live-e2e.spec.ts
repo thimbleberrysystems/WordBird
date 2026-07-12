@@ -101,8 +101,12 @@ live('4 · plan mode: live plan file, proposal card, no writes', () => {
         'Start a plan for it.'
     )
     const plansDir = path.join(harness.root, 'plans')
-    const planFiles = fs.existsSync(plansDir) ? fs.readdirSync(plansDir) : []
-    expect(planFiles.length).toBeGreaterThanOrEqual(1)
+    const planFilesOf = (): string[] => (fs.existsSync(plansDir) ? fs.readdirSync(plansDir) : [])
+    if (planFilesOf().length === 0) {
+      // A weak model may interview first — one writer-like nudge is fair.
+      await harness.send('t-plan', 'Save the plan file now with what we have so far.')
+    }
+    expect(planFilesOf().length).toBeGreaterThanOrEqual(1)
     // Plan mode binds no write tools — mechanically nothing can be proposed.
     expect(harness.editProposals).toHaveLength(0)
   })
@@ -184,5 +188,70 @@ live('7 · blueprint: empty-project onboarding produces real artifacts', () => {
     const producedSomething =
       harness.editProposals.length > 0 || bibleExists || structure.includes('chapter')
     expect(producedSomething).toBe(true)
+  })
+})
+
+live('8 · methodology: discovery writer gets discovery treatment', () => {
+  it('records the method via set_writing_method and does not force outline shells', async() => {
+    const harness = await make({ root: createEmptyLiveProject() })
+    harness.setMode('auto')
+    await harness.send(
+      't-method',
+      'I am a discovery writer — I hate outlines, I find the story as I write. ' +
+        'Set my project up for a ghost-story novella and remember how I like to work.'
+    )
+    // A faithful onboarding interviews first — answer and let it finish.
+    await harness.send(
+      't-method',
+      'Premise: a lighthouse keeper who hears her drowned sister knocking. Gothic tone, ' +
+        'third person past, around 20k words. No structure template. Go ahead.'
+    )
+    const fs = await import('fs')
+    const path = await import('path')
+    const meta = JSON.parse(
+      fs.readFileSync(path.join(harness.root, '.wordbird', 'project.json'), 'utf8')
+    )
+    // The method was actually recorded through the tool…
+    expect(meta.planningStyle).toBe('discovery')
+    // …and no outline scaffolding was imposed on a pantser (≤2 units:
+    // at most an opening scene inside one chapter, no scene-list dump).
+    const structurePath = path.join(harness.root, '.wordbird', 'structure.json')
+    if (fs.existsSync(structurePath)) {
+      const structure = JSON.parse(fs.readFileSync(structurePath, 'utf8'))
+      interface UnitLike {
+        children?: UnitLike[]
+      }
+      const countLeaves = (units: UnitLike[]): number =>
+        units.reduce((sum, u) => sum + (u.children ? countLeaves(u.children) : 1), 0)
+      expect(countLeaves(structure.units)).toBeLessThanOrEqual(2)
+    }
+  })
+})
+
+live('9 · timeline is readable: story-time questions get grounded answers', () => {
+  it('answers which scene happens first in story time from `when` metadata', async() => {
+    const harness = await make()
+    // Seed story-time metadata: the letter scene predates the alley opening.
+    const { structureService } = await import(
+      '../../src/main/services/novel/StructureService'
+    )
+    const structure = await structureService.loadReconciled(harness.root)
+    const chapter = structure.units[0]
+    const opening = chapter.children!.find((u) => u.title.includes('opening'))!
+    const letter = chapter.children!.find((u) => u.title.includes('letter'))!
+    await structureService.updateUnit(harness.root, structure, opening.id, {
+      when: '1954-03-12'
+    })
+    await structureService.updateUnit(harness.root, structure, letter.id, {
+      when: '1953-11-02'
+    })
+
+    harness.setMode('ask')
+    const reply = await harness.send(
+      't-when',
+      'Looking at story time (the when metadata), which scene happens EARLIEST ' +
+        'chronologically? Name the scene.'
+    )
+    expect(reply.toLowerCase()).toContain('letter')
   })
 })

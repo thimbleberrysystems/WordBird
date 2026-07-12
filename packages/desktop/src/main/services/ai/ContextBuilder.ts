@@ -16,6 +16,7 @@ import fsPromises from 'fs/promises'
 import { structureService, collectLeaves } from '../novel/StructureService'
 import { continuityService } from '../novel/ContinuityService'
 import { revisionService, RevisionService } from '../novel/RevisionService'
+import { readProjectMeta } from '../novel/ProjectMeta'
 import type { INovelUnit } from '../../../shared/types/novel'
 
 const MAX_OUTLINE_LINES = 80
@@ -55,6 +56,8 @@ export const renderOutline = (units: INovelUnit[], maxLines = MAX_OUTLINE_LINES)
       if (unit.wordCount) meta.push(words(unit.wordCount))
       if (unit.status && unit.status !== 'idea') meta.push(unit.status)
       if (unit.pov) meta.push(`POV: ${unit.pov}`)
+      if (unit.when) meta.push(`@${unit.when}`)
+      if (unit.location) meta.push(`loc: ${unit.location}`)
       const suffix = meta.length ? ` (${meta.join(', ')})` : ''
       lines.push(`${indent}- [${unit.type}] ${unit.title}${suffix} <id:${unit.id}>`)
       if (unit.children) walk(unit.children, depth + 1)
@@ -68,7 +71,20 @@ export const renderOutline = (units: INovelUnit[], maxLines = MAX_OUTLINE_LINES)
   return lines.join('\n')
 }
 
+export interface ISessionContext {
+  viewMode: 'page' | 'corkboard' | 'outline' | 'timeline'
+  currentUnitId?: string
+  currentFile?: string
+}
+
 export class ContextBuilder {
+  private _sessionContext: ISessionContext | null = null
+
+  /** Where the writer is looking (view + open scene); set from the renderer. */
+  setSessionContext(context: ISessionContext | null): void {
+    this._sessionContext = context
+  }
+
   /**
    * Build the project brief for the active project root. Returns '' when
    * no project is open (the agents then work purely conversationally).
@@ -92,6 +108,42 @@ export class ContextBuilder {
         `Layout: ${structure.flavor} · ${leaves.length} prose unit${leaves.length === 1 ? '' : 's'} · ${words(totalWords)} words total · ` +
         `${biblePages} bible page${biblePages === 1 ? '' : 's'} · ${summaries} summar${summaries === 1 ? 'y' : 'ies'} · ${plans} plan${plans === 1 ? '' : 's'}`
       )
+
+      // The writer's METHOD drives which playbook applies.
+      const meta = readProjectMeta(projectRoot)
+      const hasBeatSheet = fs.existsSync(path.join(projectRoot, 'bible', 'structure.md'))
+      const methodBits: string[] = []
+      if (meta.planningStyle && meta.planningStyle !== 'unset') {
+        methodBits.push(`Method: ${meta.planningStyle}`)
+      }
+      if (meta.structureTemplate && meta.structureTemplate !== 'unset') {
+        methodBits.push(
+          `Structure: ${meta.structureTemplate}${hasBeatSheet ? ' (beat sheet: bible/structure.md — map scenes to beats when planning or health-checking)' : ''}`
+        )
+      } else if (hasBeatSheet) {
+        methodBits.push('Structure beat sheet exists at bible/structure.md')
+      }
+      if (methodBits.length > 0) {
+        sections.push(`WRITING METHOD:\n${methodBits.join(' · ')}`)
+      } else if (leaves.length > 0) {
+        sections.push(
+          'Writing method not recorded — when it comes up naturally, ask the writer how ' +
+          'they like to work (outline first / discover as they go / hybrid; structure ' +
+          'framework or none) and record it with set_writing_method.'
+        )
+      }
+
+      // Where the writer is looking right now (view + open scene), when known.
+      if (this._sessionContext) {
+        const vantageBits: string[] = [`${this._sessionContext.viewMode} view`]
+        if (this._sessionContext.currentUnitId) {
+          const open = leaves.find((l) => l.id === this._sessionContext?.currentUnitId)
+          if (open) vantageBits.push(`open scene: "${open.title}" <id:${open.id}>`)
+        } else if (this._sessionContext.currentFile) {
+          vantageBits.push(`open file: ${this._sessionContext.currentFile}`)
+        }
+        sections.push(`WRITER'S VANTAGE: ${vantageBits.join(' · ')}`)
+      }
 
       if (leaves.length === 0 && totalWords === 0) {
         sections.push(

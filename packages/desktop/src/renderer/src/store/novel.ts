@@ -112,6 +112,40 @@ export const useNovelStore = defineStore('novel', () => {
   function setViewMode(mode: NovelViewMode): void {
     viewMode.value = mode
     if (mode !== 'page') refresh()
+    sendSessionContext()
+  }
+
+  // Tell Biscuit where the writer is looking (view + open scene) so its
+  // help matches the writer's current altitude. Fire-and-forget.
+  function sendSessionContext(): void {
+    try {
+      const editorStore = useEditorStore()
+      const pathname = editorStore.currentFile?.pathname
+      const unit = pathname && root.value
+        ? collectUnits(structure.value?.units ?? []).find(
+          (u) => u.path && window.path.join(root.value as string, u.path) === pathname
+        )
+        : undefined
+      window.electron.ai.setSessionContext({
+        viewMode: viewMode.value,
+        currentUnitId: unit?.id,
+        currentFile: pathname ?? undefined
+      })
+    } catch {
+      // Context is advisory — never let it break the UI.
+    }
+  }
+
+  function collectUnits(units: INovelUnit[]): INovelUnit[] {
+    const out: INovelUnit[] = []
+    const walk = (list: INovelUnit[]): void => {
+      for (const u of list) {
+        out.push(u)
+        if (u.children) walk(u.children)
+      }
+    }
+    walk(units)
+    return out
   }
 
   /** Open a unit's backing file in the editor (scenes / flat chapters). */
@@ -147,6 +181,7 @@ export const useNovelStore = defineStore('novel', () => {
     moveUnit,
     deleteUnit,
     compile,
-    openUnit
+    openUnit,
+    sendSessionContext
   }
 })

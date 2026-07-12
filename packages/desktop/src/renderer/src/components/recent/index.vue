@@ -47,6 +47,40 @@
           <span class="flavor-desc">{{ option.description }}</span>
         </button>
       </div>
+
+      <!-- How the writer works — optional, changeable any time via Biscuit. -->
+      <div class="method-row">
+        <label>{{ t('recent.planningStyle') }}</label>
+        <el-select
+          v-model="selectedPlanning"
+          size="small"
+        >
+          <el-option
+            v-for="option in planningOptions"
+            :key="option.id"
+            :value="option.id"
+            :label="option.label"
+          />
+        </el-select>
+      </div>
+      <div class="method-row">
+        <label>{{ t('recent.structureTemplate') }}</label>
+        <el-select
+          v-model="selectedStructure"
+          size="small"
+        >
+          <el-option
+            v-for="option in structureOptions"
+            :key="option.id"
+            :value="option.id"
+            :label="option.label"
+          />
+        </el-select>
+      </div>
+      <p class="method-hint">
+        {{ t('recent.methodHint') }}
+      </p>
+
       <template #footer>
         <el-button @click="showFlavorPicker = false">
           {{ t('recent.cancel') }}
@@ -66,12 +100,31 @@
 import { ref, computed } from 'vue'
 import { useProjectStore } from '@/store/project'
 import { t } from '../../i18n'
-import type { ProjectFlavor } from '@shared/types/novel'
+import type { ProjectFlavor, PlanningStyle, StructureTemplate } from '@shared/types/novel'
 
 const projectStore = useProjectStore()
 
 const showFlavorPicker = ref(false)
 const selectedFlavor = ref<ProjectFlavor>('chapters-scenes')
+const selectedPlanning = ref<PlanningStyle>('unset')
+const selectedStructure = ref<StructureTemplate>('unset')
+
+const planningOptions = computed(() => [
+  { id: 'unset' as PlanningStyle, label: t('recent.planningLater') },
+  { id: 'outline-first' as PlanningStyle, label: t('recent.planningOutline') },
+  { id: 'discovery' as PlanningStyle, label: t('recent.planningDiscovery') },
+  { id: 'hybrid' as PlanningStyle, label: t('recent.planningHybrid') }
+])
+
+const structureOptions = computed(() => [
+  { id: 'unset' as StructureTemplate, label: t('recent.planningLater') },
+  { id: 'freeform' as StructureTemplate, label: t('recent.structureFreeform') },
+  { id: 'three-act' as StructureTemplate, label: t('recent.structureThreeAct') },
+  { id: 'save-the-cat' as StructureTemplate, label: t('recent.structureSaveTheCat') },
+  { id: 'heros-journey' as StructureTemplate, label: t('recent.structureHerosJourney') },
+  { id: 'seven-point' as StructureTemplate, label: t('recent.structureSevenPoint') },
+  { id: 'romancing-the-beat' as StructureTemplate, label: t('recent.structureRomancing') }
+])
 
 const flavorOptions = computed(() => [
   {
@@ -93,12 +146,14 @@ const flavorOptions = computed(() => [
 
 const openFlavorPicker = () => {
   selectedFlavor.value = 'chapters-scenes'
+  selectedPlanning.value = 'unset'
+  selectedStructure.value = 'unset'
   showFlavorPicker.value = true
 }
 
 const confirmCreate = () => {
   showFlavorPicker.value = false
-  projectStore.createProject(selectedFlavor.value)
+  projectStore.createProject(selectedFlavor.value, selectedPlanning.value, selectedStructure.value)
 }
 
 const loadProject = () => {
@@ -168,5 +223,25 @@ const loadProject = () => {
     color: var(--iconColor);
     line-height: 1.5;
   }
+}
+.method-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  & label {
+    width: 180px;
+    font-size: 13px;
+    color: var(--editorColor);
+  }
+  & .el-select {
+    flex: 1;
+  }
+}
+
+.method-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--iconColor);
 }
 </style>

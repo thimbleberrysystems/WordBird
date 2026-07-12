@@ -322,6 +322,20 @@ Locked bible pages (`locked: true` front matter) are immutable to agents.
 Plans live in `plans/` (writer-editable); `propose_plan` raises the approval
 card that switches modes and starts execution.
 
+### Writing methods & structure templates
+`.wordbird/project.json` carries the writer's METHOD (planningStyle:
+outline-first|discovery|hybrid; structureTemplate: three-act|save-the-cat|
+heros-journey|seven-point|romancing-the-beat|freeform) — typed reader in
+`main/services/novel/ProjectMeta.ts`; beat-sheet markdown in
+`main/services/novel/structureTemplates.ts` seeds `bible/structure.md`
+(writer-editable structural canon). Chosen at project creation
+(recent/index.vue) or recorded by Biscuit via the set_writing_method tool.
+The brief announces WRITING METHOD + WRITER'S VANTAGE (current view + open
+scene, sent via mt::ai:set-session-context); playbooks branch per method
+under a flexibility prime directive ("DEFAULTS, never doctrine" — locked by
+test). list_structure exposes every unit-meta field the views edit
+(including location and when, so the Timeline is agent-readable).
+
 ### Renderer AI surfaces
 - `renderer/src/components/rightPrompt/` — RightPrompt (chat, mode line with
   Shift+Tab cycling, context ring, token counter; Stop kills the whole run) +

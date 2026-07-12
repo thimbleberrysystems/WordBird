@@ -7,6 +7,8 @@ import * as git from 'isomorphic-git'
 import { isDirectory2 } from 'common/filesystem'
 import { isValidProjectPath } from '../filesystem/markdown'
 import { structureService } from '../services/novel/StructureService'
+import { STRUCTURE_TEMPLATES } from '../services/novel/structureTemplates'
+import { isPlanningStyle, isStructureTemplate } from '../services/novel/ProjectMeta'
 import { snapshotService } from '../services/novel/SnapshotService'
 import type {
   ProjectCreateArgs,
@@ -153,12 +155,24 @@ export const registerProjectHandlers = (): void => {
       if (!fs.existsSync(dotWordbirdPath)) {
         fs.mkdirSync(dotWordbirdPath, { recursive: true })
       }
+      const planningStyle = isPlanningStyle(args.planningStyle) ? args.planningStyle : 'unset'
+      const structureTemplate = isStructureTemplate(args.structureTemplate)
+        ? args.structureTemplate
+        : 'unset'
       const markerPath = path.join(dotWordbirdPath, 'project.json')
       fs.writeFileSync(markerPath, JSON.stringify({
         name,
         createdAt: new Date().toISOString(),
-        flavor
+        flavor,
+        planningStyle,
+        structureTemplate
       }, null, 2), 'utf8')
+
+      // A chosen framework seeds its beat sheet as writer-editable canon.
+      const beatSheet = STRUCTURE_TEMPLATES[structureTemplate]
+      if (beatSheet) {
+        fs.writeFileSync(path.join(location, 'bible', 'structure.md'), beatSheet, 'utf8')
+      }
 
       // Build the initial structure manifest from the scaffolded files
       try {

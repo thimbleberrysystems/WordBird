@@ -17,7 +17,7 @@ import { getFileStateFromData } from './help'
 import { useLayoutStore } from './layout'
 import { useEditorStore } from './editor'
 import { debouncedSendBufferedState } from './bufferedState'
-import type { ProjectFlavor } from '@shared/types/novel'
+import type { PlanningStyle, StructureTemplate, ProjectFlavor } from '@shared/types/novel'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ProjectTree = any
@@ -161,9 +161,17 @@ export const useProjectStore = defineStore('project', () => {
     currentProjectPath.value = pathname
   }
 
-  const createProject = async(flavor?: ProjectFlavor): Promise<void> => {
+  const createProject = async(
+    flavor?: ProjectFlavor,
+    planningStyle?: PlanningStyle,
+    structureTemplate?: StructureTemplate
+  ): Promise<void> => {
     try {
-      await window.electron.project.create(flavor ? { flavor } : {})
+      await window.electron.project.create({
+        ...(flavor ? { flavor } : {}),
+        ...(planningStyle ? { planningStyle } : {}),
+        ...(structureTemplate ? { structureTemplate } : {})
+      })
       // The main process will emit 'mt::open-directory' to trigger file loading
     } catch (err) {
       console.error('Project creation failed:', err)

@@ -404,7 +404,20 @@
     "flavorFlat": "심플",
     "flavorFlatDesc": "챕터당 파일 하나. 미니멀하고 깔끔하게.",
     "create": "만들기",
-    "cancel": "취소"
+    "cancel": "취소",
+    "planningStyle": "어떤 방식으로 쓰시나요?",
+    "planningLater": "나중에 결정",
+    "planningOutline": "개요 먼저 (플로터)",
+    "planningDiscovery": "쓰면서 발견 (팬처)",
+    "planningHybrid": "둘 다 조금씩",
+    "structureTemplate": "이야기 구조 템플릿",
+    "structureFreeform": "자유 (템플릿 없음)",
+    "structureThreeAct": "3막 구조",
+    "structureSaveTheCat": "Save the Cat (15비트)",
+    "structureHerosJourney": "영웅의 여정",
+    "structureSevenPoint": "7포인트",
+    "structureRomancing": "Romancing the Beat (로맨스)",
+    "methodHint": "선택 사항 — Biscuit이 당신의 방식에 맞춰 돕습니다. 언제든 Biscuit에게 말해 바꿀 수 있어요."
   },
   "import": {
     "title": "가져오기 또는 열기",

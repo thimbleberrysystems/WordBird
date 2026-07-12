@@ -1027,6 +1027,42 @@
           "url"
         ]
       }
+    },
+    {
+      "id": "set_writing_method",
+      "name": "set_writing_method",
+      "displayName": "Record writing method",
+      "description": "Record how the writer likes to work, after THEY tell you. planningStyle: outline-first (plotter), discovery (pantser, never push outlines), hybrid. structureTemplate seeds a beat sheet at bible/structure.md (three-act, save-the-cat, heros-journey, seven-point, romancing-the-beat, or freeform for none). Metadata only — changeable any time; the writer's words always win over the recorded method.",
+      "handler": "set_writing_method",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "planningStyle": {
+            "type": "string",
+            "enum": [
+              "outline-first",
+              "discovery",
+              "hybrid"
+            ],
+            "description": "The writer's planning style."
+          },
+          "structureTemplate": {
+            "type": "string",
+            "enum": [
+              "freeform",
+              "three-act",
+              "save-the-cat",
+              "heros-journey",
+              "seven-point",
+              "romancing-the-beat"
+            ],
+            "description": "Story structure framework; seeds bible/structure.md unless freeform."
+          }
+        }
+      }
     }
   ]
 }

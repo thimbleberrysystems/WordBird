@@ -247,7 +247,7 @@ describe('tool output context caps', () => {
       units: Array<{ children?: Array<{ synopsis?: string }> }>
     }
     const listed = result.units[0].children![0]
-    expect(listed.synopsis!.length).toBeLessThanOrEqual(201)
+    expect(listed.synopsis!.length).toBeLessThanOrEqual(401)
   })
 })
 

@@ -19,6 +19,8 @@ import { promisify } from 'util'
 import { resolveRgPath } from '../../ipc/ripgrep'
 import { structureService, collectLeaves, findUnit } from '../novel/StructureService'
 import { snapshotService } from '../novel/SnapshotService'
+import { updateProjectMeta, isPlanningStyle, isStructureTemplate } from '../novel/ProjectMeta'
+import { STRUCTURE_TEMPLATES } from '../novel/structureTemplates'
 import { continuityService } from '../novel/ContinuityService'
 import { revisionService, RevisionService } from '../novel/RevisionService'
 import type { AgentToolContext, AgentToolService } from './AgentToolService'
@@ -32,7 +34,7 @@ const MAX_FILE_BYTES = 2 * 1024 * 1024
 // model's window (2 MB of prose is ~500k tokens). Reads are capped and
 // truncation is announced so the agent can narrow with line ranges.
 const MAX_TOOL_OUTPUT_CHARS = 24000
-const MAX_SYNOPSIS_CHARS = 200
+const MAX_SYNOPSIS_CHARS = 400
 
 const capForContext = (
   text: string,
@@ -125,6 +127,8 @@ interface UnitSummaryNode {
   path?: string
   status?: string
   pov?: string
+  location?: string
+  when?: string
   synopsis?: string
   wordCount?: number
   children?: UnitSummaryNode[]
@@ -137,6 +141,11 @@ const toSummaryNode = (unit: INovelUnit): UnitSummaryNode => ({
   path: unit.path,
   status: unit.status,
   pov: unit.pov,
+  // location + when make the Outline columns and the Timeline view fully
+  // readable — without them agents could WRITE these fields but never see
+  // them again (the timeline was invisible to the AI).
+  location: unit.location,
+  when: unit.when,
   // On a 1000-scene novel, full synopses would dominate the context.
   synopsis: unit.synopsis && unit.synopsis.length > MAX_SYNOPSIS_CHARS
     ? unit.synopsis.slice(0, MAX_SYNOPSIS_CHARS) + '…'
@@ -1131,6 +1140,54 @@ const snapshotProject = async(
   return { snapshot: id ?? null, changed: id !== null }
 }
 
+const setWritingMethod = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const planningStyle = optStr(args, 'planningStyle')
+  const structureTemplate = optStr(args, 'structureTemplate')
+  if (!planningStyle && !structureTemplate) {
+    throw new Error('Provide planningStyle and/or structureTemplate.')
+  }
+  const patch: Record<string, string> = {}
+  if (planningStyle) {
+    if (!isPlanningStyle(planningStyle) || planningStyle === 'unset') {
+      throw new Error('planningStyle must be outline-first | discovery | hybrid.')
+    }
+    patch.planningStyle = planningStyle
+  }
+  if (structureTemplate) {
+    if (!isStructureTemplate(structureTemplate) || structureTemplate === 'unset') {
+      throw new Error(
+        'structureTemplate must be freeform | three-act | save-the-cat | heros-journey | seven-point | romancing-the-beat.'
+      )
+    }
+    patch.structureTemplate = structureTemplate
+  }
+  const meta = await updateProjectMeta(root, patch)
+
+  // Seed the beat sheet once — the writer's edits to it are canon afterwards.
+  let seededBeatSheet = false
+  const beatSheet = structureTemplate ? STRUCTURE_TEMPLATES[meta.structureTemplate ?? 'unset'] : undefined
+  const beatSheetPath = path.join(root, 'bible', 'structure.md')
+  if (beatSheet && !fs.existsSync(beatSheetPath)) {
+    await fsPromises.mkdir(path.dirname(beatSheetPath), { recursive: true })
+    await fsPromises.writeFile(beatSheetPath, beatSheet, 'utf8')
+    seededBeatSheet = true
+  }
+
+  return {
+    recorded: true,
+    planningStyle: meta.planningStyle,
+    structureTemplate: meta.structureTemplate,
+    seededBeatSheet,
+    note: seededBeatSheet
+      ? 'Beat sheet created at bible/structure.md — the writer can edit it freely; re-read it before relying on it.'
+      : 'Method recorded. Remember: the writer\'s words always override the recorded method.'
+  }
+}
+
 export const registerNovelAgentToolHandlers = (service: AgentToolService): void => {
   service.registerHandler('list_structure', listStructure)
   service.registerHandler('read_unit', readUnit)
@@ -1161,4 +1218,5 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('mark_revision_unit', markRevisionUnit)
   service.registerHandler('complete_revision', completeRevision)
   service.registerHandler('snapshot_project', snapshotProject)
+  service.registerHandler('set_writing_method', setWritingMethod)
 }

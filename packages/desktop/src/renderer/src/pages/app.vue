@@ -187,6 +187,9 @@ onMounted(async () => {
   window.electron.ai.onBiscuitReattach(() => {
     layoutStore.SET_LAYOUT({ showRightPrompt: true })
   })
+  // Where the writer is looking follows the open file too.
+  watch(currentFile, () => novelStore.sendSessionContext())
+
   // Main broadcasts every connection transition — mirror it so the UI and
   // the reconnect guards never drift from reality.
   window.electron.ai.onConnectionState((state) => {

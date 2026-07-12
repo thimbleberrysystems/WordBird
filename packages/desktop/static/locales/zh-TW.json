@@ -404,7 +404,20 @@
     "flavorFlat": "簡潔",
     "flavorFlatDesc": "每章一個檔案，極簡清爽。",
     "create": "建立",
-    "cancel": "取消"
+    "cancel": "取消",
+    "planningStyle": "你喜歡怎樣寫作？",
+    "planningLater": "稍後決定",
+    "planningOutline": "先列大綱（規劃派）",
+    "planningDiscovery": "邊寫邊發現（隨性派）",
+    "planningHybrid": "兩者皆有",
+    "structureTemplate": "故事結構範本",
+    "structureFreeform": "自由（無範本）",
+    "structureThreeAct": "三幕結構",
+    "structureSaveTheCat": "Save the Cat（15 節拍）",
+    "structureHerosJourney": "英雄之旅",
+    "structureSevenPoint": "七點結構",
+    "structureRomancing": "Romancing the Beat（言情）",
+    "methodHint": "選填 — Biscuit 會依你的方法調整協助方式。隨時告訴 Biscuit 即可更改。"
   },
   "import": {
     "title": "匯入或開啟",

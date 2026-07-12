@@ -404,7 +404,20 @@
     "flavorFlat": "シンプル",
     "flavorFlatDesc": "章ごとに1ファイル。ミニマルですっきり。",
     "create": "作成",
-    "cancel": "キャンセル"
+    "cancel": "キャンセル",
+    "planningStyle": "どんな書き方が好みですか？",
+    "planningLater": "後で決める",
+    "planningOutline": "まずアウトライン（プロッター）",
+    "planningDiscovery": "書きながら発見（パンツァー）",
+    "planningHybrid": "両方すこしずつ",
+    "structureTemplate": "物語構成テンプレート",
+    "structureFreeform": "自由（テンプレートなし）",
+    "structureThreeAct": "三幕構成",
+    "structureSaveTheCat": "Save the Cat（15ビート）",
+    "structureHerosJourney": "英雄の旅",
+    "structureSevenPoint": "7ポイント",
+    "structureRomancing": "Romancing the Beat（恋愛）",
+    "methodHint": "任意 — Biscuit はあなたの手法に合わせて支援します。いつでも Biscuit に伝えて変更できます。"
   },
   "import": {
     "title": "インポートまたは開く",

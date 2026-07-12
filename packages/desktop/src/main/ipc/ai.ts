@@ -2,6 +2,7 @@ import { app, ipcMain } from 'electron'
 import log from 'electron-log'
 import { langGraphManager } from '../services/ai/LangGraphManager'
 import { openBiscuitWindow } from '../windows/biscuit'
+import { contextBuilder } from '../services/ai/ContextBuilder'
 import { writeMarkdownFileWithDefaults } from '../filesystem/markdown'
 import type {
   AIProvider,
@@ -81,6 +82,10 @@ export const registerAIHandlers = (): void => {
 
   ipcMain.handle('mt::ai:cancel-agent', async(_e, agentId: string) => {
     return { cancelled: langGraphManager.cancelAgent(agentId) }
+  })
+
+  ipcMain.on('mt::ai:set-session-context', (_e, context) => {
+    contextBuilder.setSessionContext(context ?? null)
   })
 
   ipcMain.handle(

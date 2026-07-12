@@ -183,6 +183,11 @@ declare global {
         conversationId?: string
         projectRoot?: string
       }) => Promise<{ ok: boolean }>
+      setSessionContext: (context: {
+        viewMode: 'page' | 'corkboard' | 'outline' | 'timeline'
+        currentUnitId?: string
+        currentFile?: string
+      } | null) => void
       onApprovalResolved: (handler: (event: { id: string }) => void) => () => void
       onBiscuitReattach: (handler: () => void) => () => void
       onConnectionState: (

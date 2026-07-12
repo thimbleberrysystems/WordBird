@@ -403,7 +403,20 @@
     "flavorFlat": "Sencillo",
     "flavorFlatDesc": "Un archivo por capítulo. Mínimo y limpio.",
     "create": "Crear",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "planningStyle": "¿Cómo te gusta escribir?",
+    "planningLater": "Decidir después",
+    "planningOutline": "Primero el esquema (plotter)",
+    "planningDiscovery": "Descubrir sobre la marcha (pantser)",
+    "planningHybrid": "Un poco de ambos (plantser)",
+    "structureTemplate": "Plantilla de estructura",
+    "structureFreeform": "Libre (sin plantilla)",
+    "structureThreeAct": "Tres actos",
+    "structureSaveTheCat": "Save the Cat (15 beats)",
+    "structureHerosJourney": "El viaje del héroe",
+    "structureSevenPoint": "Siete puntos",
+    "structureRomancing": "Romancing the Beat (romance)",
+    "methodHint": "Opcional — Biscuit adapta su ayuda a tu método. Cámbialo cuando quieras, solo díselo a Biscuit."
   },
   "import": {
     "title": "Importar o Abrir",

@@ -44,12 +44,18 @@ export const PROJECT_CONVENTIONS =
   'bible/places/<name>.md, bible/lore/… Front matter matters: `aliases: [Liz, the Widow]` ' +
   'powers entity search; `locked: true` makes a page immutable to agents. When you create ' +
   'a character/place page, ALWAYS include an aliases list. bible/style.md holds the ' +
-  'writer\'s voice/tense/POV rules.\n' +
+  'writer\'s voice/tense/POV rules; bible/structure.md (when present) is the structure ' +
+  'beat sheet — structural canon the writer can edit, tick beats [x] as covered.\n' +
   '- .wordbird/summaries/<unitId>.md and book.md — the summary ladder agents maintain ' +
   'with update_summary; read_summary tells you if one is stale. plans/ — live plan files. ' +
   'notes/ — the writer\'s freeform notes. .wordbird/ and .git/ are otherwise off-limits.\n' +
   '- The binder (structure.json) is the source of truth for order and metadata — use ' +
   'list_structure ids, never guess paths.\n'
+
+const SCENE_CRAFT =
+  ' SCENE CRAFT (Swain): a proactive scene carries goal → conflict → disaster/turn; a ' +
+  'reactive beat carries reaction → dilemma → decision. Within paragraphs, motivation ' +
+  'comes before reaction. End scenes on the turn, not after it.'
 
 const STYLE_NOTE =
   ' If bible/style.md exists, read it first and obey it — voice, tense, POV ' +
@@ -104,6 +110,7 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'FIRST read the story bible (read_bible) and the relevant summaries/units so you ' +
       'match established canon, voice, tense, and POV.' +
       STYLE_NOTE +
+      SCENE_CRAFT +
       REVISION_NOTE +
       ' Then produce the prose via ' +
       'propose_project_file_edit, propose_new_unit, or propose_bible_update — the writer ' +
@@ -137,6 +144,9 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'Use search_manuscript to find every relevant mention; verify against read_bible. ' +
       'Check list_continuity_issues first so you do not re-report known problems, and ' +
       'resolve_continuity_issue only when you verified in the prose that a conflict is gone. ' +
+      'Timeline checks: list_structure exposes each unit\'s `when` — flag out-of-order or ' +
+      'missing story-time values. If bible/structure.md exists (beat sheet), report which ' +
+      'beats the prose covers and where pacing drifts from the ~targets, as observation. ' +
       'Log each real problem with log_continuity_issue (quote both conflicting passages). ' +
       'When verifying a revision, search with entity=<name> to prove zero references ' +
       'survive, and record verified units with mark_revision_unit. ' +
@@ -159,7 +169,10 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'Your job: polish ONE span of existing prose — rhythm, word choice, clarity, ' +
       'dialogue beats — without changing plot, canon facts, or the author\'s voice. ' +
       'Read the target text and nearby context first, then submit the improved version ' +
-      'via propose_project_file_edit. Use dictionary_lookup when weighing word choice.' +
+      'via propose_project_file_edit. Use dictionary_lookup when weighing word choice. ' +
+      'PASS DISCIPLINE: work the one concern your task names (dialogue, rhythm, or line) ' +
+      'and leave everything else alone. Respect scene/sequel rhythm — never smooth away ' +
+      'a scene-ending disaster or turn.' +
       STYLE_NOTE +
       ' After proposing, stop calling tools and note the kinds of changes you made.'
     ),
@@ -186,7 +199,8 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'propose_new_unit',
       'update_unit_meta',
       'restructure_unit',
-      'update_summary'
+      'update_summary',
+      'set_writing_method'
     ]
   }
 }
