@@ -11,7 +11,10 @@
       "enabled": true,
       "scope": "project",
       "confirm": "never",
-      "schema": { "type": "object", "properties": {} }
+      "schema": {
+        "type": "object",
+        "properties": {}
+      }
     },
     {
       "id": "read_unit",
@@ -25,9 +28,14 @@
       "schema": {
         "type": "object",
         "properties": {
-          "unitId": { "type": "string", "description": "Unit id from list_structure." }
+          "unitId": {
+            "type": "string",
+            "description": "Unit id from list_structure."
+          }
         },
-        "required": ["unitId"]
+        "required": [
+          "unitId"
+        ]
       }
     },
     {
@@ -42,12 +50,30 @@
       "schema": {
         "type": "object",
         "properties": {
-          "query": { "type": "string", "description": "Text or regex to search for (omit when using entity)." },
-          "entity": { "type": "string", "description": "A character/place name — expands to its bible-page aliases automatically." },
-          "regex": { "type": "boolean", "description": "Treat query as a regular expression (default false)." },
-          "caseSensitive": { "type": "boolean", "description": "Case-sensitive match (default false)." },
-          "contextLines": { "type": "integer", "description": "Context lines around each match, max 5 (default 1)." },
-          "maxResults": { "type": "integer", "description": "Maximum matches to return, max 200 (default 50)." }
+          "query": {
+            "type": "string",
+            "description": "Text or regex to search for (omit when using entity)."
+          },
+          "entity": {
+            "type": "string",
+            "description": "A character/place name — expands to its bible-page aliases automatically."
+          },
+          "regex": {
+            "type": "boolean",
+            "description": "Treat query as a regular expression (default false)."
+          },
+          "caseSensitive": {
+            "type": "boolean",
+            "description": "Case-sensitive match (default false)."
+          },
+          "contextLines": {
+            "type": "integer",
+            "description": "Context lines around each match, max 5 (default 1)."
+          },
+          "maxResults": {
+            "type": "integer",
+            "description": "Maximum matches to return, max 200 (default 50)."
+          }
         }
       }
     },
@@ -76,7 +102,9 @@
             "description": "Optional inclusive 1-based end line."
           }
         },
-        "required": ["fname"]
+        "required": [
+          "fname"
+        ]
       }
     },
     {
@@ -112,14 +140,17 @@
             "description": "Optional human-readable explanation for the proposed edit."
           }
         },
-        "required": ["fname", "newdata"]
+        "required": [
+          "fname",
+          "newdata"
+        ]
       }
     },
     {
       "id": "propose_new_unit",
       "name": "propose_new_unit",
       "displayName": "Create scene/chapter",
-      "description": "Add a new part, chapter, or scene to the binder. If prose content is provided it is returned as an edit proposal for user review; the structural shell is created immediately.",
+      "description": "Add a new part, chapter, or scene to the binder. PUT THE PROSE IN `content` — that is what reaches the writer as a reviewable diff. Without `content` this creates an EMPTY structural shell only (outline work); the synopsis is metadata, never the prose.",
       "handler": "propose_new_unit",
       "enabled": true,
       "scope": "project",
@@ -127,14 +158,40 @@
       "schema": {
         "type": "object",
         "properties": {
-          "type": { "type": "string", "enum": ["part", "chapter", "scene"], "description": "Kind of unit to create." },
-          "title": { "type": "string", "description": "Title for the new unit." },
-          "parentId": { "type": "string", "description": "Parent unit id (omit for top level)." },
-          "index": { "type": "integer", "description": "Insert position among siblings (appends when omitted)." },
-          "synopsis": { "type": "string", "description": "One-paragraph synopsis stored as binder metadata." },
-          "content": { "type": "string", "description": "Optional prose for the new unit — goes through user review." }
+          "type": {
+            "type": "string",
+            "enum": [
+              "part",
+              "chapter",
+              "scene"
+            ],
+            "description": "Kind of unit to create."
+          },
+          "title": {
+            "type": "string",
+            "description": "Title for the new unit."
+          },
+          "parentId": {
+            "type": "string",
+            "description": "Parent unit id (omit for top level)."
+          },
+          "index": {
+            "type": "integer",
+            "description": "Insert position among siblings (appends when omitted)."
+          },
+          "synopsis": {
+            "type": "string",
+            "description": "One-paragraph synopsis stored as binder metadata."
+          },
+          "content": {
+            "type": "string",
+            "description": "The full prose of the new unit — REQUIRED whenever the writer asked for written text. Omitting it saves NO prose (empty shell only). Goes through user review."
+          }
         },
-        "required": ["type", "title"]
+        "required": [
+          "type",
+          "title"
+        ]
       }
     },
     {
@@ -149,11 +206,22 @@
       "schema": {
         "type": "object",
         "properties": {
-          "unitId": { "type": "string", "description": "Unit to move." },
-          "newParentId": { "type": "string", "description": "Destination parent id (omit for top level)." },
-          "index": { "type": "integer", "description": "Position among the destination's children (default 0)." }
+          "unitId": {
+            "type": "string",
+            "description": "Unit to move."
+          },
+          "newParentId": {
+            "type": "string",
+            "description": "Destination parent id (omit for top level)."
+          },
+          "index": {
+            "type": "integer",
+            "description": "Position among the destination's children (default 0)."
+          }
         },
-        "required": ["unitId"]
+        "required": [
+          "unitId"
+        ]
       }
     },
     {
@@ -168,15 +236,37 @@
       "schema": {
         "type": "object",
         "properties": {
-          "unitId": { "type": "string" },
-          "title": { "type": "string" },
-          "status": { "type": "string", "enum": ["idea", "draft", "revised", "final"] },
-          "pov": { "type": "string" },
-          "location": { "type": "string" },
-          "synopsis": { "type": "string" },
-          "when": { "type": "string" }
+          "unitId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "idea",
+              "draft",
+              "revised",
+              "final"
+            ]
+          },
+          "pov": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "synopsis": {
+            "type": "string"
+          },
+          "when": {
+            "type": "string"
+          }
         },
-        "required": ["unitId"]
+        "required": [
+          "unitId"
+        ]
       }
     },
     {
@@ -191,7 +281,10 @@
       "schema": {
         "type": "object",
         "properties": {
-          "path": { "type": "string", "description": "Bible-relative file to read in full, e.g. bible/characters/elara.md." }
+          "path": {
+            "type": "string",
+            "description": "Bible-relative file to read in full, e.g. bible/characters/elara.md."
+          }
         }
       }
     },
@@ -207,11 +300,23 @@
       "schema": {
         "type": "object",
         "properties": {
-          "path": { "type": "string", "description": "Target page under bible/, e.g. bible/characters/elara.md." },
-          "newContent": { "type": "string", "description": "Full new content of the page." },
-          "reason": { "type": "string", "description": "Why this canon change/addition is needed." }
+          "path": {
+            "type": "string",
+            "description": "Target page under bible/, e.g. bible/characters/elara.md."
+          },
+          "newContent": {
+            "type": "string",
+            "description": "Full new content of the page."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this canon change/addition is needed."
+          }
         },
-        "required": ["path", "newContent"]
+        "required": [
+          "path",
+          "newContent"
+        ]
       }
     },
     {
@@ -226,7 +331,10 @@
       "schema": {
         "type": "object",
         "properties": {
-          "unitId": { "type": "string", "description": "Unit id; omit for the book-level summary." }
+          "unitId": {
+            "type": "string",
+            "description": "Unit id; omit for the book-level summary."
+          }
         }
       }
     },
@@ -242,10 +350,18 @@
       "schema": {
         "type": "object",
         "properties": {
-          "unitId": { "type": "string", "description": "Unit id; omit for the book-level summary." },
-          "content": { "type": "string", "description": "The summary text (markdown)." }
+          "unitId": {
+            "type": "string",
+            "description": "Unit id; omit for the book-level summary."
+          },
+          "content": {
+            "type": "string",
+            "description": "The summary text (markdown)."
+          }
         },
-        "required": ["content"]
+        "required": [
+          "content"
+        ]
       }
     },
     {
@@ -260,16 +376,34 @@
       "schema": {
         "type": "object",
         "properties": {
-          "title": { "type": "string", "description": "Short name for the issue." },
-          "description": { "type": "string", "description": "What conflicts with what, with quotes/locations." },
-          "severity": { "type": "string", "enum": ["low", "medium", "high"] },
+          "title": {
+            "type": "string",
+            "description": "Short name for the issue."
+          },
+          "description": {
+            "type": "string",
+            "description": "What conflicts with what, with quotes/locations."
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
           "relatedPaths": {
             "type": "array",
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "description": "Project-relative files involved."
           }
         },
-        "required": ["title", "description"]
+        "required": [
+          "title",
+          "description"
+        ]
       }
     },
     {
@@ -284,7 +418,10 @@
       "schema": {
         "type": "object",
         "properties": {
-          "dir": { "type": "string", "description": "Project-relative directory to list (omit for the whole project)." }
+          "dir": {
+            "type": "string",
+            "description": "Project-relative directory to list (omit for the whole project)."
+          }
         }
       }
     },
@@ -297,7 +434,10 @@
       "enabled": true,
       "scope": "project",
       "confirm": "never",
-      "schema": { "type": "object", "properties": {} }
+      "schema": {
+        "type": "object",
+        "properties": {}
+      }
     },
     {
       "id": "resolve_continuity_issue",
@@ -311,10 +451,19 @@
       "schema": {
         "type": "object",
         "properties": {
-          "issueId": { "type": "string", "description": "Issue id from list_continuity_issues." },
-          "resolution": { "type": "string", "description": "How it was verified fixed, with evidence." }
+          "issueId": {
+            "type": "string",
+            "description": "Issue id from list_continuity_issues."
+          },
+          "resolution": {
+            "type": "string",
+            "description": "How it was verified fixed, with evidence."
+          }
         },
-        "required": ["issueId", "resolution"]
+        "required": [
+          "issueId",
+          "resolution"
+        ]
       }
     },
     {
@@ -329,11 +478,23 @@
       "schema": {
         "type": "object",
         "properties": {
-          "path": { "type": "string", "description": "Project-relative path ending in .md/.txt, e.g. notes/research-questions.md." },
-          "content": { "type": "string", "description": "Full content of the new file." },
-          "reason": { "type": "string", "description": "Why this file is being created." }
+          "path": {
+            "type": "string",
+            "description": "Project-relative path ending in .md/.txt, e.g. notes/research-questions.md."
+          },
+          "content": {
+            "type": "string",
+            "description": "Full content of the new file."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this file is being created."
+          }
         },
-        "required": ["path", "content"]
+        "required": [
+          "path",
+          "content"
+        ]
       }
     },
     {
@@ -348,9 +509,14 @@
       "schema": {
         "type": "object",
         "properties": {
-          "path": { "type": "string", "description": "Project-relative folder path." }
+          "path": {
+            "type": "string",
+            "description": "Project-relative folder path."
+          }
         },
-        "required": ["path"]
+        "required": [
+          "path"
+        ]
       }
     },
     {
@@ -365,11 +531,24 @@
       "schema": {
         "type": "object",
         "properties": {
-          "from": { "type": "string", "description": "Current project-relative path." },
-          "to": { "type": "string", "description": "New project-relative path." },
-          "reason": { "type": "string", "description": "Why this move/rename." }
+          "from": {
+            "type": "string",
+            "description": "Current project-relative path."
+          },
+          "to": {
+            "type": "string",
+            "description": "New project-relative path."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this move/rename."
+          }
         },
-        "required": ["from", "to", "reason"]
+        "required": [
+          "from",
+          "to",
+          "reason"
+        ]
       }
     },
     {
@@ -384,10 +563,19 @@
       "schema": {
         "type": "object",
         "properties": {
-          "path": { "type": "string", "description": "Project-relative file path." },
-          "reason": { "type": "string", "description": "Why this file is being removed." }
+          "path": {
+            "type": "string",
+            "description": "Project-relative file path."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this file is being removed."
+          }
         },
-        "required": ["path", "reason"]
+        "required": [
+          "path",
+          "reason"
+        ]
       }
     },
     {
@@ -402,11 +590,23 @@
       "schema": {
         "type": "object",
         "properties": {
-          "unitId": { "type": "string", "description": "Unit id from list_structure." },
-          "deleteFiles": { "type": "boolean", "description": "Also delete the backing files (default true)." },
-          "reason": { "type": "string", "description": "Why this unit is being removed." }
+          "unitId": {
+            "type": "string",
+            "description": "Unit id from list_structure."
+          },
+          "deleteFiles": {
+            "type": "boolean",
+            "description": "Also delete the backing files (default true)."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this unit is being removed."
+          }
         },
-        "required": ["unitId", "reason"]
+        "required": [
+          "unitId",
+          "reason"
+        ]
       }
     },
     {
@@ -421,11 +621,22 @@
       "schema": {
         "type": "object",
         "properties": {
-          "query": { "type": "string", "description": "Topic to search for." },
-          "lang": { "type": "string", "description": "Wikipedia language code, e.g. en, de, ja (default en)." },
-          "maxResults": { "type": "integer", "description": "Max results, up to 10 (default 5)." }
+          "query": {
+            "type": "string",
+            "description": "Topic to search for."
+          },
+          "lang": {
+            "type": "string",
+            "description": "Wikipedia language code, e.g. en, de, ja (default en)."
+          },
+          "maxResults": {
+            "type": "integer",
+            "description": "Max results, up to 10 (default 5)."
+          }
         },
-        "required": ["query"]
+        "required": [
+          "query"
+        ]
       }
     },
     {
@@ -440,10 +651,18 @@
       "schema": {
         "type": "object",
         "properties": {
-          "title": { "type": "string", "description": "Exact article title." },
-          "lang": { "type": "string", "description": "Wikipedia language code (default en)." }
+          "title": {
+            "type": "string",
+            "description": "Exact article title."
+          },
+          "lang": {
+            "type": "string",
+            "description": "Wikipedia language code (default en)."
+          }
         },
-        "required": ["title"]
+        "required": [
+          "title"
+        ]
       }
     },
     {
@@ -458,9 +677,14 @@
       "schema": {
         "type": "object",
         "properties": {
-          "word": { "type": "string", "description": "A single English word." }
+          "word": {
+            "type": "string",
+            "description": "A single English word."
+          }
         },
-        "required": ["word"]
+        "required": [
+          "word"
+        ]
       }
     },
     {
@@ -475,10 +699,19 @@
       "schema": {
         "type": "object",
         "properties": {
-          "title": { "type": "string", "description": "Short plan name, e.g. 'Draft the Amityville short story'." },
-          "plan": { "type": "string", "description": "The plan so far, in markdown — numbered steps." }
+          "title": {
+            "type": "string",
+            "description": "Short plan name, e.g. 'Draft the Amityville short story'."
+          },
+          "plan": {
+            "type": "string",
+            "description": "The plan so far, in markdown — numbered steps."
+          }
         },
-        "required": ["title", "plan"]
+        "required": [
+          "title",
+          "plan"
+        ]
       }
     },
     {
@@ -493,11 +726,23 @@
       "schema": {
         "type": "object",
         "properties": {
-          "planId": { "type": "string", "description": "Plan path from save_plan/list_plans, e.g. plans/amityville-short-story.md." },
-          "plan": { "type": "string", "description": "The complete updated plan body (markdown)." },
-          "title": { "type": "string", "description": "New title (keeps the old one when omitted)." }
+          "planId": {
+            "type": "string",
+            "description": "Plan path from save_plan/list_plans, e.g. plans/amityville-short-story.md."
+          },
+          "plan": {
+            "type": "string",
+            "description": "The complete updated plan body (markdown)."
+          },
+          "title": {
+            "type": "string",
+            "description": "New title (keeps the old one when omitted)."
+          }
         },
-        "required": ["planId", "plan"]
+        "required": [
+          "planId",
+          "plan"
+        ]
       }
     },
     {
@@ -509,7 +754,10 @@
       "enabled": true,
       "scope": "project",
       "confirm": "never",
-      "schema": { "type": "object", "properties": {} }
+      "schema": {
+        "type": "object",
+        "properties": {}
+      }
     },
     {
       "id": "propose_plan",
@@ -523,9 +771,14 @@
       "schema": {
         "type": "object",
         "properties": {
-          "planId": { "type": "string", "description": "Plan path from save_plan/list_plans." }
+          "planId": {
+            "type": "string",
+            "description": "Plan path from save_plan/list_plans."
+          }
         },
-        "required": ["planId"]
+        "required": [
+          "planId"
+        ]
       }
     },
     {
@@ -540,10 +793,19 @@
       "schema": {
         "type": "object",
         "properties": {
-          "title": { "type": "string", "description": "Short name, e.g. 'Remove Marcus'." },
-          "directive": { "type": "string", "description": "The writer's full guidance (markdown)." }
+          "title": {
+            "type": "string",
+            "description": "Short name, e.g. 'Remove Marcus'."
+          },
+          "directive": {
+            "type": "string",
+            "description": "The writer's full guidance (markdown)."
+          }
         },
-        "required": ["title", "directive"]
+        "required": [
+          "title",
+          "directive"
+        ]
       }
     },
     {
@@ -558,9 +820,13 @@
       "schema": {
         "type": "object",
         "properties": {
-          "revisionId": { "type": "string" }
+          "revisionId": {
+            "type": "string"
+          }
         },
-        "required": ["revisionId"]
+        "required": [
+          "revisionId"
+        ]
       }
     },
     {
@@ -575,23 +841,53 @@
       "schema": {
         "type": "object",
         "properties": {
-          "revisionId": { "type": "string" },
+          "revisionId": {
+            "type": "string"
+          },
           "entries": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "unitId": { "type": "string", "description": "Unit id from list_structure." },
-                "path": { "type": "string", "description": "Backing file path." },
-                "classification": { "type": "string", "enum": ["remove", "rewrite", "mention-only", "plot-dependency"] },
-                "evidence": { "type": "string", "description": "Quoted proof this unit is affected." },
-                "plan": { "type": "string", "description": "One sentence: what happens to this unit." }
+                "unitId": {
+                  "type": "string",
+                  "description": "Unit id from list_structure."
+                },
+                "path": {
+                  "type": "string",
+                  "description": "Backing file path."
+                },
+                "classification": {
+                  "type": "string",
+                  "enum": [
+                    "remove",
+                    "rewrite",
+                    "mention-only",
+                    "plot-dependency"
+                  ]
+                },
+                "evidence": {
+                  "type": "string",
+                  "description": "Quoted proof this unit is affected."
+                },
+                "plan": {
+                  "type": "string",
+                  "description": "One sentence: what happens to this unit."
+                }
               },
-              "required": ["unitId", "classification", "evidence", "plan"]
+              "required": [
+                "unitId",
+                "classification",
+                "evidence",
+                "plan"
+              ]
             }
           }
         },
-        "required": ["revisionId", "entries"]
+        "required": [
+          "revisionId",
+          "entries"
+        ]
       }
     },
     {
@@ -606,12 +902,30 @@
       "schema": {
         "type": "object",
         "properties": {
-          "revisionId": { "type": "string" },
-          "unitId": { "type": "string" },
-          "status": { "type": "string", "enum": ["done", "skipped", "pending"] },
-          "note": { "type": "string", "description": "What was done, briefly." }
+          "revisionId": {
+            "type": "string"
+          },
+          "unitId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "done",
+              "skipped",
+              "pending"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "description": "What was done, briefly."
+          }
         },
-        "required": ["revisionId", "unitId", "status"]
+        "required": [
+          "revisionId",
+          "unitId",
+          "status"
+        ]
       }
     },
     {
@@ -626,11 +940,22 @@
       "schema": {
         "type": "object",
         "properties": {
-          "revisionId": { "type": "string" },
-          "report": { "type": "string", "description": "Verification findings and anything left for the writer." },
-          "abandoned": { "type": "boolean", "description": "True to close without finishing." }
+          "revisionId": {
+            "type": "string"
+          },
+          "report": {
+            "type": "string",
+            "description": "Verification findings and anything left for the writer."
+          },
+          "abandoned": {
+            "type": "boolean",
+            "description": "True to close without finishing."
+          }
         },
-        "required": ["revisionId", "report"]
+        "required": [
+          "revisionId",
+          "report"
+        ]
       }
     },
     {
@@ -645,9 +970,14 @@
       "schema": {
         "type": "object",
         "properties": {
-          "message": { "type": "string", "description": "What this snapshot captures, e.g. 'Before renaming Elara'." }
+          "message": {
+            "type": "string",
+            "description": "What this snapshot captures, e.g. 'Before renaming Elara'."
+          }
         },
-        "required": ["message"]
+        "required": [
+          "message"
+        ]
       }
     },
     {
@@ -662,10 +992,18 @@
       "schema": {
         "type": "object",
         "properties": {
-          "query": { "type": "string", "description": "Search query." },
-          "maxResults": { "type": "integer", "description": "Max results, up to 10 (default 5)." }
+          "query": {
+            "type": "string",
+            "description": "Search query."
+          },
+          "maxResults": {
+            "type": "integer",
+            "description": "Max results, up to 10 (default 5)."
+          }
         },
-        "required": ["query"]
+        "required": [
+          "query"
+        ]
       }
     },
     {
@@ -680,9 +1018,14 @@
       "schema": {
         "type": "object",
         "properties": {
-          "url": { "type": "string", "description": "Absolute http(s) URL to fetch." }
+          "url": {
+            "type": "string",
+            "description": "Absolute http(s) URL to fetch."
+          }
         },
-        "required": ["url"]
+        "required": [
+          "url"
+        ]
       }
     }
   ]

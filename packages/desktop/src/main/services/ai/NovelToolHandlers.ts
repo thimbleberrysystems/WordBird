@@ -387,7 +387,26 @@ const proposeNewUnit = async(
       originalPath: absolute
     }
   }
-  return { created: true, unitId: unit.id, path: unit.path ?? null, title }
+  if (content && !unit.path) {
+    // A container (e.g. a chapter in chapters-scenes flavor) has no backing
+    // file — silently dropping the prose here would let the model claim a
+    // save that never happened.
+    throw new Error(
+      `Created ${type} "${title}" (id ${unit.id}), but a ${type} is a container with no ` +
+        'prose file — the content was NOT saved. Create a scene inside it ' +
+        `(propose_new_unit type=scene parentId=${unit.id} content=<the prose>).`
+    )
+  }
+  return {
+    created: true,
+    unitId: unit.id,
+    path: unit.path ?? null,
+    title,
+    warning:
+      'EMPTY SHELL ONLY — no prose was saved and the writer sees no diff. If you have ' +
+      `prose for this ${type}, call propose_new_unit again with the content argument, or ` +
+      (unit.path ? `propose_project_file_edit on ${unit.path}.` : 'add scenes inside it.')
+  }
 }
 
 const restructureUnit = async(

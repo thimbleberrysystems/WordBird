@@ -36,7 +36,8 @@
     "test:unit": "vitest run test/unit",
     "test:e2e": "playwright test test/e2e",
     "typecheck": "vue-tsc --noEmit -p tsconfig.json",
-    "typecheck:watch": "vue-tsc --noEmit -p tsconfig.json --watch"
+    "typecheck:watch": "vue-tsc --noEmit -p tsconfig.json --watch",
+    "test:live": "vitest run --config vitest.live.config.ts"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",

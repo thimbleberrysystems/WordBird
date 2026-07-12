@@ -197,6 +197,7 @@ All platform build scripts automatically run `minify-locales` and `electron-rebu
 pnpm run test          # All unit tests (Vitest)
 pnpm run test:unit     # Unit tests only
 pnpm run test:e2e      # End-to-end tests (Playwright)
+pnpm run test:live     # Live E2E vs a real model (needs OPENROUTER_KEY; see docs/LIVE_E2E.md)
 pnpm run lint          # ESLint (run before committing; CI enforces)
 pnpm run typecheck     # vue-tsc --noEmit (CI enforces)
 

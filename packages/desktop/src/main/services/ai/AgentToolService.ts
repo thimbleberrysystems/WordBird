@@ -70,7 +70,11 @@ const isPlanProposalPayload = (value: unknown): value is PlanProposalPayload => 
 const isEditProposalPayload = (value: unknown): value is EditProposalPayload => {
   if (!value || typeof value !== 'object') return false
   const data = value as Record<string, unknown>
-  return Boolean(data.edit && data.oldContent && data.originalPath)
+  // oldContent is the EMPTY STRING for brand-new files — a truthiness check
+  // here silently dropped every new-unit/new-file proposal (the review card
+  // never appeared while the model believed it had proposed the edit).
+  return Boolean(data.edit) && typeof data.oldContent === 'string' &&
+    typeof data.originalPath === 'string' && data.originalPath.length > 0
 }
 
 const AgentToolPackSchema = z

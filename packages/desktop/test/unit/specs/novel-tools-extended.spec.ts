@@ -273,3 +273,67 @@ describe('role/tool matrix', () => {
     expect(AGENT_ROLES.auditor.allowedTools).toContain('resolve_continuity_issue')
   })
 })
+
+describe('new-file edit proposals reach the review queue', () => {
+  it('propose_new_unit WITH content emits an edit proposal (oldContent is empty for new files)', async() => {
+    const emitted: unknown[] = []
+    service.setEditProposalEmitter((p) => {
+      emitted.push(p)
+    })
+    service.setProjectRoot(root)
+    service.loadToolPack({
+      version: 1,
+      enabled: true,
+      source: 'test',
+      tools: [
+        {
+          id: 'propose_new_unit',
+          name: 'propose_new_unit',
+          description: 'create unit',
+          handler: 'propose_new_unit',
+          enabled: true,
+          scope: 'project',
+          confirm: 'renderer',
+          schema: {
+            type: 'object',
+            properties: {
+              type: { type: 'string' },
+              title: { type: 'string' },
+              content: { type: 'string' }
+            },
+            required: ['type', 'title']
+          }
+        }
+      ]
+    })
+    const structure = await structureService.loadReconciled(root)
+    const chapterId = structure.units[0].id
+    const langChainTool = service.getLangChainTools().find((t) => t.name === 'propose_new_unit')!
+    const reply = (await langChainTool.invoke({
+      type: 'scene',
+      title: 'The Cellar',
+      parentId: chapterId,
+      content: 'Zara pried the door open.'
+    })) as string
+    expect(emitted).toHaveLength(1)
+    const payload = emitted[0] as { edit: { newContent: string }; oldContent: string }
+    expect(payload.oldContent).toBe('')
+    expect(payload.edit.newContent).toContain('Zara')
+    expect(reply).toContain('Edit proposal created')
+  })
+
+  it('content aimed at a container unit fails loudly instead of dropping prose', async() => {
+    await expect(
+      run('propose_new_unit', { type: 'chapter', title: 'Two', content: 'prose here' })
+    ).rejects.toThrow(/NOT saved/i)
+  })
+
+  it('propose_new_unit WITHOUT content warns the model that nothing was saved', async() => {
+    const result = (await run('propose_new_unit', {
+      type: 'chapter',
+      title: 'Empty Shell'
+    })) as { created: boolean; warning?: string }
+    expect(result.created).toBe(true)
+    expect(result.warning).toMatch(/no prose was saved/i)
+  })
+})
