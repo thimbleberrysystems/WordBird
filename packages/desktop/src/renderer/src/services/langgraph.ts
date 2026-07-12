@@ -32,18 +32,34 @@ class LangGraphService {
     return this._currentApiKey
   }
 
+  // Concurrent identical connects collapse into one: at startup several
+  // watchers hydrate preferences at once and each passed the "already
+  // connected" guard while the FIRST handshake was still in flight —
+  // main ended up rebuilding the whole AI stack six times.
+  private _inflightConnect: { key: string; promise: Promise<void> } | null = null
+
   async connect(config: IAIConfig): Promise<void> {
-    try {
-      const cleanConfig = toIpc(config)
-      await window.electron.ai.connect(cleanConfig)
-      this._isConnected = true
-      this._currentProvider = config.provider
-      this._currentModel = config.model || null
-      this._currentApiKey = config.apiKey || ''
-    } catch (error) {
-      this._isConnected = false
-      throw error
+    const key = `${config.provider}|${config.model ?? ''}|${config.apiKey ?? ''}|${config.baseUrl ?? ''}`
+    if (this._inflightConnect?.key === key) {
+      return this._inflightConnect.promise
     }
+    const promise = (async(): Promise<void> => {
+      try {
+        const cleanConfig = toIpc(config)
+        await window.electron.ai.connect(cleanConfig)
+        this._isConnected = true
+        this._currentProvider = config.provider
+        this._currentModel = config.model || null
+        this._currentApiKey = config.apiKey || ''
+      } catch (error) {
+        this._isConnected = false
+        throw error
+      } finally {
+        if (this._inflightConnect?.key === key) this._inflightConnect = null
+      }
+    })()
+    this._inflightConnect = { key, promise }
+    return promise
   }
 
   async disconnect(): Promise<void> {

@@ -1,4 +1,5 @@
 import './globalSetting'
+import fs from 'fs'
 import path from 'path'
 import { app, dialog, crashReporter } from 'electron'
 import log from 'electron-log'
@@ -65,9 +66,30 @@ process.on('unhandledRejection', (reason) => {
 })
 
 // -----------------------------------------------
-// Disable GPU if requested
-if (args['--disable-gpu']) {
+// Disable GPU if requested — and by default under WSL, where WSLg's
+// virtual GPU intermittently crash-loops Chromium's GPU process until a
+// FATAL "GPU process isn't usable" kills the app before any window opens.
+// Software rendering is reliable there; opt back in with WORDBIRD_FORCE_GPU=1.
+const isWsl =
+  process.platform === 'linux' &&
+  (() => {
+    try {
+      return fs.readFileSync('/proc/version', 'utf8').toLowerCase().includes('microsoft')
+    } catch {
+      return false
+    }
+  })()
+
+if (args['--disable-gpu'] || (isWsl && process.env.WORDBIRD_FORCE_GPU !== '1')) {
+  if (isWsl && !args['--disable-gpu']) {
+    log.info('[main] WSL detected — GPU disabled (WORDBIRD_FORCE_GPU=1 overrides)')
+  }
+  // disableHardwareAcceleration() alone still spawns a GPU process for
+  // compositing (SwiftShader) — and on a degraded WSLg that process
+  // crash-loops into FATAL "GPU process isn't usable". Kill it entirely.
   app.disableHardwareAcceleration()
+  app.commandLine.appendSwitch('disable-gpu')
+  app.commandLine.appendSwitch('disable-gpu-compositing')
 }
 
 // Single instance lock (except macOS & development)
