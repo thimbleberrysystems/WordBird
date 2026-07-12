@@ -50,6 +50,21 @@ variation. Each test gets one automatic retry.
   quality, not (necessarily) a WordBird bug — check which model the run
   printed.
 
+## Regression setup — this is not an ad-hoc suite
+
+- **Nightly CI**: `.github/workflows/live-e2e.yml` runs the suite every
+  night (and on PRs that touch the suite itself) using the
+  `OPENROUTER_KEY` repository secret. Without the secret the suite
+  self-skips and the job stays green.
+- **Maintenance policy** (also in CLAUDE.md): every new or changed
+  agent-facing behavior — a tool, a mode, a prompt contract, an
+  orchestration rule — must land with BOTH a scripted unit spec and a
+  live flow in `live-e2e.spec.ts`. The live suite is the only place a
+  bug like "new-file proposals never reach the review queue" can be
+  caught, because only a real model exercises the real tool contracts.
+- PR CI stays deterministic (unit suites); the live suite is the daily
+  behavioral gate, deliberately not PR-blocking for unrelated changes.
+
 ## Where things live
 
 - `packages/desktop/test/live/harness.ts` — model resolution, scratch

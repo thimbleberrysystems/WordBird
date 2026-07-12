@@ -294,7 +294,8 @@
       "settings": "设置",
       "binder": "书稿",
       "history": "历史",
-      "continuity": "连贯性"
+      "continuity": "连贯性",
+      "agents": "智能体"
     }
   },
   "commandPalette": {

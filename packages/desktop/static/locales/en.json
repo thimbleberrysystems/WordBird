@@ -293,7 +293,8 @@
       "settings": "Settings",
       "binder": "Manuscript",
       "history": "History",
-      "continuity": "Continuity"
+      "continuity": "Continuity",
+      "agents": "Agents"
     }
   },
   "commandPalette": {

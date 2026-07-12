@@ -294,7 +294,8 @@
       "settings": "設定",
       "binder": "原稿",
       "history": "履歴",
-      "continuity": "整合性"
+      "continuity": "整合性",
+      "agents": "エージェント"
     }
   },
   "commandPalette": {

@@ -294,7 +294,8 @@
       "settings": "설정",
       "binder": "원고",
       "history": "기록",
-      "continuity": "연속성"
+      "continuity": "연속성",
+      "agents": "에이전트"
     }
   },
   "commandPalette": {

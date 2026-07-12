@@ -24,42 +24,6 @@
         Biscuit
       </div>
       <div class="header-actions">
-        <!-- Agents tree: every agent and sub-agent, expandable to its
-             task + tool use, with per-row pause and kill. -->
-        <el-popover
-          v-model:visible="agentsVisible"
-          placement="bottom-end"
-          :width="320"
-          trigger="click"
-          popper-class="biscuit-history-popover"
-        >
-          <template #reference>
-            <button
-              class="header-action"
-              :class="{ 'agents-active': runState === 'running' }"
-              :title="t('biscuit.agentsTip')"
-            >
-              <el-icon><Operation /></el-icon>
-              <span
-                v-if="runningAgentCount > 0"
-                class="agents-badge"
-              >{{ runningAgentCount }}</span>
-            </button>
-          </template>
-          <agent-tree
-            :agents="agentList"
-            :activity="activity"
-            :run-state="runState"
-            @cancel="cancelAgent"
-            @retry="retryAgent"
-            @pause-agent="pauseAgentRow"
-            @resume-agent="resumeAgentRow"
-            @pause-all="pauseRun"
-            @resume-all="resumeRun"
-            @stop-all="stopGeneration"
-          />
-        </el-popover>
-
         <el-popover
           v-model:visible="historyVisible"
           placement="bottom-end"
@@ -374,6 +338,7 @@ import { usePreferencesStore } from '../../store/preferences'
 import { useLayoutStore } from '../../store/layout'
 import { useProjectStore } from '../../store/project'
 import { useEditorStore } from '../../store/editor'
+import { useAgentsStore } from '../../store/agents'
 import { langGraphService } from '../../services/langgraph'
 import bus from '../../bus'
 import { t } from '../../i18n'
@@ -384,17 +349,14 @@ import {
   type ChatEntry,
   type ErrorInfo
 } from '../../composables/useConversationHistory'
-import { DArrowRight, Plus, ChatLineSquare, Delete, Operation } from '@element-plus/icons-vue'
+import { DArrowRight, Plus, ChatLineSquare, Delete } from '@element-plus/icons-vue'
 import GlobalAgentReview from '../agent/GlobalAgentReview.vue'
-import AgentTree from './AgentTree.vue'
 import PlanCard from './PlanCard.vue'
 import ErrorCard from './ErrorCard.vue'
 import type {
   ILangGraphMessage,
-  IAgentActivityEvent,
   IAgentApprovalRequest,
   IPlanProposal,
-  IAgentStatus,
   AgentPermissionMode
 } from '@shared/types/langgraph'
 
@@ -459,16 +421,14 @@ const togglePanel = () => {
 
 onBeforeUnmount(() => {
   stopResizing()
-  unsubActivity?.()
   unsubApproval?.()
   unsubUsage?.()
   unsubPlan?.()
   unsubPlanSaved?.()
   unsubTokens?.()
-  unsubAgents?.()
-  unsubRunState?.()
   if (approvalTimer) clearInterval(approvalTimer)
   bus.off('biscuit-ask', handleBiscuitAsk)
+  bus.off('biscuit-retry-task', handleRetryTask)
 })
 
 // Reactive state
@@ -570,17 +530,6 @@ const dismissPlan = (): void => {
   pendingPlan.value = null
 }
 
-// ---- Run state (idle / running / paused) ----
-const runState = ref<'idle' | 'running' | 'paused'>('idle')
-
-const pauseRun = async (): Promise<void> => {
-  await window.electron.ai.pause()
-}
-
-const resumeRun = async (): Promise<void> => {
-  await window.electron.ai.resume()
-}
-
 // ---- Live plan file → main editor ----
 const openPlanInEditor = (relativePath: string): void => {
   const root = useProjectStore().currentProjectPath
@@ -599,8 +548,10 @@ const openPlanInEditor = (relativePath: string): void => {
   }
 }
 
-// ---- Retry a failed/cancelled agent ----
-const retryAgent = (task: string): void => {
+// ---- Retry a failed/cancelled agent (from the Agents sidebar) ----
+const handleRetryTask = (payload: unknown): void => {
+  const task = typeof payload === 'string' ? payload : ''
+  if (!task) return
   const message = t('biscuit.retryMessage', { task })
   if (sending.value) {
     steerWith(message)
@@ -610,28 +561,20 @@ const retryAgent = (task: string): void => {
   }
 }
 
-// ---- Live agents (header tree with per-agent pause / kill) ----
-const agentMap = ref(new Map<string, IAgentStatus>())
-const agentList = computed(() => Array.from(agentMap.value.values()))
-const agentsVisible = ref(false)
-const runningAgentCount = computed(
-  () => agentList.value.filter((a) => a.status === 'running').length
+// Keep the chat pinned to the latest turn while agents stream activity.
+watch(
+  () => activity.value.length,
+  async () => {
+    await nextTick()
+    if (promptBody.value) promptBody.value.scrollTop = promptBody.value.scrollHeight
+  }
 )
 
-const cancelAgent = async (agentId: string): Promise<void> => {
-  await window.electron.ai.cancelAgent(agentId)
-}
+// ---- Live agents + activity: shared store, shown in the Agents sidebar ----
+const agentsStore = useAgentsStore()
+const { activity, runState, agentMap } = storeToRefs(agentsStore)
 
-const pauseAgentRow = async (agentId: string): Promise<void> => {
-  await window.electron.ai.pauseAgent(agentId)
-}
-
-const resumeAgentRow = async (agentId: string): Promise<void> => {
-  await window.electron.ai.resumeAgent(agentId)
-}
-
-// ---- Activity feed + approvals ----
-const activity = ref<IAgentActivityEvent[]>([])
+// ---- Approvals ----
 const pendingApproval = ref<IAgentApprovalRequest | null>(null)
 
 // ---- Usage indicators (token counter + context ring) ----
@@ -663,8 +606,7 @@ const {
   aiMessages,
   isBusy: () => sending.value,
   onSwitch: () => {
-    activity.value = []
-    agentMap.value = new Map()
+    agentsStore.clear()
     pendingApproval.value = null
     contextUsage.value = null
     tokenUsage.value = null
@@ -707,24 +649,16 @@ watch(pendingApproval, (request) => {
   }, 1000)
 })
 
-let unsubActivity: (() => void) | null = null
 let unsubApproval: (() => void) | null = null
 let unsubUsage: (() => void) | null = null
 let unsubPlan: (() => void) | null = null
 let unsubPlanSaved: (() => void) | null = null
 let unsubTokens: (() => void) | null = null
-let unsubAgents: (() => void) | null = null
-let unsubRunState: (() => void) | null = null
 
 onMounted(() => {
   if (aiIsConnected.value) setMode(mode.value)
+  agentsStore.init()
   initializeHistory()
-  unsubActivity = window.electron.ai.onActivity(async (event) => {
-    activity.value.push(event)
-    if (activity.value.length > 200) activity.value.splice(0, 100)
-    await nextTick()
-    if (promptBody.value) promptBody.value.scrollTop = promptBody.value.scrollHeight
-  })
   unsubApproval = window.electron.ai.onApprovalRequest((request) => {
     pendingApproval.value = request
   })
@@ -744,16 +678,10 @@ onMounted(() => {
   unsubTokens = window.electron.ai.onTokenUsage((usage) => {
     tokenUsage.value = usage
   })
-  unsubAgents = window.electron.ai.onAgentStatus((status) => {
-    const next = new Map(agentMap.value)
-    next.set(status.agentId, status)
-    agentMap.value = next
-  })
-  unsubRunState = window.electron.ai.onRunState(({ state }) => {
-    runState.value = state
-  })
-  // Selection actions in the editor route through the normal chat pipeline.
+  // Selection actions in the editor route through the normal chat pipeline;
+  // agent retries from the sidebar arrive the same way.
   bus.on('biscuit-ask', handleBiscuitAsk)
+  bus.on('biscuit-retry-task', handleRetryTask)
 })
 
 const respondApproval = async (approved: boolean): Promise<void> => {
@@ -1029,31 +957,6 @@ async function sendMessage (): Promise<void> {
   &:hover {
     border-color: var(--themeColor, #409eff);
   }
-}
-
-/* Agents-tree trigger: highlighted while a run is live, with a
-   running-agent count badge. */
-.header-action.agents-active {
-  color: var(--themeColor, #409eff);
-}
-
-.agents-badge {
-  font-size: 0.62rem;
-  font-weight: 700;
-  line-height: 1;
-  min-width: 13px;
-  text-align: center;
-  padding: 2px 3px;
-  border-radius: 7px;
-  color: #fff;
-  background: var(--themeColor, #409eff);
-  animation: agents-badge-pulse 1.2s infinite ease-in-out;
-}
-
-@keyframes agents-badge-pulse {
-  0% { opacity: 0.55; }
-  50% { opacity: 1; }
-  100% { opacity: 0.55; }
 }
 
 /* History popover contents */

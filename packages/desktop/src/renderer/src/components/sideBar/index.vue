@@ -24,6 +24,12 @@
           @click="handleLeftIconClick(c.id)"
         >
           <component :is="c.icon" />
+          <!-- Live dot: agents are working right now. -->
+          <span
+            v-if="c.id === 'agents' && agentsStore.runState !== 'idle'"
+            class="agents-live-dot"
+            :class="{ paused: agentsStore.runState === 'paused' }"
+          />
         </li>
       </ul>
       <div class="left-column-bottom">
@@ -56,6 +62,7 @@
       <toc v-else-if="rightColumn === 'toc'" />
       <history v-else-if="rightColumn === 'history'" />
       <continuity v-else-if="rightColumn === 'continuity'" />
+      <agents-view v-else-if="rightColumn === 'agents'" />
     </div>
     <div
       v-show="rightColumn"
@@ -79,11 +86,15 @@ import SideBarSearch from './search.vue'
 import Toc from './toc.vue'
 import History from './history.vue'
 import Continuity from './continuity.vue'
+import AgentsView from './agents.vue'
+import { useAgentsStore } from '@/store/agents'
 import { DArrowLeft } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
 import type { TabDescriptor } from './types'
 
 const layoutStore = useLayoutStore()
+const agentsStore = useAgentsStore()
+agentsStore.init()
 const projectStore = useProjectStore()
 const editorStore = useEditorStore()
 
@@ -209,6 +220,7 @@ const handleExpandClick = () => {
 }
 
 .left-column ul > li {
+  position: relative;
   width: 45px;
   height: 45px;
   margin: 0;
@@ -217,6 +229,28 @@ const handleExpandClick = () => {
   justify-content: space-around;
   align-items: center;
   cursor: pointer;
+}
+
+.agents-live-dot {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--themeColor, #409eff);
+  animation: agents-dot-pulse 1.2s infinite ease-in-out;
+}
+
+.agents-live-dot.paused {
+  background: #e6a23c;
+  animation: none;
+}
+
+@keyframes agents-dot-pulse {
+  0% { opacity: 0.35; }
+  50% { opacity: 1; }
+  100% { opacity: 0.35; }
 }
 
 .left-column-bottom {

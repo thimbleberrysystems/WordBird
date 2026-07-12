@@ -1,0 +1,41 @@
+name: Live E2E (real model)
+
+# Behavioral regression gate for the Biscuit agent stack: the real
+# orchestrator + tool handlers driven by a real model over OpenRouter
+# (free tier). Scheduled nightly rather than per-PR because free pools
+# are rate-limited and flaky by nature — PR CI stays fast/deterministic
+# via the unit suites; this catches behavioral regressions daily.
+#
+# Requires the OPENROUTER_KEY repository secret. Without it the suite
+# self-skips and the job stays green, so forks are unaffected.
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    # Also run when the live suite itself changes, so a broken harness
+    # never lands silently.
+    paths:
+      - 'packages/desktop/test/live/**'
+      - 'packages/desktop/vitest.live.config.ts'
+      - '.github/workflows/live-e2e.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  live-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      - name: Run live E2E suite
+        env:
+          OPENROUTER_KEY: ${{ secrets.OPENROUTER_KEY }}
+          OPENROUTER_MODEL: openrouter/free
+        run: pnpm run test:live

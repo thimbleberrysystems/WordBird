@@ -329,6 +329,16 @@ card that switches modes and starts execution.
 `chat-markdown.spec.ts`. Workers/supervisor are tested with scripted models —
 no network needed.
 
+**Live regression suite** (`packages/desktop/test/live/`, `pnpm run
+test:live`, docs/LIVE_E2E.md): the real orchestrator + full tool pack +
+real handlers against a real model via OpenRouter (`OPENROUTER_KEY`;
+`OPENROUTER_MODEL=openrouter/free` auto-picks a free tool-calling model
+with live capacity). Runs nightly in CI (live-e2e.yml) and on PRs touching
+the suite. MAINTENANCE POLICY: any new or changed agent-facing behavior
+(tools, modes, prompts, orchestration) must extend BOTH the scripted unit
+specs and `test/live/live-e2e.spec.ts` — the live suite asserts behavior
+(proposals emitted, files created, approvals requested), not wording.
+
 ## IPC Conventions
 
 Most IPC channels between main and renderer use the `mt::` prefix (e.g. `mt::open-new-tab`, `mt::file-saved`). AI channels use `mt::ai:*`, novel-model channels `mt::novel:*`. Some internal channels do not follow this convention (e.g. `language-changed`).

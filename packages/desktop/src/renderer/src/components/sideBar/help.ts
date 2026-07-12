@@ -1,5 +1,6 @@
 import {
   Notebook as BinderIcon,
+  Cpu as AgentsIcon,
   Folder as FilesIcon,
   Search as SearchIcon,
   Memo as TocIcon,
@@ -40,6 +41,11 @@ export const sideBarIcons: SideBarIconEntry[] = [
     id: 'history',
     name: () => t('sideBar.icons.history'),
     icon: HistoryIcon
+  },
+  {
+    id: 'agents',
+    name: () => t('sideBar.icons.agents'),
+    icon: AgentsIcon
   },
   {
     id: 'continuity',
