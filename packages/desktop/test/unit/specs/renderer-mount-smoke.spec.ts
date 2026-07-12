@@ -43,6 +43,9 @@ beforeAll(() => {
       onTokenUsage: vi.fn(unsub),
       onAgentStatus: vi.fn(unsub),
       onRunState: vi.fn(unsub),
+      onApprovalResolved: vi.fn(unsub),
+      onBiscuitReattach: vi.fn(unsub),
+      detachBiscuit: vi.fn(async() => ({ ok: true })),
       onPullProgress: vi.fn(unsub),
       onEditProposal: vi.fn(unsub)
     },
