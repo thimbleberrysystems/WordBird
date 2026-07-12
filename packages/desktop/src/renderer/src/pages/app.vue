@@ -75,6 +75,7 @@ import TimelineView from '@/components/novel/TimelineView.vue'
 import SelectionActions from '@/components/novel/SelectionActions.vue'
 import { useNovelStore } from '@/store/novel'
 import bus from '@/bus'
+import { langGraphService } from '@/services/langgraph'
 import { DEFAULT_STYLE } from '@/config'
 import { useLayoutStore } from '@/store/layout'
 import { useListenForMainStore } from '@/store/listenForMain'
@@ -185,6 +186,12 @@ onMounted(async () => {
   // Detached Biscuit window closed → bring the docked panel back.
   window.electron.ai.onBiscuitReattach(() => {
     layoutStore.SET_LAYOUT({ showRightPrompt: true })
+  })
+  // Main broadcasts every connection transition — mirror it so the UI and
+  // the reconnect guards never drift from reality.
+  window.electron.ai.onConnectionState((state) => {
+    langGraphService.applyMainState(state)
+    preferencesStore.aiIsConnected = state.connected
   })
   if (window.wordbird?.initialState) {
     preferencesStore.SET_USER_PREFERENCE(window.wordbird.initialState)

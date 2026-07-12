@@ -409,12 +409,21 @@ export class LangGraphManager {
       })
       this._orchestrator.setMode(this._permissionMode)
       this._agent = this._orchestrator.buildGraph() as unknown as CompiledAgent
+      this._broadcastConnectionState()
     } catch (error) {
       log.error('[LangGraphMain] Connect error details:', error)
       this.disconnect()
       const errorMessage = error instanceof Error ? error.message : String(error)
       throw new Error(`Failed to connect to ${provider}: ${errorMessage}`)
     }
+  }
+
+  private _broadcastConnectionState(): void {
+    this._broadcast('mt::ai:connection-state', {
+      connected: this.isConnected,
+      provider: this._currentProvider,
+      model: this._currentModel
+    })
   }
 
   disconnect(): void {
@@ -429,6 +438,7 @@ export class LangGraphManager {
     for (const [id] of this._pendingApprovals) {
       this.resolveApproval(id, false)
     }
+    this._broadcastConnectionState()
   }
 
   async fetchModels(provider: AIProvider, apiKey: string, baseUrl?: string): Promise<string[]> {

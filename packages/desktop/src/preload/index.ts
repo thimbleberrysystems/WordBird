@@ -331,6 +331,16 @@ const aiAPI = {
     ipcRenderer.on('mt::ai:approval-resolved', subscription)
     return () => ipcRenderer.removeListener('mt::ai:approval-resolved', subscription)
   },
+  onConnectionState: (
+    handler: (state: { connected: boolean; provider: string | null; model: string | null }) => void
+  ) => {
+    const subscription = (
+      _e: unknown,
+      state: { connected: boolean; provider: string | null; model: string | null }
+    ) => handler(state)
+    ipcRenderer.on('mt::ai:connection-state', subscription)
+    return () => ipcRenderer.removeListener('mt::ai:connection-state', subscription)
+  },
   onBiscuitReattach: (handler: () => void) => {
     const subscription = () => handler()
     ipcRenderer.on('mt::ai:biscuit-reattach', subscription)

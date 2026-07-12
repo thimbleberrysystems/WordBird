@@ -496,9 +496,21 @@ const MODES: Array<{
   { id: 'auto', label: () => t('biscuit.modeAuto'), symbol: '⏵', hint: () => t('biscuit.modeAutoHint') },
   { id: 'full-auto', label: () => t('biscuit.modeMax'), symbol: '⏵⏵', hint: () => t('biscuit.modeMaxHint') }
 ]
-const mode = ref<AgentPermissionMode>(
-  (localStorage.getItem('biscuit-mode') as AgentPermissionMode) || 'ask'
-)
+// Every fresh session STARTS IN PLAN MODE — brainstorm safely by default;
+// nothing can change until the writer (or an approved plan) escalates.
+// A reload keeps the session's mode (sessionStorage claim), and a detached
+// Biscuit window adopts the current session mode instead of resetting it.
+const MODE_CLAIM_KEY = 'biscuit-window-mode'
+const initialMode = ((): AgentPermissionMode => {
+  const persisted = localStorage.getItem('biscuit-mode') as AgentPermissionMode | null
+  if (props.detached || sessionStorage.getItem(MODE_CLAIM_KEY)) {
+    return persisted || 'plan'
+  }
+  localStorage.setItem('biscuit-mode', 'plan')
+  return 'plan'
+})()
+sessionStorage.setItem(MODE_CLAIM_KEY, '1')
+const mode = ref<AgentPermissionMode>(initialMode)
 
 const currentModeInfo = computed(
   () => MODES.find((m) => m.id === mode.value) ?? MODES[1]

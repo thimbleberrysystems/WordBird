@@ -354,6 +354,9 @@ export interface IpcMainEventChannels {
   'mt::ai:plan-saved': [event: { path: string }]
   'mt::ai:approval-resolved': [event: { id: string }]
   'mt::ai:biscuit-reattach': [event: Record<string, never>]
+  'mt::ai:connection-state': [
+    state: { connected: boolean; provider: string | null; model: string | null }
+  ]
   'mt::about-dialog': []
   'mt::ask-for-close': []
   'mt::bootstrap-editor': [config: BootstrapEditorConfig]

@@ -185,6 +185,13 @@ declare global {
       }) => Promise<{ ok: boolean }>
       onApprovalResolved: (handler: (event: { id: string }) => void) => () => void
       onBiscuitReattach: (handler: () => void) => () => void
+      onConnectionState: (
+        handler: (state: {
+          connected: boolean
+          provider: string | null
+          model: string | null
+        }) => void
+      ) => () => void
       pauseAgent: (agentId: string) => Promise<{ paused: boolean }>
       resumeAgent: (agentId: string) => Promise<{ resumed: boolean }>
       pause: () => Promise<{ paused: boolean }>

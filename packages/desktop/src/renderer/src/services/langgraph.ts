@@ -62,6 +62,24 @@ class LangGraphService {
     return promise
   }
 
+  /**
+   * Main is the source of truth for connection state — every transition
+   * (connect success, failure, disconnect) is broadcast and mirrored here
+   * so the redundant-connect guard can never go stale and block a
+   * reconnect.
+   */
+  applyMainState(state: { connected: boolean; provider: string | null; model: string | null }): void {
+    this._isConnected = state.connected
+    if (!state.connected) {
+      this._currentProvider = null
+      this._currentModel = null
+      this._currentApiKey = ''
+    } else {
+      this._currentProvider = (state.provider as typeof this._currentProvider) ?? this._currentProvider
+      this._currentModel = state.model ?? this._currentModel
+    }
+  }
+
   async disconnect(): Promise<void> {
     await window.electron.ai.disconnect()
     this._isConnected = false
