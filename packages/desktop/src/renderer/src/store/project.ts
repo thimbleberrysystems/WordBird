@@ -89,6 +89,14 @@ export const useProjectStore = defineStore('project', () => {
   const renameCache = ref<string | null>(null)
   const clipboard = ref<ClipboardEntry | null>(null)
   const currentProjectPath = ref<string | null>(null)
+
+  /**
+   * Adopt a project path WITHOUT loading the tree — used by the detached
+   * Biscuit window, which only needs the root for transcripts/snapshots.
+   */
+  function ADOPT_PROJECT_PATH(pathname: string): void {
+    currentProjectPath.value = pathname
+  }
   const projectTree = ref<ProjectTree | null>(null)
   const pendingTreeEvents = ref<PendingEvent[]>([])
 
@@ -397,6 +405,7 @@ export const useProjectStore = defineStore('project', () => {
     renameCache,
     clipboard,
     currentProjectPath,
+    ADOPT_PROJECT_PATH,
     projectTree,
     pendingTreeEvents,
     OPEN_PROJECT,

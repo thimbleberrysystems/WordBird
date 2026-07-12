@@ -1575,7 +1575,9 @@
     "deleteConversationConfirm": "删除对话“{title}”？此操作无法撤销。",
     "approvalCountdown": "{time} 后自动拒绝",
     "approvalTimedOut": "审批请求已超时并被拒绝。",
-    "autoApplied": "已应用 {count} 处编辑 — 快照已保存，可随时从历史回退。"
+    "autoApplied": "已应用 {count} 处编辑 — 快照已保存，可随时从历史回退。",
+    "detachTip": "在独立窗口中打开 Biscuit",
+    "reattachTip": "将 Biscuit 放回编辑器"
   },
   "review": {
     "pendingOne": "1 处待处理编辑",

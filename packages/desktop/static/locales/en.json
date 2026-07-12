@@ -1574,7 +1574,9 @@
     "deleteConversationConfirm": "Delete the conversation “{title}”? This cannot be undone.",
     "approvalCountdown": "Auto-declines in {time}",
     "approvalTimedOut": "The approval request timed out and was declined.",
-    "autoApplied": "{count} edit(s) applied — snapshot saved, rewind from History anytime."
+    "autoApplied": "{count} edit(s) applied — snapshot saved, rewind from History anytime.",
+    "detachTip": "Open Biscuit in its own window",
+    "reattachTip": "Return Biscuit to the editor"
   },
   "review": {
     "pendingOne": "1 pending edit",

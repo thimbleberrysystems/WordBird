@@ -43,4 +43,27 @@ test.describe('Biscuit panel + Agents sidebar', () => {
 
     await expectNoRendererErrors(app)
   })
+
+  test('Biscuit detaches into its own window and reattaches on close', async() => {
+    const before = app.windows().length
+    // The detach button is the first header action in the panel.
+    await page.locator('.right-prompt .header-actions .header-action').first().click()
+
+    // A second renderer window appears hosting the detached panel.
+    await expect
+      .poll(async() => app.windows().length, { timeout: 15000 })
+      .toBe(before + 1)
+    const biscuitWin = app
+      .windows()
+      .find((w) => w !== page && w.url().includes('type=biscuit'))
+    expect(biscuitWin).toBeTruthy()
+    await biscuitWin!.waitForSelector('.right-prompt--detached', { timeout: 15000 })
+
+    // The docked panel is hidden while detached…
+    await expect(page.locator('.right-prompt')).toHaveCount(0)
+
+    // …and returns when the detached window closes.
+    await biscuitWin!.close()
+    await expect(page.locator('.right-prompt')).toBeVisible({ timeout: 10000 })
+  })
 })

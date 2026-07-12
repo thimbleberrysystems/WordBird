@@ -74,14 +74,14 @@ export class LangGraphManager {
     clearTimeout(pending.timer)
     this._pendingApprovals.delete(approvalId)
     pending.resolve(approved)
+    this._broadcast('mt::ai:approval-resolved', { id: approvalId })
     return true
   }
 
   private _requestApproval(request: IAgentApprovalRequest): Promise<boolean> {
-    const mainWindow = this._getMainWindow()
-    if (!mainWindow) return Promise.resolve(false)
+    if (BrowserWindow.getAllWindows().length === 0) return Promise.resolve(false)
     // The renderer counts down to the same deadline main enforces below.
-    mainWindow.webContents.send('mt::ai:approval-request', {
+    this._broadcast('mt::ai:approval-request', {
       ...request,
       expiresAt: Date.now() + APPROVAL_TIMEOUT_MS
     })
@@ -165,7 +165,7 @@ export class LangGraphManager {
       : this._orchestrator?.isPaused
         ? 'paused'
         : 'running'
-    this._getMainWindow()?.webContents.send('mt::ai:run-state', { state })
+    this._broadcast('mt::ai:run-state', { state })
   }
 
   pause(): boolean {
@@ -228,12 +228,30 @@ export class LangGraphManager {
     }
   }
 
+  private _accessor: Accessor | null = null
+
   setAccessor(accessor: Accessor): void {
+    this._accessor = accessor
     setAgentToolAccessor(accessor)
+  }
+
+  getAccessor(): Accessor | null {
+    return this._accessor
   }
 
   private _getMainWindow(): BrowserWindow | null {
     return BrowserWindow.getAllWindows()[0] ?? null
+  }
+
+  /**
+   * AI events go to EVERY window: with Biscuit detachable, the chat can
+   * live in its own window while edit proposals land in the editor —
+   * each renderer picks up the channels it cares about.
+   */
+  private _broadcast(channel: string, payload: unknown): void {
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) win.webContents.send(channel, payload)
+    }
   }
 
   private async _loadToolPacks(): Promise<void> {
@@ -343,19 +361,14 @@ export class LangGraphManager {
 
       await this._loadToolPacks()
       this._agentToolService.setPlanSavedEmitter(({ planSaved }) => {
-        this._getMainWindow()?.webContents.send('mt::ai:plan-saved', planSaved)
+        this._broadcast('mt::ai:plan-saved', planSaved)
       })
       this._agentToolService.setPlanProposalEmitter(async({ planProposal }) => {
-        this._getMainWindow()?.webContents.send('mt::ai:plan-proposal', planProposal)
+        this._broadcast('mt::ai:plan-proposal', planProposal)
       })
       this._agentToolService.setEditProposalEmitter(async(proposal) => {
         log.debug('[LangGraphMain] ToolNode edit proposal emitter received:', proposal)
-        const mainWindow = this._getMainWindow()
-        if (mainWindow) {
-          mainWindow.webContents.send('mt::ai:edit-proposal', proposal)
-        } else {
-          log.warn('[LangGraphMain] No main window available for ToolNode edit proposal')
-        }
+        this._broadcast('mt::ai:edit-proposal', proposal)
       })
 
       this._agent = null
@@ -375,20 +388,20 @@ export class LangGraphManager {
         tools: this._agentToolService.getLangChainTools(),
         callbacks: {
           emitActivity: (event) => {
-            this._getMainWindow()?.webContents.send('mt::ai:activity', event)
+            this._broadcast('mt::ai:activity', event)
           },
           requestApproval: (request) => this._requestApproval(request),
           // Per-turn project grounding: outline + book summary + open
           // continuity issues, shared by supervisor and workers.
           buildBrief: () => contextBuilder.buildProjectBrief(getActiveAgentProjectRoot()),
           emitContextUsage: (usage) => {
-            this._getMainWindow()?.webContents.send('mt::ai:context-usage', usage)
+            this._broadcast('mt::ai:context-usage', usage)
           },
           emitTokenUsage: (usage) => {
-            this._getMainWindow()?.webContents.send('mt::ai:token-usage', usage)
+            this._broadcast('mt::ai:token-usage', usage)
           },
           emitAgentStatus: (status) => {
-            this._getMainWindow()?.webContents.send('mt::ai:agent-status', status)
+            this._broadcast('mt::ai:agent-status', status)
           },
           drainSteering: () => this._steeringQueue.splice(0)
         },
@@ -726,14 +739,7 @@ export class LangGraphManager {
     const result = await this._agentToolService.execute(call, { projectRoot })
 
     if (result.ok && this._agentToolService.isEditProposalPayload(result.data)) {
-      const proposal = result.data
-
-      const mainWindow = this._getMainWindow()
-      if (mainWindow) {
-        mainWindow.webContents.send('mt::ai:edit-proposal', proposal)
-      } else {
-        log.warn('[LangGraphMain] No main window available for edit proposal')
-      }
+      this._broadcast('mt::ai:edit-proposal', result.data)
     }
 
     return result

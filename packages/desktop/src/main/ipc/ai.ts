@@ -1,6 +1,7 @@
 import { app, ipcMain } from 'electron'
 import log from 'electron-log'
 import { langGraphManager } from '../services/ai/LangGraphManager'
+import { openBiscuitWindow } from '../windows/biscuit'
 import { writeMarkdownFileWithDefaults } from '../filesystem/markdown'
 import type {
   AIProvider,
@@ -81,6 +82,16 @@ export const registerAIHandlers = (): void => {
   ipcMain.handle('mt::ai:cancel-agent', async(_e, agentId: string) => {
     return { cancelled: langGraphManager.cancelAgent(agentId) }
   })
+
+  ipcMain.handle(
+    'mt::ai:detach-biscuit',
+    async(_e, options: { conversationId?: string; projectRoot?: string }) => {
+      const accessor = langGraphManager.getAccessor()
+      if (!accessor) return { ok: false }
+      openBiscuitWindow(accessor, options ?? {})
+      return { ok: true }
+    }
+  )
 
   ipcMain.handle('mt::ai:pause-agent', async(_e, agentId: string) => {
     return { paused: langGraphManager.pauseAgent(agentId) }

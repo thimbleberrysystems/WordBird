@@ -179,6 +179,12 @@ declare global {
       onTokenUsage: (handler: (usage: ITokenUsageUpdate) => void) => () => void
       onAgentStatus: (handler: (status: IAgentStatus) => void) => () => void
       cancelAgent: (agentId: string) => Promise<{ cancelled: boolean }>
+      detachBiscuit: (options: {
+        conversationId?: string
+        projectRoot?: string
+      }) => Promise<{ ok: boolean }>
+      onApprovalResolved: (handler: (event: { id: string }) => void) => () => void
+      onBiscuitReattach: (handler: () => void) => () => void
       pauseAgent: (agentId: string) => Promise<{ paused: boolean }>
       resumeAgent: (agentId: string) => Promise<{ resumed: boolean }>
       pause: () => Promise<{ paused: boolean }>

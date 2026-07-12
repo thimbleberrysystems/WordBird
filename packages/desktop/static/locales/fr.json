@@ -1576,7 +1576,9 @@
     "deleteConversationConfirm": "Supprimer la conversation « {title} » ? Cette action est irréversible.",
     "approvalCountdown": "Refus automatique dans {time}",
     "approvalTimedOut": "La demande d’approbation a expiré et a été refusée.",
-    "autoApplied": "{count} modification(s) appliquée(s) — instantané enregistré, rembobinez depuis l’Historique à tout moment."
+    "autoApplied": "{count} modification(s) appliquée(s) — instantané enregistré, rembobinez depuis l’Historique à tout moment.",
+    "detachTip": "Ouvrir Biscuit dans sa propre fenêtre",
+    "reattachTip": "Ramener Biscuit dans l’éditeur"
   },
   "review": {
     "pendingOne": "1 modification en attente",

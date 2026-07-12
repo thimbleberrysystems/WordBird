@@ -1576,7 +1576,9 @@
     "deleteConversationConfirm": "Excluir a conversa “{title}”? Isso não pode ser desfeito.",
     "approvalCountdown": "Recusa automática em {time}",
     "approvalTimedOut": "A solicitação de aprovação expirou e foi recusada.",
-    "autoApplied": "{count} edição(ões) aplicadas — instantâneo salvo, retroceda pelo Histórico quando quiser."
+    "autoApplied": "{count} edição(ões) aplicadas — instantâneo salvo, retroceda pelo Histórico quando quiser.",
+    "detachTip": "Abrir o Biscuit em janela própria",
+    "reattachTip": "Devolver o Biscuit ao editor"
   },
   "review": {
     "pendingOne": "1 edição pendente",

@@ -1576,7 +1576,9 @@
     "deleteConversationConfirm": "대화 “{title}”을(를) 삭제할까요? 되돌릴 수 없습니다.",
     "approvalCountdown": "{time} 후 자동 거절됩니다",
     "approvalTimedOut": "승인 요청이 시간 초과되어 거절되었습니다.",
-    "autoApplied": "{count}개 편집 적용됨 — 스냅샷 저장됨, 언제든 히스토리에서 되돌릴 수 있습니다."
+    "autoApplied": "{count}개 편집 적용됨 — 스냅샷 저장됨, 언제든 히스토리에서 되돌릴 수 있습니다.",
+    "detachTip": "Biscuit을 별도 창으로 열기",
+    "reattachTip": "Biscuit을 편집기로 되돌리기"
   },
   "review": {
     "pendingOne": "대기 중인 편집 1개",

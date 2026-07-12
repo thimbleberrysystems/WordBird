@@ -182,6 +182,10 @@ const setupDragDropHandler = (): void => {
   )
 }
 onMounted(async () => {
+  // Detached Biscuit window closed → bring the docked panel back.
+  window.electron.ai.onBiscuitReattach(() => {
+    layoutStore.SET_LAYOUT({ showRightPrompt: true })
+  })
   if (window.wordbird?.initialState) {
     preferencesStore.SET_USER_PREFERENCE(window.wordbird.initialState)
   }

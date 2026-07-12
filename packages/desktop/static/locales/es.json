@@ -1574,7 +1574,9 @@
     "deleteConversationConfirm": "¿Eliminar la conversación «{title}»? Esto no se puede deshacer.",
     "approvalCountdown": "Se rechaza automáticamente en {time}",
     "approvalTimedOut": "La solicitud de aprobación caducó y fue rechazada.",
-    "autoApplied": "{count} edición(es) aplicadas — instantánea guardada, rebobina desde el Historial cuando quieras."
+    "autoApplied": "{count} edición(es) aplicadas — instantánea guardada, rebobina desde el Historial cuando quieras.",
+    "detachTip": "Abrir Biscuit en su propia ventana",
+    "reattachTip": "Devolver Biscuit al editor"
   },
   "review": {
     "pendingOne": "1 edición pendiente",

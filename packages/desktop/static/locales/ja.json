@@ -1576,7 +1576,9 @@
     "deleteConversationConfirm": "会話「{title}」を削除しますか？この操作は取り消せません。",
     "approvalCountdown": "{time} 後に自動的に拒否されます",
     "approvalTimedOut": "承認リクエストは期限切れになり、拒否されました。",
-    "autoApplied": "{count} 件の編集を適用 — スナップショット保存済み。いつでも履歴から巻き戻せます。"
+    "autoApplied": "{count} 件の編集を適用 — スナップショット保存済み。いつでも履歴から巻き戻せます。",
+    "detachTip": "Biscuit を別ウィンドウで開く",
+    "reattachTip": "Biscuit をエディタに戻す"
   },
   "review": {
     "pendingOne": "保留中の編集 1件",

@@ -24,11 +24,16 @@ const parseSettingsPage = (type: string | null | undefined): string => {
 const routes = (type: string | null | undefined): RouteRecordRaw[] => [
   {
     path: '/',
-    redirect: type === 'editor' ? '/editor' : parseSettingsPage(type)
+    redirect:
+      type === 'editor' ? '/editor' : type === 'biscuit' ? '/biscuit' : parseSettingsPage(type)
   },
   {
     path: '/editor',
     component: App
+  },
+  {
+    path: '/biscuit',
+    component: () => import('@/pages/biscuit.vue')
   },
   {
     path: '/preference',

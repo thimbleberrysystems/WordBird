@@ -1574,7 +1574,9 @@
     "deleteConversationConfirm": "Unterhaltung „{title}“ löschen? Das kann nicht rückgängig gemacht werden.",
     "approvalCountdown": "Wird in {time} automatisch abgelehnt",
     "approvalTimedOut": "Die Freigabeanfrage ist abgelaufen und wurde abgelehnt.",
-    "autoApplied": "{count} Änderung(en) übernommen — Schnappschuss gespeichert, jederzeit im Verlauf zurückspulbar."
+    "autoApplied": "{count} Änderung(en) übernommen — Schnappschuss gespeichert, jederzeit im Verlauf zurückspulbar.",
+    "detachTip": "Biscuit in eigenem Fenster öffnen",
+    "reattachTip": "Biscuit in den Editor zurückholen"
   },
   "review": {
     "pendingOne": "1 ausstehende Änderung",

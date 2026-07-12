@@ -324,6 +324,18 @@ const aiAPI = {
     return () => ipcRenderer.removeListener('mt::ai:agent-status', subscription)
   },
   cancelAgent: (agentId: string) => invoke('mt::ai:cancel-agent', agentId),
+  detachBiscuit: (options: { conversationId?: string; projectRoot?: string }) =>
+    invoke('mt::ai:detach-biscuit', options),
+  onApprovalResolved: (handler: (event: { id: string }) => void) => {
+    const subscription = (_e: unknown, event: { id: string }) => handler(event)
+    ipcRenderer.on('mt::ai:approval-resolved', subscription)
+    return () => ipcRenderer.removeListener('mt::ai:approval-resolved', subscription)
+  },
+  onBiscuitReattach: (handler: () => void) => {
+    const subscription = () => handler()
+    ipcRenderer.on('mt::ai:biscuit-reattach', subscription)
+    return () => ipcRenderer.removeListener('mt::ai:biscuit-reattach', subscription)
+  },
   pauseAgent: (agentId: string) => invoke('mt::ai:pause-agent', agentId),
   resumeAgent: (agentId: string) => invoke('mt::ai:resume-agent', agentId),
   pause: () => invoke('mt::ai:pause'),

@@ -1,17 +1,20 @@
 <template>
   <aside
     class="right-prompt"
+    :class="{ 'right-prompt--detached': detached }"
     role="complementary"
     aria-label="Biscuit chat panel"
-    :style="rightPromptStyle"
+    :style="detached ? undefined : rightPromptStyle"
   >
     <div
+      v-if="!detached"
       class="resizer"
       @mousedown="startResizing"
     />
 
     <!-- Unified Toggle Button (Collapse) -->
     <div
+      v-if="!detached"
       class="toggle-biscuit-btn collapse"
       :title="t('biscuit.collapseTip')"
       @click="togglePanel"
@@ -24,6 +27,18 @@
         Biscuit
       </div>
       <div class="header-actions">
+        <!-- Detach to a resizable window / bring back into the editor. -->
+        <button
+          class="header-action"
+          :title="detached ? t('biscuit.reattachTip') : t('biscuit.detachTip')"
+          @click="detached ? reattachBiscuit() : detachBiscuit()"
+        >
+          <el-icon>
+            <CopyDocument v-if="!detached" />
+            <Back v-else />
+          </el-icon>
+        </button>
+
         <el-popover
           v-model:visible="historyVisible"
           placement="bottom-end"
@@ -349,7 +364,7 @@ import {
   type ChatEntry,
   type ErrorInfo
 } from '../../composables/useConversationHistory'
-import { DArrowRight, Plus, ChatLineSquare, Delete } from '@element-plus/icons-vue'
+import { DArrowRight, Plus, ChatLineSquare, Delete, CopyDocument, Back } from '@element-plus/icons-vue'
 import GlobalAgentReview from '../agent/GlobalAgentReview.vue'
 import PlanCard from './PlanCard.vue'
 import ErrorCard from './ErrorCard.vue'
@@ -359,6 +374,11 @@ import type {
   IPlanProposal,
   AgentPermissionMode
 } from '@shared/types/langgraph'
+
+// Detached mode: this instance fills its own window (pages/biscuit.vue);
+// resizing/collapsing don't apply and the detach button becomes reattach.
+const props = defineProps<{ detached?: boolean }>()
+const detached = computed(() => !!props.detached)
 
 // Store
 const preferencesStore = usePreferencesStore()
@@ -419,6 +439,7 @@ const togglePanel = () => {
 onBeforeUnmount(() => {
   stopResizing()
   unsubApproval?.()
+  unsubApprovalResolved?.()
   unsubUsage?.()
   unsubPlan?.()
   unsubPlanSaved?.()
@@ -545,6 +566,24 @@ const openPlanInEditor = (relativePath: string): void => {
   }
 }
 
+// ---- Detach / reattach ----
+const detachBiscuit = async (): Promise<void> => {
+  const { ok } = await window.electron.ai.detachBiscuit({
+    conversationId: currentId.value || undefined,
+    projectRoot: useProjectStore().currentProjectPath ?? undefined
+  })
+  if (ok) {
+    // Hide the docked panel; the reattach broadcast restores it when the
+    // detached window closes.
+    layoutStore.SET_LAYOUT({ showRightPrompt: false })
+  }
+}
+
+const reattachBiscuit = (): void => {
+  // Closing the window triggers main's reattach broadcast.
+  window.close()
+}
+
 // ---- Retry a failed/cancelled agent (from the Agents sidebar) ----
 const handleRetryTask = (payload: unknown): void => {
   const task = typeof payload === 'string' ? payload : ''
@@ -650,6 +689,7 @@ watch(pendingApproval, (request) => {
 })
 
 let unsubApproval: (() => void) | null = null
+let unsubApprovalResolved: (() => void) | null = null
 let unsubUsage: (() => void) | null = null
 let unsubPlan: (() => void) | null = null
 let unsubPlanSaved: (() => void) | null = null
@@ -661,6 +701,10 @@ onMounted(() => {
   initializeHistory()
   unsubApproval = window.electron.ai.onApprovalRequest((request) => {
     pendingApproval.value = request
+  })
+  // Approvals broadcast to every window; whoever answers clears the rest.
+  unsubApprovalResolved = window.electron.ai.onApprovalResolved(({ id }) => {
+    if (pendingApproval.value?.id === id) pendingApproval.value = null
   })
   unsubUsage = window.electron.ai.onContextUsage((usage) => {
     contextUsage.value = usage
@@ -1190,6 +1234,11 @@ async function sendMessage (): Promise<void> {
   display: flex;
   justify-content: flex-end;
   gap: 6px;
+}
+
+.right-prompt--detached {
+  width: 100%;
+  flex: 1 1 auto;
 }
 
 .prompt-body {
