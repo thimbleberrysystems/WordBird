@@ -66,6 +66,15 @@ process.on('unhandledRejection', (reason) => {
 })
 
 // -----------------------------------------------
+// Secrets: API keys go through Electron safeStorage. On Linux, Chromium
+// would consult GNOME Keyring/KWallet — surfacing an intimidating unlock
+// dialog at startup — so pin the 'basic' backend: no keyring, no dialog.
+// Windows (DPAPI) and macOS (Keychain) keep strong, prompt-free encryption.
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('password-store', 'basic')
+}
+
+// -----------------------------------------------
 // Disable GPU if requested — and by default under WSL, where WSLg's
 // virtual GPU intermittently crash-loops Chromium's GPU process until a
 // FATAL "GPU process isn't usable" kills the app before any window opens.
@@ -86,10 +95,14 @@ if (args['--disable-gpu'] || (isWsl && process.env.WORDBIRD_FORCE_GPU !== '1')) 
   }
   // disableHardwareAcceleration() alone still spawns a GPU process for
   // compositing (SwiftShader) — and on a degraded WSLg that process
-  // crash-loops into FATAL "GPU process isn't usable". Kill it entirely.
+  // crash-loops into FATAL "GPU process isn't usable". Even with
+  // --disable-gpu a broker GPU process can launch (and die, error 1002),
+  // so run the GPU thread in-process: no separate process, nothing to
+  // crash-loop.
   app.disableHardwareAcceleration()
   app.commandLine.appendSwitch('disable-gpu')
   app.commandLine.appendSwitch('disable-gpu-compositing')
+  app.commandLine.appendSwitch('in-process-gpu')
 }
 
 // Single instance lock (except macOS & development)

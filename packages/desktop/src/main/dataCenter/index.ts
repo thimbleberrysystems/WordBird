@@ -1,7 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { BrowserWindow, dialog, ipcMain } from 'electron'
-import keytar from 'keytar'
+import { BrowserWindow, dialog, ipcMain, app, safeStorage } from 'electron'
 import schema from './schema.json'
 import Store from 'electron-store'
 import log from 'electron-log'
@@ -11,12 +10,13 @@ import { TypedEmitter } from '@shared/types/typedEmitter'
 
 const DATA_CENTER_NAME = 'dataCenter'
 
-// When the OS keyring is unavailable (locked, prompt cancelled, or — the
-// WSL norm — no keyring daemon at all), API keys fall back to the local
-// store, lightly obfuscated. Forgetting the keyring password therefore
-// never locks anyone out of WordBird: worst case the stored keys become
-// unreadable and are re-entered once. The obfuscation is NOT encryption —
-// it only keeps keys from being shoulder-surfed in the JSON file.
+// API keys are stored via Electron safeStorage (DPAPI on Windows, Keychain
+// on macOS, Chromium basic on Linux — pinned in main/index.ts so no OS
+// keyring dialog ever appears). When safeStorage is unavailable the value
+// falls back to light obfuscation: NOT encryption, it only keeps keys from
+// being shoulder-surfed in the JSON file. Either way, nothing can ever
+// lock the writer out — worst case a key is re-entered once.
+const SECURE_SUFFIX = '__secure'
 const FALLBACK_SUFFIX = '__insecureFallback'
 
 export const obfuscate = (value: string): string =>
@@ -43,7 +43,6 @@ interface DataCenterPaths {
 class DataCenter extends TypedEmitter<DataCenterEvents> {
   dataCenterPath: string
   userDataPath: string
-  serviceName: string
   encryptKeys: string[]
   hasDataCenterFile: boolean
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -55,7 +54,6 @@ class DataCenter extends TypedEmitter<DataCenterEvents> {
     const { dataCenterPath, userDataPath } = paths
     this.dataCenterPath = dataCenterPath
     this.userDataPath = userDataPath
-    this.serviceName = 'marktext'
     this.encryptKeys = [
       'openai_apiKey',
       'anthropic_apiKey',
@@ -100,20 +98,11 @@ class DataCenter extends TypedEmitter<DataCenterEvents> {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getAll(): Promise<Record<string, any>> {
-    const { serviceName, encryptKeys } = this
+    const { encryptKeys } = this
     const data = this.store.store
     try {
       const encryptData = await Promise.all(
-        encryptKeys.map(async(key) => {
-          try {
-            const secret = await keytar.getPassword(serviceName, key)
-            if (secret !== null) return secret
-          } catch {
-            // Keyring locked or absent — fall through to the local copy.
-          }
-          const fallback = this.store.get(`${key}${FALLBACK_SUFFIX}`) as string | undefined
-          return fallback ? deobfuscate(fallback) : null
-        })
+        encryptKeys.map((key) => this._readSecret(key))
       )
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const encryptObj = encryptKeys.reduce<Record<string, any>>((acc, k, i) => {
@@ -157,21 +146,43 @@ class DataCenter extends TypedEmitter<DataCenterEvents> {
     return this.store.set(type, items)
   }
 
+  /** Read a secret: safeStorage first, legacy obfuscated fallback second. */
+  private async _readSecret(key: string): Promise<string | null> {
+    await app.whenReady()
+    const secure = this.store.get(`${key}${SECURE_SUFFIX}`) as string | undefined
+    if (secure) {
+      try {
+        return safeStorage.decryptString(Buffer.from(secure, 'base64'))
+      } catch (err) {
+        log.warn(`[dataCenter] Could not decrypt stored ${key}; falling back:`, err)
+      }
+    }
+    const fallback = this.store.get(`${key}${FALLBACK_SUFFIX}`) as string | undefined
+    return fallback ? deobfuscate(fallback) : null
+  }
+
+  private async _writeSecret(key: string, value: string): Promise<void> {
+    await app.whenReady()
+    if (safeStorage.isEncryptionAvailable()) {
+      this.store.set(
+        `${key}${SECURE_SUFFIX}`,
+        safeStorage.encryptString(value).toString('base64')
+      )
+      this.store.delete(`${key}${FALLBACK_SUFFIX}`)
+    } else {
+      log.warn(
+        `[dataCenter] safeStorage unavailable — storing ${key} with light obfuscation only`
+      )
+      this.store.set(`${key}${FALLBACK_SUFFIX}`, obfuscate(value))
+      this.store.delete(`${key}${SECURE_SUFFIX}`)
+    }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getItem(key: string): Promise<any> | any {
-    const { encryptKeys, serviceName } = this
+    const { encryptKeys } = this
     if (encryptKeys.includes(key)) {
-      return keytar
-        .getPassword(serviceName, key)
-        .catch((err) => {
-          log.warn(`[dataCenter] Keyring unavailable reading ${key}; trying fallback:`, err)
-          return null
-        })
-        .then((secret) => {
-          if (secret !== null) return secret
-          const fallback = this.store.get(`${key}${FALLBACK_SUFFIX}`) as string | undefined
-          return fallback ? deobfuscate(fallback) : null
-        })
+      return this._readSecret(key)
     } else {
       const value = this.store.get(key)
       return Promise.resolve(value)
@@ -180,25 +191,13 @@ class DataCenter extends TypedEmitter<DataCenterEvents> {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async setItem(key: string, value: any): Promise<any> {
-    const { encryptKeys, serviceName } = this
+    const { encryptKeys } = this
     if (key === 'screenshotFolderPath') {
       ensureDirSync(value as string)
     }
     ipcMain.emit('broadcast-user-data-changed', { [key]: value })
     if (encryptKeys.includes(key)) {
-      try {
-        const result = await keytar.setPassword(serviceName, key, value)
-        // Keyring took it — drop any stale fallback copy.
-        this.store.delete(`${key}${FALLBACK_SUFFIX}`)
-        return result
-      } catch (err) {
-        log.warn(
-          `[dataCenter] Keyring unavailable storing ${key} — using local obfuscated fallback ` +
-            '(re-enterable from AI settings at any time):',
-          err
-        )
-        return this.store.set(`${key}${FALLBACK_SUFFIX}`, obfuscate(String(value)))
-      }
+      return this._writeSecret(key, String(value))
     } else {
       return this.store.set(key, value)
     }

@@ -153,7 +153,7 @@ class Preference extends TypedEmitter<PreferenceEvents> {
         const config = aiConfigs[provider]
         // ONLY attempt to encrypt if there is an actual non-empty string to encrypt
         if (config && typeof config.apiKey === 'string' && config.apiKey.trim().length > 0) {
-          // Move apiKey to DataCenter (keytar)
+          // Move apiKey to DataCenter (safeStorage)
           try {
             this.dataCenter.setItem(`${provider}_apiKey`, config.apiKey)
             // Store empty string in preferences.json to keep schema valid but avoid duplication
