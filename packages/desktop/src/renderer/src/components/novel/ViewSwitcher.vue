@@ -32,8 +32,9 @@ const options: Array<{ id: NovelViewMode; label: string }> = [
 .view-switcher {
   position: absolute;
   top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
+  /* Right-aligned: centered chips sat exactly under the centered filename
+     in the title bar and overlapped it. */
+  right: 16px;
   display: flex;
   gap: 2px;
   padding: 2px;
