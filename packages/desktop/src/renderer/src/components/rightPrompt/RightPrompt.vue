@@ -397,13 +397,10 @@ const handleMouseMove = (event: MouseEvent) => {
   // Calculate width from the right side
   const newWidth = window.innerWidth - event.clientX
 
-  if (newWidth < 150) {
-    // If pushed too far right, hide it
-    layoutStore.SET_LAYOUT({ showRightPrompt: false })
-    stopResizing()
-    return
-  }
-
+  // Clamp instead of hiding: silently vanishing on an over-drag was a trap
+  // (the panel "disappeared" with only a subtle expand arrow to recover).
+  // Hiding stays an explicit action: the collapse button or View → Toggle
+  // AI Panel.
   panelWidth.value = Math.max(MIN_WIDTH, Math.min(newWidth, MAX_WIDTH))
 }
 
