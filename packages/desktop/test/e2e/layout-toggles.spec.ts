@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
-import { launchWithMarkdown, clickMenuById } from './helpers'
+import { launchWithMarkdown, clickMenuById, waitForMenuReady, closeElectron } from './helpers'
 
 // Wait until a `v-show`-toggled element's visibility differs from `wasVisible`.
 // A missing element counts as "not visible", so the change-detection logic
@@ -16,14 +16,14 @@ const waitForVisibilityFlip = (page: Page, selector: string, wasVisible: boolean
     { timeout: 5000 }
   )
 
-// Helper to hide the AI panel for layout tests
-const hideAiPanel = async(page: Page) => {
-  // Check if AI panel is visible
+// Helper to hide the AI panel for layout tests. The View-menu toggle is the
+// stable path (the old sidebar-bottom icon this used to click is Settings
+// now and never touched the panel — the test hung on it).
+const hideAiPanel = async(app: ElectronApplication, page: Page) => {
   const aiPanelVisible = await page.evaluate(() => !!document.querySelector('.right-prompt'))
   if (aiPanelVisible) {
-    // Click the Biscuit icon in the sidebar to toggle it off
-    await page.locator('.side-bar .left-column > ul.bottom li').first().click()
-    // Wait for the panel to be removed from the DOM
+    await waitForMenuReady(app)
+    await clickMenuById(app, 'aiPanelMenuItem')
     await page.waitForFunction(() => !document.querySelector('.right-prompt'), null, {
       timeout: 5000
     })
@@ -41,7 +41,7 @@ test.describe('Layout panel toggles', () => {
   })
 
   test.afterAll(async() => {
-    if (app) await app.close()
+    if (app) await closeElectron(app)
   })
 
   test('Sidebar toggle changes .side-bar visibility', async() => {
@@ -108,7 +108,7 @@ test.describe('Layout panel toggles', () => {
     // The AI panel is in the sidebar's bottom section, so we need to ensure
     // the sidebar is fully rendered before interacting with it.
     await page.waitForTimeout(100)
-    await hideAiPanel(page)
+    await hideAiPanel(app, page)
 
     // Open search panel and then collapse it back to the icon strip by
     // clicking the search icon. We use a locator-based click (not a DOM

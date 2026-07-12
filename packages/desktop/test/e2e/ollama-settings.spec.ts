@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
-import { launchElectron } from './helpers'
+import { launchElectron, closeElectron } from './helpers'
 
 /**
  * The provider list is honest: exactly one Ollama entry ("Ollama (Local)")
@@ -18,7 +18,7 @@ test.describe('AI provider settings', () => {
   })
 
   test.afterAll(async() => {
-    await app.close()
+    await closeElectron(app)
   })
 
   test('the provider list has one honest Ollama entry and no Bundled', async() => {

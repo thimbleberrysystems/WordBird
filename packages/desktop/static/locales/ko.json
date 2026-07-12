@@ -1480,7 +1480,10 @@
     "saveTip": "열려 있는 모든 파일을 저장하고 히스토리에 스냅샷을 기록",
     "saveSnapshotMessage": "수동 저장",
     "saved": "프로젝트 저장됨 — 히스토리에 스냅샷이 기록되었습니다.",
-    "actionFailed": "변경 사항이 저장되지 않았습니다: {error}"
+    "actionFailed": "변경 사항이 저장되지 않았습니다: {error}",
+    "compileMd": "Markdown으로 컴파일",
+    "compileEpub": "EPUB으로 컴파일 (전자책)",
+    "compileDocx": "Word로 컴파일 (.docx)"
   },
   "history": {
     "title": "기록",

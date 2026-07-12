@@ -3,7 +3,7 @@ import * as os from 'node:os'
 import * as path from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
-import { launchElectron } from './helpers'
+import { launchElectron, closeElectron } from './helpers'
 
 // End-to-end smoke for the streaming ripgrep IPC (mt::rg::start /
 // mt::rg::match / mt::rg::done). Writes a small fixture tree, drives the
@@ -32,7 +32,7 @@ test.describe('Ripgrep IPC streaming', () => {
   })
 
   test.afterAll(async() => {
-    if (app) await app.close().catch(() => {})
+    if (app) await closeElectron(app).catch(() => {})
     if (fixtureDir) {
       try {
         fs.rmSync(fixtureDir, { recursive: true, force: true })

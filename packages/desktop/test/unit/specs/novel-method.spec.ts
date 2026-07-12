@@ -165,6 +165,23 @@ describe('brief carries method, vantage, and timeline', () => {
     expect(brief).toContain('open scene')
     builder.setSessionContext(null)
   })
+
+  it('carries the working set and live selection into the vantage', async() => {
+    write('manuscript/chapter-one/opening.md', 'Rain fell on the pier.')
+    builder.setSessionContext({
+      viewMode: 'page',
+      currentFile: 'opening.md',
+      openTabs: ['opening.md', 'the-letter.md'],
+      unsavedTabs: ['the-letter.md'],
+      selection: { text: 'Rain fell on the pier.', file: 'opening.md' }
+    })
+    const brief = await builder.buildProjectBrief(root)
+    expect(brief).toContain('open tabs: opening.md, the-letter.md')
+    expect(brief).toContain('UNSAVED changes in: the-letter.md')
+    expect(brief).toContain('SELECTED TEXT (in opening.md)')
+    expect(brief).toContain('"Rain fell on the pier."')
+    builder.setSessionContext(null)
+  })
 })
 
 describe('list_structure exposes the full metadata read', () => {

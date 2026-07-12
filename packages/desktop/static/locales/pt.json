@@ -1480,7 +1480,10 @@
     "saveTip": "Salva todos os arquivos abertos e registra um instantâneo no Histórico",
     "saveSnapshotMessage": "Salvamento manual",
     "saved": "Projeto salvo — instantâneo registrado no Histórico.",
-    "actionFailed": "Essa alteração não foi salva: {error}"
+    "actionFailed": "Essa alteração não foi salva: {error}",
+    "compileMd": "Compilar para Markdown",
+    "compileEpub": "Compilar para EPUB (e-book)",
+    "compileDocx": "Compilar para Word (.docx)"
   },
   "history": {
     "title": "Histórico",

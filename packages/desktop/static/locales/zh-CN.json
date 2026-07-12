@@ -1480,7 +1480,10 @@
     "saveTip": "保存所有打开的文件，并在历史中记录快照",
     "saveSnapshotMessage": "手动保存",
     "saved": "项目已保存 — 快照已记录到历史。",
-    "actionFailed": "该更改未能保存：{error}"
+    "actionFailed": "该更改未能保存：{error}",
+    "compileMd": "编译为 Markdown",
+    "compileEpub": "编译为 EPUB（电子书）",
+    "compileDocx": "编译为 Word（.docx）"
   },
   "history": {
     "title": "历史",

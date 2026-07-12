@@ -313,9 +313,14 @@ export interface IpcSendChannels {
       viewMode: 'page' | 'corkboard' | 'outline' | 'timeline'
       currentUnitId?: string
       currentFile?: string
+      openTabs?: string[]
+      unsavedTabs?: string[]
+      selection?: { text: string; file?: string }
     } | null
   ]
   'mt::ai:edit-resolved': [resolution: IAgentEditResolution]
+  'mt::ai:mode-changed': [event: { mode: AgentPermissionMode }]
+  'mt::novel:project-changed': [event: { root: string | null }]
   'mt::window-tab-closed': [pathname: string]
   'mt::window-toggle-always-on-top': []
   'mt::window::drop': [payload: unknown]

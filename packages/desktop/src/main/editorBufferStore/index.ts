@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import log from 'electron-log'
 import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import { TypedEmitter } from '@shared/types/typedEmitter'
 
@@ -94,7 +95,10 @@ class EditorBufferStore extends TypedEmitter<EditorBufferStoreEvents> {
     // saved, we can delete its saved buffer.
 
     if (!restoreBufferId) {
-      console.warn('No restoreBufferId found for window, skipping buffer cleanup')
+      // Normal for windows that never owned a session buffer (settings,
+      // detached Biscuit, editor windows without restorable tabs) — there
+      // is simply nothing to clean up.
+      log.debug('[bufferStore] Window closed without a session buffer — nothing to clean up')
       return
     }
 

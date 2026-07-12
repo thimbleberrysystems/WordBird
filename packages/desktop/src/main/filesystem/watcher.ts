@@ -217,7 +217,15 @@ class Watcher {
   }
 
   watch(win: BrowserWindow, watchPath: string, type: WatchType = 'dir'): () => void {
-    const usePolling = isOsx ? true : this._preferences.getItem('watcherUsePolling')
+    // Windows-mounted paths under WSL (/mnt/*) sit on a 9p filesystem where
+    // inotify never fires — without polling the tree silently goes stale
+    // (files agents create/delete would never appear).
+    const isWslMount =
+      process.platform === 'linux' &&
+      /^\/mnt\/[a-z]\//i.test(watchPath) &&
+      (!!process.env.WSL_DISTRO_NAME || !!process.env.WSL_INTEROP)
+    const usePolling =
+      isOsx || isWslMount ? true : this._preferences.getItem('watcherUsePolling')
 
     const id = getUniqueId()
 

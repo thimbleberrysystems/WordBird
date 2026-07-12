@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
-import { launchWithMarkdown, clickMenuById } from './helpers'
+import { launchWithMarkdown, clickMenuById, closeElectron } from './helpers'
 
 // Note: applying inline format marks (bold/italic/etc.) requires a live Muya
 // selection driven by user gestures. Setting DOM selection from outside the
@@ -33,7 +33,7 @@ test.describe('Inline format menu wiring', () => {
   })
 
   test.afterAll(async() => {
-    if (app) await app.close()
+    if (app) await closeElectron(app)
   })
 
   for (const id of formatMenuIds) {

@@ -1480,7 +1480,10 @@
     "saveTip": "Enregistrer tous les fichiers ouverts et consigner un instantané dans l’Historique",
     "saveSnapshotMessage": "Enregistrement manuel",
     "saved": "Projet enregistré — instantané consigné dans l’Historique.",
-    "actionFailed": "Cette modification n'a pas été enregistrée : {error}"
+    "actionFailed": "Cette modification n'a pas été enregistrée : {error}",
+    "compileMd": "Compiler en Markdown",
+    "compileEpub": "Compiler en EPUB (livre numérique)",
+    "compileDocx": "Compiler en Word (.docx)"
   },
   "history": {
     "title": "Historique",

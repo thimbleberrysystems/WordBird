@@ -155,6 +155,8 @@ export interface INovelCompileOptions {
   separators?: INovelSeparators
   /** When set, also write the compiled manuscript to this absolute path. */
   outputPath?: string
+  /** Output format for outputPath (default 'md'; epub/docx via BookExporter). */
+  format?: 'md' | 'epub' | 'docx'
 }
 
 export interface INovelCompileResult {

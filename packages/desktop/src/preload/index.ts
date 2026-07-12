@@ -347,6 +347,9 @@ const aiAPI = {
     viewMode: 'page' | 'corkboard' | 'outline' | 'timeline'
     currentUnitId?: string
     currentFile?: string
+    openTabs?: string[]
+    unsavedTabs?: string[]
+    selection?: { text: string; file?: string }
   } | null) => ipcRenderer.send('mt::ai:set-session-context', context),
   onApprovalResolved: (handler: (event: { id: string }) => void) => {
     const subscription = (_e: unknown, event: { id: string }) => handler(event)
@@ -407,6 +410,16 @@ const aiAPI = {
     const subscription = () => handler()
     ipcRenderer.on('mt::ai:pending-edits-cleared', subscription)
     return () => ipcRenderer.removeListener('mt::ai:pending-edits-cleared', subscription)
+  },
+  onModeChanged: (handler: (event: { mode: AgentPermissionMode }) => void) => {
+    const subscription = (_e: unknown, event: { mode: AgentPermissionMode }) => handler(event)
+    ipcRenderer.on('mt::ai:mode-changed', subscription)
+    return () => ipcRenderer.removeListener('mt::ai:mode-changed', subscription)
+  },
+  onProjectChanged: (handler: (event: { root: string | null }) => void) => {
+    const subscription = (_e: unknown, event: { root: string | null }) => handler(event)
+    ipcRenderer.on('mt::novel:project-changed', subscription)
+    return () => ipcRenderer.removeListener('mt::novel:project-changed', subscription)
   },
   onEditProposal: (
     handler: (proposal: {

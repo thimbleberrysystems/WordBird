@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
-import { launchWithMarkdown, clickMenuById, setSourceMarkdown, placeCaretInEditor } from './helpers'
+import { launchWithMarkdown, clickMenuById, setSourceMarkdown, placeCaretInEditor, closeElectron } from './helpers'
 
 const resetTo = async(page: Page, app: ElectronApplication, text: string) => {
   await setSourceMarkdown(page, app, text + '\n')
@@ -18,7 +18,7 @@ test.describe('Paragraph block transforms', () => {
   })
 
   test.afterAll(async() => {
-    if (app) await app.close()
+    if (app) await closeElectron(app)
   })
 
   test.beforeEach(async() => {

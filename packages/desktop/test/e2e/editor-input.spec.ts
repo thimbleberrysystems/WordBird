@@ -5,7 +5,7 @@ import {
   getMarkdownContent,
   enterSourceMode,
   exitSourceMode,
-  typeIntoEditor
+  typeIntoEditor, closeElectron
 } from './helpers'
 
 test.describe('Editor input and source-mode roundtrip', () => {
@@ -19,7 +19,7 @@ test.describe('Editor input and source-mode roundtrip', () => {
   })
 
   test.afterAll(async() => {
-    if (app) await app.close()
+    if (app) await closeElectron(app)
   })
 
   test('Initial markdown is loaded into the editor', async() => {

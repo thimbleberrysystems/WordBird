@@ -76,7 +76,17 @@ export interface ISessionContext {
   viewMode: 'page' | 'corkboard' | 'outline' | 'timeline'
   currentUnitId?: string
   currentFile?: string
+  /** Every open tab (filenames), so agents see the writer's working set. */
+  openTabs?: string[]
+  /** Tabs with unsaved changes — the disk may lag what the writer sees. */
+  unsavedTabs?: string[]
+  /** Text the writer currently has highlighted in the editor. */
+  selection?: { text: string; file?: string }
 }
+
+/** Cap for the selection excerpt carried into the brief. */
+const MAX_SELECTION_CHARS = 400
+const MAX_TAB_NAMES = 8
 
 /** How much of the previous scene's ending a drafter gets for continuity. */
 const HANDOFF_WORDS = 500
@@ -170,16 +180,44 @@ export class ContextBuilder {
         )
       }
 
-      // Where the writer is looking right now (view + open scene), when known.
+      // Where the writer is looking right now (view + open scene + working
+      // set + live selection), when known.
       if (this._sessionContext) {
-        const vantageBits: string[] = [`${this._sessionContext.viewMode} view`]
-        if (this._sessionContext.currentUnitId) {
-          const open = leaves.find((l) => l.id === this._sessionContext?.currentUnitId)
+        const ctx = this._sessionContext
+        const vantageBits: string[] = [`${ctx.viewMode} view`]
+        if (ctx.currentUnitId) {
+          const open = leaves.find((l) => l.id === ctx.currentUnitId)
           if (open) vantageBits.push(`open scene: "${open.title}" <id:${open.id}>`)
-        } else if (this._sessionContext.currentFile) {
-          vantageBits.push(`open file: ${this._sessionContext.currentFile}`)
+        } else if (ctx.currentFile) {
+          vantageBits.push(`open file: ${ctx.currentFile}`)
         }
-        sections.push(`WRITER'S VANTAGE: ${vantageBits.join(' · ')}`)
+        if (ctx.openTabs && ctx.openTabs.length > 0) {
+          const shown = ctx.openTabs.slice(0, MAX_TAB_NAMES).join(', ')
+          const more = ctx.openTabs.length > MAX_TAB_NAMES
+            ? ` +${ctx.openTabs.length - MAX_TAB_NAMES} more`
+            : ''
+          vantageBits.push(`open tabs: ${shown}${more}`)
+        }
+        if (ctx.unsavedTabs && ctx.unsavedTabs.length > 0) {
+          vantageBits.push(
+            `UNSAVED changes in: ${ctx.unsavedTabs.slice(0, MAX_TAB_NAMES).join(', ')} ` +
+            '(the files on disk may lag what the writer sees)'
+          )
+        }
+        const lines = [`WRITER'S VANTAGE: ${vantageBits.join(' · ')}`]
+        const selected = ctx.selection?.text?.trim()
+        if (selected) {
+          const excerpt =
+            selected.length > MAX_SELECTION_CHARS
+              ? selected.slice(0, MAX_SELECTION_CHARS) + '…'
+              : selected
+          lines.push(
+            `SELECTED TEXT${ctx.selection?.file ? ` (in ${ctx.selection.file})` : ''} — when ` +
+            'the writer says "this"/"it", they usually mean this passage:\n' +
+            `"${excerpt}"`
+          )
+        }
+        sections.push(lines.join('\n'))
       }
 
       if (leaves.length === 0 && totalWords === 0) {

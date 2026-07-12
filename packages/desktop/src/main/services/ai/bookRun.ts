@@ -39,6 +39,12 @@ export interface BookRunDeps {
   maxContinuations: number
   /** Safety ceiling on tokens per run. */
   tokenCeiling: number
+  /**
+   * Ask the writer whether to grant another budget block when a safety
+   * ceiling is reached (surfaces as an approval card). Approved → the run
+   * resumes with a fresh block; declined/absent → the run pauses.
+   */
+  requestContinuation?: (reason: string) => Promise<boolean>
   signal?: AbortSignal
 }
 
@@ -58,21 +64,48 @@ export async function driveBookRun(firstContent: string, deps: BookRunDeps): Pro
   let stalled = 0
   let lastSignature = deps.progressSignature()
   const startTokens = deps.sessionTokens()
+  // Ceilings are blocks, not hard stops: hitting one asks the writer for
+  // another block (approval card) so a long book run resumes seamlessly.
+  let segmentBudget = deps.maxContinuations
+  let tokenBudget = deps.tokenCeiling
   let endNote: string | null = null
+
+  const askForAnotherBlock = async(reason: string): Promise<boolean> => {
+    if (!deps.requestContinuation || deps.signal?.aborted) return false
+    deps.emitStatus('Book run paused at a safety ceiling', reason)
+    try {
+      return await deps.requestContinuation(reason)
+    } catch {
+      return false
+    }
+  }
 
   while (match) {
     if (deps.signal?.aborted || !deps.isAuto()) break
-    if (segments >= deps.maxContinuations) {
-      endNote =
-        `Book run paused after ${segments} segments (safety ceiling). ` +
-        'Say **continue** to keep going.'
-      break
+    if (segments >= segmentBudget) {
+      const granted = await askForAnotherBlock(
+        `The book run has used ${segments} auto-continued segments. Keep going?`
+      )
+      if (!granted) {
+        endNote =
+          `Book run paused after ${segments} segments (safety ceiling). ` +
+          'Say **continue** to keep going.'
+        break
+      }
+      segmentBudget = segments + deps.maxContinuations
     }
-    if (deps.sessionTokens() - startTokens > deps.tokenCeiling) {
-      endNote =
-        'Book run paused — it reached its token budget for one run. ' +
-        'Say **continue** to keep going.'
-      break
+    const spent = deps.sessionTokens() - startTokens
+    if (spent > tokenBudget) {
+      const granted = await askForAnotherBlock(
+        `The book run has consumed roughly ${Math.round(spent / 1000)}k tokens. Keep going?`
+      )
+      if (!granted) {
+        endNote =
+          'Book run paused — it reached its token budget for one run. ' +
+          'Say **continue** to keep going.'
+        break
+      }
+      tokenBudget = spent + deps.tokenCeiling
     }
 
     segments += 1

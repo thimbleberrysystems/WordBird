@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
-import { launchWithDoc } from './helpers'
+import { launchWithDoc, closeElectron } from './helpers'
 
 type FixtureAssertion = (ctx: { page: Page }) => Promise<void>
 
@@ -18,7 +18,7 @@ const runFixture = (name: string, relativePath: string, assertion: FixtureAssert
     })
 
     test.afterAll(async() => {
-      if (app) await app.close()
+      if (app) await closeElectron(app)
     })
 
     test(`${name} renders expected DOM`, async() => {

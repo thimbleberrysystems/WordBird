@@ -35,6 +35,25 @@
       </template>
     </div>
 
+    <!-- Biscuit's OWN recent tool use: small tasks are done directly
+         (no spawn), and that work must be just as visible as workers'. -->
+    <div
+      v-if="rootRecentTools.length > 0"
+      class="tree-detail tree-detail--root"
+    >
+      <div
+        v-for="(tool, i) in rootRecentTools"
+        :key="i"
+        class="detail-tool"
+        :title="tool.detail"
+      >
+        {{ tool.label }}<span
+          v-if="tool.detail"
+          class="log-detail"
+        > — {{ tool.detail }}</span>
+      </div>
+    </div>
+
     <!-- Children: one row per sub-agent, expandable to task + tool use. -->
     <div
       v-for="agent in agents"
@@ -122,6 +141,7 @@
     <details
       v-if="activity.length > 0"
       class="agent-log"
+      :open="runState !== 'idle'"
     >
       <summary>{{ t('biscuit.activityLog') }}</summary>
       <div
@@ -176,6 +196,16 @@ const rootDotClass = computed(() => {
   if (props.runState === 'paused') return 'agent-dot--paused'
   return 'agent-dot--idle'
 })
+
+// The supervisor's own tool calls (activity kind 'tool', "Biscuit: <tool>")
+// — visible even when no workers were spawned, so direct work never looks
+// like idleness.
+const rootRecentTools = computed(() =>
+  props.activity
+    .filter((event) => event.kind === 'tool')
+    .slice(-4)
+    .map((event) => ({ label: event.label, detail: event.detail }))
+)
 
 const rootMeta = computed(() => {
   const running = props.agents.filter((a) => a.status === 'running').length

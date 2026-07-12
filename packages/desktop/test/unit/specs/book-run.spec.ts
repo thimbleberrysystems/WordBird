@@ -95,6 +95,60 @@ describe('driveBookRun', () => {
     expect(result).toBe('The novella is complete.')
   })
 
+  it('a ceiling asks the writer and RESUMES with a fresh block when approved', async() => {
+    let asks = 0
+    const d = deps({
+      maxContinuations: 2,
+      requestContinuation: async(reason: string) => {
+        asks += 1
+        expect(reason).toContain('segments')
+        // Grant one extra block, then decline.
+        return asks === 1
+      }
+    })
+    d.invokeNext = async() => {
+      d.invocations += 1
+      // Finish cleanly during the granted block.
+      return d.invocations < 4 ? 'more\nCONTINUE: next' : 'The novella is complete.'
+    }
+    const result = await driveBookRun('start\nCONTINUE: scene 1', d)
+    expect(asks).toBe(1)
+    expect(d.invocations).toBe(4)
+    expect(result).toBe('The novella is complete.')
+  })
+
+  it('a declined ceiling pauses the run with the resume hint', async() => {
+    const d = deps({
+      maxContinuations: 2,
+      requestContinuation: async() => false
+    })
+    const result = await driveBookRun('start\nCONTINUE: scene 1', d)
+    expect(d.invocations).toBe(2)
+    expect(result).toContain('safety ceiling')
+    expect(result).toContain('continue')
+  })
+
+  it('the token ceiling also asks and extends on approval', async() => {
+    let tokens = 0
+    let asks = 0
+    const d = deps({
+      sessionTokens: () => {
+        tokens += 600
+        return tokens
+      },
+      tokenCeiling: 1000,
+      maxContinuations: 10,
+      requestContinuation: async(reason: string) => {
+        asks += 1
+        expect(reason.toLowerCase()).toContain('token')
+        return asks <= 1
+      }
+    })
+    const result = await driveBookRun('start\nCONTINUE: scene 1', d)
+    expect(asks).toBeGreaterThanOrEqual(2)
+    expect(result).toContain('token budget')
+  })
+
   it('detects two stalled segments and pauses', async() => {
     const d = deps({ progressSignature: () => 'frozen', maxContinuations: 10 })
     const result = await driveBookRun('start\nCONTINUE: scene 1', d)

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
-import { launchWithMarkdown, clickMenuById } from './helpers'
+import { launchWithMarkdown, clickMenuById, closeElectron } from './helpers'
 
 test.describe('View modes', () => {
   let app: ElectronApplication
@@ -13,7 +13,7 @@ test.describe('View modes', () => {
   })
 
   test.afterAll(async() => {
-    if (app) await app.close()
+    if (app) await closeElectron(app)
   })
 
   test('Toggle focus mode adds and removes .focus on .editor-wrapper', async() => {

@@ -1480,7 +1480,10 @@
     "saveTip": "開いているすべてのファイルを保存し、履歴にスナップショットを記録",
     "saveSnapshotMessage": "手動保存",
     "saved": "プロジェクトを保存 — 履歴にスナップショットを記録しました。",
-    "actionFailed": "この変更は保存されませんでした：{error}"
+    "actionFailed": "この変更は保存されませんでした：{error}",
+    "compileMd": "Markdownに書き出し",
+    "compileEpub": "EPUBに書き出し（電子書籍）",
+    "compileDocx": "Wordに書き出し（.docx）"
   },
   "history": {
     "title": "履歴",

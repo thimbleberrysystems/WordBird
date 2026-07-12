@@ -1482,7 +1482,10 @@
     "saveTip": "儲存所有開啟的檔案，並在歷史中記錄快照",
     "saveSnapshotMessage": "手動儲存",
     "saved": "專案已儲存 — 快照已記錄到歷史。",
-    "actionFailed": "該變更未能儲存：{error}"
+    "actionFailed": "該變更未能儲存：{error}",
+    "compileMd": "編譯為 Markdown",
+    "compileEpub": "編譯為 EPUB（電子書）",
+    "compileDocx": "編譯為 Word（.docx）"
   },
   "history": {
     "title": "歷史",

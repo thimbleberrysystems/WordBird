@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
-import { launchWithMarkdown, sendIpcToRenderer } from './helpers'
+import { launchWithMarkdown, sendIpcToRenderer, closeElectron } from './helpers'
 
 test.describe('Command palette', () => {
   let app: ElectronApplication
@@ -13,7 +13,7 @@ test.describe('Command palette', () => {
   })
 
   test.afterAll(async() => {
-    if (app) await app.close()
+    if (app) await closeElectron(app)
   })
 
   test('IPC opens the palette', async() => {

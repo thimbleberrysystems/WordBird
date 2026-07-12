@@ -485,6 +485,7 @@ onBeforeUnmount(() => {
   unsubTokens?.()
   if (approvalTimer) clearInterval(approvalTimer)
   stopStallWatchdog()
+  unsubModeChanged?.()
   bus.off('biscuit-ask', handleBiscuitAsk)
   bus.off('biscuit-retry-task', handleRetryTask)
 })
@@ -545,19 +546,24 @@ const normalizeMode = (value: string | null): AgentPermissionMode => {
   if (value === 'approvals') return 'approvals'
   return 'approvals'
 }
-// Every fresh session starts in APPROVALS mode (the safe default: every
-// edit waits for the writer's OK). A reload keeps the session's mode, and
-// a detached Biscuit window adopts the current session mode.
-const MODE_CLAIM_KEY = 'biscuit-window-mode'
-const initialMode = ((): AgentPermissionMode => {
-  if (props.detached || sessionStorage.getItem(MODE_CLAIM_KEY)) {
-    return normalizeMode(localStorage.getItem('biscuit-mode'))
+// The permission mode is a PER-PROJECT preference: main persists it in the
+// project's .wordbird/agent-state/session.json, so a project reopens in the
+// mode the writer last used with it (a brand-new project starts in the safe
+// approvals default). The renderer mirrors main's answer; localStorage keeps
+// a copy only for the auto-apply check in editor.vue.
+const mode = ref<AgentPermissionMode>(normalizeMode(localStorage.getItem('biscuit-mode')))
+
+const refreshModeFromMain = async (): Promise<void> => {
+  try {
+    const { mode: saved } = await window.electron.ai.getMode()
+    mode.value = normalizeMode(saved)
+    localStorage.setItem('biscuit-mode', mode.value)
+  } catch {
+    // Main not ready yet — the localStorage mirror stands in.
   }
-  localStorage.setItem('biscuit-mode', 'approvals')
-  return 'approvals'
-})()
-sessionStorage.setItem(MODE_CLAIM_KEY, '1')
-const mode = ref<AgentPermissionMode>(initialMode)
+}
+// Adopt the saved mode when the active project changes (and at mount below).
+watch(() => useProjectStore().currentProjectPath, refreshModeFromMain)
 
 const currentModeInfo = computed(
   () => MODES.find((m) => m.id === mode.value) ?? MODES[1]
@@ -583,9 +589,46 @@ const cycleMode = (): void => {
 // Ctrl+Shift chord (no third key) arms the mode cycle — disarmed the moment
 // any other key joins so Ctrl+Shift+O etc. never mis-fire; fires on release.
 let modeChordArmed = false
+// ---- Prompt history (shell-style): ArrowUp recalls earlier prompts,
+// ArrowDown walks back toward the draft you were typing. Only fires when
+// the caret is at the very start/end so multiline editing is untouched.
+let historyIndex = -1
+let draftBeforeHistory = ''
+
+const promptHistory = (): string[] =>
+  aiMessages.value
+    .filter((m) => m.role === 'user' && !m.content.startsWith('⤷'))
+    .map((m) => m.content)
+
+const recallHistory = (direction: -1 | 1, textarea: HTMLTextAreaElement): void => {
+  const history = promptHistory()
+  if (history.length === 0) return
+  if (historyIndex === -1) {
+    if (direction === 1) return
+    draftBeforeHistory = userInput.value
+    historyIndex = history.length
+  }
+  const next = historyIndex + direction
+  if (next >= history.length) {
+    // Walked past the newest entry — restore the draft.
+    historyIndex = -1
+    userInput.value = draftBeforeHistory
+    return
+  }
+  if (next < 0) return
+  historyIndex = next
+  userInput.value = history[next]
+  // Caret at the end so continued typing appends naturally.
+  nextTick(() => {
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length)
+  })
+}
+
 const handleInputKeydown = (event: KeyboardEvent): void => {
   if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
     event.preventDefault()
+    historyIndex = -1
+    draftBeforeHistory = ''
     sendMessage()
     return
   }
@@ -593,6 +636,25 @@ const handleInputKeydown = (event: KeyboardEvent): void => {
     event.preventDefault()
     cycleMode()
     return
+  }
+  if (
+    (event.key === 'ArrowUp' || event.key === 'ArrowDown') &&
+    !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey
+  ) {
+    const textarea = event.target as HTMLTextAreaElement
+    const empty = userInput.value.length === 0
+    const caretAtStart = textarea.selectionStart === 0 && textarea.selectionEnd === 0
+    const caretAtEnd =
+      textarea.selectionStart === textarea.value.length &&
+      textarea.selectionEnd === textarea.value.length
+    if (
+      (event.key === 'ArrowUp' && (empty || caretAtStart || historyIndex !== -1)) ||
+      (event.key === 'ArrowDown' && historyIndex !== -1 && (empty || caretAtEnd))
+    ) {
+      event.preventDefault()
+      recallHistory(event.key === 'ArrowUp' ? -1 : 1, textarea)
+      return
+    }
   }
   if ((event.key === 'Shift' && event.ctrlKey) || (event.key === 'Control' && event.shiftKey)) {
     modeChordArmed = true
@@ -796,6 +858,7 @@ watch(pendingApproval, (request) => {
 })
 
 let unsubApproval: (() => void) | null = null
+let unsubModeChanged: (() => void) | null = null
 let unsubApprovalResolved: (() => void) | null = null
 let unsubUsage: (() => void) | null = null
 let unsubPlan: (() => void) | null = null
@@ -804,12 +867,18 @@ let unsubQuestion: (() => void) | null = null
 let unsubTokens: (() => void) | null = null
 
 onMounted(() => {
-  if (aiIsConnected.value) setMode(mode.value)
+  // Main owns the per-project mode — adopt it (never push the local mirror).
+  refreshModeFromMain()
   agentsStore.init()
   initializeHistory()
   unsubApproval = window.electron.ai.onApprovalRequest((request) => {
     pendingApproval.value = request
   })
+  // Mode changes broadcast from main keep every window's mode line in sync.
+  unsubModeChanged = window.electron.ai.onModeChanged?.(({ mode: m }) => {
+    mode.value = normalizeMode(m)
+    localStorage.setItem('biscuit-mode', mode.value)
+  }) ?? null
   // Approvals broadcast to every window; whoever answers clears the rest.
   unsubApprovalResolved = window.electron.ai.onApprovalResolved(({ id }) => {
     if (pendingApproval.value?.id === id) pendingApproval.value = null

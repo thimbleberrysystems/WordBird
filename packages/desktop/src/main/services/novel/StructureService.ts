@@ -675,7 +675,17 @@ export class StructureService {
       const outputPath = options.outputPath
       if (outputPath) {
         await fsPromises.mkdir(path.dirname(outputPath), { recursive: true })
-        await fsPromises.writeFile(outputPath, content, 'utf8')
+        const format = options.format ?? 'md'
+        if (format === 'md') {
+          await fsPromises.writeFile(outputPath, content, 'utf8')
+        } else {
+          const { renderBook } = await import('./BookExporter')
+          const { readProjectMeta } = await import('./ProjectMeta')
+          const rendered = await renderBook(content, format, {
+            title: readProjectMeta(root).name
+          })
+          await fsPromises.writeFile(outputPath, rendered)
+        }
       }
       return { ok: true, content, outputPath, wordCount: countWords(content) }
     } catch (error) {

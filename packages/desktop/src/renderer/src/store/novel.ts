@@ -135,11 +135,11 @@ export const useNovelStore = defineStore('novel', () => {
     return mutate(() => window.electron.novel.deleteUnit(rootPath, unitId, deleteFiles))
   }
 
-  async function compile(): Promise<INovelCompileResult | null> {
+  async function compile(format: 'md' | 'epub' | 'docx' = 'md'): Promise<INovelCompileResult | null> {
     if (!root.value) return null
     const name = window.path.basename(root.value) || 'manuscript'
-    const outputPath = window.path.join(root.value, 'exports', `${name}.md`)
-    return window.electron.novel.compile(root.value, { outputPath })
+    const outputPath = window.path.join(root.value, 'exports', `${name}.${format}`)
+    return window.electron.novel.compile(root.value, { outputPath, format })
   }
 
   function setViewMode(mode: NovelViewMode): void {
@@ -148,8 +148,24 @@ export const useNovelStore = defineStore('novel', () => {
     sendSessionContext()
   }
 
-  // Tell Biscuit where the writer is looking (view + open scene) so its
-  // help matches the writer's current altitude. Fire-and-forget.
+  // The writer's live selection (fed by SelectionActions; '' when cleared).
+  const currentSelection = ref('')
+  let selectionSendTimer: ReturnType<typeof setTimeout> | null = null
+
+  /** Record what the writer highlighted; debounced into the session context. */
+  function noteSelection(text: string): void {
+    if (text === currentSelection.value) return
+    currentSelection.value = text
+    if (selectionSendTimer) clearTimeout(selectionSendTimer)
+    selectionSendTimer = setTimeout(() => {
+      selectionSendTimer = null
+      sendSessionContext()
+    }, 500)
+  }
+
+  // Tell Biscuit where the writer is looking (view + open scene + working
+  // set + selection) so its help matches the writer's current altitude.
+  // Fire-and-forget.
   function sendSessionContext(): void {
     try {
       const editorStore = useEditorStore()
@@ -159,10 +175,28 @@ export const useNovelStore = defineStore('novel', () => {
           (u) => u.path && window.path.join(root.value as string, u.path) === pathname
         )
         : undefined
+      const tabName = (f: { filename?: string; pathname?: string }): string =>
+        f.filename || (f.pathname ? window.path.basename(f.pathname) : '') || 'untitled'
+      const tabs = editorStore.tabs as Array<{
+        filename?: string
+        pathname?: string
+        isSaved?: boolean
+      }>
+      const selected = currentSelection.value.trim()
       window.electron.ai.setSessionContext({
         viewMode: viewMode.value,
         currentUnitId: unit?.id,
-        currentFile: pathname ?? undefined
+        currentFile: pathname ?? undefined,
+        openTabs: tabs.map(tabName).filter(Boolean),
+        unsavedTabs: tabs.filter((f) => f.isSaved === false).map(tabName),
+        selection: selected
+          ? {
+            text: selected.slice(0, 400),
+            file: editorStore.currentFile
+              ? tabName(editorStore.currentFile as { filename?: string; pathname?: string })
+              : undefined
+          }
+          : undefined
       })
     } catch {
       // Context is advisory — never let it break the UI.
@@ -215,6 +249,7 @@ export const useNovelStore = defineStore('novel', () => {
     deleteUnit,
     compile,
     openUnit,
-    sendSessionContext
+    sendSessionContext,
+    noteSelection
   }
 })

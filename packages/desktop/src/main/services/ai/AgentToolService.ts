@@ -169,6 +169,25 @@ export class AgentToolPackLoader {
   }
 }
 
+/**
+ * Tools that change the project on disk directly (files/structure/metadata):
+ * after any of them succeeds, the renderer must refresh its trees so the
+ * writer sees the change immediately — never on the next manual refresh.
+ */
+const PROJECT_MUTATING_TOOLS = new Set([
+  'propose_new_unit',
+  'restructure_unit',
+  'update_unit_meta',
+  'delete_unit',
+  'create_folder',
+  'move_file',
+  'delete_file',
+  'update_summary',
+  'set_writing_method',
+  'save_plan',
+  'update_plan'
+])
+
 export class AgentToolService {
   private readonly _handlers = new Map<string, AgentToolHandler>()
   private readonly _tools = new Map<string, LoadedTool>()
@@ -177,9 +196,15 @@ export class AgentToolService {
   private _planProposalEmitter: PlanProposalEmitter | null = null
   private _planSavedEmitter: PlanSavedEmitter | null = null
   private _writerQuestionEmitter: WriterQuestionEmitter | null = null
+  private _projectChangedEmitter: ((root: string | null) => void) | null = null
 
   setEditProposalEmitter(emitter: EditProposalEmitter): void {
     this._editProposalEmitter = emitter
+  }
+
+  /** Fired after any tool that mutates project files/structure succeeds. */
+  setProjectChangedEmitter(emitter: (root: string | null) => void): void {
+    this._projectChangedEmitter = emitter
   }
 
   setPlanProposalEmitter(emitter: PlanProposalEmitter): void {
@@ -277,6 +302,15 @@ export class AgentToolService {
           signal: config?.signal
         }
         const result = await handler(args, context)
+
+        // Direct disk mutations must reflect in the UI immediately.
+        if (this._projectChangedEmitter && PROJECT_MUTATING_TOOLS.has(definition.name)) {
+          try {
+            this._projectChangedEmitter(this._currentProjectRoot)
+          } catch {
+            // UI refresh is advisory — never fail the tool over it.
+          }
+        }
 
         if (this._editProposalEmitter && isEditProposalPayload(result)) {
           await this._editProposalEmitter(result)

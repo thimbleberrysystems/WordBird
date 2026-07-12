@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
-import { launchWithMarkdown, clickMenuById, expectNoRendererErrors } from './helpers'
+import { launchWithMarkdown, clickMenuById, expectNoRendererErrors, closeElectron } from './helpers'
 
 // Regression guard: the Biscuit panel and the Agents sidebar view render
 // without renderer exceptions, and the View menu can always bring the
@@ -16,7 +16,7 @@ test.describe('Biscuit panel + Agents sidebar', () => {
   })
 
   test.afterAll(async() => {
-    if (app) await app.close()
+    if (app) await closeElectron(app)
   })
 
   test('Biscuit panel renders and toggles from the View menu', async() => {

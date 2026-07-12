@@ -185,8 +185,21 @@ onMounted(async () => {
   window.electron.ai.onBiscuitReattach(() => {
     layoutStore.SET_LAYOUT({ showRightPrompt: true })
   })
-  // Where the writer is looking follows the open file too.
+  // An agent (or an accepted edit) changed project files/structure on disk —
+  // refresh the binder/views immediately instead of waiting for the watcher.
+  window.electron.ai.onProjectChanged?.(() => {
+    novelStore.refresh()
+  })
+  // Where the writer is looking follows the open file, the tab set, and
+  // save-state (unsaved tabs mean disk lags the screen).
   watch(currentFile, () => novelStore.sendSessionContext())
+  watch(
+    () =>
+      editorStore.tabs
+        .map((f) => `${f.pathname || f.filename}:${(f as { isSaved?: boolean }).isSaved}`)
+        .join('|'),
+    () => novelStore.sendSessionContext()
+  )
 
   // Main broadcasts every connection transition — mirror it so the UI and
   // the reconnect guards never drift from reality.

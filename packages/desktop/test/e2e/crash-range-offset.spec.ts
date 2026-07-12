@@ -23,7 +23,7 @@ import {
   clearRendererErrors,
   launchWithMarkdown,
   placeCaretInEditor,
-  typeIntoEditor
+  typeIntoEditor, closeElectron
 } from './helpers'
 
 test.describe('Crash: setStart Range offset', () => {
@@ -39,7 +39,7 @@ test.describe('Crash: setStart Range offset', () => {
   })
 
   test.afterEach(async() => {
-    if (app) await app.close()
+    if (app) await closeElectron(app)
   })
 
   // Recipe from #2526.
@@ -217,7 +217,7 @@ test.describe('Crash: paste-induced setCursorRange', () => {
   })
 
   test.afterEach(async() => {
-    if (app) await app.close()
+    if (app) await closeElectron(app)
   })
 
   test('Paste rich HTML into mid-paragraph does not crash', async() => {
@@ -302,7 +302,7 @@ test.describe('Crash counter sanity', () => {
       )
       expect(captured, 'expected the renderer-thrown error to reach the IPC sink').not.toBeNull()
     } finally {
-      await app.close()
+      await closeElectron(app)
     }
   })
 })

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
-import { launchElectron } from './helpers'
+import { launchElectron, closeElectron } from './helpers'
 
 // Asserts the renderer is actually sandboxed: contextIsolation: true,
 // nodeIntegration: false, sandbox: true. If any of these regress, the bridge
@@ -18,7 +18,7 @@ test.describe('Renderer sandboxing', () => {
   })
 
   test.afterAll(async() => {
-    if (app) await app.close()
+    if (app) await closeElectron(app)
   })
 
   test('contextBridge active, nodeIntegration disabled, no preload leakage', async() => {

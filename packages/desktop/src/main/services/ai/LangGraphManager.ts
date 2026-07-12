@@ -69,13 +69,39 @@ export class LangGraphManager {
     { resolve: (approved: boolean) => void; timer: NodeJS.Timeout }
   >()
 
+  /** Which project's saved mode is currently loaded (lazy, follows the active project). */
+  private _modeLoadedFor: string | null = null
+
   get permissionMode(): AgentPermissionMode {
+    this._ensureModeLoaded()
     return this._permissionMode
+  }
+
+  /**
+   * The permission mode is a PER-PROJECT preference: each project remembers
+   * how the writer last worked with it (`.wordbird/agent-state/session.json`).
+   * Loaded lazily so switching projects picks up that project's mode.
+   */
+  private _ensureModeLoaded(): void {
+    const dir = this._agentStateDir()
+    if (this._modeLoadedFor === dir) return
+    this._modeLoadedFor = dir
+    const saved = this._readSessionFile().permissionMode
+    if (saved === 'ask' || saved === 'approvals' || saved === 'auto') {
+      this._permissionMode = saved
+    } else {
+      this._permissionMode = 'approvals'
+    }
+    this._orchestrator?.setMode(this._permissionMode)
   }
 
   setPermissionMode(mode: AgentPermissionMode): void {
     this._permissionMode = mode
+    this._modeLoadedFor = this._agentStateDir()
+    this._writeSessionFile({ permissionMode: mode })
     this._orchestrator?.setMode(mode)
+    // Every window shows the mode (editor panel + detached Biscuit).
+    this._broadcast('mt::ai:mode-changed', { mode })
   }
 
   resolveApproval(approvalId: string, approved: boolean): boolean {
@@ -121,27 +147,36 @@ export class LangGraphManager {
     return path.join(this._agentStateDir(), 'session.json')
   }
 
-  private _loadOrCreateThreadId(): string {
+  private _readSessionFile(): Record<string, unknown> {
     try {
-      const raw = fs.readFileSync(this._sessionPath(), 'utf8')
-      const parsed = JSON.parse(raw) as { threadId?: unknown }
-      if (typeof parsed.threadId === 'string' && parsed.threadId) {
-        return parsed.threadId
-      }
+      return JSON.parse(fs.readFileSync(this._sessionPath(), 'utf8')) as Record<string, unknown>
     } catch {
-      // First run for this project — fall through and create one.
+      return {}
     }
+  }
+
+  private _writeSessionFile(patch: Record<string, unknown>): void {
+    try {
+      fs.mkdirSync(this._agentStateDir(), { recursive: true })
+      fs.writeFileSync(
+        this._sessionPath(),
+        JSON.stringify({ ...this._readSessionFile(), ...patch }),
+        'utf8'
+      )
+    } catch (error) {
+      log.warn('[LangGraphMain] Failed to persist session state:', error)
+    }
+  }
+
+  private _loadOrCreateThreadId(): string {
+    const saved = this._readSessionFile().threadId
+    if (typeof saved === 'string' && saved) return saved
     return this._persistNewThreadId()
   }
 
   private _persistNewThreadId(): string {
     const threadId = `biscuit-${crypto.randomUUID()}`
-    try {
-      fs.mkdirSync(this._agentStateDir(), { recursive: true })
-      fs.writeFileSync(this._sessionPath(), JSON.stringify({ threadId }), 'utf8')
-    } catch (error) {
-      log.warn('[LangGraphMain] Failed to persist thread id:', error)
-    }
+    this._writeSessionFile({ threadId })
     return threadId
   }
 
@@ -435,6 +470,11 @@ export class LangGraphManager {
       await this.fetchModels(provider, apiKey, baseUrl)
 
       await this._loadToolPacks()
+      // Direct file/structure mutations reflect in every window immediately
+      // (binder, corkboard, outline, timeline, files tree).
+      this._agentToolService.setProjectChangedEmitter((changedRoot) => {
+        this._broadcast('mt::novel:project-changed', { root: changedRoot })
+      })
       this._agentToolService.setPlanSavedEmitter(({ planSaved }) => {
         this._broadcast('mt::ai:plan-saved', planSaved)
       })
@@ -856,6 +896,14 @@ export class LangGraphManager {
       emitStatus: (label, detail) => this._emitBookRunStatus(label, detail),
       maxContinuations: this._maxContinuations,
       tokenCeiling: LangGraphManager.BOOK_RUN_TOKEN_CEILING,
+      // A ceiling raises an approval card; approval grants another block so
+      // the run resumes instead of making the writer type "continue".
+      requestContinuation: (reason) =>
+        this._requestApproval({
+          id: `bookrun-${crypto.randomUUID()}`,
+          summary: `CONTINUE BOOK RUN — ${reason}`,
+          spawns: []
+        }),
       signal
     })
   }

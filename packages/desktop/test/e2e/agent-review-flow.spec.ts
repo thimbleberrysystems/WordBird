@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
-import { launchWithMarkdown, sendIpcToRenderer, expectNoRendererErrors } from './helpers'
+import { launchWithMarkdown, sendIpcToRenderer, expectNoRendererErrors, closeElectron } from './helpers'
 
 /**
  * Mocked-AI e2e: drives the real `mt::ai:*` IPC surface from the main
@@ -49,7 +49,7 @@ test.describe('Review queue + question card (mocked AI)', () => {
   })
 
   test.afterAll(async() => {
-    if (app) await app.close()
+    if (app) await closeElectron(app)
   })
 
   test('an edit proposal appears in the review queue', async() => {

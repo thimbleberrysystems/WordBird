@@ -1481,7 +1481,10 @@
     "saveTip": "Save every open file and record a snapshot in History",
     "saveSnapshotMessage": "Manual save",
     "saved": "Project saved — snapshot recorded in History.",
-    "actionFailed": "That change didn't save: {error}"
+    "actionFailed": "That change didn't save: {error}",
+    "compileMd": "Compile to Markdown",
+    "compileEpub": "Compile to EPUB (e-book)",
+    "compileDocx": "Compile to Word (.docx)"
   },
   "history": {
     "title": "History",

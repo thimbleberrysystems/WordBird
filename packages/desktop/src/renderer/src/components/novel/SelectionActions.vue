@@ -46,9 +46,11 @@ import bus from '@/bus'
 import { useEditorStore } from '@/store/editor'
 import { useProjectStore } from '@/store/project'
 import { useLayoutStore } from '@/store/layout'
+import { useNovelStore } from '@/store/novel'
 import { t } from '../../i18n'
 
 const editorStore = useEditorStore()
+const novelStore = useNovelStore()
 const projectStore = useProjectStore()
 const layoutStore = useLayoutStore()
 
@@ -109,10 +111,14 @@ const onSelectionChange = (): void => {
     ) {
       visible.value = false
       customMode.value = false
+      // Selection gone — Biscuit's vantage must not keep a stale excerpt.
+      novelStore.noteSelection('')
       return
     }
     const rect = selection.getRangeAt(0).getBoundingClientRect()
     selectedText = text
+    // Feed the writer's vantage: agents see what is highlighted right now.
+    novelStore.noteSelection(text)
     pos.value = {
       top: Math.max(8, rect.top - 40),
       left: Math.max(8, rect.left + rect.width / 2 - 90)

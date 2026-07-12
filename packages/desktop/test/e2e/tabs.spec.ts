@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
-import { launchWithMarkdown, sendIpcToRenderer } from './helpers'
+import { launchWithMarkdown, sendIpcToRenderer, closeElectron } from './helpers'
 
 const tabSelector = '.tabs-container > li'
 
@@ -15,7 +15,7 @@ test.describe('Tab management', () => {
   })
 
   test.afterAll(async() => {
-    if (app) await app.close()
+    if (app) await closeElectron(app)
   })
 
   test('Initial document loads as a single tab in the tab list', async() => {

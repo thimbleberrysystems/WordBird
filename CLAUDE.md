@@ -270,6 +270,9 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
 - `main/services/novel/SnapshotService.ts` — "mini git" over the whole project
   via isomorphic-git: snapshot/list/non-destructive rewind. Auto-snapshots
   guard every destructive agent operation.
+- `main/services/novel/BookExporter.ts` — whole-book EPUB/DOCX output (pure
+  JS: marked + epub-gen-memory + html-to-docx, no pandoc); the binder's
+  Compile dropdown routes through `mt::novel:compile` with `format`.
 - `main/services/novel/ContinuityService.ts` — `.wordbird/continuity/issues.json`
   issue lifecycle (agents log; resolution requires verified evidence).
 - `main/services/novel/RevisionService.ts` — sweeping revisions ("remove this
@@ -288,9 +291,11 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   in auto mode the supervisor ends a segment with a final `CONTINUE: <next>`
   line while the live plan has unchecked items and the loop grants another
   segment — bounded by maxContinuations (default 25), a token-spend guard,
-  and a two-segment no-progress detector; resumable because progress lives
-  in plan files + structure.json. Pure module (unit-tested); wired in
-  LangGraphManager.sendMessage.
+  and a two-segment no-progress detector. Hitting a ceiling raises an
+  approval card ("CONTINUE BOOK RUN — …"); approval grants another budget
+  block so the run resumes without the writer typing continue. Resumable
+  because progress lives in plan files + structure.json. Pure module
+  (unit-tested); wired in LangGraphManager.sendMessage.
 - `main/services/ai/EditResolutionTracker.ts` — the acceptance feedback
   loop: every edit proposal is tracked (`.wordbird/agent-state/
   pending-edits.json`); the writer's accept/reject decisions flow back via
@@ -339,7 +344,10 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   cannot grow checkpoints.json unboundedly.
 
 ### Safety model
-Three modes (ctrl+shift cycles; fresh sessions start in approvals):
+Three modes (ctrl+shift cycles) — a PER-PROJECT preference persisted in
+`.wordbird/agent-state/session.json` (main is the source of truth; renderer
+mirrors via mt::ai:get-mode + the mt::ai:mode-changed broadcast; brand-new
+projects start in approvals):
 `ask` is mechanically read-only (no write tools bound; only researcher/
 explorer workers spawn, stripped to read+web tools; plans/ is the one
 writable surface). Prose/bible changes always flow through `propose_*`
@@ -364,7 +372,8 @@ heros-journey|seven-point|romancing-the-beat|freeform) — typed reader in
 (writer-editable structural canon). Chosen at project creation
 (recent/index.vue) or recorded by Biscuit via the set_writing_method tool.
 The brief announces WRITING METHOD + WRITER'S VANTAGE (current view + open
-scene, sent via mt::ai:set-session-context); playbooks branch per method
+scene + open/unsaved tabs + the writer's live text selection, sent via
+mt::ai:set-session-context); playbooks branch per method
 under a flexibility prime directive ("DEFAULTS, never doctrine" — locked by
 test). list_structure exposes every unit-meta field the views edit
 (including location and when, so the Timeline is agent-readable).

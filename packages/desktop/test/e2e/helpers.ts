@@ -61,6 +61,29 @@ export interface LaunchOptions {
   suppressErrorDialog?: boolean
 }
 
+/**
+ * Close the app without hanging: specs that typed into the editor leave
+ * unsaved changes, and the window-close veto (the "save changes?" flow)
+ * can stall `app.close()` until the 30s test timeout — every teardown then
+ * shows up as an "error not part of any test". Give the graceful path a
+ * short window, then kill the process outright.
+ */
+export const closeElectron = async(app: ElectronApplication): Promise<void> => {
+  let timer: NodeJS.Timeout | undefined
+  const timeout = new Promise<'timeout'>((resolve) => {
+    timer = setTimeout(() => resolve('timeout'), 5000)
+  })
+  const result = await Promise.race([app.close().then(() => 'closed' as const), timeout])
+  if (timer) clearTimeout(timer)
+  if (result === 'timeout') {
+    try {
+      app.process().kill('SIGKILL')
+    } catch {
+      // Already gone.
+    }
+  }
+}
+
 export const launchElectron = async(
   userArgs?: string[],
   options: LaunchOptions = {}

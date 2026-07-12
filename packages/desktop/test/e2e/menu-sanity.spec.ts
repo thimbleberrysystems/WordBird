@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication } from 'playwright'
-import { launchElectron, waitForMenuReady } from './helpers'
+import { launchElectron, waitForMenuReady, closeElectron } from './helpers'
 
 test.describe('Application menu wiring', () => {
   let app: ElectronApplication
@@ -12,7 +12,7 @@ test.describe('Application menu wiring', () => {
   })
 
   test.afterAll(async() => {
-    if (app) await app.close()
+    if (app) await closeElectron(app)
   })
 
   test('Top-level menu has the expected categories', async() => {

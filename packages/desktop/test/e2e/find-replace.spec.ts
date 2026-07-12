@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
-import { launchWithMarkdown, sendIpcToRenderer, focusEditor } from './helpers'
+import { launchWithMarkdown, sendIpcToRenderer, focusEditor, closeElectron } from './helpers'
 
 test.describe('Find bar', () => {
   let app: ElectronApplication
@@ -16,7 +16,7 @@ test.describe('Find bar', () => {
   })
 
   test.afterAll(async() => {
-    if (app) await app.close()
+    if (app) await closeElectron(app)
   })
 
   test('Find action reveals .search-bar', async() => {

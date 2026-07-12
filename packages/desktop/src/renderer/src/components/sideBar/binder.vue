@@ -62,14 +62,31 @@
       >
         {{ t('binder.save') }}
       </el-button>
-      <el-button
-        size="small"
-        text
-        :loading="compiling"
-        @click="handleCompile"
+      <el-dropdown
+        trigger="click"
+        @command="(format: string) => handleCompile(format as 'md' | 'epub' | 'docx')"
       >
-        {{ t('binder.compile') }}
-      </el-button>
+        <el-button
+          size="small"
+          text
+          :loading="compiling"
+        >
+          {{ t('binder.compile') }}
+        </el-button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="md">
+              {{ t('binder.compileMd') }}
+            </el-dropdown-item>
+            <el-dropdown-item command="epub">
+              {{ t('binder.compileEpub') }}
+            </el-dropdown-item>
+            <el-dropdown-item command="docx">
+              {{ t('binder.compileDocx') }}
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
     </div>
 
     <div
@@ -288,16 +305,18 @@ const handleSaveAll = async (): Promise<void> => {
   }
 }
 
-const handleCompile = async (): Promise<void> => {
+const handleCompile = async (format: 'md' | 'epub' | 'docx' = 'md'): Promise<void> => {
   compiling.value = true
   try {
-    const result = await novelStore.compile()
+    const result = await novelStore.compile(format)
     if (result?.ok) {
       ElMessage.success(t('binder.compiled', { path: result.outputPath ?? '' }))
-      // Open the compiled book so File → Export (PDF/HTML/print) is one
-      // step away — the whole-novel export path, not just a loose .md.
-      if (result.outputPath) {
+      if (format === 'md' && result.outputPath) {
+        // Open the compiled book so File → Export (PDF/HTML/print) is one
+        // step away. EPUB/DOCX are binary — reveal them instead.
         window.electron.ipcRenderer.send('mt::open-file', result.outputPath, {})
+      } else if (result.outputPath) {
+        window.electron.shell.showItemInFolder(result.outputPath)
       }
     } else {
       ElMessage.error(result?.error ?? 'Compile failed')

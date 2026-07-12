@@ -1,4 +1,4 @@
-import { app, ipcMain } from 'electron'
+import { app, ipcMain, BrowserWindow } from 'electron'
 import log from 'electron-log'
 import { langGraphManager } from '../services/ai/LangGraphManager'
 import { openBiscuitWindow } from '../windows/biscuit'
@@ -176,6 +176,12 @@ export const registerAIHandlers = (): void => {
       try {
         if (!pathname) throw new Error('No file path provided')
         await writeMarkdownFileWithDefaults(pathname, content)
+        // An accepted edit landed on disk — refresh trees in every window.
+        for (const win of BrowserWindow.getAllWindows()) {
+          if (!win.isDestroyed()) {
+            win.webContents.send('mt::novel:project-changed', { root: null })
+          }
+        }
         return { ok: true }
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Failed to write file'

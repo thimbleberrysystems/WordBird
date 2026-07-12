@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
-import { launchWithMarkdown, focusEditor } from './helpers'
+import { launchWithMarkdown, focusEditor, closeElectron } from './helpers'
 
 // Validates the pako-based encoder that replaced Node zlib in
 // src/muya/lib/parser/render/plantuml.js. The encoded payload is what shows
@@ -21,7 +21,7 @@ test.describe('PlantUML render via pako', () => {
   })
 
   test.afterAll(async() => {
-    if (app) await app.close()
+    if (app) await closeElectron(app)
   })
 
   test('plantuml block renders an img with a plantuml.com src', async() => {

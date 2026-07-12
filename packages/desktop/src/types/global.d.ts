@@ -193,6 +193,9 @@ declare global {
         viewMode: 'page' | 'corkboard' | 'outline' | 'timeline'
         currentUnitId?: string
         currentFile?: string
+        openTabs?: string[]
+        unsavedTabs?: string[]
+        selection?: { text: string; file?: string }
       } | null) => void
       onApprovalResolved: (handler: (event: { id: string }) => void) => () => void
       onBiscuitReattach: (handler: () => void) => () => void
@@ -224,6 +227,8 @@ declare global {
         Array<{ edit: IAgentEditProposal; oldContent: string; originalPath: string }>
       >
       onPendingEditsCleared: (handler: () => void) => () => void
+      onModeChanged: (handler: (event: { mode: AgentPermissionMode }) => void) => () => void
+      onProjectChanged: (handler: (event: { root: string | null }) => void) => () => void
       onEditProposal: (
         handler: (proposal: {
           edit: IAgentEditProposal

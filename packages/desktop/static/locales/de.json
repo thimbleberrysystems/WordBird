@@ -1480,7 +1480,10 @@
     "saveTip": "Alle offenen Dateien speichern und einen Schnappschuss im Verlauf aufzeichnen",
     "saveSnapshotMessage": "Manuelle Speicherung",
     "saved": "Projekt gespeichert — Schnappschuss im Verlauf aufgezeichnet.",
-    "actionFailed": "Diese Änderung wurde nicht gespeichert: {error}"
+    "actionFailed": "Diese Änderung wurde nicht gespeichert: {error}",
+    "compileMd": "Als Markdown kompilieren",
+    "compileEpub": "Als EPUB kompilieren (E-Book)",
+    "compileDocx": "Als Word kompilieren (.docx)"
   },
   "history": {
     "title": "Verlauf",

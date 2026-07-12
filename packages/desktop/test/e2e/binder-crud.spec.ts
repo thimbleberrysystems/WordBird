@@ -3,7 +3,7 @@ import type { ElectronApplication, Page } from 'playwright'
 import * as fs from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
-import { launchElectron, clickMenuById, expectNoRendererErrors } from './helpers'
+import { launchElectron, clickMenuById, expectNoRendererErrors, closeElectron } from './helpers'
 
 /**
  * Binder CRUD against a real WordBird project opened from the CLI: the
@@ -37,7 +37,7 @@ test.describe('Binder CRUD (real project)', () => {
   })
 
   test.afterAll(async() => {
-    if (app) await app.close()
+    if (app) await closeElectron(app)
     fs.rmSync(root, { recursive: true, force: true })
   })
 

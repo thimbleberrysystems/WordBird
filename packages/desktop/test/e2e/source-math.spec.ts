@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
-import { launchWithMarkdown, enterSourceMode } from './helpers'
+import { launchWithMarkdown, enterSourceMode, closeElectron } from './helpers'
 
 // Regression test for https://github.com/marktext/marktext/issues/4121
 // Underscores inside inline math (`$...$`) and block math (`$$...$$`) must
@@ -61,7 +61,7 @@ test.describe('Source view: math tokenization (#4121)', () => {
   })
 
   test.afterAll(async() => {
-    if (app) await app.close()
+    if (app) await closeElectron(app)
   })
 
   test('underscores inside $...$ are not styled as Markdown emphasis', async() => {

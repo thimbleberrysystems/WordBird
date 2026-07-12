@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
-import { launchElectron } from './helpers'
+import { launchElectron, closeElectron } from './helpers'
 
 // Centralized app name for test assertions
 const APP_NAME = 'WordBird'
@@ -18,7 +18,7 @@ test.describe('Check Launch WordBird', () => {
   })
 
   test.afterAll(async() => {
-    await app.close()
+    await closeElectron(app)
   })
 
   test('Empty WordBird', async() => {

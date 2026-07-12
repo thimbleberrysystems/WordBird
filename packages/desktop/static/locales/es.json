@@ -1480,7 +1480,10 @@
     "saveTip": "Guarda todos los archivos abiertos y registra una instantánea en el Historial",
     "saveSnapshotMessage": "Guardado manual",
     "saved": "Proyecto guardado — instantánea registrada en el Historial.",
-    "actionFailed": "Ese cambio no se guardó: {error}"
+    "actionFailed": "Ese cambio no se guardó: {error}",
+    "compileMd": "Compilar a Markdown",
+    "compileEpub": "Compilar a EPUB (libro electrónico)",
+    "compileDocx": "Compilar a Word (.docx)"
   },
   "history": {
     "title": "Historial",
