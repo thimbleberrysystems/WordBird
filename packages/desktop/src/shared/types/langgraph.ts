@@ -10,6 +10,8 @@ export interface IAIProviderConfig {
   model?: string
   temperature?: number
   maxTokens?: number
+  /** Manual context-window override (tokens); otherwise resolved per provider. */
+  contextWindow?: number
 }
 
 export interface IAIConfig extends IAIProviderConfig {
@@ -80,6 +82,23 @@ export interface IAgentApplyEditRequest {
   edit: IAgentEditProposal
   oldContent: string
   originalPath: string
+}
+
+/** The full edit-proposal event payload (broadcast as mt::ai:edit-proposal). */
+export interface IAgentEditProposalPayload {
+  edit: IAgentEditProposal
+  oldContent: string
+  originalPath: string
+}
+
+/**
+ * Review outcome for one proposed edit, reported renderer → main
+ * (mt::ai:edit-resolved) so the model learns what the writer decided.
+ */
+export interface IAgentEditResolution {
+  id: string
+  filePath: string
+  accepted: boolean
 }
 
 export interface IBlockDiffState {
@@ -183,4 +202,10 @@ export interface IContextUsage {
   ratio: number
   /** True while old turns are being condensed. */
   compacting: boolean
+  /** Prompt tokens — provider-reported when available, else chars/4. */
+  usedTokens?: number
+  /** Usable input tokens for the connected model (window − output − overhead). */
+  budgetTokens?: number
+  /** The connected model's full context window, when resolved. */
+  contextWindow?: number
 }

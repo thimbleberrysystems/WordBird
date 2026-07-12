@@ -228,10 +228,10 @@ const resolve = async (issue: IContinuityIssue): Promise<void> => {
   border-radius: 50%;
   flex-shrink: 0;
   &.high {
-    background: #f56c6c;
+    background: var(--wbErrorColor);
   }
   &.medium {
-    background: #e6a23c;
+    background: var(--wbWarningColor);
   }
   &.low {
     background: var(--iconColor);
@@ -247,7 +247,7 @@ const resolve = async (issue: IContinuityIssue): Promise<void> => {
 
 .issue-resolve {
   opacity: 0;
-  color: #67c23a;
+  color: var(--wbSuccessColor);
   padding: 0 4px;
 }
 
@@ -323,7 +323,7 @@ const resolve = async (issue: IContinuityIssue): Promise<void> => {
 .revision-fill {
   height: 100%;
   border-radius: 2px;
-  background: var(--themeColor, #409eff);
+  background: var(--themeColor, var(--wbInfoColor));
   transition: width 0.4s ease;
 }
 

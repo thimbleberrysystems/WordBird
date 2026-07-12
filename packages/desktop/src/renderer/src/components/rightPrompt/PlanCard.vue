@@ -94,7 +94,7 @@ defineEmits<{
 
 .plan-card__path {
   font-size: 0.68rem;
-  color: var(--iconColor, #909399);
+  color: var(--iconColor, var(--wbMutedColor));
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 

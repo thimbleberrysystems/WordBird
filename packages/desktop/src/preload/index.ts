@@ -25,7 +25,6 @@ import type {
   IAIConfig,
   ILangGraphMessage,
   IAgentToolCall,
-  IAgentApplyEditRequest,
   IAgentEditProposal,
   IAgentActivityEvent,
   IAgentApprovalRequest,
@@ -395,11 +394,20 @@ const aiAPI = {
     return () => ipcRenderer.removeListener('mt::ai:pull-progress', subscription)
   },
   executeTool: (call: IAgentToolCall) => invoke('mt::ai:execute-tool', call),
-  applyEdit: (request: IAgentApplyEditRequest) => invoke('mt::ai:apply-edit', request),
   writeFile: (pathname: string, content: string): Promise<{ ok: boolean; error?: string }> =>
     invoke('mt::ai:write-file', pathname, content),
-  applyEditInRenderer: (request: IAgentApplyEditRequest) =>
-    invoke('mt::ai:apply-edit-in-renderer', request),
+  // Review feedback loop: report the writer's accept/reject decision and
+  // rehydrate the review queue after a reload/restart.
+  resolveEdit: (resolution: { id: string; filePath: string; accepted: boolean }) =>
+    ipcRenderer.send('mt::ai:edit-resolved', resolution),
+  getPendingEdits: (): Promise<
+    Array<{ edit: IAgentEditProposal; oldContent: string; originalPath: string }>
+  > => invoke('mt::ai:get-pending-edits'),
+  onPendingEditsCleared: (handler: () => void) => {
+    const subscription = () => handler()
+    ipcRenderer.on('mt::ai:pending-edits-cleared', subscription)
+    return () => ipcRenderer.removeListener('mt::ai:pending-edits-cleared', subscription)
+  },
   onEditProposal: (
     handler: (proposal: {
       edit: IAgentEditProposal
@@ -413,20 +421,6 @@ const aiAPI = {
     ) => handler(proposal)
     ipcRenderer.on('mt::ai:edit-proposal', subscription)
     return () => ipcRenderer.removeListener('mt::ai:edit-proposal', subscription)
-  },
-  onApplyEditInRenderer: (
-    handler: (request: {
-      edit: IAgentEditProposal
-      oldContent: string
-      originalPath: string
-    }) => void
-  ) => {
-    const subscription = (
-      _e: unknown,
-      request: { edit: IAgentEditProposal; oldContent: string; originalPath: string }
-    ) => handler(request)
-    ipcRenderer.on('mt::ai:apply-edit-in-renderer', subscription)
-    return () => ipcRenderer.removeListener('mt::ai:apply-edit-in-renderer', subscription)
   }
 }
 

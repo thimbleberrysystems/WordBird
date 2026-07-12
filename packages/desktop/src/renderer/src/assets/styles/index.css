@@ -3,6 +3,15 @@
   --titleBarHeight: 32px;
   --editorAreaWidth: 750px;
 
+  /* Semantic status colors for the WordBird surfaces (binder, agents,
+     continuity, corkboard, timeline, Biscuit panel). Themes may override;
+     these defaults track Element Plus so light and dark both read well. */
+  --wbSuccessColor: #67c23a;
+  --wbErrorColor: #f56c6c;
+  --wbWarningColor: #e6a23c;
+  --wbInfoColor: #409eff;
+  --wbMutedColor: #909399;
+
   /*editor*/
   /*Theme color cluster*/
   --themeColor: rgba(33, 181, 111, 1);

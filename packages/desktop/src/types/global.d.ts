@@ -22,7 +22,6 @@ import type {
   ILangGraphResponse,
   IAgentToolCall,
   IAgentToolResult,
-  IAgentApplyEditRequest,
   IAgentEditProposal,
   IAgentActivityEvent,
   IAgentApprovalRequest,
@@ -219,18 +218,14 @@ declare global {
         handler: (progress: { percent?: number; status?: string; digest?: string }) => void
       ) => () => void
       executeTool: (call: IAgentToolCall) => Promise<IAgentToolResult>
-      applyEdit: (request: IAgentApplyEditRequest) => Promise<{ ok: boolean; error?: string }>
       writeFile: (pathname: string, content: string) => Promise<{ ok: boolean; error?: string }>
-      applyEditInRenderer: (request: IAgentApplyEditRequest) => Promise<{ ok: boolean; error?: string }>
+      resolveEdit: (resolution: { id: string; filePath: string; accepted: boolean }) => void
+      getPendingEdits: () => Promise<
+        Array<{ edit: IAgentEditProposal; oldContent: string; originalPath: string }>
+      >
+      onPendingEditsCleared: (handler: () => void) => () => void
       onEditProposal: (
         handler: (proposal: {
-          edit: IAgentEditProposal
-          oldContent: string
-          originalPath: string
-        }) => void
-      ) => () => void
-      onApplyEditInRenderer: (
-        handler: (request: {
           edit: IAgentEditProposal
           oldContent: string
           originalPath: string

@@ -61,6 +61,23 @@ export const slugify = (title: string): string => {
 
 export const generateUnitId = (): string => crypto.randomUUID()
 
+/**
+ * Writer-friendly collision handling: `opening.md`, `opening-2.md`,
+ * `opening-3.md`, … — never UUID fragments or timestamps in filenames.
+ * `dir` is project-relative ('.' for the root); returns the relative path.
+ */
+export const uniqueSlugPath = (root: string, dir: string, slug: string): string => {
+  const candidate = (suffix: string): string => {
+    const filename = `${slug}${suffix}.md`
+    return dir === '.' ? filename : path.join(dir, filename)
+  }
+  if (!fs.existsSync(path.join(root, candidate('')))) return candidate('')
+  for (let n = 2; ; n++) {
+    const relative = candidate(`-${n}`)
+    if (!fs.existsSync(path.join(root, relative))) return relative
+  }
+}
+
 /** Sum of leaf word counts across the whole binder tree. */
 export const totalWords = (units: INovelUnit[]): number => {
   let total = 0
@@ -561,13 +578,7 @@ export class StructureService {
     if (isLeaf) {
       const chain = this._parentChain(structure.units, parentId)
       const dir = this._leafDirectory(structure, chain)
-      let filename = `${slugify(title)}.md`
-      let relative = dir === '.' ? filename : path.join(dir, filename)
-      // Keep names stable and unique — suffix with a short id on collision.
-      if (fs.existsSync(path.join(root, relative))) {
-        filename = `${slugify(title)}-${unit.id.slice(0, 8)}.md`
-        relative = dir === '.' ? filename : path.join(dir, filename)
-      }
+      const relative = uniqueSlugPath(root, dir, slugify(title))
       if (!isSafeRelative(root, relative)) {
         throw new Error(`Unsafe unit path: ${relative}`)
       }

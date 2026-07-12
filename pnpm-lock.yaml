@@ -69,8 +69,8 @@ importers:
         specifier: ^1.1.48
         version: 1.1.48(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.1)(zod@4.4.3))(ws@8.20.1)
       '@langchain/google-genai':
-        specifier: ^0.0.10
-        version: 0.0.10(openai@5.23.2(ws@8.20.1)(zod@4.4.3))
+        specifier: ^1.0.3
+        version: 1.0.3(@langchain/core@1.1.48(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.1)(zod@4.4.3))(ws@8.20.1))
       '@langchain/langgraph':
         specifier: ^1.3.5
         version: 1.3.5(@langchain/core@1.1.48(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.1)(zod@4.4.3))(ws@8.20.1))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vue@3.5.34(typescript@5.9.3))(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3)
@@ -2521,8 +2521,8 @@ packages:
   '@formatjs/intl-localematcher@0.6.2':
     resolution: {integrity: sha512-XOMO2Hupl0wdd172Y06h6kLpBz6Dv+J4okPLl4LPtzbr8f66WbIoy4ev98EBuZ6ZK4h5ydTN6XneT4QVpD7cdA==}
 
-  '@google/generative-ai@0.1.3':
-    resolution: {integrity: sha512-Cm4uJX1sKarpm1mje/MiOIinM7zdUUrQp/5/qGPAgznbdd/B9zup5ehT6c1qGqycFcSopTA1J1HpqHS5kJR8hQ==}
+  '@google/generative-ai@0.24.1':
+    resolution: {integrity: sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q==}
     engines: {node: '>=18.0.0'}
 
   '@hfelix/electron-localshortcut@4.0.1':
@@ -2780,10 +2780,6 @@ packages:
     peerDependencies:
       '@langchain/core': '>=0.3.58 <0.4.0'
 
-  '@langchain/core@0.1.63':
-    resolution: {integrity: sha512-+fjyYi8wy6x1P+Ee1RWfIIEyxd9Ee9jksEwvrggPwwI/p45kIDTdYTblXsM13y4mNWTiACyLSdbwnPaxxdoz+w==}
-    engines: {node: '>=18'}
-
   '@langchain/core@0.2.36':
     resolution: {integrity: sha512-qHLvScqERDeH7y2cLuJaSAlMwg3f/3Oc9nayRSXRU2UuaK/SOhI42cxiPLj1FnuHJSmN0rBQFkrLx02gI4mcVg==}
     engines: {node: '>=18'}
@@ -2792,9 +2788,11 @@ packages:
     resolution: {integrity: sha512-fQU6Guyb1pwc2fEplmA8FPbKfOMAofjnyJzExevro0FxEiuGHE18Ov/ZHmT9trWCDTZRI9eW1VIc6aChxV8pAQ==}
     engines: {node: '>=20'}
 
-  '@langchain/google-genai@0.0.10':
-    resolution: {integrity: sha512-neFuCoMew9t8IYM5srh6RVUFQsZxqPtAFVJ0mWtZqHXtb627MECs5FYr+xw1ptPKSbhIAN5H8sgdObqes4bN3A==}
-    engines: {node: '>=18'}
+  '@langchain/google-genai@1.0.3':
+    resolution: {integrity: sha512-ZN3f6SPFZI3FMjJ1C0y5A/lWlZ/x+A9RoIKg1PNYdX6bEu7/BR7oz0dYYI2+YGl3TRp1u75e3SzzL0MxmfWfDA==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@langchain/core': 1.0.6
 
   '@langchain/langgraph-checkpoint@1.0.4':
     resolution: {integrity: sha512-1y5MgZ0gXXrtmoy56e3kaBChI3GwFPIKl27xkrHwN+VE/3iUsyr9gO3Jtp7kdKAe6diZGbcas5bdC/r0yUwTZA==}
@@ -4797,9 +4795,6 @@ packages:
 
   bidi-js@1.0.3:
     resolution: {integrity: sha512-RKshQI1R3YQ+n9YJz2QQ147P66ELpa1FQEg20Dk8oW9t2KgLbpDLLp9aGZ7y8WHSshDknG0bknqGw5/tyCs5tw==}
-
-  binary-search@1.3.6:
-    resolution: {integrity: sha512-nbE1WxOTTrUWIfsfZ4aHGYu5DOuNkbxGokjV6Z2kxfJK3uaAb8zNK1muzOeipoLHZjInT4Br88BHpzevc681xA==}
 
   bindings@1.5.0:
     resolution: {integrity: sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ==}
@@ -7162,9 +7157,6 @@ packages:
   is-alphanumerical@1.0.4:
     resolution: {integrity: sha512-UzoZUr+XfVz3t3v4KyGEniVL9BDRoQtY7tOyrRybkVNjDFWyo1yhXNGrrBTQxp3ib9BLAWs7k2YKBQsFRkZG9A==}
 
-  is-any-array@2.0.1:
-    resolution: {integrity: sha512-UtilS7hLRu++wb/WBAw9bNuP1Eg04Ivn1vERJck8zJthEvXCBEBpGR/33u/xLKWEQf95803oalHrVDptcAvFdQ==}
-
   is-arguments@1.2.0:
     resolution: {integrity: sha512-7bVbi0huj/wrIAOzb8U1aszg9kdi3KN/CyU19CTI7tAoZYEZoL9yCDXpbXN+uPsuWnP02cyug1gleqq+TU+YCA==}
     engines: {node: '>= 0.4'}
@@ -8242,21 +8234,6 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  ml-array-mean@1.1.6:
-    resolution: {integrity: sha512-MIdf7Zc8HznwIisyiJGRH9tRigg3Yf4FldW8DxKxpCCv/g5CafTw0RRu51nojVEOXuCQC7DRVVu5c7XXO/5joQ==}
-
-  ml-array-sum@1.1.6:
-    resolution: {integrity: sha512-29mAh2GwH7ZmiRnup4UyibQZB9+ZLyMShvt4cH4eTK+cL2oEMIZFnSyB3SS8MlsTh6q/w/yh48KmqLxmovN4Dw==}
-
-  ml-distance-euclidean@2.0.0:
-    resolution: {integrity: sha512-yC9/2o8QF0A3m/0IXqCTXCzz2pNEzvmcE/9HFKOZGnTjatvBbsn4lWYJkxENkA4Ug2fnYl7PXQxnPi21sgMy/Q==}
-
-  ml-distance@4.0.1:
-    resolution: {integrity: sha512-feZ5ziXs01zhyFUUUeZV5hwc0f5JW0Sh0ckU1koZe/wdVkJdGxcP06KNQuF0WBTj8FttQUzcvQcpcrOp/XrlEw==}
-
-  ml-tree-similarity@1.0.0:
-    resolution: {integrity: sha512-XJUyYqjSuUQkNQHMscr6tcjldsOoAekxADTplt40QKfwW6nd++1wHWV9AArl0Zvw/TIHgNaZZNvr8QGvE8wLRg==}
-
   mlly@1.8.2:
     resolution: {integrity: sha512-d+ObxMQFmbt10sretNDytwt85VrbkhhUA/JBGm1MPaWJ65Cl4wOgLaB1NYvJSZ0Ef03MMEU/0xpPMXUIQ29UfA==}
 
@@ -8433,10 +8410,6 @@ packages:
 
   nth-check@2.1.1:
     resolution: {integrity: sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w==}
-
-  num-sort@2.1.0:
-    resolution: {integrity: sha512-1MQz1Ed8z2yckoBeSfkQHHO9K1yDRxxtotKSJ9yvcTUUxSvfvzEq5GwBrjjHEpMlq/k5gvXdmJ1SbYxWtpNoVg==}
-    engines: {node: '>=8'}
 
   num2fraction@1.2.2:
     resolution: {integrity: sha512-Y1wZESM7VUThYY+4W+X4ySH2maqcA+p7UR+w8VWNWVAd6lwuXXWz/w/Cz43J/dI2I+PS6wD5N+bJUF+gjWvIqg==}
@@ -10471,13 +10444,12 @@ packages:
     deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
-  uuid@14.0.0:
-    resolution: {integrity: sha512-Qo+uWgilfSmAhXCMav1uYFynlQO7fMFiMVZsQqZRMIXp0O7rR7qjkj+cPvBHLgBqi960QCoo/PH2/6ZtVqKvrg==}
+  uuid@11.1.1:
+    resolution: {integrity: sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==}
     hasBin: true
 
-  uuid@9.0.1:
-    resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
-    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+  uuid@14.0.0:
+    resolution: {integrity: sha512-Qo+uWgilfSmAhXCMav1uYFynlQO7fMFiMVZsQqZRMIXp0O7rR7qjkj+cPvBHLgBqi960QCoo/PH2/6ZtVqKvrg==}
     hasBin: true
 
   validate-npm-package-license@3.0.4:
@@ -12999,7 +12971,7 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@google/generative-ai@0.1.3': {}
+  '@google/generative-ai@0.24.1': {}
 
   '@hfelix/electron-localshortcut@4.0.1':
     dependencies:
@@ -13209,23 +13181,6 @@ snapshots:
     transitivePeerDependencies:
       - zod
 
-  '@langchain/core@0.1.63(openai@5.23.2(ws@8.20.1)(zod@4.4.3))':
-    dependencies:
-      ansi-styles: 5.2.0
-      camelcase: 6.3.0
-      decamelize: 1.2.0
-      js-tiktoken: 1.0.21
-      langsmith: 0.1.68(openai@5.23.2(ws@8.20.1)(zod@4.4.3))
-      ml-distance: 4.0.1
-      mustache: 4.2.0
-      p-queue: 6.6.2
-      p-retry: 4.6.2
-      uuid: 9.0.1
-      zod: 3.25.76
-      zod-to-json-schema: 3.25.2(zod@3.25.76)
-    transitivePeerDependencies:
-      - openai
-
   '@langchain/core@0.2.36(openai@5.23.2(ws@8.20.1)(zod@4.4.3))':
     dependencies:
       ansi-styles: 5.2.0
@@ -13258,12 +13213,11 @@ snapshots:
       - openai
       - ws
 
-  '@langchain/google-genai@0.0.10(openai@5.23.2(ws@8.20.1)(zod@4.4.3))':
+  '@langchain/google-genai@1.0.3(@langchain/core@1.1.48(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.1)(zod@4.4.3))(ws@8.20.1))':
     dependencies:
-      '@google/generative-ai': 0.1.3
-      '@langchain/core': 0.1.63(openai@5.23.2(ws@8.20.1)(zod@4.4.3))
-    transitivePeerDependencies:
-      - openai
+      '@google/generative-ai': 0.24.1
+      '@langchain/core': 1.1.48(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.1)(zod@4.4.3))(ws@8.20.1)
+      uuid: 11.1.1
 
   '@langchain/langgraph-checkpoint@1.0.4(@langchain/core@1.1.48(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.1)(zod@4.4.3))(ws@8.20.1))':
     dependencies:
@@ -15393,8 +15347,6 @@ snapshots:
   bidi-js@1.0.3:
     dependencies:
       require-from-string: 2.0.2
-
-  binary-search@1.3.6: {}
 
   bindings@1.5.0:
     dependencies:
@@ -18486,8 +18438,6 @@ snapshots:
       is-alphabetical: 1.0.4
       is-decimal: 1.0.4
 
-  is-any-array@2.0.1: {}
-
   is-arguments@1.2.0:
     dependencies:
       call-bound: 1.0.4
@@ -19724,27 +19674,6 @@ snapshots:
 
   mkdirp@1.0.4: {}
 
-  ml-array-mean@1.1.6:
-    dependencies:
-      ml-array-sum: 1.1.6
-
-  ml-array-sum@1.1.6:
-    dependencies:
-      is-any-array: 2.0.1
-
-  ml-distance-euclidean@2.0.0: {}
-
-  ml-distance@4.0.1:
-    dependencies:
-      ml-array-mean: 1.1.6
-      ml-distance-euclidean: 2.0.0
-      ml-tree-similarity: 1.0.0
-
-  ml-tree-similarity@1.0.0:
-    dependencies:
-      binary-search: 1.3.6
-      num-sort: 2.1.0
-
   mlly@1.8.2:
     dependencies:
       acorn: 8.16.0
@@ -19931,8 +19860,6 @@ snapshots:
   nth-check@2.1.1:
     dependencies:
       boolbase: 1.0.0
-
-  num-sort@2.1.0: {}
 
   num2fraction@1.2.2: {}
 
@@ -22432,9 +22359,9 @@ snapshots:
 
   uuid@10.0.0: {}
 
-  uuid@14.0.0: {}
+  uuid@11.1.1: {}
 
-  uuid@9.0.1: {}
+  uuid@14.0.0: {}
 
   validate-npm-package-license@3.0.4:
     dependencies:

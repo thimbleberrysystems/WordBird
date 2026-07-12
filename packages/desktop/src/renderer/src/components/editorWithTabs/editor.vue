@@ -120,6 +120,7 @@ import { usePreferencesStore } from '@/store/preferences'
 import { useEditorStore } from '@/store/editor'
 import { useProjectStore } from '@/store/project'
 import { applyAgentEditToCurrentFile } from '@/services/agentEditorApply'
+import type { IAgentEditProposal } from '@shared/types/langgraph'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
@@ -230,6 +231,7 @@ let spellchecker: any = null
 let switchLanguageCommand: any = null
 let imageViewer: SimpleImageViewer | null = null
 let unsubscribeEditProposal: (() => void) | null = null
+let unsubscribePendingCleared: (() => void) | null = null
 
 // Handle for the injected inline-diff nodes (see services/agentDiffDom.ts,
 // verified by agent-diff-dom.spec.ts). null when no diff is shown.
@@ -408,6 +410,11 @@ async function handleAgentApplyAll (): Promise<void> {
 function handleAgentDiscardAll (): void {
   if (inlineDiffHandle) {
     discardAllHunks()
+  }
+  // Discard-all is a rejection of every pending edit — record each one so
+  // the model is told, instead of silently emptying the queue.
+  for (const edit of agentStore.pendingEdits) {
+    if (edit.status === 'pending') agentStore.updateEditStatus(edit.id, 'rejected')
   }
   agentStore.clearPendingEdits()
 }
@@ -1340,36 +1347,6 @@ const handleScreenShot = () => {
 }
 
 // Handle agent edit application through Muya
-const handleApplyAgentEdit = (request: {
-  edit: {
-    id: string
-    filePath: string
-    start?: number
-    end?: number
-    newContent: string
-    reason?: string
-  }
-  oldContent: string
-  originalPath: string
-}) => {
-  if (!editor.value || !currentFile.value) return
-
-  const applied = applyAgentEditToCurrentFile(request, {
-    currentFile: currentFile.value,
-    setMarkdown: (markdown: string) => {
-      editor.value?.setMarkdown(markdown)
-    },
-    save: () => {
-      editorStore.FILE_SAVE()
-    }
-  })
-
-  if (!applied) return
-
-  clearDiffStateInMuya(editor.value)
-  hideInlineDiff()
-}
-
 const handleResetPaddingBottom = () => {
   const { container } = editor.value
   const firstChild = container.firstElementChild as HTMLElement | null
@@ -1503,29 +1480,33 @@ onMounted(() => {
   bus.on('switch-spellchecker-language', switchSpellcheckLanguage)
   bus.on('open-command-spellchecker-switch-language', openSpellcheckerLanguageCommand)
   bus.on('replace-misspelling', replaceMisspelling)
-  bus.on('apply-agent-edit', handleApplyAgentEdit as any)
   // Global Apply All / Discard All from the bar above the Biscuit prompt
   bus.on('agent-apply-all', handleAgentApplyAll)
   bus.on('agent-apply-one', handleAgentApplyOne)
   bus.on('agent-discard-one', handleAgentDiscardOne)
   bus.on('agent-discard-all', handleAgentDiscardAll)
 
-  // Listen for AI edit proposals from main process
-  unsubscribeEditProposal = window.electron.ai.onEditProposal((proposal) => {
-    if (!editor.value || !currentFile.value) return
-
+  // Listen for AI edit proposals from main process. Queueing is
+  // unconditional — a proposal must never be dropped just because no file
+  // (or a different file) is open; the review queue and Apply All handle it.
+  const receiveProposal = (proposal: {
+    edit: IAgentEditProposal
+    oldContent: string
+    originalPath: string
+  }): void => {
+    if (agentStore.getPendingEdit(proposal.edit.id)) return
     agentStore.addPendingEdit(proposal.edit, proposal.oldContent, proposal.originalPath)
 
-    // Auto / full-auto: the writer chose speed over per-edit review — apply
+    // Auto mode: the writer chose speed over per-edit review — apply
     // automatically. Safety comes from the snapshot handleAgentApplyAll
-    // takes before writing, so the whole batch is one Rewind away. Ask and
-    // plan modes keep the review gate.
+    // takes before writing, so the whole batch is one Rewind away.
     const mode = localStorage.getItem('biscuit-mode')
     if (mode === 'auto') {
       scheduleAutoApply()
       return
     }
 
+    if (!editor.value || !currentFile.value) return
     const proposalPath = proposal.edit.filePath || ''
     const currentPath = currentFile.value.filename || currentFile.value.pathname || ''
 
@@ -1545,7 +1526,19 @@ onMounted(() => {
       reason: proposal.edit.reason,
       filePath: proposal.edit.filePath
     })
-  })
+  }
+  unsubscribeEditProposal = window.electron.ai.onEditProposal(receiveProposal)
+
+  // Rehydrate edits that were still awaiting review before a reload/restart.
+  window.electron.ai.getPendingEdits?.().then((persisted) => {
+    for (const proposal of persisted) receiveProposal(proposal)
+  }).catch(() => { /* fresh session — nothing to rehydrate */ })
+
+  // Conversation switched/reset on the main side — its proposals are void.
+  unsubscribePendingCleared = window.electron.ai.onPendingEditsCleared?.(() => {
+    if (inlineDiffHandle) hideInlineDiff()
+    agentStore.clearPendingEdits()
+  }) ?? null
 
   editor.value.on('change', (changes: MuyaChange) => {
     // There is a chance that this event is fired AFTER the tab is switched. If we purely rely on this.currentFile later on
@@ -1663,7 +1656,6 @@ onBeforeUnmount(() => {
   bus.off('switch-spellchecker-language', switchSpellcheckLanguage)
   bus.off('open-command-spellchecker-switch-language', openSpellcheckerLanguageCommand)
   bus.off('replace-misspelling', replaceMisspelling)
-  bus.off('apply-agent-edit', handleApplyAgentEdit as any)
   bus.off('agent-apply-all', handleAgentApplyAll)
   bus.off('agent-apply-one', handleAgentApplyOne)
   bus.off('agent-discard-one', handleAgentDiscardOne)
@@ -1671,6 +1663,10 @@ onBeforeUnmount(() => {
   bus.off('language-changed', handleLanguageChanged)
 
   // Remove AI edit proposal listener
+  if (unsubscribePendingCleared) {
+    unsubscribePendingCleared()
+    unsubscribePendingCleared = null
+  }
   if (unsubscribeEditProposal) {
     unsubscribeEditProposal()
     unsubscribeEditProposal = null

@@ -442,7 +442,6 @@
       "items": {
         "autoSave": "Den bearbeiteten Inhalt automatisch speichern",
         "autoSaveDelay": "Die Zeit in ms nach einer Änderung, bis die Datei gespeichert wird",
-        "autoNormalizeLineEndings": "Zeilenenden beim Öffnen automatisch zu LF normalisieren und optional nachgestellte neue Zeilen",
         "titleBarStyle": "Der Titelleisten-Stil (nur Windows und Linux-System)",
         "openFilesInNewWindow": "Dateien in einem neuen Fenster öffnen",
         "openFolderInNewWindow": "Ordner über Menü in einem neuen Fenster öffnen",
@@ -754,7 +753,26 @@
       "title": "Biscuit-Einstellungen",
       "provider": {
         "title": "Biscuit-Anbieter"
-      }
+      },
+      "selectProvider": "Modellanbieter auswählen",
+      "enterApiKey": "API-Schlüssel eingeben",
+      "enterEndpoint": "Endpunkt-URL eingeben",
+      "temperature": "Kreativität (Temperature)",
+      "maxTokens": "Maximale Antwortlänge (Tokens)",
+      "maxTokensNotes": "Höhere Werte lassen Biscuit längere Szenen pro Schritt schreiben; das Kontextbudget passt sich automatisch an.",
+      "connectProvider": "Anbieter verbinden",
+      "selectModel": "Modell auswählen",
+      "refreshModels": "Modelle aktualisieren",
+      "selectModelPlaceholder": "Modell auswählen",
+      "connectModel": "Modell verbinden",
+      "pulling": "Wird geladen…",
+      "pullingModel": "Modell wird geladen…",
+      "pullFailed": "Das Laden des Modells '{model}' ist fehlgeschlagen oder Ollama ist beschäftigt.",
+      "providerConnected": "Anbieter verbunden",
+      "modelConnected": "Modellverbindung erfolgreich",
+      "modelConnectionFailed": "Modellverbindung fehlgeschlagen: {error}",
+      "noModels": "Keine Modelle gefunden. Bitte Zugangsdaten prüfen.",
+      "fetchModelsFailed": "Modelle konnten nicht geladen werden: {error}"
     },
     "markdown": {
       "title": "Markdown",
@@ -1461,7 +1479,8 @@
     "save": "Speichern",
     "saveTip": "Alle offenen Dateien speichern und einen Schnappschuss im Verlauf aufzeichnen",
     "saveSnapshotMessage": "Manuelle Speicherung",
-    "saved": "Projekt gespeichert — Schnappschuss im Verlauf aufgezeichnet."
+    "saved": "Projekt gespeichert — Schnappschuss im Verlauf aufgezeichnet.",
+    "actionFailed": "Diese Änderung wurde nicht gespeichert: {error}"
   },
   "history": {
     "title": "Verlauf",
@@ -1540,6 +1559,7 @@
     "openSettings": "KI-Einstellungen öffnen",
     "stopped": "Gestoppt.",
     "contextTip": "Gesprächsspeicher zu {percent} % voll — Biscuit verdichtet ältere Beiträge automatisch, wenn er sich füllt.",
+    "contextTokens": "({used} von {budget} Tokens.)",
     "compacting": "Frühere Unterhaltung wird verdichtet…",
     "selRewrite": "Umschreiben",
     "selExpand": "Ausbauen",
@@ -1592,7 +1612,10 @@
     "reattachTip": "Biscuit in den Editor zurückholen",
     "modeApprovals": "Freigabe-Modus",
     "modeApprovalsHint": "Jede Änderung wartet auf dein OK — einzeln oder alle zusammen freigeben.",
-    "questionFreeform": "Oder eigene Antwort schreiben…"
+    "questionFreeform": "Oder eigene Antwort schreiben…",
+    "steerFailed": "Deine Notiz konnte Biscuit nicht erreichen — sie steht wieder im Eingabefeld.",
+    "stalledTitle": "Keine Antwort vom Modell",
+    "stalled": "Seit einiger Zeit kommt nichts zurück. Der Lauf hängt womöglich — drücke Stopp, um abzubrechen (nichts geht verloren), oder warte weiter, falls dein Modell nur langsam ist."
   },
   "review": {
     "pendingOne": "1 ausstehende Änderung",

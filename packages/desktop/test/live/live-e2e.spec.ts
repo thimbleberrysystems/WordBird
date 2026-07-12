@@ -272,3 +272,156 @@ live('11 · deletes always ask, even in auto mode', () => {
     )
   })
 })
+
+live('12 · review outcomes reach the model (acceptance loop)', () => {
+  it('a rejected edit is acknowledged as NOT in the manuscript', async() => {
+    const harness = await make()
+    harness.setMode('approvals')
+    await harness.send(
+      't-review',
+      'Rewrite the opening scene’s first sentence so it mentions thunder. ' +
+        'Propose the edit to the file.'
+    )
+    expect(harness.editProposals.length).toBeGreaterThanOrEqual(1)
+
+    // The writer rejects it — exactly the note LangGraphManager injects.
+    const os = await import('os')
+    const fsm = await import('fs')
+    const pathm = await import('path')
+    const { EditResolutionTracker } = await import(
+      '../../src/main/services/ai/EditResolutionTracker'
+    )
+    const stateDir = fsm.mkdtempSync(pathm.join(os.tmpdir(), 'wordbird-live-review-'))
+    const tracker = new EditResolutionTracker(() => stateDir)
+    const proposal = harness.editProposals[0] as {
+      edit: { id: string; filePath: string }
+    }
+    tracker.recordProposal(proposal as never, 't-review')
+    tracker.resolve({ id: proposal.edit.id, filePath: proposal.edit.filePath, accepted: false })
+    const note = tracker.drainNote()
+    expect(note).toContain('REJECTED')
+
+    const reply = await harness.send(
+      't-review',
+      `${note}\n\nIs your thunder rewrite in the manuscript right now? Start your answer ` +
+        'with Yes or No.'
+    )
+    expect(reply.toLowerCase()).toMatch(/\bno\b|reject|not (in|applied|there)|declined/)
+    fsm.rmSync(stateDir, { recursive: true, force: true })
+  })
+})
+
+live('13 · book run: multi-segment drafting without typing continue', () => {
+  it('drafts multiple scenes across auto-continued segments', async() => {
+    const harness = await make({ root: createEmptyLiveProject() })
+    harness.setMode('auto')
+
+    const { driveBookRun, AUTO_CONTINUE_MESSAGE } = await import(
+      '../../src/main/services/ai/bookRun'
+    )
+    const fsm = await import('fs')
+    const pathm = await import('path')
+
+    let segments = 0
+    const { CONTINUE_RE } = await import('../../src/main/services/ai/bookRun')
+    let first = await harness.send(
+      't-bookrun',
+      'AUTO MODE BOOK RUN. Do exactly this, no questions: (1) save_plan a plan titled ' +
+        '"Novella" with three unchecked items: scene 1, scene 2, scene 3. (2) Draft scene 1 ' +
+        'now — propose_new_unit with 3–4 sentences of ghost-story prose — and tick its plan ' +
+        'item. (3) End your reply with the exact final line "CONTINUE: scene 2". In later ' +
+        'segments repeat for scene 2 then scene 3, and after scene 3 wrap up WITHOUT the ' +
+        'CONTINUE line.'
+    )
+    if (!CONTINUE_RE.test(first)) {
+      // Weak free models regularly do the work but drop the protocol line —
+      // one corrective nudge is fair (same policy as flow 4).
+      console.info(`[live-e2e] first book-run reply lacked CONTINUE (tail: …${first.slice(-160)})`)
+      first = await harness.send(
+        't-bookrun',
+        'You forgot the protocol. Plan items remain unchecked, so end THIS reply with the ' +
+          'exact final line "CONTINUE: scene 2" (nothing after it).'
+      )
+    }
+    const final = await driveBookRun(first, {
+      invokeNext: async() => {
+        segments += 1
+        return harness.send('t-bookrun', AUTO_CONTINUE_MESSAGE)
+      },
+      isAuto: () => true,
+      sessionTokens: () => 0,
+      progressSignature: () => {
+        // Real progress = proposals + structure growth (edits are not
+        // applied to disk in this harness, so count proposals too).
+        const structurePath = pathm.join(harness.root, '.wordbird', 'structure.json')
+        const structure = fsm.existsSync(structurePath)
+          ? fsm.readFileSync(structurePath, 'utf8')
+          : ''
+        return `${harness.editProposals.length}:${structure.length}`
+      },
+      emitStatus: () => {},
+      maxContinuations: 4,
+      tokenCeiling: 10_000_000
+    })
+
+    // The run continued at least once with zero writer input, and the
+    // protocol line never leaks into the final writer-facing reply.
+    expect(segments).toBeGreaterThanOrEqual(1)
+    expect(final).not.toMatch(/(^|\n)CONTINUE:/)
+    // Multiple scenes came out of the run (shells in structure + proposed
+    // prose), proving segment N+1 kept working the same plan.
+    expect(harness.editProposals.length).toBeGreaterThanOrEqual(2)
+  }, 600_000)
+})
+
+live('14 · context budget reflects the real model window', () => {
+  it('usage events carry the resolved window, not the legacy default', async() => {
+    const harness = await make()
+    harness.setMode('ask')
+    harness.orchestrator.setContextBudget(131072, 8192)
+    await harness.send('t-budget', 'Reply with the single word: ok')
+    expect(harness.contextUsages.length).toBeGreaterThanOrEqual(1)
+    const last = harness.contextUsages[harness.contextUsages.length - 1]
+    expect(last.contextWindow).toBe(131072)
+    expect(last.budgetTokens).toBe(131072 - 8192 - 8000)
+    expect(last.budgetChars).not.toBe(60000)
+  })
+})
+
+live('15 · context prep: orientation happens before prose edits', () => {
+  it('continuing the story reads/searches the project before the first proposal', async() => {
+    const harness = await make()
+    harness.setMode('auto')
+    await harness.send(
+      't-prep',
+      'Continue the story: draft the next scene after the letter scene, where Zara ' +
+        'decides to drive to Amityville. Keep it to 4 sentences.'
+    )
+    if (harness.editProposals.length === 0) {
+      // A weak model may orient and then check in first — one nudge is fair.
+      await harness.send(
+        't-prep',
+        'Yes — draft it now as a new scene file in chapter one. No more questions.'
+      )
+    }
+    expect(harness.editProposals.length).toBeGreaterThanOrEqual(1)
+
+    // Evidence of orientation BEFORE proposing: supervisor read/search tool
+    // activity or a completed worker (drafters read bible/summaries first;
+    // explorers count too). Proposing with zero reads = drafting blind.
+    const firstProposalAt = harness.activity.findIndex((event) =>
+      /propose/i.test(`${event.label} ${event.detail ?? ''}`)
+    )
+    const prelude =
+      firstProposalAt === -1 ? harness.activity : harness.activity.slice(0, firstProposalAt)
+    const oriented = prelude.some(
+      (event) =>
+        (event.kind === 'tool' &&
+          /read_|search_manuscript|where_appears|list_structure/i.test(
+            `${event.label} ${event.detail ?? ''}`
+          )) ||
+        event.kind === 'agent-start'
+    )
+    expect(oriented).toBe(true)
+  })
+})

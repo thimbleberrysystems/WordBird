@@ -476,18 +476,13 @@
       },
       "anthropic": {
         "apiKey": "",
-        "model": "claude-3-5-sonnet-latest"
+        "model": "claude-sonnet-4-5"
       },
       "google": {
         "apiKey": "",
-        "model": "gemini-1.5-pro"
+        "model": "gemini-2.5-flash"
       },
       "ollama": {
-        "apiKey": "ollama",
-        "baseUrl": "http://127.0.0.1:11434",
-        "model": "llama3"
-      },
-      "ollama_bundled": {
         "apiKey": "ollama",
         "baseUrl": "http://127.0.0.1:11434",
         "model": "llama3"

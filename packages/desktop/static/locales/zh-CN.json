@@ -262,7 +262,6 @@
     "replaceSingle": "单个替换",
     "invalidRegex": "无效的正则表达式 \"{pattern}\"",
     "regexMatchEmpty": "正则表达式 \"{pattern}\" 匹配到了空字符串",
-    "searchResultCount": "搜索结果",
     "searchResultInfo": "在 {fileCount} 个文件中找到 {matchCount} 个匹配项",
     "searchLimited": "仅搜索前 {count} 个结果"
   },
@@ -443,7 +442,6 @@
       "items": {
         "autoSave": "自动保存正在编辑的内容",
         "autoSaveDelay": "文件保存前的延迟时间（毫秒）",
-        "autoNormalizeLineEndings": "打开时自动将行尾规范化为 LF，可选择处理末尾换行符",
         "titleBarStyle": "标题栏样式（仅限 Windows 和 Linux 系统）",
         "openFilesInNewWindow": "在新窗口中打开文件",
         "openFolderInNewWindow": "通过菜单在新窗口中打开文件夹",
@@ -700,7 +698,7 @@
       },
       "uploader": {
         "title": "图片上传器",
-        "currentUploader": "当前上传器",
+        "currentUploader": "当前上传器：{name}",
         "picgoNotInstalled": "PicGo 未安装",
         "picgoDetectionStatus": "PicGo 检测状态",
         "picgoInstalled": "PicGo 已安装",
@@ -755,7 +753,26 @@
       "title": "Biscuit 设置",
       "provider": {
         "title": "Biscuit 提供商"
-      }
+      },
+      "selectProvider": "选择模型提供方",
+      "enterApiKey": "输入 API 密钥",
+      "enterEndpoint": "输入端点 URL",
+      "temperature": "创造力（temperature）",
+      "maxTokens": "最大回复长度（token）",
+      "maxTokensNotes": "数值越大，Biscuit 每步可写出更长的场景；上下文预算会自动调整。",
+      "connectProvider": "连接提供方",
+      "selectModel": "选择模型",
+      "refreshModels": "刷新模型",
+      "selectModelPlaceholder": "请选择模型",
+      "connectModel": "连接模型",
+      "pulling": "拉取中…",
+      "pullingModel": "正在拉取模型…",
+      "pullFailed": "模型“{model}”拉取失败，或 Ollama 正忙。",
+      "providerConnected": "提供方已连接",
+      "modelConnected": "模型连接成功",
+      "modelConnectionFailed": "模型连接失败：{error}",
+      "noModels": "未找到模型。请检查你的凭据。",
+      "fetchModelsFailed": "获取模型失败：{error}"
     },
     "markdown": {
       "title": "Markdown",
@@ -900,7 +917,7 @@
       "online": "在线",
       "saveError": "保存快捷键时出错",
       "shortcutInUse": "快捷键正在使用",
-      "shortcutInUseMessage": "此快捷键已分配给另一个命令",
+      "shortcutInUseMessage": "该快捷键已分配给 {accelerator}",
       "table": {
         "description": "描述",
         "edit": "编辑",
@@ -937,7 +954,7 @@
     "selectAll": "全选"
   },
   "about": {
-    "copyright": "版权",
+    "copyright": "Copyright © Luo Ran 2017-{year}",
     "copyrightContributors": "版权贡献者"
   },
   "commands": {
@@ -1099,7 +1116,7 @@
     "close": "关闭",
     "dontSave": "放弃保存",
     "file": "文件",
-    "fileExists": "文件已存在",
+    "fileExists": "文件已存在：{filename}",
     "files": "文件",
     "importWarning": "导入警告",
     "installPandoc": "安装 Pandoc",
@@ -1112,12 +1129,12 @@
   "error": {
     "configSchemaViolation": "配置架构违规",
     "copyError": "复制错误",
-    "initializationFailed": "初始化失败",
+    "initializationFailed": "初始化失败:{hint}",
     "otherInstanceDetected": "检测到 WordBird 的另一个实例正在运行",
     "report": "报告",
     "startupError": "启动错误",
     "terminatedDueToError": "由于错误而终止",
-    "unexpectedErrorWithMessage": "意外错误消息",
+    "unexpectedErrorWithMessage": "意外错误:{message}",
     "unexpectedMainProcess": "意外的主进程错误",
     "unexpectedRendererProcess": "意外的渲染进程错误"
   },
@@ -1129,7 +1146,7 @@
     "editor": {
       "anchorLinkCopied": "锚点链接已复制",
       "tabNotFound": "未找到标签页",
-      "tocItemNotFound": "未找到目录项",
+      "tocItemNotFound": "未找到目录 {key}",
       "highlightStart": "[高亮开始]",
       "highlightEnd": "[高亮结束]",
       "typeAtToInsert": "输入 {'@'} 来插入",
@@ -1377,19 +1394,19 @@
     },
     "export": {
       "error": "导出错误",
-      "errorExporting": "导出文件时出错",
-      "failed": "导出失败"
+      "errorExporting": "导出 {type} 文件时出错",
+      "failed": "{type} 导出失败"
     },
     "print": {
-      "error": "打印错误",
+      "error": "“{title}”打印出错",
       "failed": "打印失败"
     },
     "spellcheck": {
       "title": "拼写检查",
       "disabledError": "拼写检查已禁用错误",
-      "errorSwitchingLanguage": "切换拼写检查语言时出错",
-      "languageMissing": "拼写检查语言缺失",
-      "switchError": "拼写检查切换错误",
+      "errorSwitchingLanguage": "切换拼写检查语言出错:{languageCode}",
+      "languageMissing": "缺少拼写检查语言:{languageCode}",
+      "switchError": "{languageCode} 拼写检查切换错误:{error}",
       "disabled": "拼写检查已禁用",
       "enabled": "拼写检查已启用",
       "enabledError": "启用拼写检查时出错"
@@ -1462,7 +1479,8 @@
     "save": "保存",
     "saveTip": "保存所有打开的文件，并在历史中记录快照",
     "saveSnapshotMessage": "手动保存",
-    "saved": "项目已保存 — 快照已记录到历史。"
+    "saved": "项目已保存 — 快照已记录到历史。",
+    "actionFailed": "该更改未能保存：{error}"
   },
   "history": {
     "title": "历史",
@@ -1541,6 +1559,7 @@
     "openSettings": "打开 AI 设置",
     "stopped": "已停止。",
     "contextTip": "对话记忆已用 {percent}% —— 快满时 Biscuit 会自动压缩较早的对话。",
+    "contextTokens": "（{used} / {budget} 个 token。）",
     "compacting": "正在压缩较早的对话…",
     "selRewrite": "重写",
     "selExpand": "扩写",
@@ -1593,7 +1612,10 @@
     "reattachTip": "将 Biscuit 放回编辑器",
     "modeApprovals": "审批模式",
     "modeApprovalsHint": "每处编辑都等待你的确认 — 可逐项或一键全部批准。",
-    "questionFreeform": "或自行输入回答…"
+    "questionFreeform": "或自行输入回答…",
+    "steerFailed": "无法把你的批注发给 Biscuit——已放回输入框。",
+    "stalledTitle": "模型没有响应",
+    "stalled": "已经有一段时间没有任何返回。运行可能已卡住——按“停止”取消（不会丢失任何内容），如果只是模型较慢也可以继续等待。"
   },
   "review": {
     "pendingOne": "1 处待处理编辑",

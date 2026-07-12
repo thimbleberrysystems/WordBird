@@ -25,8 +25,9 @@ import type {
   ILangGraphResponse,
   IAgentToolCall,
   IAgentToolResult,
-  IAgentApplyEditRequest,
   IAgentEditProposal,
+  IAgentEditProposalPayload,
+  IAgentEditResolution,
   IAgentActivityEvent,
   IAgentApprovalRequest,
   IContextUsage,
@@ -136,9 +137,8 @@ export interface IpcInvokeChannels {
   'mt::ai:disconnect': { args: []; ret: void }
   'mt::ai:send-message': { args: [ILangGraphMessage[]]; ret: ILangGraphResponse }
   'mt::ai:execute-tool': { args: [IAgentToolCall]; ret: IAgentToolResult }
-  'mt::ai:apply-edit': { args: [IAgentApplyEditRequest]; ret: { ok: boolean; error?: string } }
   'mt::ai:write-file': { args: [string, string]; ret: { ok: boolean; error?: string } }
-  'mt::ai:apply-edit-in-renderer': { args: [IAgentApplyEditRequest]; ret: { ok: boolean; error?: string } }
+  'mt::ai:get-pending-edits': { args: []; ret: IAgentEditProposalPayload[] }
   'mt::ai:abort': { args: []; ret: { success: boolean } }
   'mt::ai:reset-thread': { args: []; ret: { threadId: string } }
   'mt::ai:set-mode': { args: [mode: AgentPermissionMode]; ret: { mode: AgentPermissionMode } }
@@ -315,6 +315,7 @@ export interface IpcSendChannels {
       currentFile?: string
     } | null
   ]
+  'mt::ai:edit-resolved': [resolution: IAgentEditResolution]
   'mt::window-tab-closed': [pathname: string]
   'mt::window-toggle-always-on-top': []
   'mt::window::drop': [payload: unknown]

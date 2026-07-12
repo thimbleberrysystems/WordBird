@@ -281,12 +281,31 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
 ### Biscuit agent runtime (main process)
 - `main/services/ai/LangGraphManager.ts` — provider clients (OpenAI/Anthropic/
   Gemini/OpenRouter/Ollama), credential validation at connect, durable
-  threads, permission modes, IPC surface.
+  threads, permission modes, IPC surface. Resolves the model's real context
+  window at connect (OpenRouter context_length / Ollama /api/show / family
+  table / `contextWindow` override) → `orchestrator.setContextBudget`.
+- `main/services/ai/bookRun.ts` — the auto-continuation loop ("book run"):
+  in auto mode the supervisor ends a segment with a final `CONTINUE: <next>`
+  line while the live plan has unchecked items and the loop grants another
+  segment — bounded by maxContinuations (default 25), a token-spend guard,
+  and a two-segment no-progress detector; resumable because progress lives
+  in plan files + structure.json. Pure module (unit-tested); wired in
+  LangGraphManager.sendMessage.
+- `main/services/ai/EditResolutionTracker.ts` — the acceptance feedback
+  loop: every edit proposal is tracked (`.wordbird/agent-state/
+  pending-edits.json`); the writer's accept/reject decisions flow back via
+  `mt::ai:edit-resolved`, become an `[EDIT REVIEW]` note opening the next
+  model turn plus an EDIT REVIEW STATUS brief line, and the pending queue
+  rehydrates the renderer review queue after a restart (cleared on
+  conversation switch).
 - `main/services/ai/orchestrator/Orchestrator.ts` — dynamic supervisor graph
   (housekeeping → supervisor ⇄ actions). Spawns role-scoped ReAct workers in
   parallel waves; per-mode budgets; conversation compaction past 80% of the
-  history budget (durable thread rewrite); history trimming safety net;
-  token-usage tallies; per-agent AbortControllers (`cancelAgent`).
+  MODEL-AWARE budget (triggered by provider-reported input_tokens or the
+  chars/4 estimate, whichever crosses first; durable thread rewrite);
+  history trimming safety net; token-usage tallies; per-agent
+  AbortControllers (`cancelAgent`); drafter spawns get a scene N→N+1
+  handoff (tail of the preceding scene, built by ContextBuilder).
 - `main/services/ai/orchestrator/roles.ts` — agent catalog (explorer,
   researcher, drafter, auditor, line-editor, plotter) with allowed-tool lists;
   a matrix test asserts every tool maps to a registered handler. Exports
@@ -303,12 +322,21 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   registered in code — JSON alone cannot add executable behavior. Tool
   outputs are context-capped (~24k chars) with announced truncation.
 - `main/services/ai/ContextBuilder.ts` — the per-turn "project brief"
-  (outline + book summary + open issues + active revisions + maturity stats:
+  (outline + book summary + open issues + active revisions + ACTIVE PLAN
+  progress + WHO'S WHERE entity block + EDIT REVIEW STATUS + maturity stats:
   bible/summary/plan counts, EMPTY PROJECT / NO STORY BIBLE markers that
   point at the matching playbook) injected into supervisor AND workers;
-  never persisted into thread state.
+  never persisted into thread state. Also builds the scene handoff.
+- `main/services/novel/EntityIndex.ts` — deterministic entity index (no
+  LLM): bible pages (name + aliases) × prose units → appearance counts,
+  persisted at `.wordbird/index/entities.json`, rebuilt lazily on an
+  mtime/size signature. Feeds WHO'S WHERE and the `where_appears` tool.
+  The supervisor prompt carries a CONTEXT PREP hard rule: no propose_* on
+  existing prose without in-turn read/search evidence.
 - `main/services/ai/FileCheckpointSaver.ts` — file-backed LangGraph
-  checkpointer under `.wordbird/agent-state/` (excluded from snapshots).
+  checkpointer under `.wordbird/agent-state/` (excluded from snapshots);
+  prunes to the newest 20 checkpoints per thread so novel-length threads
+  cannot grow checkpoints.json unboundedly.
 
 ### Safety model
 Three modes (ctrl+shift cycles; fresh sessions start in approvals):

@@ -69,11 +69,11 @@ onMounted(() => {
 }
 
 .agents-state--running {
-  color: var(--themeColor, #409eff);
+  color: var(--themeColor, var(--wbInfoColor));
 }
 
 .agents-state--paused {
-  color: #e6a23c;
+  color: var(--wbWarningColor);
 }
 
 .agents-body {

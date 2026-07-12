@@ -65,6 +65,11 @@ export interface OrchestratorCallbacks {
   emitAgentStatus?: (status: IAgentStatus) => void
   /** Mid-run writer notes, drained at each supervisor boundary. */
   drainSteering?: () => string[]
+  /**
+   * Scene handoff: given a drafter's task text, return the tail of the
+   * preceding scene's prose (or null) so consecutive scenes join seamlessly.
+   */
+  buildHandoff?: (task: string) => Promise<string | null>
 }
 
 // ---- Token accounting -------------------------------------------------
@@ -218,12 +223,23 @@ export class PauseGate {
 
 // ---- Context budgeting -------------------------------------------------
 // Thread state accumulates every turn and tool result; without a window
-// the model input grows unboundedly on a long project. Budgets are in
-// characters (~4 chars/token): generous enough for continuity, small
-// enough to never blow a context window.
+// the model input grows unboundedly on a long project. The trimming
+// machinery works in characters (~4 chars/token), but the ACTUAL budgets
+// are derived from the connected model's context window via
+// setContextBudget() — a 200k-context model gets ~13× the room of these
+// conservative defaults, a small local model gets clamped down. The
+// defaults below apply until a model is connected.
 const HISTORY_CHAR_BUDGET = 60000
 const SINGLE_MESSAGE_CHAR_CAP = 16000
 const WORKER_RESULT_CHAR_CAP = 8000
+const CHARS_PER_TOKEN = 4
+/** Prompt overhead reserved out of the window: system prompt + brief + tool schemas. */
+const FIXED_OVERHEAD_TOKENS = 8000
+/** Share of usable input granted to conversation history. */
+const HISTORY_SHARE = 0.6
+
+const clamp = (value: number, lo: number, hi: number): number =>
+  Math.min(hi, Math.max(lo, value))
 
 /** Most recent tool calls kept per agent for the agents-tree detail view. */
 const RECENT_TOOLS_CAP = 12
@@ -233,12 +249,12 @@ const contentLength = (message: BaseMessage): number => {
   return typeof c === 'string' ? c.length : JSON.stringify(c ?? '').length
 }
 
-const clipContent = (message: BaseMessage): BaseMessage => {
+const clipContent = (message: BaseMessage, cap = SINGLE_MESSAGE_CHAR_CAP): BaseMessage => {
   if (typeof message.content !== 'string') return message
-  if (message.content.length <= SINGLE_MESSAGE_CHAR_CAP) return message
+  if (message.content.length <= cap) return message
   const clipped =
-    message.content.slice(0, SINGLE_MESSAGE_CHAR_CAP) +
-    `\n…[${message.content.length - SINGLE_MESSAGE_CHAR_CAP} characters trimmed]`
+    message.content.slice(0, cap) +
+    `\n…[${message.content.length - cap} characters trimmed]`
   if (message instanceof ToolMessage) {
     return new ToolMessage({ content: clipped, tool_call_id: message.tool_call_id })
   }
@@ -311,9 +327,10 @@ const COMPACT_PROMPT =
  */
 export const trimHistory = (
   messages: BaseMessage[],
-  budget = HISTORY_CHAR_BUDGET
+  budget = HISTORY_CHAR_BUDGET,
+  messageCap = SINGLE_MESSAGE_CHAR_CAP
 ): { messages: BaseMessage[]; trimmed: boolean } => {
-  const clipped = messages.map(clipContent)
+  const clipped = messages.map((m) => clipContent(m, messageCap))
   let total = clipped.reduce((sum, m) => sum + contentLength(m), 0)
   if (total <= budget) return { messages: clipped, trimmed: false }
 
@@ -337,6 +354,7 @@ const SUPERVISOR_TOOL_NAMES = [
   'list_structure',
   'read_summary',
   'search_manuscript',
+  'where_appears',
   'read_bible',
   'list_files',
   'list_continuity_issues',
@@ -404,6 +422,13 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'plotter. Independent tasks belong in ONE wave so they run in parallel.\n' +
   '- Give each agent complete, self-contained instructions: what to do, where to look, what to ' +
   'return. Include relevant unit ids/paths from the project brief so they start oriented.\n' +
+  '- CONTEXT PREP (hard rule, not a suggestion): before your FIRST propose_* of a turn ' +
+  'that touches existing prose, you must hold in-turn evidence — read/search results or a ' +
+  'completed explorer wave — covering the target units AND every named character/place ' +
+  'involved (WHO\'S WHERE + where_appears make this one glance; read_summary/read_bible ' +
+  'fill the rest). Editing text you have not read this turn is how continuity dies. ' +
+  'Brainstorming or starting a new project? Default the FIRST wave to an explorer (plus a ' +
+  'researcher when real-world facts are in play) instead of answering cold.\n' +
   '- PROSE BELONGS IN FILES, NEVER IN CHAT. When the writer asks you to write or save ' +
   'anything (a scene, a chapter, notes), you MUST produce it through a tool: spawn a ' +
   'drafter for substantial or multi-scene work, or for one small piece call ' +
@@ -413,6 +438,11 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   '— they will see your proposal as a reviewable diff and accept it with one click.\n' +
   '- Prose/bible changes always reach the writer as reviewable diffs — never claim a ' +
   'change happened without a tool call that proposed it.\n' +
+  '- REVIEW OUTCOMES: a proposed edit is NOT applied until the writer accepts it. Turns ' +
+  'may open with an automated "[EDIT REVIEW]" report, and the brief carries an EDIT ' +
+  'REVIEW STATUS line — treat both as ground truth. Run aftercare only for ACCEPTED ' +
+  'edits. A REJECTED edit is a decision: do not silently re-propose it — ask what to ' +
+  'change, or move on. Edits "awaiting review" do not exist in the manuscript yet.\n' +
   '- After results return, either spawn another wave (if genuinely needed) or reply to the writer ' +
   'in warm, plain language. Do not mention roles, waves, or tool names to the writer.\n' +
   '- DELETING (delete_unit / delete_file) is available in approvals and auto modes, and ' +
@@ -456,7 +486,9 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   '   · hybrid: milestone beats are the only outline; discover freely between them; when ' +
   'a scene lands, note which beat it serves.\n' +
   '   Always orient before drafting (read_summary neighbors, read_bible for everyone ' +
-  'present). AFTERCARE after accepted edits — update_summary for the unit (book.md when ' +
+  'present). Give every scene a DISTINCT, descriptive title — "The Cellar Door", never ' +
+  '"Opening Scene" or "Scene 2" — titles become filenames the writer lives with. ' +
+  'AFTERCARE after accepted edits — update_summary for the unit (book.md when ' +
   'the shape moved) and propose_bible_update for new canon. Strongly encouraged, but it ' +
   'yields if the writer says skip it.\n' +
   '3) STRUCTURE FRAMEWORK (whenever bible/structure.md exists, any method): when planning ' +
@@ -524,7 +556,15 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
       : '\nAUTO MODE IS ACTIVE: proposed edits are applied to the manuscript ' +
         'automatically after a safety snapshot. When you report changes, say they are ' +
         'APPLIED (and rewindable from History) — do not tell the writer to review or ' +
-        'accept anything.\n')
+        'accept anything.\n' +
+        'BOOK RUN (auto-continuation): when you are executing a live plan and this ' +
+        'turn\'s work is done but unchecked plan items remain, end your reply with a ' +
+        'FINAL line exactly of the form "CONTINUE: <the next step>" — the harness ' +
+        'immediately gives you another turn; the writer never has to type continue. ' +
+        'Each segment: do the next chunk of work, tick completed plan items, then ' +
+        'CONTINUE again. OMIT the marker when the plan is complete, when you need the ' +
+        'writer\'s input (a question or approval), or when something went wrong — that ' +
+        'ends the run normally. Never use the marker outside plan execution.\n')
 
 export class Orchestrator {
   private _mode: AgentPermissionMode = 'approvals'
@@ -553,6 +593,47 @@ export class Orchestrator {
     this._mode = mode
   }
 
+  // ---- Model-aware context budgets ----
+  // Derived from the connected model's real context window; the defaults
+  // (equivalent to a ~25k-token window) apply until setContextBudget runs.
+  private _contextWindow = 0
+  private _usableInputTokens = Math.round((HISTORY_CHAR_BUDGET / CHARS_PER_TOKEN) / HISTORY_SHARE)
+  private _historyCharBudget = HISTORY_CHAR_BUDGET
+  private _singleMessageCharCap = SINGLE_MESSAGE_CHAR_CAP
+  private _workerResultCharCap = WORKER_RESULT_CHAR_CAP
+  /** Prompt size the provider actually reported for the last supervisor call. */
+  private _lastInputTokens = 0
+
+  /**
+   * Size every context budget to the connected model: usable input =
+   * window − output reservation − fixed overhead; history gets its share;
+   * per-message and worker-report caps scale along.
+   */
+  setContextBudget(contextWindow: number, maxOutputTokens: number): void {
+    if (!Number.isFinite(contextWindow) || contextWindow <= 0) return
+    this._contextWindow = Math.floor(contextWindow)
+    const usable = Math.max(
+      4000,
+      this._contextWindow - Math.max(0, maxOutputTokens) - FIXED_OVERHEAD_TOKENS
+    )
+    this._usableInputTokens = usable
+    this._historyCharBudget = Math.floor(usable * HISTORY_SHARE) * CHARS_PER_TOKEN
+    this._singleMessageCharCap = clamp(Math.floor(this._historyCharBudget * 0.27), 4000, 120000)
+    this._workerResultCharCap = clamp(Math.floor(this._historyCharBudget * 0.13), 2000, 60000)
+    log.info(
+      `[orchestrator] Context budget: window=${this._contextWindow} usable=${usable} ` +
+      `history=${this._historyCharBudget} chars`
+    )
+  }
+
+  get contextBudget(): { contextWindow: number; usableInputTokens: number; historyCharBudget: number } {
+    return {
+      contextWindow: this._contextWindow,
+      usableInputTokens: this._usableInputTokens,
+      historyCharBudget: this._historyCharBudget
+    }
+  }
+
   // ---- Token accounting state ----
   private _turnUsage: ITokenTally = emptyTally()
   private _sessionUsage: ITokenTally = emptyTally()
@@ -560,6 +641,11 @@ export class Orchestrator {
   private _recordUsage(role: string, message: BaseMessage): void {
     const usage = extractUsage(message)
     if (!usage) return
+    // The supervisor's prompt carries the whole thread — its reported input
+    // size is the real context pressure (compaction triggers on it).
+    if (role === 'supervisor' && usage.inputTokens > 0) {
+      this._lastInputTokens = usage.inputTokens
+    }
     addToTally(this._turnUsage, role, usage)
     addToTally(this._sessionUsage, role, usage)
     this._callbacks.emitTokenUsage?.({
@@ -571,6 +657,11 @@ export class Orchestrator {
   /** New user turn — turn tally starts fresh (called from housekeeping). */
   private _beginTurnUsage(): void {
     this._turnUsage = emptyTally()
+  }
+
+  /** Total tokens consumed this session (book-run spend guard reads this). */
+  get sessionTokens(): number {
+    return this._sessionUsage.inputTokens + this._sessionUsage.outputTokens
   }
 
   resetSessionUsage(): void {
@@ -690,11 +781,20 @@ export class Orchestrator {
   }
 
   private _emitUsage(usedChars: number, compacting: boolean): void {
+    // Real context pressure: prefer the provider-reported prompt size over
+    // the chars/4 estimate the moment we have one.
+    const estimatedTokens = Math.round(usedChars / CHARS_PER_TOKEN)
+    const usedTokens = this._lastInputTokens > 0 ? this._lastInputTokens : estimatedTokens
+    const charsRatio = usedChars / this._historyCharBudget
+    const tokenRatio = usedTokens / this._usableInputTokens
     this._callbacks.emitContextUsage?.({
       usedChars,
-      budgetChars: HISTORY_CHAR_BUDGET,
-      ratio: Math.min(1, usedChars / HISTORY_CHAR_BUDGET),
-      compacting
+      budgetChars: this._historyCharBudget,
+      ratio: Math.min(1, Math.max(charsRatio, tokenRatio)),
+      compacting,
+      usedTokens,
+      budgetTokens: this._usableInputTokens,
+      contextWindow: this._contextWindow > 0 ? this._contextWindow : undefined
     })
   }
 
@@ -909,9 +1009,20 @@ export class Orchestrator {
       // they start oriented instead of re-discovering the novel via tools.
       const brief = await this._getBrief()
       const systemText = definition.systemPrompt + (brief ? `\n\n${brief}` : '')
+      // Scene handoff: drafters get the tail of the preceding scene so
+      // consecutive scenes join without a seam (voice, time, open threads).
+      let task = spawn.task
+      if (spawn.role === 'drafter' && this._callbacks.buildHandoff) {
+        try {
+          const handoff = await this._callbacks.buildHandoff(spawn.task)
+          if (handoff) task += `\n\n${handoff}`
+        } catch {
+          // Handoff is an assist, never a blocker.
+        }
+      }
       const result = (await graph.invoke(
         {
-          messages: [new SystemMessage(systemText), new HumanMessage(spawn.task)]
+          messages: [new SystemMessage(systemText), new HumanMessage(task)]
         },
         { recursionLimit, signal: combinedSignal } as never
       )) as { messages: BaseMessage[] }
@@ -919,10 +1030,10 @@ export class Orchestrator {
       let content =
         typeof last?.content === 'string' ? last.content : JSON.stringify(last?.content ?? '')
       // Worker reports persist in thread state — keep them bounded.
-      if (content.length > WORKER_RESULT_CHAR_CAP) {
+      if (content.length > this._workerResultCharCap) {
         content =
-          content.slice(0, WORKER_RESULT_CHAR_CAP) +
-          `\n…[report truncated at ${WORKER_RESULT_CHAR_CAP} characters]`
+          content.slice(0, this._workerResultCharCap) +
+          `\n…[report truncated at ${this._workerResultCharCap} characters]`
       }
       status.status = 'done'
       status.endedAt = Date.now()
@@ -1026,9 +1137,17 @@ export class Orchestrator {
         }
 
         const used = historyChars(repairedMessages)
-        if (used > HISTORY_CHAR_BUDGET * COMPACT_TRIGGER_RATIO) {
+        // Two triggers: the chars/4 estimate against the history budget, and
+        // the provider-reported prompt size against the model's real usable
+        // input — whichever crosses 80% first wins.
+        const overByEstimate = used > this._historyCharBudget * COMPACT_TRIGGER_RATIO
+        const overByUsage =
+          this._lastInputTokens > this._usableInputTokens * COMPACT_TRIGGER_RATIO
+        if (overByEstimate || overByUsage) {
           const update = await this._compact(repairedMessages, signal)
           if (update) {
+            // The old prompt-size sample described the pre-compaction thread.
+            this._lastInputTokens = 0
             const after = update.filter((m) => !(m instanceof RemoveMessage))
             this._emitUsage(historyChars(after), false)
             return { messages: update }
@@ -1054,7 +1173,11 @@ export class Orchestrator {
         // the system prompt carries the project brief, and the accumulated
         // thread is windowed to the character budget.
         const brief = await this._getBrief()
-        const { messages: history, trimmed } = trimHistory(state.messages)
+        const { messages: history, trimmed } = trimHistory(
+          state.messages,
+          this._historyCharBudget,
+          this._singleMessageCharCap
+        )
         const systemText =
           buildSupervisorPrompt(mode, budget.maxWorkersPerWave) +
           (brief ? `\n\n${brief}` : '') +

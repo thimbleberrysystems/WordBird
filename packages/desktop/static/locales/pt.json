@@ -262,7 +262,6 @@
     "replaceSingle": "Substituir Um",
     "invalidRegex": "Expressão regular inválida \"{pattern}\"",
     "regexMatchEmpty": "Expressão regular corresponde à string vazia \"{pattern}\"",
-    "searchResultCount": "Resultados da pesquisa",
     "searchResultInfo": "{matchCount} correspondências em {fileCount} arquivos",
     "searchLimited": "Pesquisa limitada aos primeiros {count} resultados"
   },
@@ -443,7 +442,6 @@
       "items": {
         "autoSave": "Salvar automaticamente o conteúdo sendo editado",
         "autoSaveDelay": "O tempo em ms após uma mudança que o arquivo é salvo",
-        "autoNormalizeLineEndings": "Normalizar automaticamente as quebras de linha para LF e opcionalmente novas linhas finais ao abrir",
         "titleBarStyle": "O estilo da barra de título (apenas sistemas Windows e Linux)",
         "openFilesInNewWindow": "Abrir arquivos em uma nova janela",
         "openFolderInNewWindow": "Abrir pasta via menu em uma nova janela",
@@ -700,7 +698,7 @@
       },
       "uploader": {
         "title": "Carregador de Imagens",
-        "currentUploader": "Carregador Atual",
+        "currentUploader": "Uploader atual: {name}",
         "picgoNotInstalled": "PicGo não está instalado",
         "picgoDetectionStatus": "Status de Detecção do PicGo",
         "picgoInstalled": "PicGo está instalado",
@@ -710,7 +708,6 @@
         "npmInstallCommand": "npm install picgo -g",
         "yarnInstallCommand": "yarn global add picgo",
         "pnpmInstallCommand": "pnpm add -g picgo",
-        "brewInstallCommand": "brew install picgo",
         "chooseInstallMethod": "Escolha o méde instalação:",
         "retestPicgo": "Testar novamente",
         "detecting": "Detectando...",
@@ -756,7 +753,26 @@
       "title": "Configurações do Biscuit",
       "provider": {
         "title": "Provedor do Biscuit"
-      }
+      },
+      "selectProvider": "Selecionar provedor de modelos",
+      "enterApiKey": "Inserir chave de API",
+      "enterEndpoint": "Inserir URL do endpoint",
+      "temperature": "Criatividade (temperature)",
+      "maxTokens": "Comprimento máximo da resposta (tokens)",
+      "maxTokensNotes": "Valores mais altos permitem que o Biscuit escreva cenas mais longas por etapa; o orçamento de contexto se adapta automaticamente.",
+      "connectProvider": "Conectar provedor",
+      "selectModel": "Selecionar modelo",
+      "refreshModels": "Atualizar modelos",
+      "selectModelPlaceholder": "Selecione um modelo",
+      "connectModel": "Conectar modelo",
+      "pulling": "Baixando…",
+      "pullingModel": "Baixando modelo…",
+      "pullFailed": "Falha ao baixar o modelo '{model}' ou o Ollama está ocupado.",
+      "providerConnected": "Provedor conectado",
+      "modelConnected": "Conexão do modelo bem-sucedida",
+      "modelConnectionFailed": "Falha na conexão do modelo: {error}",
+      "noModels": "Nenhum modelo encontrado. Verifique suas credenciais.",
+      "fetchModelsFailed": "Falha ao buscar modelos: {error}"
     },
     "markdown": {
       "title": "Markdown",
@@ -901,7 +917,7 @@
       "online": "Online",
       "saveError": "Erro ao salvar atalhos de teclado",
       "shortcutInUse": "Atalho em uso",
-      "shortcutInUseMessage": "Este atalho já está atribuído a outro comando",
+      "shortcutInUseMessage": "Este atalho já está atribuído a {accelerator}",
       "table": {
         "description": "Descrição",
         "edit": "Editar",
@@ -930,7 +946,7 @@
     }
   },
   "about": {
-    "copyright": "Copyright",
+    "copyright": "Copyright © Luo Ran 2017-{year}",
     "copyrightContributors": "Copyright Contribuidores"
   },
   "commands": {
@@ -1092,7 +1108,7 @@
     "close": "Fechar",
     "dontSave": "Não Salvar",
     "file": "Arquivo",
-    "fileExists": "Arquivo existe",
+    "fileExists": "O arquivo já existe: {filename}",
     "files": "Arquivos",
     "importWarning": "Aviso de importação",
     "installPandoc": "Instalar Pandoc",
@@ -1105,12 +1121,12 @@
   "error": {
     "configSchemaViolation": "Violação do esquema de configuração",
     "copyError": "Erro de cópia",
-    "initializationFailed": "Falha na inicialização",
+    "initializationFailed": "Falha na inicialização: {hint}",
     "otherInstanceDetected": "Outra instância do WordBird já está em execução",
     "report": "Reportar",
     "startupError": "Erro de inicialização",
     "terminatedDueToError": "Terminado devido a erro",
-    "unexpectedErrorWithMessage": "Erro inesperado com mensagem",
+    "unexpectedErrorWithMessage": "Erro inesperado: {message}",
     "unexpectedMainProcess": "Erro inesperado do processo principal",
     "unexpectedRendererProcess": "Erro inesperado do processo de renderização"
   },
@@ -1122,7 +1138,7 @@
     "editor": {
       "anchorLinkCopied": "Link âncora copiado",
       "tabNotFound": "Aba não encontrada",
-      "tocItemNotFound": "Item do índice não encontrado",
+      "tocItemNotFound": "Item do sumário {key} não encontrado",
       "highlightStart": "[Início do destaque]",
       "highlightEnd": "[Fim do destaque]",
       "typeAtToInsert": "Digite {'@'} para inserir",
@@ -1358,8 +1374,8 @@
     },
     "export": {
       "error": "Erro de exportação",
-      "errorExporting": "Erro ao exportar arquivo",
-      "failed": "Exportação falhou"
+      "errorExporting": "Erro ao exportar o arquivo {type}",
+      "failed": "Falha na exportação de {type}"
     },
     "insertTable": {
       "title": "Inserir Tabela",
@@ -1370,7 +1386,7 @@
       "notificationNotFound": "Notificação não encontrada"
     },
     "print": {
-      "error": "Erro de impressão",
+      "error": "Erro de impressão para \"{title}\"",
       "failed": "Impressão falhou"
     },
     "sourceCode": {
@@ -1382,9 +1398,9 @@
       "disabled": "Verificação ortográfica desativada",
       "enabledError": "Erro ao ativar verificação ortográfica",
       "disabledError": "Erro ao desativar verificação ortográfica",
-      "errorSwitchingLanguage": "Erro ao trocar idioma da verificação ortográfica",
-      "languageMissing": "Idioma da verificação ortográfica não encontrado",
-      "switchError": "Erro ao trocar verificação ortográfica",
+      "errorSwitchingLanguage": "Erro ao trocar o idioma da verificação ortográfica: {languageCode}",
+      "languageMissing": "Idioma de verificação ortográfica ausente: {languageCode}",
+      "switchError": "Erro na troca da verificação ortográfica para {languageCode}: {error}",
       "title": "Verificação Ortográfica"
     },
     "table": "tabela",
@@ -1463,7 +1479,8 @@
     "save": "Salvar",
     "saveTip": "Salva todos os arquivos abertos e registra um instantâneo no Histórico",
     "saveSnapshotMessage": "Salvamento manual",
-    "saved": "Projeto salvo — instantâneo registrado no Histórico."
+    "saved": "Projeto salvo — instantâneo registrado no Histórico.",
+    "actionFailed": "Essa alteração não foi salva: {error}"
   },
   "history": {
     "title": "Histórico",
@@ -1542,6 +1559,7 @@
     "openSettings": "Abrir configurações de IA",
     "stopped": "Interrompido.",
     "contextTip": "Memória da conversa {percent}% cheia — o Biscuit condensa automaticamente os turnos antigos quando ela enche.",
+    "contextTokens": "({used} de {budget} tokens.)",
     "compacting": "Condensando a conversa anterior…",
     "selRewrite": "Reescrever",
     "selExpand": "Expandir",
@@ -1594,7 +1612,10 @@
     "reattachTip": "Devolver o Biscuit ao editor",
     "modeApprovals": "modo aprovações",
     "modeApprovalsHint": "Cada edição espera seu OK — por mudança ou todas de uma vez.",
-    "questionFreeform": "Ou escreva sua própria resposta…"
+    "questionFreeform": "Ou escreva sua própria resposta…",
+    "steerFailed": "Não foi possível entregar sua nota ao Biscuit — ela voltou para a caixa de entrada.",
+    "stalledTitle": "Sem resposta do modelo",
+    "stalled": "Nada retornou por um tempo. A execução pode estar travada — pressione Parar para cancelá-la (nada se perde) ou continue aguardando se o seu modelo for apenas lento."
   },
   "review": {
     "pendingOne": "1 edição pendente",

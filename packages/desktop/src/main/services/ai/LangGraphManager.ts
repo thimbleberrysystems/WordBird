@@ -15,16 +15,23 @@ import type {
   ILangGraphResponse,
   IAgentToolCall,
   IAgentToolResult,
-  IAgentApplyEditRequest,
   IAgentApprovalRequest,
+  IAgentEditProposalPayload,
+  IAgentEditResolution,
   AgentPermissionMode
 } from '../../../shared/types/langgraph'
 import type { AIProvider } from '../../../shared/constants/ai'
-import { PROVIDER_BASE_URLS, PROVIDER_DEFAULT_MODELS } from '../../../shared/constants/ai'
+import {
+  PROVIDER_BASE_URLS,
+  PROVIDER_DEFAULT_MODELS,
+  normalizeProvider
+} from '../../../shared/constants/ai'
 import axios from 'axios'
 import { AgentToolService, AgentToolPackLoader } from './AgentToolService'
 import { registerBuiltInAgentToolHandlers } from './AgentToolHandlers'
 import { getActiveAgentProjectRoot, setAgentToolAccessor } from './AgentProjectRootResolver'
+import { EditResolutionTracker } from './EditResolutionTracker'
+import { driveBookRun, AUTO_CONTINUE_MESSAGE } from './bookRun'
 import { FileCheckpointSaver } from './FileCheckpointSaver'
 import { Orchestrator } from './orchestrator/Orchestrator'
 import { contextBuilder } from './ContextBuilder'
@@ -54,6 +61,9 @@ export class LangGraphManager {
   private _threadId: string | null = null
   private _orchestrator: Orchestrator | null = null
   private _permissionMode: AgentPermissionMode = 'approvals'
+  private _editTracker = new EditResolutionTracker(() => this._agentStateDir())
+  /** Per-model context windows learned from provider APIs (OpenRouter/Ollama). */
+  private _modelContextLengths = new Map<string, number>()
   private _pendingApprovals = new Map<
     string,
     { resolve: (approved: boolean) => void; timer: NodeJS.Timeout }
@@ -140,7 +150,30 @@ export class LangGraphManager {
     this._threadId = this._persistNewThreadId()
     this._systemPromptAdded = false
     this._orchestrator?.resetSessionUsage()
+    // Proposals from the previous conversation must not leak into this one —
+    // drop them everywhere (main-side queue + every renderer's review queue).
+    this._editTracker.clearPending()
+    this._broadcast('mt::ai:pending-edits-cleared', {})
     return this._threadId
+  }
+
+  // ---- Edit review feedback loop -----------------------------------------
+
+  /** Record + broadcast an edit proposal (single path for both emit sites). */
+  private _emitEditProposal(payload: IAgentEditProposalPayload): void {
+    this._editTracker.recordProposal(payload, this._threadId)
+    this._broadcast('mt::ai:edit-proposal', payload)
+  }
+
+  /** The writer accepted/rejected an edit — feed it back to the model. */
+  resolveEdit(resolution: IAgentEditResolution): void {
+    if (!resolution || typeof resolution.id !== 'string') return
+    this._editTracker.resolve(resolution)
+  }
+
+  /** Proposals still awaiting review (renderer rehydration after restart). */
+  getPendingEdits(): IAgentEditProposalPayload[] {
+    return this._editTracker.pendingForThread(this._threadId)
   }
 
   cancelAgent(agentId: string): boolean {
@@ -199,6 +232,7 @@ export class LangGraphManager {
 
   flushCheckpoints(): void {
     this._checkpointer?.flush()
+    this._editTracker.flush()
   }
 
   public get isConnected(): boolean {
@@ -325,12 +359,9 @@ export class LangGraphManager {
           timeout: 10000
         })
       } else if (provider === 'google') {
-        await axios.get(
-          `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
-          { timeout: 10000 }
-        )
+        await axios.get(`${base}/v1beta/models?key=${apiKey}`, { timeout: 10000 })
       } else {
-        // ollama / ollama_bundled: no key — just confirm the server responds.
+        // ollama: no key — just confirm the server responds.
         await axios.get(`${base}/api/tags`, { timeout: 10000 })
       }
     } catch (error) {
@@ -350,7 +381,51 @@ export class LangGraphManager {
     }
   }
 
-  async connect(config: IAIConfig): Promise<void> {
+  /**
+   * The model's context window in tokens: manual override → provider-
+   * reported (OpenRouter model list, Ollama /api/show) → family table →
+   * a conservative 32k fallback. Sizing budgets to the REAL window is what
+   * keeps a 200k-context model from being compacted at 15k tokens and a
+   * small local model from overflowing.
+   */
+  private async _resolveContextWindow(config: IAIConfig): Promise<number> {
+    if (Number.isFinite(config.contextWindow) && (config.contextWindow as number) > 0) {
+      return Math.floor(config.contextWindow as number)
+    }
+    const model = config.model || ''
+    const reported = this._modelContextLengths.get(model)
+    if (reported) return reported
+
+    if (config.provider === 'ollama') {
+      try {
+        const base = config.baseUrl || PROVIDER_BASE_URLS.ollama
+        const response = await axios.post(`${base}/api/show`, { model }, { timeout: 10000 })
+        const info = (response.data?.model_info ?? {}) as Record<string, unknown>
+        for (const [key, value] of Object.entries(info)) {
+          if (key.endsWith('.context_length') && Number.isFinite(Number(value))) {
+            return Number(value)
+          }
+        }
+      } catch (error) {
+        log.warn('[LangGraphMain] Could not read Ollama context length:', error)
+      }
+      return 8192
+    }
+
+    const id = model.toLowerCase()
+    if (config.provider === 'anthropic' || id.includes('claude')) return 200000
+    if (config.provider === 'google' || id.includes('gemini')) return 1000000
+    if (config.provider === 'openai') {
+      if (id.startsWith('gpt-4.1')) return 1000000
+      if (id.startsWith('gpt-3.5')) return 16385
+      return 128000
+    }
+    return 32768
+  }
+
+  async connect(rawConfig: IAIConfig): Promise<void> {
+    // Saved prefs may still carry the retired 'ollama_bundled' provider.
+    const config: IAIConfig = { ...rawConfig, provider: normalizeProvider(rawConfig.provider) }
     const { provider, apiKey, baseUrl } = config
     this._currentProvider = provider
     this._currentModel = config.model || null
@@ -371,7 +446,7 @@ export class LangGraphManager {
       })
       this._agentToolService.setEditProposalEmitter(async(proposal) => {
         log.debug('[LangGraphMain] ToolNode edit proposal emitter received:', proposal)
-        this._broadcast('mt::ai:edit-proposal', proposal)
+        this._emitEditProposal(proposal)
       })
 
       this._agent = null
@@ -395,8 +470,15 @@ export class LangGraphManager {
           },
           requestApproval: (request) => this._requestApproval(request),
           // Per-turn project grounding: outline + book summary + open
-          // continuity issues, shared by supervisor and workers.
-          buildBrief: () => contextBuilder.buildProjectBrief(getActiveAgentProjectRoot()),
+          // continuity issues, shared by supervisor and workers — plus the
+          // review-loop status (edits awaiting review / recent outcomes).
+          buildBrief: async() => {
+            const brief = await contextBuilder.buildProjectBrief(getActiveAgentProjectRoot())
+            const review = this._editTracker.briefSummary()
+            if (!review) return brief
+            const line = `EDIT REVIEW STATUS: ${review}`
+            return brief ? `${brief}\n\n${line}` : line
+          },
           emitContextUsage: (usage) => {
             this._broadcast('mt::ai:context-usage', usage)
           },
@@ -406,11 +488,19 @@ export class LangGraphManager {
           emitAgentStatus: (status) => {
             this._broadcast('mt::ai:agent-status', status)
           },
-          drainSteering: () => this._steeringQueue.splice(0)
+          drainSteering: () => this._steeringQueue.splice(0),
+          // Scene N→N+1 handoff for drafters (seamless consecutive scenes).
+          buildHandoff: (task) =>
+            contextBuilder.buildSceneHandoff(getActiveAgentProjectRoot(), task)
         },
         checkpointer: this._checkpointer ?? undefined
       })
       this._orchestrator.setMode(this._permissionMode)
+      // Size every context budget to the model's real window (P0.3): a
+      // 200k-context model gets room for a novel-length thread; a small
+      // local model gets clamped below its ceiling.
+      const contextWindow = await this._resolveContextWindow(config)
+      this._orchestrator.setContextBudget(contextWindow, config.maxTokens ?? 2048)
       this._agent = this._orchestrator.buildGraph() as unknown as CompiledAgent
       this._broadcastConnectionState()
     } catch (error) {
@@ -444,18 +534,14 @@ export class LangGraphManager {
     this._broadcastConnectionState()
   }
 
-  async fetchModels(provider: AIProvider, apiKey: string, baseUrl?: string): Promise<string[]> {
+  async fetchModels(rawProvider: AIProvider, apiKey: string, baseUrl?: string): Promise<string[]> {
+    const provider = normalizeProvider(rawProvider)
     const actualBaseUrl = baseUrl || PROVIDER_BASE_URLS[provider]
 
     try {
-      if (
-        provider === 'openai' ||
-        provider === 'ollama' ||
-        provider === 'ollama_bundled' ||
-        provider === 'openrouter'
-      ) {
+      if (provider === 'openai' || provider === 'ollama' || provider === 'openrouter') {
         const url =
-          provider === 'ollama' || provider === 'ollama_bundled'
+          provider === 'ollama'
             ? `${actualBaseUrl}/api/tags`
             : `${actualBaseUrl}/models`
         const headers =
@@ -466,6 +552,16 @@ export class LangGraphManager {
         const response = await axios.get(url, { headers })
 
         if (provider === 'openai' || provider === 'openrouter') {
+          // OpenRouter reports each model's context window — remember it so
+          // the context budget can be sized to the model on connect.
+          if (provider === 'openrouter') {
+            for (const m of response.data.data as Array<Record<string, unknown>>) {
+              const length = Number(m.context_length)
+              if (Number.isFinite(length) && length > 0) {
+                this._modelContextLengths.set(String(m.id), length)
+              }
+            }
+          }
           return response.data.data
             .map((m: Record<string, unknown>) => String(m.id))
             .filter((id: string) => {
@@ -480,9 +576,9 @@ export class LangGraphManager {
       } else if (provider === 'anthropic') {
         if (!apiKey) {
           return [
-            'claude-3-5-sonnet-20241022',
-            'claude-3-5-haiku-20241022',
-            'claude-3-opus-20240229'
+            'claude-sonnet-4-5',
+            'claude-opus-4-1',
+            'claude-haiku-4-5'
           ]
         }
         const url = `${actualBaseUrl}/models`
@@ -497,13 +593,21 @@ export class LangGraphManager {
         if (!apiKey) {
           throw new Error('API Key is required for Google Gemini')
         }
-        await axios.get(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`)
-        return [
-          'gemini-1.5-pro',
-          'gemini-1.5-flash',
-          'gemini-1.5-flash-8b',
-          'gemini-2.0-flash-exp'
-        ]
+        // Live list from the API (honoring a custom endpoint); fall back to
+        // a current static set only if the shape is unexpected.
+        const googleBase = baseUrl || PROVIDER_BASE_URLS.google
+        const response = await axios.get(`${googleBase}/v1beta/models?key=${apiKey}`)
+        const models = (response.data?.models ?? []) as Array<Record<string, unknown>>
+        const generative = models
+          .filter((m) =>
+            Array.isArray(m.supportedGenerationMethods)
+              ? (m.supportedGenerationMethods as string[]).includes('generateContent')
+              : true
+          )
+          .map((m) => String(m.name ?? '').replace(/^models\//, ''))
+          .filter((name) => name.startsWith('gemini'))
+        if (generative.length > 0) return generative
+        return ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash']
       }
       return []
     } catch (error) {
@@ -559,13 +663,14 @@ export class LangGraphManager {
     messages: ILangGraphMessage[],
     signal?: AbortSignal
   ): Promise<ILangGraphResponse> {
-    if (!this._orchestrator) {
+    const orchestrator = this._orchestrator
+    if (!orchestrator) {
       throw new Error('Not connected to any AI provider')
     }
     // Rebuild per turn: the compiled graph bakes in the permission mode,
     // which the writer can change between messages. Compilation is cheap.
-    this._orchestrator.setMode(this._permissionMode)
-    const agent = this._orchestrator.buildGraph() as unknown as CompiledAgent
+    orchestrator.setMode(this._permissionMode)
+    const agent = orchestrator.buildGraph() as unknown as CompiledAgent
     this._agent = agent
 
     const toLangchain = (msg: ILangGraphMessage): HumanMessage | AIMessage | SystemMessage => {
@@ -602,20 +707,36 @@ export class LangGraphManager {
 
     const langchainMessages = outgoing.map(toLangchain)
 
-    this._turnRunning = true
-    this._emitRunState()
-    let response: unknown
-    try {
-      response = await agent.invoke(
-        { messages: langchainMessages },
+    // Review outcomes since the last turn open this one, so the model knows
+    // exactly which of its edits the writer accepted or rejected. Delivered
+    // as a marked HumanMessage (mid-thread system messages break Anthropic),
+    // same pattern as the compaction summary.
+    const reviewNote = this._editTracker.drainNote()
+    if (reviewNote) {
+      langchainMessages.unshift(new HumanMessage(reviewNote))
+    }
+
+    const invokeOnce = (msgs: Array<HumanMessage | AIMessage | SystemMessage>): Promise<unknown> =>
+      agent.invoke(
+        { messages: msgs },
         {
           signal,
-          recursionLimit: this._orchestrator.recursionLimit(),
+          recursionLimit: orchestrator.recursionLimit(),
           ...(this._checkpointer && this._threadId
             ? { configurable: { thread_id: this._threadId } }
             : {})
         }
       )
+
+    this._turnRunning = true
+    this._emitRunState()
+    let content: string
+    try {
+      const response = await invokeOnce(langchainMessages)
+      content = this._extractResponseContent(response)
+      // Book run: in auto mode the supervisor may end with a CONTINUE marker
+      // while a live plan has work left — keep granting segments (bounded).
+      content = await this._driveBookRun(content, invokeOnce, signal)
     } catch (error) {
       // Running out of supersteps is a budget, not a failure: the thread
       // is checkpointed up to the last completed step (housekeeping repairs
@@ -642,12 +763,101 @@ export class LangGraphManager {
       this._steeringQueue = []
       this._emitRunState()
     }
-    const content = this._extractResponseContent(response)
 
     return {
       content,
       model: this._currentModel || this._currentProvider || 'unknown'
     }
+  }
+
+  // ---- Book run (auto-continuation) ---------------------------------------
+  // Loop logic lives in bookRun.ts (pure, unit-tested); this class only
+  // provides the real dependencies.
+
+  private _maxContinuations = 25
+  private static readonly BOOK_RUN_TOKEN_CEILING = 2_000_000
+
+  /** Safety ceiling for one book run (configurable; primary bound). */
+  setMaxContinuations(limit: number): void {
+    this._maxContinuations = Math.max(0, Math.floor(limit))
+  }
+
+  private _emitBookRunStatus(label: string, detail?: string): void {
+    this._broadcast('mt::ai:activity', {
+      id: `bookrun-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      ts: Date.now(),
+      kind: 'status',
+      label,
+      detail
+    })
+  }
+
+  /**
+   * Cheap "did anything actually change?" fingerprint: manuscript/plan/bible
+   * markdown (count + bytes) plus ticked plan checkboxes. Two consecutive
+   * unchanged segments mean the run is spinning — stop it.
+   */
+  private _progressSignature(): string {
+    const root = getActiveAgentProjectRoot()
+    if (!root) return ''
+    let files = 0
+    let bytes = 0
+    let ticked = 0
+    const walk = (dir: string): void => {
+      let entries: fs.Dirent[]
+      try {
+        entries = fs.readdirSync(dir, { withFileTypes: true })
+      } catch {
+        return
+      }
+      for (const entry of entries) {
+        if (entry.name === '.wordbird' || entry.name === '.git' || entry.name === 'node_modules') {
+          continue
+        }
+        const full = path.join(dir, entry.name)
+        if (entry.isDirectory()) {
+          walk(full)
+        } else if (entry.name.endsWith('.md')) {
+          files += 1
+          try {
+            bytes += fs.statSync(full).size
+          } catch {
+            // Vanished mid-walk — skip.
+          }
+        }
+      }
+    }
+    walk(root)
+    try {
+      for (const entry of fs.readdirSync(path.join(root, 'plans'))) {
+        if (!entry.endsWith('.md')) continue
+        const text = fs.readFileSync(path.join(root, 'plans', entry), 'utf8')
+        ticked += (text.match(/- \[x\]/gi) ?? []).length
+      }
+    } catch {
+      // No plans directory.
+    }
+    return `${files}:${bytes}:${ticked}`
+  }
+
+  private _driveBookRun(
+    firstContent: string,
+    invokeOnce: (msgs: Array<HumanMessage | AIMessage | SystemMessage>) => Promise<unknown>,
+    signal?: AbortSignal
+  ): Promise<string> {
+    return driveBookRun(firstContent, {
+      invokeNext: async() => {
+        const response = await invokeOnce([new HumanMessage(AUTO_CONTINUE_MESSAGE)])
+        return this._extractResponseContent(response)
+      },
+      isAuto: () => this._permissionMode === 'auto',
+      sessionTokens: () => this._orchestrator?.sessionTokens ?? 0,
+      progressSignature: () => this._progressSignature(),
+      emitStatus: (label, detail) => this._emitBookRunStatus(label, detail),
+      maxContinuations: this._maxContinuations,
+      tokenCeiling: LangGraphManager.BOOK_RUN_TOKEN_CEILING,
+      signal
+    })
   }
 
   private _createChatModel(config: IAIConfig): BaseChatModel {
@@ -688,11 +898,14 @@ export class LangGraphManager {
         return new ChatGoogleGenerativeAI({
           ...common,
           apiKey,
-          maxOutputTokens: common.maxTokens
+          // Without `model`, LangChain silently falls back to its own default
+          // and the user's dropdown choice never reaches the API.
+          model: targetModel,
+          maxOutputTokens: common.maxTokens,
+          ...(baseUrl ? { baseUrl } : {})
         }) as unknown as BaseChatModel
 
       case 'ollama':
-      case 'ollama_bundled':
         return new ChatOllama({
           ...common,
           model: targetModel,
@@ -752,26 +965,10 @@ export class LangGraphManager {
     const result = await this._agentToolService.execute(call, { projectRoot })
 
     if (result.ok && this._agentToolService.isEditProposalPayload(result.data)) {
-      this._broadcast('mt::ai:edit-proposal', result.data)
+      this._emitEditProposal(result.data)
     }
 
     return result
-  }
-
-  async applyEdit(request: IAgentApplyEditRequest): Promise<{ ok: boolean; error?: string }> {
-    try {
-      const mainWindow = this._getMainWindow()
-      if (mainWindow) {
-        mainWindow.webContents.send('mt::ai:apply-edit-in-renderer', request)
-      } else {
-        log.warn('[LangGraphMain] No main window available for apply edit')
-      }
-
-      return { ok: true }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      return { ok: false, error: message }
-    }
   }
 }
 

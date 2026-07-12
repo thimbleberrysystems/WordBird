@@ -10,7 +10,7 @@ import type {
   ILangGraphMessage,
   IAgentToolCall,
   IAgentToolResult,
-  IAgentApplyEditRequest,
+  IAgentEditResolution,
   AgentPermissionMode
 } from '../../shared/types/langgraph'
 
@@ -156,8 +156,16 @@ export const registerAIHandlers = (): void => {
     }
   })
 
-  ipcMain.handle('mt::ai:apply-edit', async(_e, request: IAgentApplyEditRequest) => {
-    return await langGraphManager.applyEdit(request)
+  // Review feedback loop: the writer's accept/reject decisions flow back so
+  // the model's next turn knows what actually landed in the manuscript.
+  ipcMain.on('mt::ai:edit-resolved', (_e, resolution: IAgentEditResolution) => {
+    langGraphManager.resolveEdit(resolution)
+  })
+
+  // Proposals still awaiting review — rehydrates the renderer's review queue
+  // after a window reload or app restart.
+  ipcMain.handle('mt::ai:get-pending-edits', async() => {
+    return langGraphManager.getPendingEdits()
   })
 
   // Write an AI edit straight to disk — used by the global "Apply All" for

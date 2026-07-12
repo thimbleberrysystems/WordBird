@@ -78,6 +78,28 @@
       }
     },
     {
+      "id": "where_appears",
+      "name": "where_appears",
+      "displayName": "Where an entity appears",
+      "description": "Instant answer to 'which scenes is this character/place in?' from the always-fresh entity index: every prose unit the entity (or any of its bible-page aliases) appears in, with mention counts, in narrative order of weight. Cheaper and more complete than searching — use it to orient before drafting or editing anything that involves a known character or place. For line-level matches use search_manuscript instead.",
+      "handler": "where_appears",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "entity": {
+            "type": "string",
+            "description": "The character or place name (any alias from its bible page works)."
+          }
+        },
+        "required": [
+          "entity"
+        ]
+      }
+    },
+    {
       "id": "read_project_file",
       "name": "read_project_file",
       "displayName": "Read file",

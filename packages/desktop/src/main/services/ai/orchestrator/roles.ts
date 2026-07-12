@@ -21,6 +21,7 @@ const READ_TOOLS = [
   'read_unit',
   'read_summary',
   'search_manuscript',
+  'where_appears',
   'read_bible',
   'read_project_file',
   'list_files',
@@ -130,7 +131,9 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       REVISION_NOTE +
       ' Then produce the prose via ' +
       'propose_project_file_edit, propose_new_unit, or propose_bible_update — the writer ' +
-      'reviews every change as a diff. After proposing, stop calling tools and summarize ' +
+      'reviews every change as a diff. New scenes get DISTINCT, descriptive titles ' +
+      '("The Cellar Door", never "Opening Scene" or "Scene 2") — titles become filenames. ' +
+      'After proposing, stop calling tools and summarize ' +
       'what you wrote in one or two sentences.'
     ),
     allowedTools: [

@@ -58,7 +58,7 @@ defineEmits<{ (e: 'open-settings'): void }>()
   gap: 6px;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #f56c6c;
+  color: var(--wbErrorColor);
 }
 
 .error-card__explain {
@@ -69,7 +69,7 @@ defineEmits<{ (e: 'open-settings'): void }>()
 
 .error-card__details {
   font-size: 0.7rem;
-  color: var(--iconColor, #909399);
+  color: var(--iconColor, var(--wbMutedColor));
   & summary {
     cursor: pointer;
     user-select: none;

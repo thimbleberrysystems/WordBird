@@ -246,7 +246,7 @@ const elapsed = (agent: IAgentStatus): string => {
   font-size: 0.7rem;
   border: none;
   background: transparent;
-  color: var(--iconColor, #909399);
+  color: var(--iconColor, var(--wbMutedColor));
   cursor: pointer;
   padding: 0;
   width: 12px;
@@ -261,29 +261,29 @@ const elapsed = (agent: IAgentStatus): string => {
 }
 
 .agent-dot--running {
-  background: var(--themeColor, #409eff);
+  background: var(--themeColor, var(--wbInfoColor));
   animation: agent-pulse 1.2s infinite ease-in-out;
 }
 
 .agent-dot--paused {
-  background: #e6a23c;
+  background: var(--wbWarningColor);
 }
 
 .agent-dot--idle {
-  background: var(--iconColor, #909399);
+  background: var(--iconColor, var(--wbMutedColor));
   opacity: 0.5;
 }
 
 .agent-dot--done {
-  background: #67c23a;
+  background: var(--wbSuccessColor);
 }
 
 .agent-dot--failed {
-  background: #f56c6c;
+  background: var(--wbErrorColor);
 }
 
 .agent-dot--cancelled {
-  background: var(--iconColor, #909399);
+  background: var(--iconColor, var(--wbMutedColor));
 }
 
 @keyframes agent-pulse {
@@ -301,7 +301,7 @@ const elapsed = (agent: IAgentStatus): string => {
 
 .agent-meta {
   font-size: 0.68rem;
-  color: var(--iconColor, #909399);
+  color: var(--iconColor, var(--wbMutedColor));
   flex-shrink: 0;
 }
 
@@ -310,21 +310,21 @@ const elapsed = (agent: IAgentStatus): string => {
   font-size: 0.72rem;
   border: none;
   background: transparent;
-  color: var(--iconColor, #909399);
+  color: var(--iconColor, var(--wbMutedColor));
   cursor: pointer;
   padding: 0 3px;
   flex-shrink: 0;
   &:hover {
-    color: var(--themeColor, #409eff);
+    color: var(--themeColor, var(--wbInfoColor));
   }
 }
 
 .row-btn--danger:hover {
-  color: #f56c6c;
+  color: var(--wbErrorColor);
 }
 
 .row-btn--accent {
-  color: #e6a23c;
+  color: var(--wbWarningColor);
 }
 
 .tree-detail {
@@ -343,7 +343,7 @@ const elapsed = (agent: IAgentStatus): string => {
 }
 
 .detail-tool {
-  color: var(--iconColor, #909399);
+  color: var(--iconColor, var(--wbMutedColor));
   padding-left: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -351,19 +351,19 @@ const elapsed = (agent: IAgentStatus): string => {
 }
 
 .tree-empty {
-  color: var(--iconColor, #909399);
+  color: var(--iconColor, var(--wbMutedColor));
   padding: 4px 0;
 }
 
 .agent-log {
   margin-top: 6px;
   font-size: 0.68rem;
-  color: var(--iconColor, #909399);
+  color: var(--iconColor, var(--wbMutedColor));
   & summary {
     cursor: pointer;
     user-select: none;
     &:hover {
-      color: var(--themeColor, #409eff);
+      color: var(--themeColor, var(--wbInfoColor));
     }
   }
 }

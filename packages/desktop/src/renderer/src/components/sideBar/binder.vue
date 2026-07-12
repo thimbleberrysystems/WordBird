@@ -294,6 +294,11 @@ const handleCompile = async (): Promise<void> => {
     const result = await novelStore.compile()
     if (result?.ok) {
       ElMessage.success(t('binder.compiled', { path: result.outputPath ?? '' }))
+      // Open the compiled book so File → Export (PDF/HTML/print) is one
+      // step away — the whole-novel export path, not just a loose .md.
+      if (result.outputPath) {
+        window.electron.ipcRenderer.send('mt::open-file', result.outputPath, {})
+      }
     } else {
       ElMessage.error(result?.error ?? 'Compile failed')
     }
@@ -329,7 +334,7 @@ const handleCompile = async (): Promise<void> => {
   color: var(--iconColor);
   cursor: pointer;
   &:hover {
-    color: var(--themeColor, #409eff);
+    color: var(--themeColor, var(--wbInfoColor));
   }
 }
 
@@ -340,11 +345,11 @@ const handleCompile = async (): Promise<void> => {
 .binder-today {
   font-size: 11px;
   font-weight: 600;
-  color: #67c23a;
+  color: var(--wbSuccessColor);
 }
 
 .binder-today.negative {
-  color: #e6a23c;
+  color: var(--wbWarningColor);
 }
 
 .binder-target-bar {
@@ -358,12 +363,12 @@ const handleCompile = async (): Promise<void> => {
 .binder-target-fill {
   height: 100%;
   border-radius: 2px;
-  background: var(--themeColor, #409eff);
+  background: var(--themeColor, var(--wbInfoColor));
   transition: width 0.4s ease;
 }
 
 .binder-target-fill.done {
-  background: #67c23a;
+  background: var(--wbSuccessColor);
 }
 
 .binder-toolbar {

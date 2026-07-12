@@ -17,7 +17,12 @@ import path from 'path'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import { resolveRgPath } from '../../ipc/ripgrep'
-import { structureService, collectLeaves, findUnit } from '../novel/StructureService'
+import {
+  structureService,
+  collectLeaves,
+  findUnit,
+  uniqueSlugPath
+} from '../novel/StructureService'
 import { snapshotService } from '../novel/SnapshotService'
 import { updateProjectMeta, isPlanningStyle, isStructureTemplate } from '../novel/ProjectMeta'
 import { STRUCTURE_TEMPLATES } from '../novel/structureTemplates'
@@ -353,6 +358,48 @@ const searchManuscript = async(
     biblePage,
     matches,
     truncated: matches.length >= maxResults
+  }
+}
+
+/**
+ * where_appears — unit-level entity appearances from the deterministic
+ * index (always fresh: rebuilt when bible/manuscript inputs changed).
+ */
+const whereAppears = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const entity = str(args, 'entity')
+  const { getEntityIndex } = await import('../novel/EntityIndex')
+  const index = await getEntityIndex(root)
+  const wanted = entity.trim().toLowerCase()
+  const entry = index.entities.find(
+    (e) =>
+      e.name.toLowerCase() === wanted ||
+      e.aliases.some((alias) => alias.toLowerCase() === wanted)
+  )
+  if (!entry) {
+    const known = index.entities.map((e) => e.name)
+    return {
+      entity,
+      found: false,
+      note:
+        'No bible page matches this name. Known entities: ' +
+        (known.length ? known.join(', ') : '(none — the bible has no entity pages yet)') +
+        '. For an ad-hoc phrase use search_manuscript.'
+    }
+  }
+  return {
+    entity: entry.name,
+    found: true,
+    aliases: entry.aliases,
+    biblePage: entry.page,
+    appearances: entry.appearances,
+    note:
+      entry.appearances.length === 0
+        ? 'This entity has a bible page but does not appear in any prose yet.'
+        : undefined
   }
 }
 
@@ -907,13 +954,8 @@ const slugifyPlanTitle = (title: string): string => {
   return slug || 'plan'
 }
 
-const planPathFor = (root: string, title: string): string => {
-  let relative = path.join('plans', `${slugifyPlanTitle(title)}.md`)
-  if (fs.existsSync(path.join(root, relative))) {
-    relative = path.join('plans', `${slugifyPlanTitle(title)}-${Date.now() % 100000}.md`)
-  }
-  return relative
-}
+const planPathFor = (root: string, title: string): string =>
+  uniqueSlugPath(root, 'plans', slugifyPlanTitle(title))
 
 const savePlan = async(
   args: Record<string, unknown>,
@@ -1192,6 +1234,7 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('list_structure', listStructure)
   service.registerHandler('read_unit', readUnit)
   service.registerHandler('search_manuscript', searchManuscript)
+  service.registerHandler('where_appears', whereAppears)
   service.registerHandler('propose_new_unit', proposeNewUnit)
   service.registerHandler('restructure_unit', restructureUnit)
   service.registerHandler('update_unit_meta', updateUnitMeta)

@@ -59,7 +59,7 @@ export const useBiscuitUsage = (options: { sending: Ref<boolean> }): BiscuitUsag
     })
     // Best-effort cost estimate — cloud models with known prices only.
     const provider = aiProvider.value
-    if (provider !== 'ollama' && provider !== 'ollama_bundled') {
+    if (provider !== 'ollama') {
       const model = aiConfigs.value[provider]?.model
       const cost = estimateCostUsd(model, session.inputTokens, session.outputTokens)
       if (cost !== null) {
@@ -90,10 +90,22 @@ export const useBiscuitUsage = (options: { sending: Ref<boolean> }): BiscuitUsag
   const contextRingTip = computed(() => {
     if (!contextUsage.value) return ''
     if (contextUsage.value.compacting || manualCompacting.value) return t('biscuit.compacting')
+    // Real numbers when the model's window is known — the ring is honest
+    // about actual context pressure, not an arbitrary internal budget.
+    const { usedTokens, budgetTokens } = contextUsage.value
+    const tokens =
+      usedTokens != null && budgetTokens != null
+        ? ` ${t('biscuit.contextTokens', {
+          used: usedTokens.toLocaleString(),
+          budget: budgetTokens.toLocaleString()
+        })}`
+        : ''
     return (
       t('biscuit.contextTip', {
         percent: Math.round(contextUsage.value.ratio * 100)
-      }) + (sending.value ? '' : ` ${t('biscuit.condenseHint')}`)
+      }) +
+      tokens +
+      (sending.value ? '' : ` ${t('biscuit.condenseHint')}`)
     )
   })
 

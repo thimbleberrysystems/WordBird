@@ -4,8 +4,7 @@ import type {
   ILangGraphMessage,
   ILangGraphResponse,
   IAgentToolCall,
-  IAgentToolResult,
-  IAgentApplyEditRequest
+  IAgentToolResult
 } from '@shared/types/langgraph'
 
 const toIpc = <T>(v: T): T => JSON.parse(JSON.stringify(v))
@@ -98,14 +97,6 @@ class LangGraphService {
 
   async executeTool(call: IAgentToolCall): Promise<IAgentToolResult> {
     return await window.electron.ai.executeTool(toIpc(call))
-  }
-
-  async applyEdit(request: IAgentApplyEditRequest): Promise<{ ok: boolean; error?: string }> {
-    return await window.electron.ai.applyEdit(toIpc(request))
-  }
-
-  async applyEditInRenderer(request: IAgentApplyEditRequest): Promise<{ ok: boolean; error?: string }> {
-    return await window.electron.ai.applyEditInRenderer(toIpc(request))
   }
 
   async abort(): Promise<void> {

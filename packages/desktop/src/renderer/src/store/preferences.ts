@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { AI_DEFAULTS, PROVIDERS_WITHOUT_KEY } from '@shared/constants/ai'
+import { AI_DEFAULTS, PROVIDERS_WITHOUT_KEY, normalizeProvider } from '@shared/constants/ai'
 import type { AIProvider, IAIConfig } from '@shared/types/langgraph'
 import { langGraphService } from '../services/langgraph'
 import bus from '../bus'
@@ -262,7 +262,9 @@ export const usePreferencesStore = defineStore('preferences', {
       const oldLanguage = this.language
 
       Object.keys(preference).forEach((key) => {
-        const incoming = (preference as Record<string, unknown>)[key]
+        let incoming = (preference as Record<string, unknown>)[key]
+        // Saved prefs may carry the retired 'ollama_bundled' provider.
+        if (key === 'aiProvider') incoming = normalizeProvider(incoming)
         if (
           typeof incoming !== 'undefined' &&
           typeof (this as unknown as Record<string, unknown>)[key] !== 'undefined'

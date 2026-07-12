@@ -56,14 +56,48 @@ const decode = (value: JsonValue): JsonValue => {
   return value
 }
 
+/**
+ * Checkpoints kept per thread. Every graph superstep checkpoints, so a
+ * novel-length thread would otherwise grow checkpoints.json without bound
+ * (tens of MB). Only the newest checkpoint is ever resumed (compaction
+ * rewrites threads in place), so a short tail is all that's needed.
+ */
+const DEFAULT_KEEP_PER_THREAD = 20
+
 export class FileCheckpointSaver extends MemorySaver {
   private _filePath: string
   private _persistTimer: NodeJS.Timeout | null = null
+  private _keepPerThread: number
 
-  constructor(filePath: string) {
+  constructor(filePath: string, keepPerThread = DEFAULT_KEEP_PER_THREAD) {
     super()
     this._filePath = filePath
+    this._keepPerThread = Math.max(2, keepPerThread)
     this._load()
+  }
+
+  /**
+   * Drop all but the newest N checkpoints for the given thread (checkpoint
+   * ids are monotonic UUIDs — lexicographic order is chronological). Their
+   * pending-writes entries go with them.
+   */
+  private _pruneThread(threadId: string): void {
+    const self = this as unknown as {
+      storage: Record<string, Record<string, Record<string, unknown>>>
+      writes: Record<string, unknown>
+    }
+    const namespaces = self.storage[threadId]
+    if (!namespaces) return
+    for (const ns of Object.keys(namespaces)) {
+      const checkpoints = namespaces[ns]
+      const ids = Object.keys(checkpoints).sort()
+      if (ids.length <= this._keepPerThread) continue
+      const stale = ids.slice(0, ids.length - this._keepPerThread)
+      for (const id of stale) {
+        delete checkpoints[id]
+        delete self.writes[JSON.stringify([threadId, ns, id])]
+      }
+    }
   }
 
   private _load(): void {
@@ -125,6 +159,8 @@ export class FileCheckpointSaver extends MemorySaver {
     metadata: CheckpointMetadata
   ): Promise<RunnableConfig> {
     const result = await super.put(config, checkpoint, metadata)
+    const threadId = config.configurable?.thread_id
+    if (typeof threadId === 'string' && threadId) this._pruneThread(threadId)
     this._schedulePersist()
     return result
   }

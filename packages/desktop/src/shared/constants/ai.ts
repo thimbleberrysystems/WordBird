@@ -7,7 +7,6 @@ export type AIProvider =
   | 'anthropic'
   | 'google'
   | 'ollama'
-  | 'ollama_bundled'
   | 'openrouter'
 
 export const AI_PROVIDERS: AIProvider[] = [
@@ -15,36 +14,42 @@ export const AI_PROVIDERS: AIProvider[] = [
   'anthropic',
   'google',
   'ollama',
-  'ollama_bundled',
   'openrouter'
 ]
+
+/**
+ * Saved preferences may carry the retired 'ollama_bundled' provider (it was
+ * never actually bundled — the label promised a binary we do not ship).
+ * Normalize it to plain local Ollama everywhere a provider value enters.
+ */
+export const normalizeProvider = (value: unknown): AIProvider => {
+  if (value === 'ollama_bundled') return 'ollama'
+  return AI_PROVIDERS.includes(value as AIProvider) ? (value as AIProvider) : 'ollama'
+}
 
 export const PROVIDER_LABELS: Record<AIProvider, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic',
   google: 'Google Gemini',
-  ollama: 'Ollama (User Hosted)',
-  ollama_bundled: 'Ollama (Bundled)',
+  ollama: 'Ollama (Local)',
   openrouter: 'OpenRouter'
 }
 
-export const PROVIDERS_WITHOUT_KEY: AIProvider[] = ['ollama', 'ollama_bundled']
+export const PROVIDERS_WITHOUT_KEY: AIProvider[] = ['ollama']
 
 export const PROVIDER_BASE_URLS: Record<AIProvider, string> = {
   openai: 'https://api.openai.com/v1',
   anthropic: 'https://api.anthropic.com/v1',
   google: 'https://generativelanguage.googleapis.com',
   ollama: 'http://127.0.0.1:11434',
-  ollama_bundled: 'http://127.0.0.1:11434',
   openrouter: 'https://openrouter.ai/api/v1'
 }
 
 export const PROVIDER_DEFAULT_MODELS: Record<AIProvider, string> = {
   openai: 'gpt-4o',
-  anthropic: 'claude-3-5-sonnet-latest',
-  google: 'gemini-1.5-pro',
+  anthropic: 'claude-sonnet-4-5',
+  google: 'gemini-2.5-flash',
   ollama: 'llama3',
-  ollama_bundled: 'llama3',
   openrouter: 'openai/auto'
 }
 
@@ -61,11 +66,6 @@ export const AI_DEFAULTS = {
       apiKey: 'ollama',
       baseUrl: PROVIDER_BASE_URLS.ollama,
       model: PROVIDER_DEFAULT_MODELS.ollama
-    },
-    ollama_bundled: {
-      apiKey: 'ollama',
-      baseUrl: PROVIDER_BASE_URLS.ollama_bundled,
-      model: PROVIDER_DEFAULT_MODELS.ollama_bundled
     },
     openrouter: {
       apiKey: '',

@@ -262,7 +262,6 @@
     "replaceSingle": "單一取代",
     "invalidRegex": "無效的正規表示式 \"{pattern}\"",
     "regexMatchEmpty": "正規表示式 \"{pattern}\" 符合空字串",
-    "searchResultCount": "搜尋結果",
     "searchResultInfo": "在 {fileCount} 個檔案中找到 {matchCount} 個符合項目",
     "searchLimited": "搜尋僅限前 {count} 個結果"
   },
@@ -443,7 +442,6 @@
       "items": {
         "autoSave": "自動儲存正在編輯的內容",
         "autoSaveDelay": "檔案儲存前的延遲時間（毫秒）",
-        "autoNormalizeLineEndings": "開啟時自動將行尾標準化為 LF，可選擇處理結尾換行符",
         "titleBarStyle": "標題欄樣式（僅限 Windows 和 Linux 系統）",
         "openFilesInNewWindow": "在新視窗中開啟檔案",
         "openFolderInNewWindow": "透過選單在新視窗中開啟資料夾",
@@ -700,7 +698,7 @@
       },
       "uploader": {
         "title": "圖片上傳器",
-        "currentUploader": "目前上傳器",
+        "currentUploader": "目前上傳器:{name}",
         "picgoNotInstalled": "PicGo 未安裝",
         "picgoDetectionStatus": "PicGo 偵測狀態",
         "picgoInstalled": "PicGo 已安裝",
@@ -710,7 +708,6 @@
         "npmInstallCommand": "npm install picgo",
         "yarnInstallCommand": "yarn add picgo",
         "pnpmInstallCommand": "pnpm add picgo",
-        "brewInstallCommand": "brew install picgo",
         "chooseInstallMethod": "選擇安裝方法：",
         "retestPicgo": "重新檢測",
         "detecting": "檢測中…",
@@ -756,7 +753,26 @@
       "title": "Biscuit 設定",
       "provider": {
         "title": "Biscuit 提供商"
-      }
+      },
+      "selectProvider": "選擇模型提供方",
+      "enterApiKey": "輸入 API 金鑰",
+      "enterEndpoint": "輸入端點 URL",
+      "temperature": "創造力（temperature）",
+      "maxTokens": "最大回覆長度（token）",
+      "maxTokensNotes": "數值越大，Biscuit 每步可寫出更長的場景；上下文預算會自動調整。",
+      "connectProvider": "連接提供方",
+      "selectModel": "選擇模型",
+      "refreshModels": "重新整理模型",
+      "selectModelPlaceholder": "請選擇模型",
+      "connectModel": "連接模型",
+      "pulling": "擷取中…",
+      "pullingModel": "正在擷取模型…",
+      "pullFailed": "模型「{model}」擷取失敗，或 Ollama 正忙。",
+      "providerConnected": "提供方已連接",
+      "modelConnected": "模型連接成功",
+      "modelConnectionFailed": "模型連接失敗：{error}",
+      "noModels": "未找到模型。請檢查你的憑證。",
+      "fetchModelsFailed": "取得模型失敗：{error}"
     },
     "markdown": {
       "title": "PicGo 設定",
@@ -901,7 +917,7 @@
       "online": "線上",
       "saveError": "儲存按鍵綁定時發生錯誤",
       "shortcutInUse": "快捷鍵使用中",
-      "shortcutInUseMessage": "此快捷鍵已指派給另一個命令",
+      "shortcutInUseMessage": "該快捷鍵已指派給 {accelerator}",
       "table": {
         "description": "描述",
         "edit": "編輯",
@@ -930,7 +946,7 @@
     }
   },
   "about": {
-    "copyright": "版權",
+    "copyright": "Copyright © Luo Ran 2017-{year}",
     "copyrightContributors": "版權貢獻者"
   },
   "commands": {
@@ -1092,7 +1108,7 @@
     "close": "關閉",
     "dontSave": "不儲存",
     "file": "檔案",
-    "fileExists": "檔案已存在",
+    "fileExists": "檔案已存在:{filename}",
     "files": "檔案",
     "importWarning": "匯入警告",
     "installPandoc": "安裝 Pandoc",
@@ -1105,12 +1121,12 @@
   "error": {
     "configSchemaViolation": "設定結構違規",
     "copyError": "複製錯誤",
-    "initializationFailed": "初始化失敗",
+    "initializationFailed": "初始化失敗:{hint}",
     "otherInstanceDetected": "偵測到另一個 WordBird 實例正在執行",
     "report": "回報",
     "startupError": "啟動錯誤",
     "terminatedDueToError": "因錯誤而終止",
-    "unexpectedErrorWithMessage": "意外錯誤訊息",
+    "unexpectedErrorWithMessage": "意外錯誤:{message}",
     "unexpectedMainProcess": "意外的主程序錯誤",
     "unexpectedRendererProcess": "意外的渲染程序錯誤"
   },
@@ -1122,7 +1138,7 @@
     "editor": {
       "anchorLinkCopied": "錨點連結已複製",
       "tabNotFound": "找不到標籤頁",
-      "tocItemNotFound": "找不到目錄項目",
+      "tocItemNotFound": "未找到目錄 {key}",
       "highlightStart": "[高亮開始]",
       "highlightEnd": "[高亮結束]",
       "typeAtToInsert": "輸入 {'@'} 來插入",
@@ -1236,14 +1252,8 @@
       "title": "流程圖",
       "subtitle": "流程圖表"
     },
-    "sequenceDiagram": {
-      "title": "序列圖",
-      "subtitle": "使用 js-sequence 渲染序列圖。"
-    },
-    "plantumlDiagram": {
-      "title": "PlantUML 圖表",
-      "subtitle": "渲染 PlantUML 圖表"
-    },
+    "sequenceDiagram": {},
+    "plantumlDiagram": {},
     "mermaid": {
       "title": "Mermaid",
       "subtitle": "使用 mermaid 渲染圖表。",
@@ -1366,8 +1376,8 @@
     },
     "export": {
       "error": "匯出錯誤",
-      "errorExporting": "匯出檔案時發生錯誤",
-      "failed": "匯出失敗"
+      "errorExporting": "匯出 {type} 檔案時出錯",
+      "failed": "{type} 匯出失敗"
     },
     "insertTable": {
       "title": "插入表格",
@@ -1378,7 +1388,7 @@
       "notificationNotFound": "找不到通知"
     },
     "print": {
-      "error": "列印錯誤",
+      "error": "「{title}」列印出錯",
       "failed": "列印失敗"
     },
     "sourceCode": {
@@ -1390,9 +1400,9 @@
       "disabled": "拼字檢查已停用",
       "enabledError": "拼字檢查啟用錯誤",
       "disabledError": "拼字檢查停用錯誤",
-      "errorSwitchingLanguage": "切換拼字檢查語言時發生錯誤",
-      "languageMissing": "拼字檢查語言遺失",
-      "switchError": "拼字檢查切換錯誤",
+      "errorSwitchingLanguage": "切換拼字檢查語言出錯:{languageCode}",
+      "languageMissing": "缺少拼字檢查語言:{languageCode}",
+      "switchError": "{languageCode} 拼字檢查切換錯誤:{error}",
       "title": "拼字檢查"
     },
     "table": "表格",
@@ -1471,7 +1481,8 @@
     "save": "儲存",
     "saveTip": "儲存所有開啟的檔案，並在歷史中記錄快照",
     "saveSnapshotMessage": "手動儲存",
-    "saved": "專案已儲存 — 快照已記錄到歷史。"
+    "saved": "專案已儲存 — 快照已記錄到歷史。",
+    "actionFailed": "該變更未能儲存：{error}"
   },
   "history": {
     "title": "歷史",
@@ -1550,6 +1561,7 @@
     "openSettings": "開啟 AI 設定",
     "stopped": "已停止。",
     "contextTip": "對話記憶已用 {percent}% —— 快滿時 Biscuit 會自動壓縮較早的對話。",
+    "contextTokens": "（{used} / {budget} 個 token。）",
     "compacting": "正在壓縮較早的對話…",
     "selRewrite": "重寫",
     "selExpand": "擴寫",
@@ -1602,7 +1614,10 @@
     "reattachTip": "將 Biscuit 放回編輯器",
     "modeApprovals": "核准模式",
     "modeApprovalsHint": "每處編輯都等待你的確認 — 可逐項或一鍵全部核准。",
-    "questionFreeform": "或自行輸入回答…"
+    "questionFreeform": "或自行輸入回答…",
+    "steerFailed": "無法把你的批註傳給 Biscuit——已放回輸入框。",
+    "stalledTitle": "模型沒有回應",
+    "stalled": "已經有一段時間沒有任何回傳。執行可能已卡住——按「停止」取消（不會遺失任何內容），如果只是模型較慢也可以繼續等待。"
   },
   "review": {
     "pendingOne": "1 處待處理編輯",

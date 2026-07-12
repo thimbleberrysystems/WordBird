@@ -6,9 +6,14 @@ import { isFile2 } from 'common/filesystem'
 
 const pandocCommand = 'pandoc'
 
+// WORDBIRD_PANDOC is the current name; MARKTEXT_PANDOC keeps working for
+// anyone who set it before the rename.
+const envPandocPath = (): string | undefined =>
+  process.env.WORDBIRD_PANDOC || process.env.MARKTEXT_PANDOC
+
 const getCommand = (): string => {
   if (envPathExists()) {
-    return process.env.MARKTEXT_PANDOC as string
+    return envPandocPath() as string
   }
   return pandocCommand
 }
@@ -57,7 +62,8 @@ pandoc.exists = (): boolean => {
 }
 
 const envPathExists = (): boolean => {
-  return !!process.env.MARKTEXT_PANDOC && isFile2(process.env.MARKTEXT_PANDOC)
+  const configured = envPandocPath()
+  return !!configured && isFile2(configured)
 }
 
 export default pandoc

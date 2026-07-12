@@ -243,7 +243,7 @@ const handleExpandClick = () => {
 }
 
 .agents-live-dot.paused {
-  background: #e6a23c;
+  background: var(--wbWarningColor);
   animation: none;
 }
 

@@ -442,7 +442,6 @@
       "items": {
         "autoSave": "Guardar automáticamente el contenido que se está editando",
         "autoSaveDelay": "El tiempo en ms después de un cambio que se guarda el archivo",
-        "autoNormalizeLineEndings": "Normalizar automáticamente los finales de línea a LF y opcionalmente las nuevas líneas finales al abrir",
         "titleBarStyle": "El estilo de la barra de título (solo sistema Windows y Linux)",
         "openFilesInNewWindow": "Abrir archivos en una nueva ventana",
         "openFolderInNewWindow": "Abrir carpeta vía menú en una nueva ventana",
@@ -754,7 +753,26 @@
       "title": "Configuración de Biscuit",
       "provider": {
         "title": "Proveedor de Biscuit"
-      }
+      },
+      "selectProvider": "Seleccionar proveedor de modelos",
+      "enterApiKey": "Introducir clave de API",
+      "enterEndpoint": "Introducir URL del endpoint",
+      "temperature": "Creatividad (temperature)",
+      "maxTokens": "Longitud máxima de respuesta (tokens)",
+      "maxTokensNotes": "Valores más altos permiten a Biscuit escribir escenas más largas por paso; el presupuesto de contexto se adapta automáticamente.",
+      "connectProvider": "Conectar proveedor",
+      "selectModel": "Seleccionar modelo",
+      "refreshModels": "Actualizar modelos",
+      "selectModelPlaceholder": "Selecciona un modelo",
+      "connectModel": "Conectar modelo",
+      "pulling": "Descargando…",
+      "pullingModel": "Descargando modelo…",
+      "pullFailed": "La descarga del modelo '{model}' falló u Ollama está ocupado.",
+      "providerConnected": "Proveedor conectado",
+      "modelConnected": "Conexión del modelo correcta",
+      "modelConnectionFailed": "Fallo de conexión del modelo: {error}",
+      "noModels": "No se encontraron modelos. Comprueba tus credenciales.",
+      "fetchModelsFailed": "No se pudieron obtener los modelos: {error}"
     },
     "markdown": {
       "title": "Markdown",
@@ -1461,7 +1479,8 @@
     "save": "Guardar",
     "saveTip": "Guarda todos los archivos abiertos y registra una instantánea en el Historial",
     "saveSnapshotMessage": "Guardado manual",
-    "saved": "Proyecto guardado — instantánea registrada en el Historial."
+    "saved": "Proyecto guardado — instantánea registrada en el Historial.",
+    "actionFailed": "Ese cambio no se guardó: {error}"
   },
   "history": {
     "title": "Historial",
@@ -1540,6 +1559,7 @@
     "openSettings": "Abrir ajustes de IA",
     "stopped": "Detenido.",
     "contextTip": "Memoria de conversación al {percent}% — Biscuit condensa los turnos antiguos automáticamente cuando se llena.",
+    "contextTokens": "({used} de {budget} tokens.)",
     "compacting": "Condensando la conversación anterior…",
     "selRewrite": "Reescribir",
     "selExpand": "Ampliar",
@@ -1592,7 +1612,10 @@
     "reattachTip": "Devolver Biscuit al editor",
     "modeApprovals": "modo aprobaciones",
     "modeApprovalsHint": "Cada edición espera tu visto bueno — por cambio o todas a la vez.",
-    "questionFreeform": "O escribe tu propia respuesta…"
+    "questionFreeform": "O escribe tu propia respuesta…",
+    "steerFailed": "No se pudo entregar tu nota a Biscuit; está de nuevo en el cuadro de entrada.",
+    "stalledTitle": "Sin respuesta del modelo",
+    "stalled": "Hace rato que no llega nada. La ejecución puede estar bloqueada: pulsa Detener para cancelarla (no se pierde nada) o sigue esperando si tu modelo solo es lento."
   },
   "review": {
     "pendingOne": "1 edición pendiente",

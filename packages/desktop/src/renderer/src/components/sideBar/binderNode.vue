@@ -313,13 +313,13 @@ const siblingListIds = (): string[] => {
     opacity: 0.5;
   }
   &.draft {
-    background: #e6a23c;
+    background: var(--wbWarningColor);
   }
   &.revised {
-    background: #409eff;
+    background: var(--wbInfoColor);
   }
   &.final {
-    background: #67c23a;
+    background: var(--wbSuccessColor);
   }
 }
 

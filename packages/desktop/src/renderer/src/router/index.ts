@@ -14,11 +14,11 @@ import AI from '@/prefComponents/ai/index.vue'
 import Keybindings from '@/prefComponents/keybindings/index.vue'
 
 const parseSettingsPage = (type: string | null | undefined): string => {
-  let pageUrl = '/preference'
-  if (type && /\/spelling$/.test(type)) {
-    pageUrl += '/spelling'
-  }
-  return pageUrl
+  // mt::open-setting-window carries the target pane as `settings/<category>`
+  // — land on it directly (previously only /spelling worked and every other
+  // category, including the AI pane, silently fell back to General).
+  const match = /\/(general|editor|markdown|spelling|theme|image|ai|keybindings)$/.exec(type ?? '')
+  return match ? `/preference/${match[1]}` : '/preference'
 }
 
 const routes = (type: string | null | undefined): RouteRecordRaw[] => [

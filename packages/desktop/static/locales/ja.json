@@ -262,7 +262,6 @@
     "replaceSingle": "単一置換",
     "invalidRegex": "無効な正規表現 \"{pattern}\"",
     "regexMatchEmpty": "正規表現が空文字列 \"{pattern}\" にマッチ",
-    "searchResultCount": "検索結果",
     "searchResultInfo": "{fileCount} 件のファイルで {matchCount} 件一致",
     "searchLimited": "最初の {count} 件まで検索しました"
   },
@@ -443,7 +442,6 @@
       "items": {
         "autoSave": "編集中のコンテンツを自動保存",
         "autoSaveDelay": "変更後にファイルが保存されるまでの時間（ミリ秒）",
-        "autoNormalizeLineEndings": "開くときに改行コードを LF に自動正規化し、オプションで末尾の改行も処理します",
         "titleBarStyle": "タイトルバーのスタイル（WindowsおよびLinuxシステムのみ）",
         "openFilesInNewWindow": "新しいウィンドウでファイルを開く",
         "openFolderInNewWindow": "メニューから新しいウィンドウでフォルダを開く",
@@ -700,7 +698,7 @@
       },
       "uploader": {
         "title": "画像アップローダー",
-        "currentUploader": "現在のアップローダー",
+        "currentUploader": "現在のアップローダー：{name}",
         "picgoNotInstalled": "PicGoがインストールされていません",
         "picgoDetectionStatus": "PicGo検出ステータス",
         "picgoInstalled": "PicGoがインストールされています",
@@ -710,7 +708,6 @@
         "npmInstallCommand": "npm install picgo -g",
         "yarnInstallCommand": "yarn global add picgo",
         "pnpmInstallCommand": "pnpm add -g picgo",
-        "brewInstallCommand": "brew install picgo",
         "chooseInstallMethod": "インストール方法を選択:",
         "retestPicgo": "再テスト",
         "detecting": "検出中...",
@@ -756,7 +753,26 @@
       "title": "Biscuit 設定",
       "provider": {
         "title": "Biscuit プロバイダー"
-      }
+      },
+      "selectProvider": "モデルプロバイダーを選択",
+      "enterApiKey": "APIキーを入力",
+      "enterEndpoint": "エンドポイントURLを入力",
+      "temperature": "創造性（temperature）",
+      "maxTokens": "最大応答長（トークン）",
+      "maxTokensNotes": "値を大きくすると、Biscuitは1ステップでより長いシーンを書けます。コンテキスト予算は自動的に調整されます。",
+      "connectProvider": "プロバイダーに接続",
+      "selectModel": "モデルを選択",
+      "refreshModels": "モデルを更新",
+      "selectModelPlaceholder": "モデルを選択してください",
+      "connectModel": "モデルに接続",
+      "pulling": "取得中…",
+      "pullingModel": "モデルを取得中…",
+      "pullFailed": "モデル「{model}」の取得に失敗したか、Ollamaが混み合っています。",
+      "providerConnected": "プロバイダーに接続しました",
+      "modelConnected": "モデル接続に成功しました",
+      "modelConnectionFailed": "モデル接続に失敗しました：{error}",
+      "noModels": "モデルが見つかりません。認証情報を確認してください。",
+      "fetchModelsFailed": "モデルの取得に失敗しました：{error}"
     },
     "markdown": {
       "title": "Markdown",
@@ -901,7 +917,7 @@
       "online": "オンライン",
       "saveError": "キーバインドの保存エラー",
       "shortcutInUse": "ショートカットが使用中",
-      "shortcutInUseMessage": "このショートカットは既に別のコマンドに割り当てられています",
+      "shortcutInUseMessage": "このショートカットは既に {accelerator} に割り当てられています",
       "table": {
         "description": "説明",
         "edit": "編集",
@@ -930,7 +946,7 @@
     }
   },
   "about": {
-    "copyright": "著作権",
+    "copyright": "Copyright © Luo Ran 2017-{year}",
     "copyrightContributors": "著作権貢献者"
   },
   "commands": {
@@ -1092,7 +1108,7 @@
     "close": "閉じる",
     "dontSave": "保存しない",
     "file": "ファイル",
-    "fileExists": "ファイルが存在します",
+    "fileExists": "ファイルが既に存在します：{filename}",
     "files": "ファイル",
     "importWarning": "インポート警告",
     "installPandoc": "Pandocをインストール",
@@ -1105,12 +1121,12 @@
   "error": {
     "configSchemaViolation": "設定スキーマ違反",
     "copyError": "コピーエラー",
-    "initializationFailed": "初期化に失敗",
+    "initializationFailed": "初期化に失敗しました：{hint}",
     "otherInstanceDetected": "WordBirdの別のインスタンスが既に実行中です",
     "report": "報告",
     "startupError": "起動エラー",
     "terminatedDueToError": "エラーにより終了",
-    "unexpectedErrorWithMessage": "予期しないエラーメッセージ",
+    "unexpectedErrorWithMessage": "予期しないエラー：{message}",
     "unexpectedMainProcess": "予期しないメインプロセスエラー",
     "unexpectedRendererProcess": "予期しないレンダラープロセスエラー"
   },
@@ -1122,7 +1138,7 @@
     "editor": {
       "anchorLinkCopied": "アンカーリンクがコピーされました",
       "tabNotFound": "タブが見つかりません",
-      "tocItemNotFound": "目次アイテムが見つかりません",
+      "tocItemNotFound": "目次 {key} が見つかりません",
       "highlightStart": "[ハイライト開始]",
       "highlightEnd": "[ハイライト終了]",
       "typeAtToInsert": "{'@'} を入力して挿入",
@@ -1358,8 +1374,8 @@
     },
     "export": {
       "error": "エクスポートエラー",
-      "errorExporting": "ファイルのエクスポート中にエラーが発生しました",
-      "failed": "エクスポートに失敗しました"
+      "errorExporting": "{type} ファイルのエクスポート中にエラーが発生しました",
+      "failed": "{type} のエクスポートに失敗しました"
     },
     "insertTable": {
       "title": "表を挿入",
@@ -1370,7 +1386,7 @@
       "notificationNotFound": "通知が見つかりません"
     },
     "print": {
-      "error": "印刷エラー",
+      "error": "「{title}」の印刷エラー",
       "failed": "印刷に失敗しました"
     },
     "sourceCode": {
@@ -1382,9 +1398,9 @@
       "disabled": "スペルチェックが無効になりました",
       "enabledError": "スペルチェックの有効化エラー",
       "disabledError": "スペルチェックの無効化エラー",
-      "errorSwitchingLanguage": "スペルチェック言語の切り替えエラー",
-      "languageMissing": "スペルチェック言語が見つかりません",
-      "switchError": "スペルチェックの切り替えエラー",
+      "errorSwitchingLanguage": "スペルチェック言語の切り替えエラー：{languageCode}",
+      "languageMissing": "スペルチェック言語がありません：{languageCode}",
+      "switchError": "{languageCode} のスペルチェック切り替えエラー：{error}",
       "title": "スペルチェック"
     },
     "table": "表",
@@ -1463,7 +1479,8 @@
     "save": "保存",
     "saveTip": "開いているすべてのファイルを保存し、履歴にスナップショットを記録",
     "saveSnapshotMessage": "手動保存",
-    "saved": "プロジェクトを保存 — 履歴にスナップショットを記録しました。"
+    "saved": "プロジェクトを保存 — 履歴にスナップショットを記録しました。",
+    "actionFailed": "この変更は保存されませんでした：{error}"
   },
   "history": {
     "title": "履歴",
@@ -1542,6 +1559,7 @@
     "openSettings": "AI設定を開く",
     "stopped": "停止しました。",
     "contextTip": "会話メモリ使用率 {percent}% — いっぱいになると、Biscuitが古いやり取りを自動で要約します。",
+    "contextTokens": "（{used} / {budget} トークン。）",
     "compacting": "以前の会話を要約中…",
     "selRewrite": "書き直す",
     "selExpand": "ふくらませる",
@@ -1594,7 +1612,10 @@
     "reattachTip": "Biscuit をエディタに戻す",
     "modeApprovals": "承認モード",
     "modeApprovalsHint": "すべての編集はあなたの承認待ち — 個別または一括で承認。",
-    "questionFreeform": "または自由に回答を入力…"
+    "questionFreeform": "または自由に回答を入力…",
+    "steerFailed": "メモをBiscuitに届けられませんでした。入力欄に戻しました。",
+    "stalledTitle": "モデルから応答がありません",
+    "stalled": "しばらく何も返ってきていません。処理が停止している可能性があります。停止を押してキャンセルするか（何も失われません）、モデルが遅いだけならこのままお待ちください。"
   },
   "review": {
     "pendingOne": "保留中の編集 1件",

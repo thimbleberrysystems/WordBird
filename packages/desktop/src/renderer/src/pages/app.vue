@@ -47,7 +47,6 @@
       <export-setting-dialog />
       <rename />
       <import-modal />
-      <agent-proposal-controller />
     </div>
   </div>
 </template>
@@ -67,7 +66,6 @@ import CommandPalette from '@/components/commandPalette/index.vue'
 import ExportSettingDialog from '@/components/exportSettings/index.vue'
 import Rename from '@/components/rename/index.vue'
 import ImportModal from '@/components/import/index.vue'
-import AgentProposalController from '@/components/agent/AgentProposalController.vue'
 import ViewSwitcher from '@/components/novel/ViewSwitcher.vue'
 import Corkboard from '@/components/novel/Corkboard.vue'
 import OutlineView from '@/components/novel/OutlineView.vue'

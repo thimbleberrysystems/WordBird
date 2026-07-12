@@ -6,9 +6,10 @@
  */
 
 import path from 'path'
-import { BrowserWindow, ipcMain } from 'electron'
+import { BrowserWindow } from 'electron'
 import type { BrowserWindowConstructorOptions } from 'electron'
 import log from 'electron-log'
+import windowStateKeeper from 'electron-window-state'
 import { isLinux, isOsx } from '../config'
 
 let biscuitWindow: BrowserWindow | null = null
@@ -37,9 +38,18 @@ export const openBiscuitWindow = (
   const { env, preferences } = accessor
   const { theme, titleBarStyle } = preferences.getAll()
 
+  // Remember the writer's chosen size/position across detaches.
+  const savedState = windowStateKeeper({
+    defaultWidth: 520,
+    defaultHeight: 780,
+    file: 'biscuit-window-state.json'
+  })
+
   const winOptions: BrowserWindowConstructorOptions = {
-    width: 520,
-    height: 780,
+    x: savedState.x,
+    y: savedState.y,
+    width: savedState.width,
+    height: savedState.height,
     minWidth: 360,
     minHeight: 480,
     resizable: true,
@@ -66,6 +76,7 @@ export const openBiscuitWindow = (
   }
 
   const win = new BrowserWindow(winOptions)
+  savedState.manage(win)
   biscuitWindow = win
 
   const baseUrl =
@@ -91,17 +102,7 @@ export const openBiscuitWindow = (
   win.on('closed', () => {
     biscuitWindow = null
     broadcastReattach()
-    ipcMain.emit('biscuit-window-closed')
   })
 
   return win
 }
-
-export const closeBiscuitWindow = (): void => {
-  if (biscuitWindow && !biscuitWindow.isDestroyed()) {
-    biscuitWindow.close()
-  }
-}
-
-export const isBiscuitDetached = (): boolean =>
-  !!biscuitWindow && !biscuitWindow.isDestroyed()

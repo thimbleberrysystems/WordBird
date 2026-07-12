@@ -30,7 +30,8 @@ import type {
   AgentPermissionMode,
   IAgentActivityEvent,
   IAgentApprovalRequest,
-  IAgentStatus
+  IAgentStatus,
+  IContextUsage
 } from '../../src/shared/types/langgraph'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -197,6 +198,7 @@ export interface LiveHarness {
   writerQuestions: Array<{ question: string; options: Array<{ label: string }> }>
   activity: IAgentActivityEvent[]
   agentStatuses: IAgentStatus[]
+  contextUsages: IContextUsage[]
   send: (threadId: string, text: string) => Promise<string>
   setMode: (mode: AgentPermissionMode) => void
   dispose: () => void
@@ -232,6 +234,7 @@ export const createHarness = async(options?: {
   const approvals: IAgentApprovalRequest[] = []
   const activity: IAgentActivityEvent[] = []
   const agentStatuses: IAgentStatus[] = []
+  const contextUsages: IContextUsage[] = []
 
   const orchestrator = new Orchestrator({
     modelFactory: () =>
@@ -258,7 +261,12 @@ export const createHarness = async(options?: {
       buildBrief: () => contextBuilder.buildProjectBrief(root),
       emitAgentStatus: (status) => {
         agentStatuses.push(status)
-      }
+      },
+      emitContextUsage: (usage) => {
+        contextUsages.push(usage)
+      },
+      // Scene handoff (P0.2) — same wiring LangGraphManager uses.
+      buildHandoff: (task) => contextBuilder.buildSceneHandoff(root, task)
     },
     checkpointer: new MemorySaver()
   })
@@ -307,7 +315,9 @@ export const createHarness = async(options?: {
       // A free pool can flicker out AFTER a clean probe. Interrupted-run
       // repair (housekeeping) makes the retried thread provider-legal, so
       // fail over to a different live model and retry the turn once.
-      if (/429|rate.?limit|provider returned error/i.test(message)) {
+      // 403 "prompt injection patterns detected" is an upstream moderation
+      // false-positive some free providers bolt on — same treatment.
+      if (/429|rate.?limit|provider returned error|prompt injection|\b403\b/i.test(message)) {
         const next = await failoverModel()
 
         console.info(`[live-e2e] pool exhausted mid-run — failing over to ${next}`)
@@ -326,6 +336,7 @@ export const createHarness = async(options?: {
     writerQuestions,
     activity,
     agentStatuses,
+    contextUsages,
     send,
     setMode: (mode) => orchestrator.setMode(mode),
     dispose: () => fs.rmSync(root, { recursive: true, force: true })

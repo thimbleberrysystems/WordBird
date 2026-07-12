@@ -753,7 +753,26 @@
       "title": "Biscuit Settings",
       "provider": {
         "title": "Biscuit Provider"
-      }
+      },
+      "selectProvider": "Select model provider",
+      "enterApiKey": "Enter API key",
+      "enterEndpoint": "Enter endpoint URL",
+      "temperature": "Creativity (temperature)",
+      "maxTokens": "Maximum reply length (tokens)",
+      "maxTokensNotes": "Higher values let Biscuit write longer scenes per step; the context budget adapts automatically.",
+      "connectProvider": "Connect Provider",
+      "selectModel": "Select model",
+      "refreshModels": "Refresh Models",
+      "selectModelPlaceholder": "Select a model",
+      "connectModel": "Connect Model",
+      "pulling": "Pulling…",
+      "pullingModel": "Pulling model…",
+      "pullFailed": "Model '{model}' pull failed or Ollama is busy.",
+      "providerConnected": "Provider Connected",
+      "modelConnected": "Model Connection Successful",
+      "modelConnectionFailed": "Model Connection Failed: {error}",
+      "noModels": "No models found. Please check your credentials.",
+      "fetchModelsFailed": "Failed to fetch models: {error}"
     },
     "markdown": {
       "title": "Markdown",
@@ -1461,7 +1480,8 @@
     "save": "Save",
     "saveTip": "Save every open file and record a snapshot in History",
     "saveSnapshotMessage": "Manual save",
-    "saved": "Project saved — snapshot recorded in History."
+    "saved": "Project saved — snapshot recorded in History.",
+    "actionFailed": "That change didn't save: {error}"
   },
   "history": {
     "title": "History",
@@ -1540,6 +1560,7 @@
     "openSettings": "Open AI Settings",
     "stopped": "Stopped.",
     "contextTip": "Conversation memory {percent}% full — Biscuit condenses older turns automatically when it fills up.",
+    "contextTokens": "({used} of {budget} tokens.)",
     "compacting": "Condensing earlier conversation…",
     "selRewrite": "Rewrite",
     "selExpand": "Expand",
@@ -1592,7 +1613,10 @@
     "reattachTip": "Return Biscuit to the editor",
     "modeApprovals": "approvals mode",
     "modeApprovalsHint": "Every edit waits for your OK — approve per change or all at once.",
-    "questionFreeform": "Or write your own answer…"
+    "questionFreeform": "Or write your own answer…",
+    "steerFailed": "Couldn't deliver your note to Biscuit — it's back in the input box.",
+    "stalledTitle": "No response from the model",
+    "stalled": "Nothing has come back for a while. The run may be stalled — press Stop to cancel it (nothing is lost), or keep waiting if your model is just slow."
   },
   "review": {
     "pendingOne": "1 pending edit",

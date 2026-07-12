@@ -14,6 +14,7 @@ import path from 'path'
 import fs from 'fs'
 import fsPromises from 'fs/promises'
 import { structureService, collectLeaves } from '../novel/StructureService'
+import { getEntityIndex } from '../novel/EntityIndex'
 import { continuityService } from '../novel/ContinuityService'
 import { revisionService, RevisionService } from '../novel/RevisionService'
 import { readProjectMeta } from '../novel/ProjectMeta'
@@ -77,12 +78,48 @@ export interface ISessionContext {
   currentFile?: string
 }
 
+/** How much of the previous scene's ending a drafter gets for continuity. */
+const HANDOFF_WORDS = 500
+
 export class ContextBuilder {
   private _sessionContext: ISessionContext | null = null
 
   /** Where the writer is looking (view + open scene); set from the renderer. */
   setSessionContext(context: ISessionContext | null): void {
     this._sessionContext = context
+  }
+
+  /**
+   * Scene handoff for drafters: find the first unit id referenced in the
+   * task (the brief's `<id:…>` format), locate the PRECEDING prose unit in
+   * narrative order, and return the tail of its prose. Null when the task
+   * names no unit, the unit is first, or the neighbor has no prose yet.
+   */
+  async buildSceneHandoff(projectRoot: string | null, task: string): Promise<string | null> {
+    if (!projectRoot) return null
+    const idMatch = /<id:([^>\s]+)>/.exec(task)
+    if (!idMatch) return null
+    try {
+      const structure = await structureService.loadReconciled(projectRoot)
+      const leaves = collectLeaves(structure.units)
+      const index = leaves.findIndex((leaf) => leaf.id === idMatch[1])
+      if (index <= 0) return null
+      const previous = leaves[index - 1]
+      if (!previous.path) return null
+      const prose = (
+        await fsPromises.readFile(path.join(projectRoot, previous.path), 'utf8')
+      ).trim()
+      if (!prose) return null
+      const tokens = prose.split(/\s+/)
+      const tail = tokens.slice(-HANDOFF_WORDS).join(' ')
+      return (
+        `PREVIOUS SCENE ENDS ("${previous.title}" — for continuity: match the voice, ` +
+        'pick up time/place/open threads from here; do not retell it):\n…' +
+        tail
+      )
+    } catch {
+      return null
+    }
   }
 
   /**
@@ -164,6 +201,13 @@ export class ContextBuilder {
         sections.push(`MANUSCRIPT OUTLINE:\n${outline}`)
       }
 
+      // WHO'S WHERE — the deterministic entity index makes orientation one
+      // glance instead of N tool calls (details via where_appears).
+      const whosWhere = await this._renderWhosWhere(projectRoot)
+      if (whosWhere) {
+        sections.push(`WHO'S WHERE (bible entities in the prose — details: where_appears):\n${whosWhere}`)
+      }
+
       // Book-level summary from the agent-maintained ladder, if present.
       const bookSummaryPath = path.join(projectRoot, '.wordbird', 'summaries', 'book.md')
       if (fs.existsSync(bookSummaryPath)) {
@@ -179,6 +223,13 @@ export class ContextBuilder {
         } catch {
           // Unreadable summary — skip.
         }
+      }
+
+      // Whole-book progress: the freshest live plan is the work queue — one
+      // line tells every turn how far the endeavor has come.
+      const planProgress = this._activePlanProgress(projectRoot)
+      if (planProgress) {
+        sections.push(`ACTIVE PLAN: ${planProgress}`)
       }
 
       // In-flight sweeping revisions: every turn must know one is active.
@@ -208,6 +259,63 @@ export class ContextBuilder {
       }
 
       return sections.join('\n\n')
+    } catch {
+      return ''
+    }
+  }
+
+  /** Compact entity-appearance lines, capped; '' when no entities exist. */
+  private async _renderWhosWhere(projectRoot: string): Promise<string> {
+    try {
+      const index = await getEntityIndex(projectRoot)
+      if (index.entities.length === 0) return ''
+      const MAX_ENTITY_LINES = 12
+      const seen = index.entities.filter((e) => e.appearances.length > 0)
+      const unseen = index.entities.length - seen.length
+      const lines = seen
+        .sort(
+          (a, b) =>
+            b.appearances.reduce((s, x) => s + x.count, 0) -
+            a.appearances.reduce((s, x) => s + x.count, 0)
+        )
+        .slice(0, MAX_ENTITY_LINES)
+        .map((entity) => {
+          const spots = entity.appearances
+            .slice(0, 4)
+            .map((a) => `${a.title} (${a.count})`)
+            .join(', ')
+          const more =
+            entity.appearances.length > 4 ? ` +${entity.appearances.length - 4} more` : ''
+          return `- ${entity.name}: ${spots}${more}`
+        })
+      if (unseen > 0) {
+        lines.push(`- ${unseen} bible entit${unseen === 1 ? 'y' : 'ies'} not yet in the prose`)
+      }
+      return lines.join('\n')
+    } catch {
+      return ''
+    }
+  }
+
+  /**
+   * "plans/novella.md — 7/22 items done" for the most recently modified
+   * plan that still has unchecked items ('' when none).
+   */
+  private _activePlanProgress(projectRoot: string): string {
+    try {
+      const dir = path.join(projectRoot, 'plans')
+      let newest: { file: string; mtime: number } | null = null
+      for (const entry of fs.readdirSync(dir)) {
+        if (!entry.endsWith('.md')) continue
+        const mtime = fs.statSync(path.join(dir, entry)).mtimeMs
+        if (!newest || mtime > newest.mtime) newest = { file: entry, mtime }
+      }
+      if (!newest) return ''
+      const text = fs.readFileSync(path.join(dir, newest.file), 'utf8')
+      const done = (text.match(/- \[x\]/gi) ?? []).length
+      const open = (text.match(/- \[ \]/g) ?? []).length
+      if (open === 0) return ''
+      return `plans/${newest.file} — ${done}/${done + open} items done (read it before working)`
     } catch {
       return ''
     }

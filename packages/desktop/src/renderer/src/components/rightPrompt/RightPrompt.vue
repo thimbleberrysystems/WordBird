@@ -484,6 +484,7 @@ onBeforeUnmount(() => {
   unsubQuestion?.()
   unsubTokens?.()
   if (approvalTimer) clearInterval(approvalTimer)
+  stopStallWatchdog()
   bus.off('biscuit-ask', handleBiscuitAsk)
   bus.off('biscuit-retry-task', handleRetryTask)
 })
@@ -894,12 +895,60 @@ async function stopGeneration (): Promise<void> {
 }
 
 const steerWith = async (text: string): Promise<void> => {
-  const queued = await window.electron.ai.steer(text)
-  if (queued.queued) {
-    aiMessages.value.push({ role: 'user', content: `⤷ ${text}` })
-    await nextTick()
-    if (promptBody.value) promptBody.value.scrollTop = promptBody.value.scrollHeight
+  try {
+    const queued = await window.electron.ai.steer(text)
+    if (queued.queued) {
+      aiMessages.value.push({ role: 'user', content: `⤷ ${text}` })
+      await nextTick()
+      if (promptBody.value) promptBody.value.scrollTop = promptBody.value.scrollHeight
+    } else {
+      // Not queued (run just ended?) — the note must never vanish.
+      userInput.value = text
+    }
+  } catch {
+    userInput.value = text
+    ElMessage.error(t('biscuit.steerFailed'))
   }
+}
+
+// ---- Stall watchdog: "sending" must never look alive forever. Any run
+// event (activity, tokens, context) counts as a heartbeat; a long silence
+// gets an advisory card so the writer knows Stop is the way out.
+const STALL_AFTER_MS = 90_000
+let stallTimer: ReturnType<typeof setInterval> | null = null
+let lastRunEventAt = 0
+watch(
+  [() => activity.value.length, tokenUsage, contextUsage],
+  () => {
+    lastRunEventAt = Date.now()
+  }
+)
+
+function stopStallWatchdog (): void {
+  if (stallTimer) {
+    clearInterval(stallTimer)
+    stallTimer = null
+  }
+}
+
+function startStallWatchdog (): void {
+  stopStallWatchdog()
+  lastRunEventAt = Date.now()
+  let warned = false
+  stallTimer = setInterval(() => {
+    if (!sending.value) {
+      stopStallWatchdog()
+      return
+    }
+    if (!warned && Date.now() - lastRunEventAt > STALL_AFTER_MS) {
+      warned = true
+      aiMessages.value.push({
+        role: 'error',
+        content: t('biscuit.stalled'),
+        errorInfo: { title: t('biscuit.stalledTitle'), explanation: t('biscuit.stalled') }
+      })
+    }
+  }, 10_000)
 }
 
 // Send message to AI
@@ -925,6 +974,7 @@ async function sendMessage (): Promise<void> {
   aiMessages.value.push(userMessage)
   userInput.value = ''
   sending.value = true
+  startStallWatchdog()
   activity.value = []
   agentMap.value = new Map()
 
@@ -976,6 +1026,7 @@ async function sendMessage (): Promise<void> {
     }
   } finally {
     sending.value = false
+    stopStallWatchdog()
   }
 }
 </script>
@@ -1002,7 +1053,7 @@ async function sendMessage (): Promise<void> {
 }
 
 .resizer:hover, .resizer:active {
-  background: var(--color-primary, #409eff);
+  background: var(--color-primary, var(--wbInfoColor));
 }
 
 .prompt-header {
@@ -1038,13 +1089,13 @@ async function sendMessage (): Promise<void> {
   justify-content: center;
   cursor: pointer;
   z-index: 1000;
-  color: var(--color-secondary, #909399);
+  color: var(--color-secondary, var(--wbMutedColor));
   transition: all 0.2s;
 }
 
 :global(.toggle-biscuit-btn:hover) {
   width: 20px;
-  color: var(--color-primary, #409eff);
+  color: var(--color-primary, var(--wbInfoColor));
   background: var(--dialogBgColor, var(--editorBgColor));
 }
 
@@ -1067,9 +1118,9 @@ async function sendMessage (): Promise<void> {
   margin: 0;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--themeColor, #409eff);
+  color: var(--themeColor, var(--wbInfoColor));
   letter-spacing: 0.05em;
-  border: 1px solid var(--themeColor, #409eff);
+  border: 1px solid var(--themeColor, var(--wbInfoColor));
   padding: 1px 10px;
   border-radius: 12px;
   background: var(--itemBgColor);
@@ -1092,13 +1143,13 @@ async function sendMessage (): Promise<void> {
   gap: 3px;
   cursor: pointer;
   font: inherit;
-  color: var(--iconColor, #909399);
+  color: var(--iconColor, var(--wbMutedColor));
   background: transparent;
   border: 1px solid transparent;
   border-radius: 10px;
   padding: 3px 6px;
   &:hover {
-    color: var(--themeColor, #409eff);
+    color: var(--themeColor, var(--wbInfoColor));
     border-color: var(--itemBgColor);
   }
 }
@@ -1109,7 +1160,7 @@ async function sendMessage (): Promise<void> {
   border-color: var(--itemBgColor);
   color: var(--editorColor);
   &:hover {
-    border-color: var(--themeColor, #409eff);
+    border-color: var(--themeColor, var(--wbInfoColor));
   }
 }
 
@@ -1134,8 +1185,8 @@ async function sendMessage (): Promise<void> {
   color: var(--floatFontColor, #303133);
   cursor: pointer;
   &:hover:not(:disabled) {
-    border-color: var(--themeColor, #409eff);
-    color: var(--themeColor, #409eff);
+    border-color: var(--themeColor, var(--wbInfoColor));
+    color: var(--themeColor, var(--wbInfoColor));
   }
   &:disabled {
     opacity: 0.4;
@@ -1148,7 +1199,7 @@ async function sendMessage (): Promise<void> {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--iconColor, #909399);
+  color: var(--iconColor, var(--wbMutedColor));
   padding: 2px 6px 6px;
 }
 
@@ -1181,17 +1232,17 @@ async function sendMessage (): Promise<void> {
 
 .history-row__delete {
   opacity: 0;
-  color: var(--iconColor, #909399);
+  color: var(--iconColor, var(--wbMutedColor));
   flex-shrink: 0;
   &:hover {
-    color: var(--deleteColor, #f56c6c);
+    color: var(--deleteColor, var(--wbErrorColor));
   }
 }
 
 .history-empty {
   padding: 12px 6px;
   font-size: 0.75rem;
-  color: var(--iconColor, #909399);
+  color: var(--iconColor, var(--wbMutedColor));
   text-align: center;
 }
 
@@ -1211,7 +1262,7 @@ async function sendMessage (): Promise<void> {
   font-size: 0.72rem;
   cursor: pointer;
   user-select: none;
-  color: var(--color-secondary, #909399);
+  color: var(--color-secondary, var(--wbMutedColor));
   min-width: 0;
   &:hover .mode-cycle-hint {
     opacity: 1;
@@ -1221,7 +1272,7 @@ async function sendMessage (): Promise<void> {
 .token-counter {
   font-size: 0.66rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  color: var(--iconColor, #909399);
+  color: var(--iconColor, var(--wbMutedColor));
   white-space: nowrap;
   cursor: help;
   flex-shrink: 0;
@@ -1257,13 +1308,13 @@ async function sendMessage (): Promise<void> {
   stroke-linecap: round;
   transition: stroke-dasharray 0.4s ease, stroke 0.4s ease;
   &.level-low {
-    stroke: var(--iconColor, #909399);
+    stroke: var(--iconColor, var(--wbMutedColor));
   }
   &.level-mid {
-    stroke: #e6a23c;
+    stroke: var(--wbWarningColor);
   }
   &.level-high {
-    stroke: #f56c6c;
+    stroke: var(--wbErrorColor);
   }
 }
 
@@ -1287,22 +1338,22 @@ async function sendMessage (): Promise<void> {
 
 .mode-line--plan .mode-symbol,
 .mode-line--plan .mode-name {
-  color: #e6a23c;
+  color: var(--wbWarningColor);
 }
 
 .mode-line--ask .mode-symbol,
 .mode-line--ask .mode-name {
-  color: var(--color-secondary, #909399);
+  color: var(--color-secondary, var(--wbMutedColor));
 }
 
 .mode-line--auto .mode-symbol,
 .mode-line--auto .mode-name {
-  color: var(--color-primary, #409eff);
+  color: var(--color-primary, var(--wbInfoColor));
 }
 
 .mode-line--full-auto .mode-symbol,
 .mode-line--full-auto .mode-name {
-  color: #f56c6c;
+  color: var(--wbErrorColor);
 }
 
 .mode-cycle-hint {
@@ -1311,7 +1362,7 @@ async function sendMessage (): Promise<void> {
 }
 
 .approval-card {
-  border: 1px solid var(--color-primary, #409eff);
+  border: 1px solid var(--color-primary, var(--wbInfoColor));
   border-radius: 8px;
   padding: 10px 12px;
   background: rgba(64, 158, 255, 0.06);
@@ -1323,7 +1374,7 @@ async function sendMessage (): Promise<void> {
 .approval-title {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--color-primary, #409eff);
+  color: var(--color-primary, var(--wbInfoColor));
 }
 
 .question-card {
@@ -1332,7 +1383,7 @@ async function sendMessage (): Promise<void> {
   gap: 6px;
   margin: 0 4px;
   padding: 10px 12px;
-  border: 1px solid var(--themeColor, #409eff);
+  border: 1px solid var(--themeColor, var(--wbInfoColor));
   border-radius: 10px;
   background: var(--floatBgColor, transparent);
 }
@@ -1357,7 +1408,7 @@ async function sendMessage (): Promise<void> {
   flex-direction: column;
   gap: 1px;
   &:hover {
-    border-color: var(--themeColor, #409eff);
+    border-color: var(--themeColor, var(--wbInfoColor));
   }
 }
 
@@ -1368,7 +1419,7 @@ async function sendMessage (): Promise<void> {
 
 .question-option__desc {
   font-size: 0.7rem;
-  color: var(--iconColor, #909399);
+  color: var(--iconColor, var(--wbMutedColor));
 }
 
 .question-freeform {
@@ -1386,14 +1437,14 @@ async function sendMessage (): Promise<void> {
     color: var(--editorColor, #303133);
     outline: none;
     &:focus {
-      border-color: var(--themeColor, #409eff);
+      border-color: var(--themeColor, var(--wbInfoColor));
     }
   }
 }
 
 .approval-countdown {
   font-size: 0.68rem;
-  color: var(--iconColor, #909399);
+  color: var(--iconColor, var(--wbMutedColor));
   margin-top: 4px;
 }
 
@@ -1444,7 +1495,7 @@ async function sendMessage (): Promise<void> {
 
 .welcome-sub {
   font-size: 0.8rem;
-  color: var(--iconColor, #909399);
+  color: var(--iconColor, var(--wbMutedColor));
   margin: 0;
   line-height: 1.5;
 }
@@ -1461,14 +1512,14 @@ async function sendMessage (): Promise<void> {
   color: var(--editorColor, #303133);
   cursor: pointer;
   &:hover {
-    border-color: var(--themeColor, #409eff);
-    color: var(--themeColor, #409eff);
+    border-color: var(--themeColor, var(--wbInfoColor));
+    color: var(--themeColor, var(--wbInfoColor));
   }
 }
 
 .welcome-hint {
   font-size: 0.7rem;
-  color: var(--iconColor, #909399);
+  color: var(--iconColor, var(--wbMutedColor));
   opacity: 0.8;
   margin: 4px 0 0;
 }
@@ -1500,12 +1551,12 @@ async function sendMessage (): Promise<void> {
 
 .message--user .message__text {
   text-align: right;
-  color: var(--color-secondary, #909399);
+  color: var(--color-secondary, var(--wbMutedColor));
 }
 
 .message--assistant .message__text {
   text-align: left;
-  color: var(--color-primary, #409eff);
+  color: var(--color-primary, var(--wbInfoColor));
 }
 
 /* Rendered-markdown subset for assistant replies. Uses :deep() because
@@ -1565,8 +1616,8 @@ async function sendMessage (): Promise<void> {
   & :deep(blockquote) {
     margin: 0.4em 0;
     padding: 2px 10px;
-    border-left: 3px solid var(--themeColor, #409eff);
-    color: var(--iconColor, #909399);
+    border-left: 3px solid var(--themeColor, var(--wbInfoColor));
+    color: var(--iconColor, var(--wbMutedColor));
   }
   & :deep(hr) {
     border: none;
@@ -1574,7 +1625,7 @@ async function sendMessage (): Promise<void> {
     margin: 0.7em 0;
   }
   & :deep(a) {
-    color: var(--themeColor, #409eff);
+    color: var(--themeColor, var(--wbInfoColor));
     text-decoration: underline;
   }
   & :deep(table) {
@@ -1591,7 +1642,7 @@ async function sendMessage (): Promise<void> {
 
 .message--stopped .message__text {
   text-align: left;
-  color: var(--color-primary, #409eff);
+  color: var(--color-primary, var(--wbInfoColor));
   font-style: italic;
 }
 
@@ -1599,7 +1650,7 @@ async function sendMessage (): Promise<void> {
    detail folded away, optional action button. */
 
 .message--thinking .message__text {
-  color: var(--color-secondary, #909399);
+  color: var(--color-secondary, var(--wbMutedColor));
   font-style: italic;
   animation: pulse 1.5s infinite ease-in-out;
 }
@@ -1712,12 +1763,12 @@ async function sendMessage (): Promise<void> {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: #909399; /* el-color-info fallback */
+  background-color: var(--wbMutedColor); /* el-color-info fallback */
   display: inline-block;
 }
 
 .status-indicator.connected {
-  background-color: #67c23a; /* el-color-success fallback */
+  background-color: var(--wbSuccessColor); /* el-color-success fallback */
   box-shadow: 0 0 5px rgba(103, 194, 58, 0.5);
 }
 </style>

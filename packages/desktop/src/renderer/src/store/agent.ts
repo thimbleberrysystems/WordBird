@@ -53,7 +53,21 @@ export const useAgentStore = defineStore('agent', () => {
   function updateEditStatus(id: string, status: 'applied' | 'rejected'): void {
     const edit = pendingEdits.value.find((e) => e.id === id)
     if (edit) {
+      const wasPending = edit.status === 'pending'
       edit.status = status
+      // Close the feedback loop: the model's next turn learns what the
+      // writer decided (main batches these into one review note).
+      if (wasPending) {
+        try {
+          window.electron?.ai?.resolveEdit?.({
+            id: edit.id,
+            filePath: edit.filePath,
+            accepted: status === 'applied'
+          })
+        } catch {
+          // Reporting is best-effort — never block the review action itself.
+        }
+      }
     }
     diffState.value = diffState.value.filter((d) => d.editId !== id)
   }

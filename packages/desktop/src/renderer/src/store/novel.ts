@@ -8,6 +8,8 @@
 
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import { t } from '../i18n'
 import { useProjectStore } from './project'
 import { useEditorStore } from './editor'
 import type {
@@ -76,14 +78,45 @@ export const useNovelStore = defineStore('novel', () => {
     }
   }
 
+  /**
+   * Every structure mutation flows through here: a rejection or a non-ok
+   * result surfaces as a toast (never a silent dead-end), and after an
+   * exception the tree is re-read so optimistic view state reverts to the
+   * on-disk truth. Binder, corkboard, outline, and timeline all inherit
+   * this handling for free.
+   */
+  const mutate = async(
+    run: () => Promise<{
+      ok: boolean
+      structure?: INovelStructure
+      todayStart?: number
+      error?: string
+    }>
+  ): Promise<boolean> => {
+    try {
+      const ok = applyResult(await run())
+      if (!ok) {
+        ElMessage.error(t('binder.actionFailed', { error: lastError.value ?? '' }))
+      }
+      return ok
+    } catch (error) {
+      lastError.value = error instanceof Error ? error.message : String(error)
+      ElMessage.error(t('binder.actionFailed', { error: lastError.value }))
+      await refresh()
+      return false
+    }
+  }
+
   async function createUnit(payload: INovelCreateUnitPayload): Promise<boolean> {
     if (!root.value) return false
-    return applyResult(await window.electron.novel.createUnit(root.value, payload))
+    const rootPath = root.value
+    return mutate(() => window.electron.novel.createUnit(rootPath, payload))
   }
 
   async function updateUnit(unitId: string, update: INovelUnitUpdate): Promise<boolean> {
     if (!root.value) return false
-    return applyResult(await window.electron.novel.updateUnit(root.value, unitId, update))
+    const rootPath = root.value
+    return mutate(() => window.electron.novel.updateUnit(rootPath, unitId, update))
   }
 
   async function moveUnit(
@@ -92,14 +125,14 @@ export const useNovelStore = defineStore('novel', () => {
     index: number
   ): Promise<boolean> {
     if (!root.value) return false
-    return applyResult(
-      await window.electron.novel.moveUnit(root.value, unitId, newParentId, index)
-    )
+    const rootPath = root.value
+    return mutate(() => window.electron.novel.moveUnit(rootPath, unitId, newParentId, index))
   }
 
   async function deleteUnit(unitId: string, deleteFiles: boolean): Promise<boolean> {
     if (!root.value) return false
-    return applyResult(await window.electron.novel.deleteUnit(root.value, unitId, deleteFiles))
+    const rootPath = root.value
+    return mutate(() => window.electron.novel.deleteUnit(rootPath, unitId, deleteFiles))
   }
 
   async function compile(): Promise<INovelCompileResult | null> {

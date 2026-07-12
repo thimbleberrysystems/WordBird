@@ -15,7 +15,6 @@ import { wordCount as getWordCount } from 'muya/lib/utils'
 import { adjustCursor } from '../../util'
 import bus from '../../bus'
 import { oneDarkThemes, railscastsThemes } from '@/config'
-import { applyAgentEditToCurrentFile } from '@/services/agentEditorApply'
 
 // CodeMirror 5 ships no first-party types; the wrapper in src/renderer/src/
 // codeMirror/index.ts also keeps the surface intentionally loose.
@@ -205,31 +204,6 @@ const handleSelectAll = () => {
   }
 }
 
-// Handle agent edit application through CodeMirror
-const handleApplyAgentEdit = (request: {
-  edit: {
-    id: string
-    filePath: string
-    start?: number
-    end?: number
-    newContent: string
-    reason?: string
-  }
-  oldContent: string
-  originalPath: string
-}) => {
-  if (!editor.value || !currentTab.value) return
-
-  const applied = applyAgentEditToCurrentFile(request, {
-    currentFile: currentTab.value,
-    setMarkdown: (markdown: string) => editor.value?.setValue(markdown)
-  })
-
-  if (!applied) {
-    // Nothing matched in this tab — the review queue keeps the proposal.
-  }
-}
-
 interface ImageActionPayload {
   id: string
   result: string
@@ -352,7 +326,6 @@ onMounted(() => {
   bus.on('file-changed', handleFileChange)
   bus.on('selectAll', handleSelectAll)
   bus.on('image-action', handleImageAction)
-  bus.on('apply-agent-edit', handleApplyAgentEdit as any)
 
   // For some reason, code mirror does not seem to play well with Vue's refs if we reference editor.value directly.
   // See https://github.com/codemirror/codemirror5/issues/6886 - hence, we need to use a local variable first.
@@ -390,7 +363,6 @@ onBeforeUnmount(() => {
   bus.off('file-changed', handleFileChange)
   bus.off('selectAll', handleSelectAll)
   bus.off('image-action', handleImageAction)
-  bus.off('apply-agent-edit', handleApplyAgentEdit as any)
 
   const { cursor, markdown: newMarkdown } = getMarkdownAndCursor(editor.value)
   bus.emit('file-changed', {
