@@ -558,7 +558,14 @@ const handleRetryTask = (payload: unknown): void => {
   }
 }
 
+// ---- Live agents + activity: shared store, shown in the Agents sidebar ----
+const agentsStore = useAgentsStore()
+const { activity, runState, agentMap } = storeToRefs(agentsStore)
+
 // Keep the chat pinned to the latest turn while agents stream activity.
+// (Must sit AFTER the destructure above — watch runs its getter
+// synchronously at creation, so an earlier placement is a TDZ crash that
+// takes the whole workspace subtree down with it.)
 watch(
   () => activity.value.length,
   async () => {
@@ -566,10 +573,6 @@ watch(
     if (promptBody.value) promptBody.value.scrollTop = promptBody.value.scrollHeight
   }
 )
-
-// ---- Live agents + activity: shared store, shown in the Agents sidebar ----
-const agentsStore = useAgentsStore()
-const { activity, runState, agentMap } = storeToRefs(agentsStore)
 
 // ---- Approvals ----
 const pendingApproval = ref<IAgentApprovalRequest | null>(null)

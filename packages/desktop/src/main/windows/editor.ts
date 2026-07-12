@@ -149,9 +149,22 @@ class EditorWindow extends BaseWindow {
       showEditorContextMenu(win, event, params, preferences.getItem('spellcheckerEnabled'))
     })
 
-    win.webContents.once('did-finish-load', () => {
+    // BOOTSTRAP HANDSHAKE. did-finish-load fires when the initial document
+    // loaded — but in dev the renderer is still importing hundreds of Vite
+    // modules and has NOT yet registered its mt::bootstrap-editor listener.
+    // Sending on did-finish-load alone silently loses the message and the
+    // window stays a blank placeholder forever (init never flips). So the
+    // renderer explicitly requests bootstrap once its listener is armed,
+    // and main bootstraps when BOTH the document is loaded AND the request
+    // arrived — whichever order they happen in.
+    let domReady = false
+    let rendererReady = false
+    let bootstrapped = false
+
+    const runBootstrap = (): void => {
       const { bufferStoreInfo: bufferInfo } = this
-      if (!win || !bufferInfo) return
+      if (!win || !bufferInfo || bootstrapped || !domReady || !rendererReady) return
+      bootstrapped = true
       this.lifecycle = WindowLifecycle.READY
       this.emit('window-ready')
 
@@ -177,6 +190,26 @@ class EditorWindow extends BaseWindow {
         this._doOpenFilesToOpen()
         this._markdownToOpen.length = 0
       }
+    }
+
+    const onBootstrapRequest = (event: Electron.IpcMainEvent): void => {
+      if (!win || event.sender !== win.webContents) return
+      // A fresh renderer after a bare reload (Ctrl+R / devtools) requests
+      // again — re-arm so it re-bootstraps from persisted state instead of
+      // staying blank.
+      rendererReady = true
+      if (bootstrapped) {
+        bootstrapped = false
+        domReady = true
+      }
+      runBootstrap()
+    }
+    ipcMain.on('mt::request-bootstrap', onBootstrapRequest)
+
+    win.webContents.once('did-finish-load', () => {
+      if (!win) return
+      domReady = true
+      runBootstrap()
 
       // Listen on default system mouse zoom event (e.g. Ctrl+MouseWheel on Linux/Windows).
       win.webContents.on('zoom-changed', (_event, zoomDirection) => {
@@ -260,6 +293,7 @@ class EditorWindow extends BaseWindow {
     win.on('closed', () => {
       this.lifecycle = WindowLifecycle.QUITTED
       this.emit('window-closed')
+      ipcMain.removeListener('mt::request-bootstrap', onBootstrapRequest)
 
       // Free window reference
       win = null

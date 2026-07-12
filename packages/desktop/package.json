@@ -125,6 +125,7 @@
     "@types/webfontloader": "^1.6.38",
     "@vitejs/plugin-vue": "^6.0.7",
     "@vitest/coverage-v8": "^4.1.6",
+    "@vue/test-utils": "^2.4.11",
     "cross-env": "^10.1.0",
     "electron": "^42.1.0",
     "electron-builder": "^26.8.1",

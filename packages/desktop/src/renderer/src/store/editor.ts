@@ -853,6 +853,9 @@ export const useEditorStore = defineStore('editor', {
       }, 400)
 
       window.electron.ipcRenderer.on('mt::bootstrap-editor', (_, config) => {
+        // Main may deliver bootstrap more than once (handshake + legacy
+        // paths) — only the first one may build tabs.
+        if (mainStore.init) return
         const {
           addBlankTab,
           rootDirectory,
@@ -894,6 +897,10 @@ export const useEditorStore = defineStore('editor', {
           }
         }
       })
+      // The listener is armed — ask main to bootstrap. did-finish-load can
+      // fire long before this point in dev (Vite module graph), so main
+      // waits for this request instead of fire-and-forgetting.
+      window.electron.ipcRenderer.send('mt::request-bootstrap')
     },
 
     // Open a new tab, optionally with content.
