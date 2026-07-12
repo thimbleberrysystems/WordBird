@@ -13,7 +13,14 @@
 import { describe, it, expect, afterEach, afterAll } from 'vitest'
 import fs from 'fs'
 import path from 'path'
-import { hasKey, resolveModel, createHarness, breathe, type LiveHarness } from './harness'
+import {
+  hasKey,
+  resolveModel,
+  createHarness,
+  createEmptyLiveProject,
+  breathe,
+  type LiveHarness
+} from './harness'
 
 const live = describe.skipIf(!hasKey())
 
@@ -153,5 +160,29 @@ live('6 · auto mode: full agentic loop end to end', () => {
     )
     expect(harness.approvals).toHaveLength(0)
     expect(reply.toLowerCase()).toMatch(/letter|amityville/)
+  })
+})
+
+live('7 · blueprint: empty-project onboarding produces real artifacts', () => {
+  it('setting up a fresh novel yields bible/scene proposals or structure, not chat-paste', async() => {
+    const harness = await make({ root: createEmptyLiveProject() })
+    harness.setMode('auto')
+    await harness.send(
+      't-blueprint',
+      'I want to start a gothic mystery novella about a lighthouse keeper named Odalys. ' +
+        'Set the project up for me: a bible page for Odalys and a first chapter with an ' +
+        'opening scene.'
+    )
+    const fs = await import('fs')
+    const path = await import('path')
+    const bibleExists = fs.existsSync(path.join(harness.root, 'bible'))
+    const structure = fs.existsSync(path.join(harness.root, '.wordbird', 'structure.json'))
+      ? fs.readFileSync(path.join(harness.root, '.wordbird', 'structure.json'), 'utf8')
+      : ''
+    // Real setup artifacts: review-gated proposals (bible/scene prose) and/or
+    // structural shells in the binder. Chat text alone is a fail.
+    const producedSomething =
+      harness.editProposals.length > 0 || bibleExists || structure.includes('chapter')
+    expect(producedSomething).toBe(true)
   })
 })

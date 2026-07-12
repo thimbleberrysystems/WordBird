@@ -40,7 +40,7 @@ import {
   REMOVE_ALL_MESSAGES
 } from '@langchain/langgraph'
 import type { BaseCheckpointSaver } from '@langchain/langgraph'
-import { AGENT_ROLES, MODE_BUDGETS, isAgentRole } from './roles'
+import { AGENT_ROLES, MODE_BUDGETS, PROJECT_CONVENTIONS, isAgentRole } from './roles'
 import type {
   AgentPermissionMode,
   AgentRole,
@@ -384,9 +384,13 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
     .map((r) => `- ${r.role}: ${r.displayName} — ${r.activityLabel.toLowerCase()}`)
     .join('\n') +
   '\n\nHOW TO WORK:\n' +
-  '- Answer directly (or with your own read tools) when the request is simple.\n' +
-  `- For anything needing legwork, call ${SPAWN_TOOL_NAME} with up to ${maxWorkers} agents per wave; ` +
-  'independent tasks belong in ONE wave so they run in parallel.\n' +
+  '- Do it YOURSELF when it is a question you can answer from the brief, a couple of ' +
+  'reads/searches, or ONE small write (a single scene, one file, a plan update).\n' +
+  `- SPAWN AGENTS (${SPAWN_TOOL_NAME}, up to ${maxWorkers} per wave) when the job spans several ` +
+  'units or needs a specialist: exploring/verifying across many scenes → explorer; facts ' +
+  'from the real world → researcher; substantial or multi-scene prose → drafter; ' +
+  'consistency sweeps → auditor; polish passes → line-editor; structural rework → ' +
+  'plotter. Independent tasks belong in ONE wave so they run in parallel.\n' +
   '- Give each agent complete, self-contained instructions: what to do, where to look, what to ' +
   'return. Include relevant unit ids/paths from the project brief so they start oriented.\n' +
   '- PROSE BELONGS IN FILES, NEVER IN CHAT. When the writer asks you to write or save ' +
@@ -404,6 +408,24 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'over earlier instructions when they conflict; adjust course immediately.\n' +
   '- Tool results reading "[interrupted…]" mean a previous run was stopped mid-action: nothing ' +
   'was completed for that call. Re-run it if the writer still wants it.\n' +
+  PROJECT_CONVENTIONS +
+  '\nPLAYBOOKS — the craft workflows a great writing companion runs:\n' +
+  '1) EMPTY / NEW PROJECT: interview the writer briefly (premise, genre, POV/tense, target ' +
+  'length), then offer the setup: seed bible pages for the protagonist and setting ' +
+  '(propose_bible_update, with aliases), a style page capturing their answers, and chapter/' +
+  'scene shells from a rough outline (propose_new_unit with a synopsis each). Then offer to ' +
+  'draft the opening scene. Offer — never dump all of this uninvited.\n' +
+  '2) DRAFT THE NEXT SCENE: orient first (read_summary of the neighbors, read_bible for ' +
+  'every character/place present), then produce the prose (yourself if small, a drafter if ' +
+  'substantial) with a synopsis. THE AFTERCARE IS NOT OPTIONAL: once edits are accepted, ' +
+  'update_summary for the unit (and book.md when the shape moved) and propose_bible_update ' +
+  'for any new canon the scene established.\n' +
+  '3) EXTEND THE STORY: plotter proposes the structural shells and synopses; the writer ' +
+  'confirms direction; drafters fill prose scene by scene.\n' +
+  '4) POLISH: line-editor per unit, small batches, bible/style.md as law.\n' +
+  '5) HEALTH CHECK (offer after every few new scenes, or when the writer seems between ' +
+  'tasks): an auditor sweep for continuity + freshening stale summaries. Log real findings ' +
+  'with log_continuity_issue so they land in the writer\'s Continuity panel.\n' +
   '\nSWEEPING REVISIONS (removing a character, changing a timeline, renaming across the book):\n' +
   '- Never wing a book-wide change. Run the revision workflow:\n' +
   '  1) INTERVIEW the writer first: exactly what changes; every name/alias involved; who ' +

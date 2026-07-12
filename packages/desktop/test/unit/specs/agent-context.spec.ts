@@ -9,6 +9,7 @@ import { AgentToolService } from '../../../src/main/services/ai/AgentToolService
 import { registerNovelAgentToolHandlers } from '../../../src/main/services/ai/NovelToolHandlers'
 import { registerBuiltInAgentToolHandlers } from '../../../src/main/services/ai/AgentToolHandlers'
 import { structureService } from '../../../src/main/services/novel/StructureService'
+import { AGENT_ROLES } from '../../../src/main/services/ai/orchestrator/roles'
 import type { INovelUnit } from '../../../src/shared/types/novel'
 
 describe('trimHistory', () => {
@@ -247,5 +248,59 @@ describe('tool output context caps', () => {
     }
     const listed = result.units[0].children![0]
     expect(listed.synopsis!.length).toBeLessThanOrEqual(201)
+  })
+})
+
+describe('project blueprint guidance', () => {
+  let root: string
+  const builder = new ContextBuilder()
+
+  const write = (relative: string, content: string): void => {
+    const target = path.join(root, relative)
+    fs.mkdirSync(path.dirname(target), { recursive: true })
+    fs.writeFileSync(target, content, 'utf8')
+  }
+
+  beforeEach(() => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), 'wordbird-blueprint-'))
+    write('.wordbird/project.json', JSON.stringify({ name: 'T', flavor: 'chapters-scenes' }))
+  })
+
+  afterEach(() => {
+    fs.rmSync(root, { recursive: true, force: true })
+  })
+
+  it('flags an EMPTY project and points at the new-project playbook', async() => {
+    const brief = await builder.buildProjectBrief(root)
+    expect(brief).toContain('EMPTY PROJECT')
+    expect(brief).toContain('NEW PROJECT playbook')
+  })
+
+  it('flags prose without a bible and reports maturity stats', async() => {
+    write('manuscript/chapter-one/opening.md', 'Rain fell on the letters.')
+    const brief = await builder.buildProjectBrief(root)
+    expect(brief).toContain('NO STORY BIBLE YET')
+    expect(brief).toMatch(/0 bible pages/)
+    expect(brief).not.toContain('EMPTY PROJECT')
+  })
+
+  it('reports bible/summary/plan counts once they exist', async() => {
+    write('manuscript/chapter-one/opening.md', 'Rain fell.')
+    write('bible/characters/zara.md', '# Zara')
+    write('bible/places/amityville.md', '# Amityville')
+    write('.wordbird/summaries/book.md', 'A summary.')
+    write('plans/plan-one.md', '# Plan')
+    const brief = await builder.buildProjectBrief(root)
+    expect(brief).toMatch(/2 bible pages/)
+    expect(brief).toMatch(/1 summary\b/)
+    expect(brief).toMatch(/1 plan\b/)
+    expect(brief).not.toContain('NO STORY BIBLE YET')
+  })
+
+  it('every worker role carries the project conventions', () => {
+    for (const definition of Object.values(AGENT_ROLES)) {
+      expect(definition.systemPrompt, definition.role).toContain('PROJECT LAYOUT & CONVENTIONS')
+      expect(definition.systemPrompt, definition.role).toContain('aliases')
+    }
   })
 })

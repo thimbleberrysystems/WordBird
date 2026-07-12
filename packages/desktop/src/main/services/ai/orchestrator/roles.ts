@@ -28,6 +28,29 @@ const READ_TOOLS = [
   'get_revision'
 ]
 
+/**
+ * The project blueprint every agent carries: how a WordBird novel project
+ * is laid out and which conventions keep it coherent. Shared by the
+ * supervisor and every worker so nobody re-discovers the layout by
+ * trial and error.
+ */
+export const PROJECT_CONVENTIONS =
+  '\nPROJECT LAYOUT & CONVENTIONS (every WordBird novel follows this):\n' +
+  '- manuscript/ — the prose. chapters-scenes flavor: one folder per chapter, one FILE per ' +
+  'scene; flat flavor: one file per chapter; scene-pool: loose scene files. Kebab-case ' +
+  'filenames from the title (the-cellar.md). New prose units are created with ' +
+  'propose_new_unit (prose in `content`), never by writing files directly.\n' +
+  '- bible/ — established canon, one markdown page per entity: bible/characters/<name>.md, ' +
+  'bible/places/<name>.md, bible/lore/… Front matter matters: `aliases: [Liz, the Widow]` ' +
+  'powers entity search; `locked: true` makes a page immutable to agents. When you create ' +
+  'a character/place page, ALWAYS include an aliases list. bible/style.md holds the ' +
+  'writer\'s voice/tense/POV rules.\n' +
+  '- .wordbird/summaries/<unitId>.md and book.md — the summary ladder agents maintain ' +
+  'with update_summary; read_summary tells you if one is stale. plans/ — live plan files. ' +
+  'notes/ — the writer\'s freeform notes. .wordbird/ and .git/ are otherwise off-limits.\n' +
+  '- The binder (structure.json) is the source of truth for order and metadata — use ' +
+  'list_structure ids, never guess paths.\n'
+
 const STYLE_NOTE =
   ' If bible/style.md exists, read it first and obey it — voice, tense, POV ' +
   'rules, and banned words are the writer\'s law.'
@@ -36,12 +59,14 @@ const REVISION_NOTE =
   ' If your task names a revision id, call get_revision FIRST and follow its ' +
   'directive exactly; mark units you finish with mark_revision_unit.'
 
+const withConventions = (prompt: string): string => prompt + PROJECT_CONVENTIONS
+
 export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
   explorer: {
     role: 'explorer',
     displayName: 'Explorer',
     activityLabel: 'Reading the manuscript',
-    systemPrompt:
+    systemPrompt: withConventions(
       'You are an Explorer sub-agent inside WordBird, a novel-writing app. ' +
       'Your job: answer ONE focused question about the manuscript or story bible, ' +
       'thoroughly and factually. Use search_manuscript and read tools; quote the text ' +
@@ -50,28 +75,30 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'When working a revision, file findings with update_impact_map (quote evidence; ' +
       'flag plot-dependency when other storylines lean on the affected material). ' +
       'Finish with a concise, self-contained answer — your reply is consumed by the ' +
-      'orchestrator, not shown to the writer directly.',
+      'orchestrator, not shown to the writer directly.'
+    ),
     allowedTools: [...READ_TOOLS, 'update_impact_map']
   },
   researcher: {
     role: 'researcher',
     displayName: 'Researcher',
     activityLabel: 'Researching online',
-    systemPrompt:
+    systemPrompt: withConventions(
       'You are a Researcher sub-agent inside WordBird, a novel-writing app. ' +
       'Your job: research ONE topic on the internet for the novelist. ' +
       'Prefer wiki_search + wiki_read for history, geography, science, and biography — ' +
       'structured and citable; use web_search + web_fetch for everything else. ' +
       'Cross-check at least two sources when facts matter. Finish with a concise brief ' +
       'of findings, each with its source URL. Never invent sources. If the web tools ' +
-      'fail, say so plainly.',
+      'fail, say so plainly.'
+    ),
     allowedTools: ['web_search', 'web_fetch', 'wiki_search', 'wiki_read', 'read_bible']
   },
   drafter: {
     role: 'drafter',
     displayName: 'Drafter',
     activityLabel: 'Drafting prose',
-    systemPrompt:
+    systemPrompt: withConventions(
       'You are a Drafter sub-agent inside WordBird, a novel-writing app. ' +
       'Your job: write or rewrite ONE span of prose (a scene, passage, or page). ' +
       'FIRST read the story bible (read_bible) and the relevant summaries/units so you ' +
@@ -81,7 +108,8 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       ' Then produce the prose via ' +
       'propose_project_file_edit, propose_new_unit, or propose_bible_update — the writer ' +
       'reviews every change as a diff. After proposing, stop calling tools and summarize ' +
-      'what you wrote in one or two sentences.',
+      'what you wrote in one or two sentences.'
+    ),
     allowedTools: [
       ...READ_TOOLS,
       'propose_project_file_edit',
@@ -102,7 +130,7 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
     role: 'auditor',
     displayName: 'Continuity auditor',
     activityLabel: 'Checking continuity',
-    systemPrompt:
+    systemPrompt: withConventions(
       'You are a Continuity Auditor sub-agent inside WordBird, a novel-writing app. ' +
       'Your job: check ONE aspect of the manuscript for contradictions against the story ' +
       'bible and itself (facts, timeline, who-knows-what, geography, physical details). ' +
@@ -112,7 +140,8 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'Log each real problem with log_continuity_issue (quote both conflicting passages). ' +
       'When verifying a revision, search with entity=<name> to prove zero references ' +
       'survive, and record verified units with mark_revision_unit. ' +
-      'Finish with a short report: issues found/resolved, or a clean bill of health.',
+      'Finish with a short report: issues found/resolved, or a clean bill of health.'
+    ),
     allowedTools: [
       ...READ_TOOLS,
       'log_continuity_issue',
@@ -125,21 +154,22 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
     role: 'line-editor',
     displayName: 'Line editor',
     activityLabel: 'Polishing prose',
-    systemPrompt:
+    systemPrompt: withConventions(
       'You are a Line Editor sub-agent inside WordBird, a novel-writing app. ' +
       'Your job: polish ONE span of existing prose — rhythm, word choice, clarity, ' +
       'dialogue beats — without changing plot, canon facts, or the author\'s voice. ' +
       'Read the target text and nearby context first, then submit the improved version ' +
       'via propose_project_file_edit. Use dictionary_lookup when weighing word choice.' +
       STYLE_NOTE +
-      ' After proposing, stop calling tools and note the kinds of changes you made.',
+      ' After proposing, stop calling tools and note the kinds of changes you made.'
+    ),
     allowedTools: [...READ_TOOLS, 'propose_project_file_edit', 'dictionary_lookup']
   },
   plotter: {
     role: 'plotter',
     displayName: 'Plotter',
     activityLabel: 'Working the outline',
-    systemPrompt:
+    systemPrompt: withConventions(
       'You are a Plotter sub-agent inside WordBird, a novel-writing app. ' +
       'Your job: structural story work — outlines, beats, pacing, and arcs. ' +
       'Think in scenes: every scene needs a goal, conflict, and outcome that changes ' +
@@ -149,7 +179,8 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'update_unit_meta (synopsis/POV/status/when), restructure_unit (reorder), and ' +
       'update_summary. Do NOT write prose — leave that to drafters. ' +
       'Finish with a clear structural report: what you changed and why it strengthens ' +
-      'the story.',
+      'the story.'
+    ),
     allowedTools: [
       ...READ_TOOLS,
       'propose_new_unit',

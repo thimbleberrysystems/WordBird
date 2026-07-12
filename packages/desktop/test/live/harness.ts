@@ -152,6 +152,18 @@ export const resolveModel = async(): Promise<string> => {
   throw new Error('Every free tool-calling model is rate-limited upstream right now — retry later.')
 }
 
+/** An EMPTY project (marker only) — exercises the new-project playbook. */
+export const createEmptyLiveProject = (): string => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'wordbird-live-empty-'))
+  fs.mkdirSync(path.join(root, '.wordbird'), { recursive: true })
+  fs.writeFileSync(
+    path.join(root, '.wordbird', 'project.json'),
+    JSON.stringify({ name: 'Fresh', flavor: 'chapters-scenes' }),
+    'utf8'
+  )
+  return root
+}
+
 /** A small but real novel project: two scenes, a bible page, the marker. */
 export const createLiveProject = (): string => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'wordbird-live-'))
@@ -191,8 +203,9 @@ export interface LiveHarness {
 
 export const createHarness = async(options?: {
   approve?: (request: IAgentApprovalRequest) => boolean
+  root?: string
 }): Promise<LiveHarness> => {
-  const root = createLiveProject()
+  const root = options?.root ?? createLiveProject()
   await resolveModel()
 
   const service = new AgentToolService()

@@ -421,3 +421,23 @@ describe('supervisor tool binding', () => {
     expect(bound).toContain('list_structure')
   })
 })
+
+describe('supervisor blueprint', () => {
+  it('the supervisor system prompt carries conventions, playbooks, and spawn heuristics', async() => {
+    const model = new ScriptedModel([new AIMessage('hello')])
+    const orchestrator = new Orchestrator({
+      modelFactory: () => model as never,
+      tools: [],
+      callbacks: { emitActivity: () => {}, requestApproval: async() => true }
+    })
+    orchestrator.setMode('auto')
+    await invokeGraph(orchestrator, 'hi')
+
+    const system = String(model.calls[0][0].content)
+    expect(system).toContain('PROJECT LAYOUT & CONVENTIONS')
+    expect(system).toContain('PLAYBOOKS')
+    expect(system).toContain('EMPTY / NEW PROJECT')
+    expect(system).toContain('AFTERCARE')
+    expect(system).toContain('SPAWN AGENTS')
+  })
+})

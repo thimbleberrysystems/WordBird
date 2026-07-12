@@ -24,6 +24,20 @@ const MAX_ISSUES = 5
 
 const words = (n: number): string => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n))
 
+/** Recursive count of files with the given extension (0 when absent). */
+const countFiles = (dir: string, extension: string): number => {
+  try {
+    let total = 0
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) total += countFiles(path.join(dir, entry.name), extension)
+      else if (entry.name.endsWith(extension)) total += 1
+    }
+    return total
+  } catch {
+    return 0
+  }
+}
+
 /** Render the binder tree as an indented outline, depth- and line-capped. */
 export const renderOutline = (units: INovelUnit[], maxLines = MAX_OUTLINE_LINES): string => {
   const lines: string[] = []
@@ -66,11 +80,32 @@ export class ContextBuilder {
       const leaves = collectLeaves(structure.units)
       const totalWords = leaves.reduce((sum, l) => sum + (l.wordCount ?? 0), 0)
 
+      // Cheap project-state signals so the AI knows the MATURITY of the
+      // project at a glance (fresh vs drafted vs maintained).
+      const biblePages = countFiles(path.join(projectRoot, 'bible'), '.md')
+      const summaries = countFiles(path.join(projectRoot, '.wordbird', 'summaries'), '.md')
+      const plans = countFiles(path.join(projectRoot, 'plans'), '.md')
+
       const sections: string[] = []
       sections.push(
         'PROJECT BRIEF (auto-generated — the novel as it stands right now):\n' +
-        `Layout: ${structure.flavor} · ${leaves.length} prose unit${leaves.length === 1 ? '' : 's'} · ${words(totalWords)} words total`
+        `Layout: ${structure.flavor} · ${leaves.length} prose unit${leaves.length === 1 ? '' : 's'} · ${words(totalWords)} words total · ` +
+        `${biblePages} bible page${biblePages === 1 ? '' : 's'} · ${summaries} summar${summaries === 1 ? 'y' : 'ies'} · ${plans} plan${plans === 1 ? '' : 's'}`
       )
+
+      if (leaves.length === 0 && totalWords === 0) {
+        sections.push(
+          'EMPTY PROJECT: no prose exists yet. Follow the NEW PROJECT playbook — ' +
+          'interview the writer about premise/genre/voice, then OFFER to seed the bible, ' +
+          'style page, and chapter/scene shells. Do not assume any existing content.'
+        )
+      } else if (biblePages === 0) {
+        sections.push(
+          'NO STORY BIBLE YET: prose exists but no canon pages. When characters or places ' +
+          'come up, offer to establish bible pages for them (with aliases) so future work ' +
+          'stays consistent.'
+        )
+      }
 
       const outline = renderOutline(structure.units)
       if (outline) {

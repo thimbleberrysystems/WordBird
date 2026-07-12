@@ -289,7 +289,13 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   token-usage tallies; per-agent AbortControllers (`cancelAgent`).
 - `main/services/ai/orchestrator/roles.ts` — agent catalog (explorer,
   researcher, drafter, auditor, line-editor, plotter) with allowed-tool lists;
-  a matrix test asserts every tool maps to a registered handler.
+  a matrix test asserts every tool maps to a registered handler. Exports
+  PROJECT_CONVENTIONS (the layout blueprint — manuscript/bible/summaries/
+  plans conventions) carried by the supervisor AND every worker; the
+  supervisor prompt additionally carries PLAYBOOKS (new-project onboarding,
+  draft-next-scene with mandatory aftercare, extend, polish, health check)
+  and spawn heuristics (do small things directly; spawn specialists for
+  multi-unit work).
 - Tools: `main/services/ai/AgentToolHandlers.ts` (core file read/edit),
   `NovelToolHandlers.ts` (structure/bible/summaries/continuity/revisions/
   plans/file management), `WebToolHandlers.ts` (web/wiki/dictionary, SSRF
@@ -297,8 +303,10 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   registered in code — JSON alone cannot add executable behavior. Tool
   outputs are context-capped (~24k chars) with announced truncation.
 - `main/services/ai/ContextBuilder.ts` — the per-turn "project brief"
-  (outline + book summary + open issues + active revisions) injected into
-  supervisor AND workers; never persisted into thread state.
+  (outline + book summary + open issues + active revisions + maturity stats:
+  bible/summary/plan counts, EMPTY PROJECT / NO STORY BIBLE markers that
+  point at the matching playbook) injected into supervisor AND workers;
+  never persisted into thread state.
 - `main/services/ai/FileCheckpointSaver.ts` — file-backed LangGraph
   checkpointer under `.wordbird/agent-state/` (excluded from snapshots).
 
