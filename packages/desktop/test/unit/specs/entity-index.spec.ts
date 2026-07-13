@@ -158,6 +158,12 @@ describe('prompt contracts: context prep + distinct titles', () => {
     expect(system).toContain('Editing text you have not read this turn')
     expect(system).toContain('DISTINCT, descriptive title')
 
+    // Full scenes are drafter work — the supervisor writes inline only for
+    // small pieces. This keeps sub-agents visibly in the loop AND routes
+    // prose through the scene-craft role prompt.
+    expect(system).toContain('ALWAYS goes through a drafter')
+    expect(system).toContain('Writing a FULL scene is NOT small')
+
     expect(AGENT_ROLES.drafter.systemPrompt).toContain('DISTINCT, descriptive titles')
     expect(AGENT_ROLES.explorer.allowedTools).toContain('where_appears')
   })

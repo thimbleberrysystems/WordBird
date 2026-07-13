@@ -39,6 +39,16 @@ import type Accessor from '../../app/accessor'
 
 const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000
 
+/**
+ * Default reply cap when the writer hasn't set one. A hard cap must exist
+ * (Anthropic's API requires max_tokens, and the context budget reserves
+ * this amount out of the window) — but it has to be prose-sized: a full
+ * scene is ~2-3k tokens and reasoning models spend budget on hidden
+ * thinking before emitting a word. 8192 fits both with headroom; the
+ * writer can raise/lower it in Settings → Biscuit.
+ */
+const DEFAULT_MAX_OUTPUT_TOKENS = 8192
+
 type CompiledAgent = {
   invoke: (
     state: { messages: unknown[] },
@@ -540,7 +550,10 @@ export class LangGraphManager {
       // 200k-context model gets room for a novel-length thread; a small
       // local model gets clamped below its ceiling.
       const contextWindow = await this._resolveContextWindow(config)
-      this._orchestrator.setContextBudget(contextWindow, config.maxTokens ?? 2048)
+      this._orchestrator.setContextBudget(
+        contextWindow,
+        config.maxTokens ?? DEFAULT_MAX_OUTPUT_TOKENS
+      )
       this._agent = this._orchestrator.buildGraph() as unknown as CompiledAgent
       this._broadcastConnectionState()
     } catch (error) {
@@ -914,7 +927,7 @@ export class LangGraphManager {
 
     const common = {
       temperature: temperature ?? 0.7,
-      maxTokens: maxTokens ?? 2048
+      maxTokens: maxTokens ?? DEFAULT_MAX_OUTPUT_TOKENS
     }
 
     switch (provider) {

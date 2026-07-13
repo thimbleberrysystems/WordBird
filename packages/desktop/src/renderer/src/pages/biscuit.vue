@@ -8,6 +8,8 @@
 import { onMounted } from 'vue'
 import RightPrompt from '@/components/rightPrompt/RightPrompt.vue'
 import { useProjectStore } from '@/store/project'
+import { usePreferencesStore } from '@/store/preferences'
+import { langGraphService } from '@/services/langgraph'
 import { addThemeStyle } from '@/util/theme'
 
 /**
@@ -31,9 +33,27 @@ if (projectRoot) {
 }
 
 // Match the app theme (passed as a query param at open time).
-onMounted(() => {
+onMounted(async () => {
   const initialTheme = params.get('theme')
   if (initialTheme) addThemeStyle(initialTheme)
+
+  // This window opens AFTER the provider connected, so the connect
+  // broadcast never reached it — pull the current state, keep following
+  // transitions, and load preferences (AI configs) so reconnects work here
+  // too. Without this the detached chat believed it was disconnected.
+  const preferencesStore = usePreferencesStore()
+  preferencesStore.ASK_FOR_USER_PREFERENCE()
+  window.electron.ai.onConnectionState((state) => {
+    langGraphService.applyMainState(state)
+    preferencesStore.aiIsConnected = state.connected
+  })
+  try {
+    const state = await window.electron.ai.getConnectionState()
+    langGraphService.applyMainState(state)
+    preferencesStore.aiIsConnected = state.connected
+  } catch {
+    // Main not ready — the next broadcast will catch us up.
+  }
 })
 </script>
 

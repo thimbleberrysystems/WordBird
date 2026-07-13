@@ -76,6 +76,16 @@ export const registerAIHandlers = (): void => {
     return { mode: langGraphManager.permissionMode }
   })
 
+  // Pull-based connection state: windows that open AFTER the connect
+  // broadcast (detached Biscuit, new editor windows) start in sync.
+  ipcMain.handle('mt::ai:get-connection-state', async() => {
+    return {
+      connected: langGraphManager.isConnected,
+      provider: langGraphManager.currentProvider,
+      model: langGraphManager.currentModel
+    }
+  })
+
   ipcMain.handle('mt::ai:approve', async(_e, approvalId: string, approved: boolean) => {
     return { handled: langGraphManager.resolveApproval(approvalId, approved) }
   })

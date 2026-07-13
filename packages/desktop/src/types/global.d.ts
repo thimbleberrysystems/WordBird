@@ -229,6 +229,11 @@ declare global {
       onPendingEditsCleared: (handler: () => void) => () => void
       onModeChanged: (handler: (event: { mode: AgentPermissionMode }) => void) => () => void
       onProjectChanged: (handler: (event: { root: string | null }) => void) => () => void
+      getConnectionState: () => Promise<{
+        connected: boolean
+        provider: string | null
+        model: string | null
+      }>
       onEditProposal: (
         handler: (proposal: {
           edit: IAgentEditProposal

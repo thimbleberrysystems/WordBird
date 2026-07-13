@@ -143,6 +143,10 @@ export interface IpcInvokeChannels {
   'mt::ai:reset-thread': { args: []; ret: { threadId: string } }
   'mt::ai:set-mode': { args: [mode: AgentPermissionMode]; ret: { mode: AgentPermissionMode } }
   'mt::ai:get-mode': { args: []; ret: { mode: AgentPermissionMode } }
+  'mt::ai:get-connection-state': {
+    args: []
+    ret: { connected: boolean; provider: AIProvider | null; model: string | null }
+  }
   'mt::ai:approve': { args: [approvalId: string, approved: boolean]; ret: { handled: boolean } }
   'mt::ai:cancel-agent': { args: [agentId: string]; ret: { cancelled: boolean } }
   'mt::ai:detach-biscuit': {

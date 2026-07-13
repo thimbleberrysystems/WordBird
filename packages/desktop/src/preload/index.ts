@@ -416,6 +416,11 @@ const aiAPI = {
     ipcRenderer.on('mt::ai:mode-changed', subscription)
     return () => ipcRenderer.removeListener('mt::ai:mode-changed', subscription)
   },
+  getConnectionState: (): Promise<{
+    connected: boolean
+    provider: string | null
+    model: string | null
+  }> => invoke('mt::ai:get-connection-state'),
   onProjectChanged: (handler: (event: { root: string | null }) => void) => {
     const subscription = (_e: unknown, event: { root: string | null }) => handler(event)
     ipcRenderer.on('mt::novel:project-changed', subscription)

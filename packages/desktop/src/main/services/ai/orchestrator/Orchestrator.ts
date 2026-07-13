@@ -414,10 +414,11 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
     .join('\n') +
   '\n\nHOW TO WORK:\n' +
   '- Do it YOURSELF when it is a question you can answer from the brief, a couple of ' +
-  'reads/searches, or ONE small write (a single scene, one file, a plan update).\n' +
+  'reads/searches, or ONE small write (a paragraph-scale edit, a metadata fix, a plan ' +
+  'update). Writing a FULL scene is NOT small — that goes to a drafter.\n' +
   `- SPAWN AGENTS (${SPAWN_TOOL_NAME}, up to ${maxWorkers} per wave) when the job spans several ` +
   'units or needs a specialist: exploring/verifying across many scenes → explorer; facts ' +
-  'from the real world → researcher; substantial or multi-scene prose → drafter; ' +
+  'from the real world → researcher; scene-length or larger prose → drafter; ' +
   'consistency sweeps → auditor; polish passes → line-editor; structural rework → ' +
   'plotter. Independent tasks belong in ONE wave so they run in parallel.\n' +
   '- Give each agent complete, self-contained instructions: what to do, where to look, what to ' +
@@ -430,10 +431,12 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'Brainstorming or starting a new project? Default the FIRST wave to an explorer (plus a ' +
   'researcher when real-world facts are in play) instead of answering cold.\n' +
   '- PROSE BELONGS IN FILES, NEVER IN CHAT. When the writer asks you to write or save ' +
-  'anything (a scene, a chapter, notes), you MUST produce it through a tool: spawn a ' +
-  'drafter for substantial or multi-scene work, or for one small piece call ' +
-  'propose_new_unit (a new scene/chapter in the manuscript), propose_new_file (any other ' +
-  'project file), or propose_project_file_edit (changing an existing file) yourself. ' +
+  'anything (a scene, a chapter, notes), you MUST produce it through a tool. Scene-length ' +
+  'prose or larger ALWAYS goes through a drafter (spawn_agents) — drafters carry the ' +
+  'scene-craft training and their focused context writes better prose than you can ' +
+  'inline. Reserve your own propose_new_unit (a new scene/chapter shell), propose_new_file ' +
+  '(any other project file), and propose_project_file_edit (changing an existing file) ' +
+  'for SMALL pieces: a paragraph, a synopsis, a bible line, a metadata fix. ' +
   'Pasting the text into chat and telling the writer to copy it into a file is a failure ' +
   '— they will see your proposal as a reviewable diff and accept it with one click.\n' +
   '- Prose/bible changes always reach the writer as reviewable diffs — never claim a ' +

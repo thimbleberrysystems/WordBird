@@ -202,11 +202,16 @@ onMounted(async () => {
   )
 
   // Main broadcasts every connection transition — mirror it so the UI and
-  // the reconnect guards never drift from reality.
+  // the reconnect guards never drift from reality. Also PULL the current
+  // state: a reloaded (or newly opened) window missed earlier broadcasts.
   window.electron.ai.onConnectionState((state) => {
     langGraphService.applyMainState(state)
     preferencesStore.aiIsConnected = state.connected
   })
+  window.electron.ai.getConnectionState?.().then((state) => {
+    langGraphService.applyMainState(state)
+    preferencesStore.aiIsConnected = state.connected
+  }).catch(() => { /* main not ready — the broadcast will catch us up */ })
   if (window.wordbird?.initialState) {
     preferencesStore.SET_USER_PREFERENCE(window.wordbird.initialState)
   }

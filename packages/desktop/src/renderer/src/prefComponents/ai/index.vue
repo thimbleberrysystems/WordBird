@@ -43,7 +43,7 @@
 
         <text-box
           :description="t('preferences.ai.maxTokens')"
-          :input="String(currentConfig.maxTokens ?? 2048)"
+          :input="String(currentConfig.maxTokens ?? 8192)"
           :notes="t('preferences.ai.maxTokensNotes')"
           :on-change="updateMaxTokens"
         />
