@@ -74,6 +74,8 @@ export class LangGraphManager {
   private _editTracker = new EditResolutionTracker(() => this._agentStateDir())
   /** Per-model context windows learned from provider APIs (OpenRouter/Ollama). */
   private _modelContextLengths = new Map<string, number>()
+  /** Per-model max output tokens where the provider reports one (OpenRouter). */
+  private _modelMaxOutputs = new Map<string, number>()
   private _pendingApprovals = new Map<
     string,
     { resolve: (approved: boolean) => void; timer: NodeJS.Timeout }
@@ -479,6 +481,19 @@ export class LangGraphManager {
       await this._validateCredentials(provider, apiKey, baseUrl)
       await this.fetchModels(provider, apiKey, baseUrl)
 
+      // Reply cap: the writer's setting (or the prose-sized default),
+      // clamped to the model's supported max output where the provider
+      // reports one — an over-ask would 400 on every request.
+      const requestedOut = config.maxTokens ?? DEFAULT_MAX_OUTPUT_TOKENS
+      const modelMaxOut = this._modelMaxOutputs.get(config.model ?? '')
+      config.maxTokens = modelMaxOut ? Math.min(requestedOut, modelMaxOut) : requestedOut
+      if (config.maxTokens !== requestedOut) {
+        log.info(
+          `[LangGraphMain] Reply cap clamped ${requestedOut} → ${config.maxTokens} ` +
+          `(model max for ${config.model})`
+        )
+      }
+
       await this._loadToolPacks()
       // Direct file/structure mutations reflect in every window immediately
       // (binder, corkboard, outline, timeline, files tree).
@@ -605,13 +620,18 @@ export class LangGraphManager {
         const response = await axios.get(url, { headers })
 
         if (provider === 'openai' || provider === 'openrouter') {
-          // OpenRouter reports each model's context window — remember it so
-          // the context budget can be sized to the model on connect.
+          // OpenRouter reports each model's context window and max output —
+          // remember both so budgets/caps can be sized to the model.
           if (provider === 'openrouter') {
             for (const m of response.data.data as Array<Record<string, unknown>>) {
               const length = Number(m.context_length)
               if (Number.isFinite(length) && length > 0) {
                 this._modelContextLengths.set(String(m.id), length)
+              }
+              const top = m.top_provider as Record<string, unknown> | undefined
+              const maxOut = Number(top?.max_completion_tokens)
+              if (Number.isFinite(maxOut) && maxOut > 0) {
+                this._modelMaxOutputs.set(String(m.id), maxOut)
               }
             }
           }

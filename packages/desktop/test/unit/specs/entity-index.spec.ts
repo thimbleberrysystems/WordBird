@@ -164,6 +164,12 @@ describe('prompt contracts: context prep + distinct titles', () => {
     expect(system).toContain('ALWAYS goes through a drafter')
     expect(system).toContain('Writing a FULL scene is NOT small')
 
+    // Real-world facts route to a researcher — never from model memory —
+    // and ride in the same wave as the drafter for real-world scenes.
+    expect(system).toContain('RESEARCH is a spawn trigger')
+    expect(system).toContain('never from your memory')
+    expect(system).toContain('SAME wave as the drafter')
+
     expect(AGENT_ROLES.drafter.systemPrompt).toContain('DISTINCT, descriptive titles')
     expect(AGENT_ROLES.explorer.allowedTools).toContain('where_appears')
   })

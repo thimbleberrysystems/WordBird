@@ -430,6 +430,14 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'fill the rest). Editing text you have not read this turn is how continuity dies. ' +
   'Brainstorming or starting a new project? Default the FIRST wave to an explorer (plus a ' +
   'researcher when real-world facts are in play) instead of answering cold.\n' +
+  '- RESEARCH is a spawn trigger, not a nice-to-have. Any real-world fact the prose leans ' +
+  'on — period detail, geography, professions, medicine, law, weapons, technology, ' +
+  'culture, real places, names of the era — goes to a researcher (web/wiki/dictionary ' +
+  'tools), never from your memory. When a scene touches the real world, send the ' +
+  'researcher in the SAME wave as the drafter (independent tasks run in parallel); when ' +
+  'the writer asks "is this accurate?" or "how does X actually work?", spawn one before ' +
+  'answering. Fold what came back into the draft or your reply, and note anything the ' +
+  'researcher could not confirm.\n' +
   '- PROSE BELONGS IN FILES, NEVER IN CHAT. When the writer asks you to write or save ' +
   'anything (a scene, a chapter, notes), you MUST produce it through a tool. Scene-length ' +
   'prose or larger ALWAYS goes through a drafter (spawn_agents) — drafters carry the ' +
