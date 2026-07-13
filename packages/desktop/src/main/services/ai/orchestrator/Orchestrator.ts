@@ -39,7 +39,15 @@ import {
   REMOVE_ALL_MESSAGES
 } from '@langchain/langgraph'
 import type { BaseCheckpointSaver } from '@langchain/langgraph'
-import { AGENT_ROLES, MODE_BUDGETS, PROJECT_CONVENTIONS, READONLY_ROLES, READONLY_WORKER_TOOLS, isAgentRole } from './roles'
+import {
+  AGENT_ROLES,
+  MODE_BUDGETS,
+  PROJECT_CONVENTIONS,
+  READONLY_ROLES,
+  READONLY_WORKER_TOOLS,
+  isAgentRole,
+  workerRecursionLimit
+} from './roles'
 import type {
   AgentPermissionMode,
   AgentRole,
@@ -442,7 +450,10 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'anything (a scene, a chapter, notes), you MUST produce it through a tool. Scene-length ' +
   'prose or larger ALWAYS goes through a drafter (spawn_agents) — drafters carry the ' +
   'scene-craft training and their focused context writes better prose than you can ' +
-  'inline. Reserve your own propose_new_unit (a new scene/chapter shell), propose_new_file ' +
+  'inline. Drafter assignments have NO size ceiling: hand one an ordered list of unit ' +
+  'ids/synopses and it will draft a whole chapter or act scene by scene; for a whole ' +
+  'novel, chain act-sized drafter assignments across book-run segments. ' +
+  'Reserve your own propose_new_unit (a new scene/chapter shell), propose_new_file ' +
   '(any other project file), and propose_project_file_edit (changing an existing file) ' +
   'for SMALL pieces: a paragraph, a synopsis, a bible line, a metadata fix. ' +
   'Pasting the text into chat and telling the writer to copy it into a file is a failure ' +
@@ -1306,7 +1317,13 @@ export class Orchestrator {
     )
 
     const results = await Promise.all(
-      spawns.map((spawn) => this._runWorkerWithRetry(spawn, budget.workerRecursionLimit, signal))
+      spawns.map((spawn) =>
+        this._runWorkerWithRetry(
+          spawn,
+          workerRecursionLimit(spawn.role, budget.workerRecursionLimit),
+          signal
+        )
+      )
     )
 
     return spawns

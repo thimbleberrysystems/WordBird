@@ -16,7 +16,10 @@ import { ContextBuilder } from '../../../src/main/services/ai/ContextBuilder'
 import { AgentToolService } from '../../../src/main/services/ai/AgentToolService'
 import { registerBuiltInAgentToolHandlers } from '../../../src/main/services/ai/AgentToolHandlers'
 import { Orchestrator } from '../../../src/main/services/ai/orchestrator/Orchestrator'
-import { AGENT_ROLES } from '../../../src/main/services/ai/orchestrator/roles'
+import {
+  AGENT_ROLES,
+  workerRecursionLimit
+} from '../../../src/main/services/ai/orchestrator/roles'
 
 let root: string
 
@@ -172,6 +175,16 @@ describe('prompt contracts: context prep + distinct titles', () => {
 
     expect(AGENT_ROLES.drafter.systemPrompt).toContain('DISTINCT, descriptive titles')
     expect(AGENT_ROLES.explorer.allowedTools).toContain('where_appears')
+
+    // No artificial scale ceiling: drafters take a chapter, an act, or a
+    // long run of scenes — and heavy roles get the step budget to match.
+    expect(system).toContain('NO size ceiling')
+    expect(AGENT_ROLES.drafter.systemPrompt).toContain('WHATEVER scale')
+    expect(AGENT_ROLES.drafter.systemPrompt).toContain('one propose_* per scene')
+    expect(workerRecursionLimit('drafter', 24)).toBe(96)
+    expect(workerRecursionLimit('auditor', 24)).toBe(96)
+    expect(workerRecursionLimit('researcher', 24)).toBe(24)
+    expect(workerRecursionLimit('explorer', 12)).toBe(12)
   })
 })
 

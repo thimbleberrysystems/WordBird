@@ -123,7 +123,9 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
     activityLabel: 'Drafting prose',
     systemPrompt: withConventions(
       'You are a Drafter sub-agent inside WordBird, a novel-writing app. ' +
-      'Your job: write or rewrite ONE span of prose (a scene, passage, or page). ' +
+      'Your job: write or rewrite prose at WHATEVER scale your task names — a passage, ' +
+      'a scene, a chapter, an act, or a run of many scenes. There is no size limit; if ' +
+      'the task lists ten scenes, you draft ten scenes. ' +
       'FIRST read the story bible (read_bible) and the relevant summaries/units so you ' +
       'match established canon, voice, tense, and POV.' +
       STYLE_NOTE +
@@ -131,10 +133,14 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       REVISION_NOTE +
       ' Then produce the prose via ' +
       'propose_project_file_edit, propose_new_unit, or propose_bible_update — the writer ' +
-      'reviews every change as a diff. New scenes get DISTINCT, descriptive titles ' +
+      'reviews every change as a diff. MULTI-SCENE assignments: work in story order and ' +
+      'propose each scene AS YOU FINISH IT (one propose_* per scene — never bundle ' +
+      'several scenes into one proposal), carrying voice, story time, and open threads ' +
+      'across your own scenes; refresh update_summary per finished scene so a stop ' +
+      'mid-assignment loses nothing. New scenes get DISTINCT, descriptive titles ' +
       '("The Cellar Door", never "Opening Scene" or "Scene 2") — titles become filenames. ' +
-      'After proposing, stop calling tools and summarize ' +
-      'what you wrote in one or two sentences.'
+      'When the assignment is complete, stop calling tools and summarize ' +
+      'what you wrote in a few sentences.'
     ),
     allowedTools: [
       ...READ_TOOLS,
@@ -185,8 +191,10 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
     activityLabel: 'Polishing prose',
     systemPrompt: withConventions(
       'You are a Line Editor sub-agent inside WordBird, a novel-writing app. ' +
-      'Your job: polish ONE span of existing prose — rhythm, word choice, clarity, ' +
+      'Your job: polish existing prose at whatever scale your task names — a passage, ' +
+      'a scene, or a batch of units — rhythm, word choice, clarity, ' +
       'dialogue beats — without changing plot, canon facts, or the author\'s voice. ' +
+      'For multi-unit sweeps, propose each unit\'s edit as you finish it. ' +
       'Read the target text and nearby context first, then submit the improved version ' +
       'via propose_project_file_edit. Use dictionary_lookup when weighing word choice. ' +
       'PASS DISCIPLINE: work the one concern your task names (dialogue, rhythm, or line) ' +
@@ -241,3 +249,15 @@ export const MODE_BUDGETS: Record<AgentPermissionMode, OrchestratorBudget> = {
   approvals: { maxWorkersPerWave: 6, maxWaves: 3, workerRecursionLimit: 16 },
   auto: { maxWorkersPerWave: 10, maxWaves: 6, workerRecursionLimit: 24 }
 }
+
+/**
+ * Roles whose assignments legitimately span many units — a drafter can be
+ * handed a whole chapter or act (one proposal per scene), an auditor or
+ * line-editor a manuscript-wide sweep. They get several times the per-mode
+ * step budget so assignment size, not an arbitrary cap, decides the work.
+ */
+export const HEAVY_ROLES: AgentRole[] = ['drafter', 'line-editor', 'auditor', 'plotter']
+export const HEAVY_ROLE_RECURSION_MULTIPLIER = 4
+
+export const workerRecursionLimit = (role: AgentRole, base: number): number =>
+  HEAVY_ROLES.includes(role) ? base * HEAVY_ROLE_RECURSION_MULTIPLIER : base
