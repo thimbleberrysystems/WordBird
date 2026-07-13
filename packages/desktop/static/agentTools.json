@@ -1075,6 +1075,102 @@
       }
     },
     {
+      "id": "list_snapshots",
+      "name": "list_snapshots",
+      "displayName": "List project snapshots",
+      "description": "The project's snapshot history (mini-git): every manual save, every agent batch, every rewind — id, message, timestamp, and whether it was automatic. This is how you see WHEN things changed and find the version to inspect with read_snapshot_file / diff_snapshot_file.",
+      "handler": "list_snapshots",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "Maximum snapshots to return (default 30, max 100)."
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "id": "read_snapshot_file",
+      "name": "read_snapshot_file",
+      "displayName": "Read a file at a snapshot",
+      "description": "Read one file exactly as it was at a given snapshot. THE way to recover lost or overwritten prose: read the old version, then propose it back with a normal edit proposal (review-gated) — no project-wide rewind needed.",
+      "handler": "read_snapshot_file",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "snapshotId": {
+            "type": "string",
+            "description": "Snapshot id from list_snapshots."
+          },
+          "path": {
+            "type": "string",
+            "description": "Project-relative file path (e.g. manuscript/chapter-one/opening.md)."
+          }
+        },
+        "required": [
+          "snapshotId",
+          "path"
+        ]
+      }
+    },
+    {
+      "id": "diff_snapshot_file",
+      "name": "diff_snapshot_file",
+      "displayName": "Diff a file against a snapshot",
+      "description": "Unified diff between a file's version at a snapshot and the current working copy — see exactly what changed (writer edits, agent edits, or a rewind) without reading both versions whole.",
+      "handler": "diff_snapshot_file",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "snapshotId": {
+            "type": "string",
+            "description": "Snapshot id from list_snapshots."
+          },
+          "path": {
+            "type": "string",
+            "description": "Project-relative file path."
+          }
+        },
+        "required": [
+          "snapshotId",
+          "path"
+        ]
+      }
+    },
+    {
+      "id": "restore_snapshot",
+      "name": "restore_snapshot",
+      "displayName": "Rewind the whole project",
+      "description": "Rewind the ENTIRE project to a snapshot. The writer must approve (every mode), and a safety snapshot of the current state is taken first so the rewind itself is undoable. For a single file, use read_snapshot_file + an edit proposal instead.",
+      "handler": "restore_snapshot",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "snapshotId": {
+            "type": "string",
+            "description": "Snapshot id from list_snapshots to rewind to."
+          }
+        },
+        "required": [
+          "snapshotId"
+        ]
+      }
+    },
+    {
       "id": "web_search",
       "name": "web_search",
       "displayName": "Search the web",

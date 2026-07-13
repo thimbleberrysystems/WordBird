@@ -175,6 +175,13 @@ export const registerNovelHandlers = (): void => {
       if (!safeRoot) return { ok: false, error: 'Not a valid WordBird project' }
       try {
         const id = await snapshotService.restore(safeRoot, snapshotId)
+        // The next agent turn must know the ground shifted under it.
+        const { contextBuilder } = await import('../services/ai/ContextBuilder')
+        contextBuilder.recordProjectEvent(
+          safeRoot,
+          `The writer REWOUND the project to snapshot ${snapshotId.slice(0, 8)} from the ` +
+          'History panel — all remembered file contents are stale.'
+        )
         return { ok: true, id: id ?? undefined }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)

@@ -27,6 +27,9 @@ const READ_TOOLS = [
   'list_files',
   'list_continuity_issues',
   'list_facts',
+  'list_snapshots',
+  'read_snapshot_file',
+  'diff_snapshot_file',
   'get_revision'
 ]
 

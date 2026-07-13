@@ -94,10 +94,58 @@ const HANDOFF_WORDS = 500
 
 export class ContextBuilder {
   private _sessionContext: ISessionContext | null = null
+  /** When the brief was last built per project — drives the changed-files line. */
+  private _lastBriefAt = new Map<string, number>()
+  /** One-shot project events (rewinds, etc.) surfaced in the next brief. */
+  private _projectEvents = new Map<string, string[]>()
 
   /** Where the writer is looking (view + open scene); set from the renderer. */
   setSessionContext(context: ISessionContext | null): void {
     this._sessionContext = context
+  }
+
+  /** Note an out-of-band project event (e.g. a History-panel rewind). */
+  recordProjectEvent(projectRoot: string, text: string): void {
+    const queue = this._projectEvents.get(projectRoot) ?? []
+    queue.push(text)
+    this._projectEvents.set(projectRoot, queue.slice(-5))
+  }
+
+  /**
+   * Files the writer (or anything outside this agent session) touched since
+   * the previous brief — the agent's memory of them is stale.
+   */
+  private _changedSinceLastBrief(projectRoot: string): string[] {
+    const since = this._lastBriefAt.get(projectRoot)
+    this._lastBriefAt.set(projectRoot, Date.now())
+    if (!since) return []
+    const changed: string[] = []
+    const walk = (dir: string): void => {
+      let entries: fs.Dirent[]
+      try {
+        entries = fs.readdirSync(dir, { withFileTypes: true })
+      } catch {
+        return
+      }
+      for (const entry of entries) {
+        if (changed.length >= 20) return
+        if (entry.name.startsWith('.') || entry.name === 'exports') continue
+        const full = path.join(dir, entry.name)
+        if (entry.isDirectory()) {
+          walk(full)
+        } else if (entry.name.endsWith('.md')) {
+          try {
+            if (fs.statSync(full).mtimeMs > since) {
+              changed.push(path.relative(projectRoot, full))
+            }
+          } catch {
+            // Vanished mid-walk.
+          }
+        }
+      }
+    }
+    walk(projectRoot)
+    return changed
   }
 
   /**
@@ -272,6 +320,23 @@ export class ContextBuilder {
         } catch {
           // Unreadable summary — skip.
         }
+      }
+
+      // Out-of-band events (rewinds from the History panel, etc.) — shown
+      // once, in the very next brief.
+      const events = this._projectEvents.get(projectRoot)
+      if (events && events.length > 0) {
+        this._projectEvents.delete(projectRoot)
+        sections.push(`PROJECT EVENTS SINCE YOUR LAST TURN:\n${events.map((e) => `- ${e}`).join('\n')}`)
+      }
+
+      // Files that changed outside this agent session — stale-memory guard.
+      const changed = this._changedSinceLastBrief(projectRoot)
+      if (changed.length > 0) {
+        sections.push(
+          'CHANGED SINCE YOUR LAST TURN (writer edits, applied reviews, or a rewind — ' +
+          `your memory of these is STALE, re-read before relying on it): ${changed.join(', ')}`
+        )
       }
 
       // Whole-book progress: the freshest live plan is the work queue — one

@@ -425,3 +425,31 @@ live('15 · context prep: orientation happens before prose edits', () => {
     expect(oriented).toBe(true)
   })
 })
+
+live('16 · history is a tool: agents answer from the snapshot mini-git', () => {
+  it('reports what changed in a file since an earlier snapshot', async() => {
+    const harness = await make()
+    const { snapshotService } = await import('../../src/main/services/novel/SnapshotService')
+    await snapshotService.snapshot(harness.root, 'first draft')
+    fs.writeFileSync(
+      path.join(harness.root, 'manuscript/chapter-one/opening.md'),
+      'Detective Zara Voss stepped into the MOONLIT alley, her grey eyes scanning the dark.\n'
+    )
+    await snapshotService.snapshot(harness.root, 'moonlight rewrite')
+
+    harness.setMode('ask')
+    const reply = await harness.send(
+      't-history',
+      'Using the project snapshot history: what changed in the opening scene between the ' +
+        '"first draft" snapshot and now? Quote the changed wording.'
+    )
+    // Grounded in the real diff — the rewrite swapped rain-slick → MOONLIT.
+    expect(reply.toLowerCase()).toMatch(/moonlit|rain-slick/)
+    const usedHistory = harness.activity.some((event) =>
+      /list_snapshots|diff_snapshot_file|read_snapshot_file/.test(
+        `${event.label} ${event.detail ?? ''}`
+      )
+    )
+    expect(usedHistory).toBe(true)
+  })
+})

@@ -904,7 +904,7 @@ const listFiles = async(
   const subdir = optStr(args, 'dir')
   const startDir = subdir ? resolveInside(root, subdir) : root
 
-  const files: Array<{ path: string; size: number }> = []
+  const files: Array<{ path: string; size: number; modifiedAt?: string }> = []
   let truncated = false
 
   const walk = async(dir: string): Promise<void> => {
@@ -933,17 +933,109 @@ const listFiles = async(
         await walk(full)
       } else if (entry.isFile() && !entry.name.startsWith('.')) {
         let size = 0
+        let modifiedAt: string | undefined
         try {
-          size = (await fsPromises.stat(full)).size
+          const stat = await fsPromises.stat(full)
+          size = stat.size
+          modifiedAt = stat.mtime.toISOString()
         } catch {
           // stat raced a delete — keep size 0
         }
-        files.push({ path: rel, size })
+        files.push({ path: rel, size, modifiedAt })
       }
     }
   }
   await walk(startDir)
   return { dir: subdir ?? '.', files, truncated }
+}
+
+// ---- snapshot history (the project's mini-git, agent-readable) ----
+
+const listSnapshots = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const { snapshotService } = await import('../novel/SnapshotService')
+  const limit = Math.min(optInt(args, 'limit') ?? 30, 100)
+  const snapshots = await snapshotService.list(root, limit)
+  return {
+    count: snapshots.length,
+    snapshots: snapshots.map((s) => ({
+      id: s.id,
+      message: s.message,
+      at: new Date(s.timestamp).toISOString(),
+      auto: s.auto
+    }))
+  }
+}
+
+const readSnapshotFile = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const { snapshotService } = await import('../novel/SnapshotService')
+  const snapshotId = str(args, 'snapshotId')
+  const target = str(args, 'path')
+  const content = await snapshotService.readFileAt(root, snapshotId, target)
+  if (content === null) {
+    return {
+      found: false,
+      note:
+        `"${target}" does not exist in snapshot ${snapshotId.slice(0, 8)} ` +
+        '(or the snapshot id is wrong — list_snapshots shows the history).'
+    }
+  }
+  const capped = capForContext(content, 'read a narrower file or a specific scene')
+  return { found: true, path: target, snapshotId, content: capped.text, truncated: capped.truncated }
+}
+
+const diffSnapshotFile = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const { snapshotService } = await import('../novel/SnapshotService')
+  const { createTwoFilesPatch } = await import('diff')
+  const snapshotId = str(args, 'snapshotId')
+  const target = str(args, 'path')
+  const old = (await snapshotService.readFileAt(root, snapshotId, target)) ?? ''
+  let current = ''
+  try {
+    current = await readTextSafe(resolveInside(root, target))
+  } catch {
+    // File deleted since the snapshot — diff against empty.
+  }
+  if (old === current) {
+    return { path: target, snapshotId, identical: true, diff: '' }
+  }
+  const patch = createTwoFilesPatch(
+    `${target} @ ${snapshotId.slice(0, 8)}`,
+    `${target} (current)`,
+    old,
+    current
+  )
+  const capped = capForContext(patch, 'diff a single scene file instead')
+  return { path: target, snapshotId, identical: false, diff: capped.text, truncated: capped.truncated }
+}
+
+const restoreSnapshot = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const { snapshotService } = await import('../novel/SnapshotService')
+  const snapshotId = str(args, 'snapshotId')
+  const resultId = await snapshotService.restore(root, snapshotId)
+  return {
+    restored: true,
+    snapshotId,
+    note:
+      'The WHOLE project was rewound to that snapshot (a safety snapshot of the ' +
+      `pre-rewind state was taken first${resultId ? `; rewind recorded as ${resultId.slice(0, 8)}` : ''}). ` +
+      'For a single file, prefer read_snapshot_file + a normal edit proposal instead.'
+  }
 }
 
 // ---- continuity read/resolve (logging lives above) ----
@@ -1301,6 +1393,10 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('log_continuity_issue', logContinuityIssue)
   service.registerHandler('record_fact', recordFact)
   service.registerHandler('list_facts', listFacts)
+  service.registerHandler('list_snapshots', listSnapshots)
+  service.registerHandler('read_snapshot_file', readSnapshotFile)
+  service.registerHandler('diff_snapshot_file', diffSnapshotFile)
+  service.registerHandler('restore_snapshot', restoreSnapshot)
   service.registerHandler('list_continuity_issues', listContinuityIssues)
   service.registerHandler('resolve_continuity_issue', resolveContinuityIssue)
   service.registerHandler('list_files', listFiles)

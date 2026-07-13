@@ -225,6 +225,28 @@ export class SnapshotService {
   }
 
   /**
+   * Read one file's content as it was at a given snapshot (null when the
+   * file did not exist in that snapshot). Powers the agents' history
+   * tools: recovering lost prose is "read the old version, propose it
+   * back as a normal reviewable edit".
+   */
+  async readFileAt(dir: string, snapshotId: string, relativePath: string): Promise<string | null> {
+    await this._ensureRepo(dir)
+    const normalized = relativePath.replace(/\\/g, '/').replace(/^\.\//, '')
+    try {
+      const { blob } = await git.readBlob({
+        fs,
+        dir,
+        oid: snapshotId,
+        filepath: normalized
+      })
+      return Buffer.from(blob).toString('utf8')
+    } catch {
+      return null
+    }
+  }
+
+  /**
    * Rewind the project to a snapshot. Writes that snapshot's files into
    * the working tree without moving HEAD, then records the result as a
    * new snapshot so the rewind itself can be undone.

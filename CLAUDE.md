@@ -268,8 +268,15 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   POV, synopsis, word counts). Scan/reconcile per project flavor
   (`chapters-scenes` | `scene-pool` | `flat`), unit CRUD, compile.
 - `main/services/novel/SnapshotService.ts` — "mini git" over the whole project
-  via isomorphic-git: snapshot/list/non-destructive rewind. Auto-snapshots
-  guard every destructive agent operation.
+  via isomorphic-git: snapshot/list/non-destructive rewind + `readFileAt`
+  (any file at any snapshot). Auto-snapshots guard every destructive agent
+  operation. AGENT-FACING HISTORY: list_snapshots / read_snapshot_file /
+  diff_snapshot_file (read tools, all roles) and restore_snapshot
+  (destructive-gated — writer approval in every mode). Recovering lost
+  prose = read the old version + a normal review-gated edit proposal.
+  FRESHNESS: the brief carries CHANGED SINCE YOUR LAST TURN (files whose
+  mtime moved between briefs → agent memory of them is stale) and one-shot
+  PROJECT EVENTS (History-panel rewinds); list_files reports modifiedAt.
 - `main/services/novel/BookExporter.ts` — whole-book EPUB/DOCX output (pure
   JS: marked + epub-gen-memory + html-to-docx, no pandoc); the binder's
   Compile dropdown routes through `mt::novel:compile` with `format`.

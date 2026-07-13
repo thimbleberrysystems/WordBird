@@ -367,6 +367,9 @@ const SUPERVISOR_TOOL_NAMES = [
   'list_files',
   'list_continuity_issues',
   'list_facts',
+  'list_snapshots',
+  'read_snapshot_file',
+  'diff_snapshot_file',
   'start_revision',
   'get_revision',
   'complete_revision',
@@ -389,12 +392,14 @@ const SUPERVISOR_WRITE_TOOL_NAMES = [
   'set_writing_method',
   'record_fact',
   'delete_unit',
-  'delete_file'
+  'delete_file',
+  'restore_snapshot'
 ]
 
-// Deletion is irreversible-feeling even with snapshots: EVERY delete asks
-// the writer first, in every mode — auto mode included.
-const DESTRUCTIVE_TOOLS = ['delete_unit', 'delete_file']
+// Deletion is irreversible-feeling even with snapshots — and a whole-
+// project rewind rewrites everything at once: EVERY one of these asks the
+// writer first, in every mode, auto included.
+const DESTRUCTIVE_TOOLS = ['delete_unit', 'delete_file', 'restore_snapshot']
 
 const SPAWN_TOOL_NAME = 'spawn_agents'
 
@@ -469,11 +474,23 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'change, or move on. Edits "awaiting review" do not exist in the manuscript yet.\n' +
   '- After results return, either spawn another wave (if genuinely needed) or reply to the writer ' +
   'in warm, plain language. Do not mention roles, waves, or tool names to the writer.\n' +
-  '- DELETING (delete_unit / delete_file) is available in approvals and auto modes, and ' +
-  'ALWAYS asks the writer to confirm first — every mode, no exceptions — with a ' +
-  'protective snapshot taken before the removal. For "clear everything" requests, ' +
+  '- DELETING (delete_unit / delete_file) and WHOLE-PROJECT REWINDS (restore_snapshot) ' +
+  'ALWAYS ask the writer to confirm first — every mode, no exceptions — with a ' +
+  'protective snapshot taken before the change. For "clear everything" requests, ' +
   'confirm once per deletion; never claim something was deleted before the writer ' +
   'approved it.\n' +
+  '- HISTORY IS A TOOL: the project keeps a full snapshot history (every save, every ' +
+  'agent batch, every rewind). list_snapshots shows when things changed; ' +
+  'diff_snapshot_file shows exactly WHAT changed in a file since any snapshot; ' +
+  'read_snapshot_file reads any old version. To recover lost/overwritten prose, read ' +
+  'the old version and propose it back as a NORMAL edit (review-gated) — reserve ' +
+  'restore_snapshot for the writer explicitly wanting the whole project rolled back. ' +
+  'When the writer says "it was better before" or "what changed?", history is your ' +
+  'first stop.\n' +
+  '- FRESHNESS: the writer edits files directly between your turns, and can rewind the ' +
+  'project from the History panel. The brief\'s CHANGED SINCE YOUR LAST TURN line lists ' +
+  'files whose content moved without you — treat your memory of those files as STALE ' +
+  'and re-read before editing or citing them. list_files reports modifiedAt timestamps.\n' +
   '- QUESTIONS WITH CHOICES go through ask_writer (a card with buttons + a free-form ' +
   'field): use it whenever the answers are enumerable — genre, tone, POV, picking between ' +
   'premises, yes/no forks. One question per card, your recommendation FIRST, then end ' +
