@@ -334,10 +334,18 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   draft-next-scene with mandatory aftercare, extend, polish, health check)
   and spawn heuristics (do small things directly; spawn specialists for
   multi-unit work).
-- Tools: `main/services/ai/AgentToolHandlers.ts` (core file read/edit),
-  `NovelToolHandlers.ts` (structure/bible/summaries/continuity/revisions/
-  plans/file management), `WebToolHandlers.ts` (web/wiki/dictionary, SSRF
-  guards). Definitions live in `static/agentTools.json`; handlers must be
+- Tools (48): `main/services/ai/AgentToolHandlers.ts` (core file read/edit
+  + `propose_text_edit` — anchored exact-quote search/replace, the Aider
+  SEARCH/REPLACE pattern, with occurrence disambiguation; the prompt-pinned
+  path for surgical prose fixes, whole-file `propose_project_file_edit` is
+  full-rewrites only), `NovelToolHandlers.ts` (structure/bible/summaries/
+  continuity/facts/history/revisions/plans/file management + `lint_prose` —
+  deterministic prose lint over a unit or file backed by
+  `novel/ProseLint.ts`: doubled words/near-repeats/filler/filter-phrases/
+  passive+adverb density/monotony/hygiene + banned terms parsed from
+  bible/style.md; line-editors lint before+after, CRITIC PASS lints drafted
+  scenes), `WebToolHandlers.ts` (web/wiki/dictionary, SSRF guards).
+  Definitions live in `static/agentTools.json`; handlers must be
   registered in code — JSON alone cannot add executable behavior. Tool
   outputs are context-capped (~24k chars) with announced truncation.
 - `main/services/ai/ContextBuilder.ts` — the per-turn "project brief"
@@ -345,7 +353,10 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   progress + WHO'S WHERE entity block + EDIT REVIEW STATUS + maturity stats:
   bible/summary/plan counts, EMPTY PROJECT / NO STORY BIBLE markers that
   point at the matching playbook) injected into supervisor AND workers;
-  never persisted into thread state. Also builds the scene handoff.
+  never persisted into thread state. Also builds the scene handoff. A
+  project-root `biscuit.md` (CLAUDE.md pattern — writer-editable standing
+  instructions) rides every brief verbatim, capped at 2000 chars; the
+  onboarding playbook offers to create it.
 - `main/services/novel/EntityIndex.ts` — deterministic entity index (no
   LLM): bible pages (name + aliases) × prose units → appearance counts,
   persisted at `.wordbird/index/entities.json`, rebuilt lazily on an
@@ -408,7 +419,10 @@ test). list_structure exposes every unit-meta field the views edit
   Shift+Tab cycling, context ring, token counter; Stop kills the whole run) +
   AgentTree (header popover: Biscuit root → sub-agent rows in a tree,
   expandable to task + tool use, per-agent/subtree pause-resume-kill) +
-  PlanCard + ErrorCard. Live plan files (plans/) open automatically in the
+  PlanCard + ErrorCard. Typing `@` in the prompt opens a mention picker
+  (scenes + bible pages + open tabs) that inserts the project-relative
+  path — Cline's `@file` pattern. ArrowUp/Down recall prompt history.
+  Live plan files (plans/) open automatically in the
   main editor as Biscuit writes them; conversations are mirrored to
   `.wordbird/transcripts/` where search_manuscript can find them.
 - `renderer/src/components/agent/` — review queue (GlobalAgentReview) and

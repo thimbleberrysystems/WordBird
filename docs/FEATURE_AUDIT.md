@@ -198,6 +198,55 @@ All eight gaps were implemented immediately after this audit:
 - **E8 DONE** — 14-day writing-history sparkline + streak in the binder
   (data from the existing .wordbird/stats.json).
 
+## 3b. Tool audit vs state-of-the-art coding agents (2026-07-13)
+
+We write novels, not code — but the open-source coding agents (Aider 41k★,
+Cline 58k★, OpenHands 68k★, Goose, Claude Code) have run the largest live
+experiment in what makes an agent harness reliable. Comparison of their
+tool surfaces against WordBird's 48 agent tools:
+
+| Capability | Coding SOTA | WordBird |
+|---|---|---|
+| Checkpoints / rollback | Cline checkpoints | git snapshots + preview_snapshot + non-destructive rewind + per-batch auto-snapshots — **ahead** |
+| Permission modes | Cline Plan/Act | ask / approvals / auto, per-project persisted, destructive gates — **ahead** |
+| Repo map | Aider tree-sitter map | brief outline + WHO'S WHERE entity index + summaries ladder — parity, novel-shaped |
+| Subagents / task lists | Claude Code agents/todos | 6 roles + parallel waves + live plan files — parity+ |
+| Context condensation / cost telemetry / BYOK | all | model-aware budgets, context ring, output clamps — parity+ |
+| Ranged reads, project search | all | read_project_file(start/end), ripgrep search — parity |
+| Web / browser tools | Cline browser | web/wiki/dictionary (SSRF-guarded) — parity (enough) |
+| Terminal execution | core to coding agents | N/A for novels — correctly absent |
+
+Four ideas were worth borrowing, all shipped same-day:
+- **Anchored text edits** (Aider SEARCH/REPLACE, Claude Code Edit) →
+  `propose_text_edit {fname, oldText, newText, occurrence?}`. The coding
+  world converged on one lesson: line numbers are the wrong anchor for LLM
+  edits — exact-text quotes are dramatically more reliable. Exact-match
+  with occurrence disambiguation and re-read-and-quote error coaching;
+  emits the standard edit-proposal payload so the whole review pipeline
+  (queue, diffs, acceptance loop, auto-apply) is unchanged.
+  `propose_project_file_edit` remains for full-file rewrites only.
+- **"Run the linter after the edit"** (Aider auto-lint, OpenHands
+  test-loop) → `lint_prose {unitId|fname}` backed by
+  `novel/ProseLint.ts` (proselint/Vale-inspired, deterministic): doubled
+  words, near-repeats, filler/crutch words, POV filter phrases, passive
+  and adverb density, sentence-length monotony, punctuation hygiene, and
+  banned terms parsed from `bible/style.md`. Line-editors lint before AND
+  after their pass; the book-run CRITIC PASS lints every drafted scene.
+  Findings are signals, not laws (flexibility directive applies).
+- **Standing-instructions file** (CLAUDE.md / .clinerules / AGENTS.md) →
+  project-root `biscuit.md`, injected verbatim into every brief (capped
+  2000 chars) as WRITER'S STANDING INSTRUCTIONS — "never kill the dog"
+  survives compaction now. Onboarding offers to create it.
+- **@-mentions in the prompt** (Cline `@file`, Aider `/add`) → typing `@`
+  in the Biscuit input opens a picker over scenes, bible pages, and open
+  tabs; inserting the project-relative path makes requests unambiguous
+  and tool-ready.
+
+**Documented as future, not built:** MCP client support (Cline's
+extensibility model). WordBird's tool packs are JSON-defined but handlers
+must be registered in code — by design. MCP is the eventual third-party
+extension story; heavy and unneeded today.
+
 ## 4. Recommended execution order (original)
 1. E2 book-run critic loop (largest coherence win per line of code)
 2. E1 Entities sidebar view (data layer already built)
@@ -216,3 +265,9 @@ All eight gaps were implemented immediately after this audit:
   comparisons (kindlepreneur, storyflow, manuscriptreport 2026)
 - Research: StoryWriter (CIKM 2025), "From Personas to Plot"
   (Magnet/Atlas, arXiv 2607.00918), StoryBox (arXiv 2510.11618)
+- Coding agents (§3b): aider.chat/docs/more/edit-formats.html +
+  aider.chat/docs/repomap.html; fabianhertwig.com "Code Surgery: How AI
+  Assistants Make Precise Edits"; Cline docs (Plan/Act, checkpoints,
+  @-mentions, MCP marketplace) via frontman.sh / wetheflywheel.com 2026
+  comparisons; OpenHands via opensourceaireview.com, ssojet.com;
+  github.com/amperser/proselint, vale.sh

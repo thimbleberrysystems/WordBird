@@ -259,6 +259,27 @@ export class ContextBuilder {
           : '')
       )
 
+      // Standing instructions (the CLAUDE.md of the novel): writer-editable
+      // rules that survive compaction because they ride every brief.
+      const MAX_INSTRUCTIONS_CHARS = 2000
+      try {
+        const instructions = (
+          await fsPromises.readFile(path.join(projectRoot, 'biscuit.md'), 'utf8')
+        ).trim()
+        if (instructions) {
+          const clipped =
+            instructions.length > MAX_INSTRUCTIONS_CHARS
+              ? instructions.slice(0, MAX_INSTRUCTIONS_CHARS) + '…[trimmed]'
+              : instructions
+          sections.push(
+            "WRITER'S STANDING INSTRUCTIONS (biscuit.md — writer-editable; obey these, " +
+            'second only to the writer\'s live words):\n' + clipped
+          )
+        }
+      } catch {
+        // No biscuit.md — nothing standing.
+      }
+
       // The writer's METHOD drives which playbook applies.
       const meta = readProjectMeta(projectRoot)
       const hasBeatSheet = fs.existsSync(path.join(projectRoot, 'bible', 'structure.md'))

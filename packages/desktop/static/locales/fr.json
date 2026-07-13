@@ -1628,7 +1628,8 @@
     "questionFreeform": "Ou écrivez votre propre réponse…",
     "steerFailed": "Impossible de transmettre votre note à Biscuit — elle est de retour dans la zone de saisie.",
     "stalledTitle": "Aucune réponse du modèle",
-    "stalled": "Rien ne revient depuis un moment. L'exécution est peut-être bloquée — appuyez sur Arrêter pour l'annuler (rien n'est perdu), ou continuez d'attendre si votre modèle est simplement lent."
+    "stalled": "Rien ne revient depuis un moment. L'exécution est peut-être bloquée — appuyez sur Arrêter pour l'annuler (rien n'est perdu), ou continuez d'attendre si votre modèle est simplement lent.",
+    "mentionHint": "Référencer une scène ou une page de la bible — ↑↓ pour choisir, Entrée pour insérer"
   },
   "review": {
     "pendingOne": "1 modification en attente",

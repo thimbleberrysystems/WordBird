@@ -169,6 +169,46 @@
       }
     },
     {
+      "id": "propose_text_edit",
+      "name": "propose_text_edit",
+      "displayName": "Propose a surgical text edit",
+      "description": "THE tool for surgical changes to existing prose: quote the text to replace EXACTLY as it appears in the file (oldText) and provide the replacement (newText) — no line numbers, no whole-file rewrites. oldText must match exactly once: include 2-3 surrounding lines to make it unique, or pass occurrence (1-based). Returns a normal reviewable edit proposal. Use propose_project_file_edit only for full-file rewrites.",
+      "handler": "propose_text_edit",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "fname": {
+            "type": "string",
+            "description": "Project-relative file path."
+          },
+          "oldText": {
+            "type": "string",
+            "description": "The exact existing text to replace — copied verbatim from the file, whitespace and punctuation included."
+          },
+          "newText": {
+            "type": "string",
+            "description": "The replacement text (may be empty to delete the span)."
+          },
+          "reason": {
+            "type": "string",
+            "description": "One line shown to the writer in the review card."
+          },
+          "occurrence": {
+            "type": "integer",
+            "description": "When oldText appears more than once: which match to edit (1-based)."
+          }
+        },
+        "required": [
+          "fname",
+          "oldText",
+          "newText"
+        ]
+      }
+    },
+    {
       "id": "propose_new_unit",
       "name": "propose_new_unit",
       "displayName": "Create scene/chapter",
@@ -514,6 +554,30 @@
           "about": {
             "type": "string",
             "description": "Filter facts whose subject/relation/object contains this text (omit for all)."
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "id": "lint_prose",
+      "name": "lint_prose",
+      "displayName": "Lint prose (deterministic)",
+      "description": "Deterministic prose checks over one scene or file — the fiction equivalent of running the linter after an edit: doubled words, close repetitions, filler words (very/just/suddenly…), POV filter phrases (she felt/he saw), -ly adverb density, sentence-length stats and monotony, passive-voice share, punctuation hygiene, and any banned terms from bible/style.md. Run it on prose you just drafted or are about to polish; findings are objective SIGNALS to weigh, not laws. Pass exactly one of unitId or fname.",
+      "handler": "lint_prose",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "unitId": {
+            "type": "string",
+            "description": "Prose unit id from list_structure."
+          },
+          "fname": {
+            "type": "string",
+            "description": "Project-relative file path (alternative to unitId)."
           }
         },
         "required": []

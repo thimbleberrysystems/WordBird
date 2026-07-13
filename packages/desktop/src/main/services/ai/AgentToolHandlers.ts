@@ -208,6 +208,79 @@ const proposeProjectFileEdit = async(
   }
 }
 
+/**
+ * Anchored search/replace editing — the pattern the coding-agent world
+ * converged on (Aider SEARCH/REPLACE, Claude Code Edit): exact old text
+ * is a far more reliable anchor for models than line numbers, and the
+ * model only produces the changed span instead of rewriting the file.
+ * Emits the STANDARD edit-proposal payload so the whole review pipeline
+ * (queue, diffs, acceptance loop, auto-apply) is unchanged.
+ */
+const proposeTextEdit = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const fname = getStringArg(args, 'fname')
+  const oldText = getStringArg(args, 'oldText')
+  const newText = typeof args.newText === 'string' ? args.newText : ''
+  const reason = getOptionalStringArg(args, 'reason')
+  const occurrence = getOptionalIntegerArg(args, 'occurrence')
+  if (oldText === newText) {
+    throw new Error('oldText and newText are identical — nothing to change.')
+  }
+  const { filePath, relativePath } = resolveProjectFile(fname, context)
+  const oldContent = await readTextFile(filePath)
+
+  // Count occurrences of the anchor.
+  const indices: number[] = []
+  let cursor = oldContent.indexOf(oldText)
+  while (cursor !== -1) {
+    indices.push(cursor)
+    cursor = oldContent.indexOf(oldText, cursor + 1)
+  }
+
+  if (indices.length === 0) {
+    // Help the model self-correct: point at the nearest line that shares
+    // the anchor's opening characters.
+    const probe = oldText.trim().slice(0, 40)
+    const nearLine = probe
+      ? oldContent.split('\n').find((line) => line.includes(probe.split('\n')[0].slice(0, 20)))
+      : undefined
+    throw new Error(
+      `oldText was not found in ${relativePath}. Quote the text EXACTLY as the file has it ` +
+      '(re-read the file if unsure — whitespace and punctuation must match).' +
+      (nearLine ? ` Nearest similar line: "${nearLine.trim().slice(0, 120)}"` : '')
+    )
+  }
+  if (indices.length > 1 && occurrence === undefined) {
+    throw new Error(
+      `oldText matches ${indices.length} places in ${relativePath}. Include 2-3 surrounding ` +
+      'lines to make it unique, or pass occurrence (1-based) to pick one.'
+    )
+  }
+  const pick = occurrence !== undefined ? occurrence : 1
+  if (pick < 1 || pick > indices.length) {
+    throw new Error(
+      `occurrence ${pick} is out of range — oldText matches ${indices.length} time(s).`
+    )
+  }
+
+  const at = indices[pick - 1]
+  const newContent =
+    oldContent.slice(0, at) + newText + oldContent.slice(at + oldText.length)
+
+  return {
+    edit: {
+      id: crypto.randomUUID(),
+      filePath: relativePath,
+      newContent,
+      reason
+    },
+    oldContent,
+    originalPath: filePath
+  }
+}
+
 const askWriter = async(args: Record<string, unknown>): Promise<unknown> => {
   const question = typeof args.question === 'string' ? args.question.trim() : ''
   const rawOptions = Array.isArray(args.options) ? args.options : []
@@ -235,6 +308,7 @@ const askWriter = async(args: Record<string, unknown>): Promise<unknown> => {
 export const registerBuiltInAgentToolHandlers = (service: AgentToolService): void => {
   service.registerHandler('read_project_file', readAgentFile)
   service.registerHandler('propose_project_file_edit', proposeProjectFileEdit)
+  service.registerHandler('propose_text_edit', proposeTextEdit)
   service.registerHandler('ask_writer', askWriter)
   registerNovelAgentToolHandlers(service)
   registerWebAgentToolHandlers(service)

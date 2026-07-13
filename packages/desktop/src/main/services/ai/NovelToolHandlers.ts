@@ -554,6 +554,57 @@ const listFacts = async(
   }
 }
 
+// ---- deterministic prose lint (the "run the tests" of fiction) ----
+
+const lintProseTool = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const unitId = optStr(args, 'unitId')
+  const fname = optStr(args, 'fname')
+  if (!unitId === !fname) {
+    throw new Error('Provide exactly one of unitId or fname.')
+  }
+
+  let target: string
+  if (unitId) {
+    const structure = await structureService.loadReconciled(root)
+    const found = findUnit(structure.units, unitId)
+    if (!found?.unit.path) {
+      throw new Error(`No prose unit with id ${unitId}. Use list_structure to see ids.`)
+    }
+    target = found.unit.path
+  } else {
+    target = fname as string
+  }
+
+  const text = await readTextSafe(resolveInside(root, target))
+  const { lintProse, parseBannedTerms } = await import('../novel/ProseLint')
+
+  let bannedTerms: string[] = []
+  try {
+    bannedTerms = parseBannedTerms(
+      await readTextSafe(resolveInside(root, path.join('bible', 'style.md')))
+    )
+  } catch {
+    // No style page — lint without banned terms.
+  }
+
+  const result = lintProse(text, { bannedTerms })
+  const MAX_FINDINGS = 40
+  return {
+    path: target,
+    stats: result.stats,
+    findingCount: result.findings.length,
+    findings: result.findings.slice(0, MAX_FINDINGS),
+    truncated: result.findings.length > MAX_FINDINGS,
+    note:
+      'Deterministic signals, not laws — a repetition can be a deliberate device. ' +
+      'Weigh each against the writer\'s style and intent.'
+  }
+}
+
 // ---- story bible tools ----
 
 const listFilesRecursive = async(dir: string, base: string): Promise<string[]> => {
@@ -1426,6 +1477,7 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('log_continuity_issue', logContinuityIssue)
   service.registerHandler('record_fact', recordFact)
   service.registerHandler('list_facts', listFacts)
+  service.registerHandler('lint_prose', lintProseTool)
   service.registerHandler('list_snapshots', listSnapshots)
   service.registerHandler('read_snapshot_file', readSnapshotFile)
   service.registerHandler('diff_snapshot_file', diffSnapshotFile)

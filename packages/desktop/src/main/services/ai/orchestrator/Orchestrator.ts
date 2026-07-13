@@ -371,6 +371,7 @@ const SUPERVISOR_TOOL_NAMES = [
   'read_snapshot_file',
   'diff_snapshot_file',
   'preview_snapshot',
+  'lint_prose',
   'start_revision',
   'get_revision',
   'complete_revision',
@@ -390,6 +391,7 @@ const SUPERVISOR_WRITE_TOOL_NAMES = [
   'propose_new_unit',
   'propose_new_file',
   'propose_project_file_edit',
+  'propose_text_edit',
   'set_writing_method',
   'record_fact',
   'delete_unit',
@@ -462,8 +464,11 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'ids/synopses and it will draft a whole chapter or act scene by scene; for a whole ' +
   'novel, chain act-sized drafter assignments across book-run segments. ' +
   'Reserve your own propose_new_unit (a new scene/chapter shell), propose_new_file ' +
-  '(any other project file), and propose_project_file_edit (changing an existing file) ' +
-  'for SMALL pieces: a paragraph, a synopsis, a bible line, a metadata fix. ' +
+  '(any other project file), and text edits for SMALL pieces: a paragraph, a synopsis, ' +
+  'a bible line, a metadata fix. SURGICAL EDITS use propose_text_edit: quote the ' +
+  'existing text EXACTLY (include 2-3 surrounding lines so it is unique) and give the ' +
+  'replacement — never rewrite a whole file to change a sentence, and never guess line ' +
+  'numbers. propose_project_file_edit is only for full-file rewrites. ' +
   'Pasting the text into chat and telling the writer to copy it into a file is a failure ' +
   '— they will see your proposal as a reviewable diff and accept it with one click.\n' +
   '- Prose/bible changes always reach the writer as reviewable diffs — never claim a ' +
@@ -516,7 +521,9 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'mid-interview — record it with set_writing_method; never wait for the rest of the ' +
   'interview. Then offer the setup: ' +
   'bible pages for protagonist and setting (propose_bible_update, with aliases), a style ' +
-  'page capturing their voice answers, and — per their method below — outline shells or ' +
+  'page capturing their voice answers, a biscuit.md with any standing rules they stated ' +
+  '(spelling conventions, hard lines like "never kill the dog", chapter habits — via ' +
+  'propose_new_file, review-gated), and — per their method below — outline shells or ' +
   'simply the opening scene. Offer, never dump.\n' +
   '2) DRAFT THE NEXT SCENE (method-aware):\n' +
   '   · outline-first: the outline is the map. Premise line → paragraph synopsis (book ' +
@@ -621,7 +628,9 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
         'CRITIC PASS (non-negotiable in book runs): any segment that drafted prose ends ' +
         'with an auditor sweep of exactly the scenes just drafted — continuity against ' +
         'the bible and facts, where_appears/entity spot-checks, story-time order, beat ' +
-        'coverage when a beat sheet exists. FIX what the auditor finds (or log it with ' +
+        'coverage when a beat sheet exists, AND lint_prose on each drafted scene ' +
+        '(repetitions, filler, banned terms — deterministic signals, fix the real ones). ' +
+        'FIX what the auditor finds (or log it with ' +
         'log_continuity_issue) BEFORE the CONTINUE marker — never stack new scenes on ' +
         'unreviewed ones. Research on long-form generation shows this single habit ' +
         'roughly halves continuity errors.\n')

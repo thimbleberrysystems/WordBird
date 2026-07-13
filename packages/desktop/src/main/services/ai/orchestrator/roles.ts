@@ -27,6 +27,7 @@ const READ_TOOLS = [
   'list_files',
   'list_continuity_issues',
   'list_facts',
+  'lint_prose',
   'list_snapshots',
   'read_snapshot_file',
   'diff_snapshot_file',
@@ -51,7 +52,9 @@ export const PROJECT_CONVENTIONS =
   'powers entity search; `locked: true` makes a page immutable to agents. When you create ' +
   'a character/place page, ALWAYS include an aliases list. bible/style.md holds the ' +
   'writer\'s voice/tense/POV rules; bible/structure.md (when present) is the structure ' +
-  'beat sheet — structural canon the writer can edit, tick beats [x] as covered.\n' +
+  'beat sheet — structural canon the writer can edit, tick beats [x] as covered. ' +
+  'biscuit.md at the project root (when present) holds the writer\'s STANDING ' +
+  'INSTRUCTIONS — durable rules for how to work with them; the brief carries it.\n' +
   '- .wordbird/summaries/<unitId>.md and book.md — the summary ladder agents maintain ' +
   'with update_summary; read_summary tells you if one is stale. The FACT LEDGER ' +
   '(record_fact/list_facts) holds atomic canon triples — check it before asserting ' +
@@ -152,6 +155,7 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
     allowedTools: [
       ...READ_TOOLS,
       'propose_project_file_edit',
+      'propose_text_edit',
       'propose_new_file',
       'propose_new_unit',
       'propose_bible_update',
@@ -207,6 +211,10 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'a scene, or a batch of units — rhythm, word choice, clarity, ' +
       'dialogue beats — without changing plot, canon facts, or the author\'s voice. ' +
       'For multi-unit sweeps, propose each unit\'s edit as you finish it. ' +
+      'Run lint_prose on the target BEFORE your pass (it points at repetitions, filler, ' +
+      'and banned terms worth fixing) and AFTER (prove your edit made the numbers ' +
+      'better, not worse). Prefer propose_text_edit for surgical fixes — quote the ' +
+      'exact text — over rewriting whole files. ' +
       'Read the target text and nearby context first, then submit the improved version ' +
       'via propose_project_file_edit. Use dictionary_lookup when weighing word choice. ' +
       'PASS DISCIPLINE: work the one concern your task names (dialogue, rhythm, or line) ' +
@@ -215,7 +223,12 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       STYLE_NOTE +
       ' After proposing, stop calling tools and note the kinds of changes you made.'
     ),
-    allowedTools: [...READ_TOOLS, 'propose_project_file_edit', 'dictionary_lookup']
+    allowedTools: [
+      ...READ_TOOLS,
+      'propose_project_file_edit',
+      'propose_text_edit',
+      'dictionary_lookup'
+    ]
   },
   plotter: {
     role: 'plotter',

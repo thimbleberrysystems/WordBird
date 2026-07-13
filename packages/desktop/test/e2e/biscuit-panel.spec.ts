@@ -44,6 +44,23 @@ test.describe('Biscuit panel + Agents sidebar', () => {
     await expectNoRendererErrors(app)
   })
 
+  test('@-mention popover lists the open file and inserts its path', async() => {
+    await page.waitForSelector('.right-prompt', { timeout: 15000 })
+    const input = page.locator('.right-prompt textarea')
+    await input.click()
+    await input.fill('Look at @')
+    // The open tab (note.md) is always a mention source, project or not.
+    await expect(page.locator('.mention-popover')).toBeVisible()
+    const first = page.locator('.mention-popover .mention-item').first()
+    await expect(first.locator('.mention-path')).toContainText('note.md')
+    await page.keyboard.press('Enter')
+    await expect(page.locator('.mention-popover')).toHaveCount(0)
+    await expect(input).toHaveValue(/Look at \S*note\.md /)
+    await input.fill('') // leave the prompt clean for later tests
+
+    await expectNoRendererErrors(app)
+  })
+
   test('Biscuit detaches into its own window and reattaches on close', async() => {
     const before = app.windows().length
     // The detach button is the first header action in the panel.

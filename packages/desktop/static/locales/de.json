@@ -1628,7 +1628,8 @@
     "questionFreeform": "Oder eigene Antwort schreiben…",
     "steerFailed": "Deine Notiz konnte Biscuit nicht erreichen — sie steht wieder im Eingabefeld.",
     "stalledTitle": "Keine Antwort vom Modell",
-    "stalled": "Seit einiger Zeit kommt nichts zurück. Der Lauf hängt womöglich — drücke Stopp, um abzubrechen (nichts geht verloren), oder warte weiter, falls dein Modell nur langsam ist."
+    "stalled": "Seit einiger Zeit kommt nichts zurück. Der Lauf hängt womöglich — drücke Stopp, um abzubrechen (nichts geht verloren), oder warte weiter, falls dein Modell nur langsam ist.",
+    "mentionHint": "Szene oder Bibel-Seite referenzieren — ↑↓ wählen, Enter einfügen"
   },
   "review": {
     "pendingOne": "1 ausstehende Änderung",

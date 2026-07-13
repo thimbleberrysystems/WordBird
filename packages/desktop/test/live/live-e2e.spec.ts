@@ -453,3 +453,24 @@ live('16 · history is a tool: agents answer from the snapshot mini-git', () => 
     expect(usedHistory).toBe(true)
   })
 })
+
+live('17 · deterministic prose lint backs the polish loop', () => {
+  it('linting a scene surfaces real findings via lint_prose', async() => {
+    const harness = await make()
+    fs.writeFileSync(
+      path.join(harness.root, 'manuscript/chapter-one/opening.md'),
+      'Zara was very tired and very cold and very alone. She felt the the rain soak through.\n'
+    )
+    harness.setMode('ask')
+    const reply = await harness.send(
+      't-lint',
+      'Run a prose lint on the opening scene and report the top findings in one short list.'
+    )
+    const usedLint = harness.activity.some((event) =>
+      /lint_prose/.test(`${event.label} ${event.detail ?? ''}`)
+    )
+    expect(usedLint).toBe(true)
+    // Grounded in the deterministic findings: "very" spam / doubled "the".
+    expect(reply.toLowerCase()).toMatch(/very|doubled|repeat/)
+  })
+})

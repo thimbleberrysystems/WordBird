@@ -280,13 +280,36 @@
       <GlobalAgentReview />
       <div class="prompt-input-outer">
         <div class="prompt-input-wrapper">
+          <!-- @-mention picker (Cline-style): scenes + bible pages. -->
+          <div
+            v-if="mentionOpen && mentionCandidates.length > 0"
+            class="mention-popover"
+          >
+            <div class="mention-hint">
+              {{ t('biscuit.mentionHint') }}
+            </div>
+            <div
+              v-for="(candidate, i) in mentionCandidates"
+              :key="candidate.path"
+              class="mention-item"
+              :class="{ active: i === mentionIndex }"
+              @mousedown.prevent="insertMention(candidate)"
+            >
+              <span class="mention-title">{{ candidate.title }}</span>
+              <span class="mention-path">{{ candidate.path }}</span>
+            </div>
+          </div>
           <textarea
+            ref="promptInput"
             v-model="userInput"
             rows="4"
             aria-label="Chat input"
             :placeholder="t('biscuit.placeholder')"
             @keydown="handleInputKeydown"
             @keyup="fireModeChord"
+            @input="updateMentionState"
+            @click="updateMentionState"
+            @blur="closeMention"
           />
         </div>
         <!-- Autonomy mode line (Claude-CLI style): shift+tab cycles -->
@@ -390,6 +413,7 @@ import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '../../store/preferences'
 import { useLayoutStore } from '../../store/layout'
 import { useProjectStore } from '../../store/project'
+import { useNovelStore } from '../../store/novel'
 import { useEditorStore } from '../../store/editor'
 import { useAgentsStore } from '../../store/agents'
 import { langGraphService } from '../../services/langgraph'
@@ -589,6 +613,100 @@ const cycleMode = (): void => {
 // Ctrl+Shift chord (no third key) arms the mode cycle — disarmed the moment
 // any other key joins so Ctrl+Shift+O etc. never mis-fire; fires on release.
 let modeChordArmed = false
+// ---- @-mention picker: reference scenes/bible pages precisely instead
+// of hoping the model guesses the right file from a title.
+const novelStore = useNovelStore()
+const promptInput = ref<HTMLTextAreaElement | null>(null)
+const mentionOpen = ref(false)
+const mentionQuery = ref('')
+const mentionIndex = ref(0)
+let mentionStart = -1
+
+interface MentionCandidate {
+  title: string
+  path: string
+}
+
+const mentionSources = ref<MentionCandidate[]>([])
+
+const loadMentionSources = async (): Promise<void> => {
+  const items: MentionCandidate[] = []
+  const walk = (units: Array<{ title: string; path?: string; children?: unknown[] }>): void => {
+    for (const unit of units) {
+      if (unit.path) items.push({ title: unit.title, path: unit.path })
+      if (unit.children) walk(unit.children as never)
+    }
+  }
+  walk((novelStore.structure?.units ?? []) as never)
+  const root = useProjectStore().currentProjectPath
+  // Open editor tabs (Cline's @file): reference whatever is on screen even
+  // outside a novel project. Project files get project-relative paths.
+  for (const tab of useEditorStore().tabs) {
+    if (!tab.pathname) continue
+    const relative =
+      root && tab.pathname.startsWith(root)
+        ? tab.pathname.slice(root.length).replace(/^[/\\]+/, '')
+        : tab.pathname
+    if (!items.some((c) => c.path === relative)) {
+      items.push({ title: tab.filename, path: relative })
+    }
+  }
+  if (root) {
+    try {
+      const index = await window.electron.novel.entityIndex(root)
+      for (const entity of index.entities) {
+        items.push({ title: entity.name, path: entity.page })
+      }
+    } catch {
+      // No entity index — scenes alone still help.
+    }
+  }
+  mentionSources.value = items
+}
+
+const mentionCandidates = computed<MentionCandidate[]>(() => {
+  const q = mentionQuery.value.toLowerCase()
+  return mentionSources.value
+    .filter((c) => !q || c.title.toLowerCase().includes(q) || c.path.toLowerCase().includes(q))
+    .slice(0, 8)
+})
+
+const updateMentionState = (): void => {
+  const el = promptInput.value
+  if (!el) return
+  const upToCaret = userInput.value.slice(0, el.selectionStart ?? 0)
+  const match = /@([\w-]{0,40})$/.exec(upToCaret)
+  if (match) {
+    mentionStart = upToCaret.length - match[0].length
+    mentionQuery.value = match[1]
+    mentionIndex.value = 0
+    if (!mentionOpen.value) {
+      mentionOpen.value = true
+      loadMentionSources()
+    }
+  } else {
+    mentionOpen.value = false
+  }
+}
+
+const closeMention = (): void => {
+  mentionOpen.value = false
+}
+
+const insertMention = (candidate: MentionCandidate): void => {
+  const el = promptInput.value
+  if (!el || mentionStart < 0) return
+  const caret = el.selectionStart ?? userInput.value.length
+  userInput.value =
+    userInput.value.slice(0, mentionStart) + candidate.path + ' ' + userInput.value.slice(caret)
+  mentionOpen.value = false
+  nextTick(() => {
+    const pos = mentionStart + candidate.path.length + 1
+    el.focus()
+    el.setSelectionRange(pos, pos)
+  })
+}
+
 // ---- Prompt history (shell-style): ArrowUp recalls earlier prompts,
 // ArrowDown walks back toward the draft you were typing. Only fires when
 // the caret is at the very start/end so multiline editing is untouched.
@@ -625,6 +743,32 @@ const recallHistory = (direction: -1 | 1, textarea: HTMLTextAreaElement): void =
 }
 
 const handleInputKeydown = (event: KeyboardEvent): void => {
+  // While the @-mention picker is open it owns the navigation keys
+  // (deliberately shadowing prompt-history arrows).
+  if (mentionOpen.value && mentionCandidates.value.length > 0) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      mentionIndex.value = (mentionIndex.value + 1) % mentionCandidates.value.length
+      return
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      mentionIndex.value =
+        (mentionIndex.value - 1 + mentionCandidates.value.length) %
+        mentionCandidates.value.length
+      return
+    }
+    if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault()
+      insertMention(mentionCandidates.value[mentionIndex.value])
+      return
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      closeMention()
+      return
+    }
+  }
   if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
     event.preventDefault()
     historyIndex = -1
@@ -1786,12 +1930,61 @@ async function sendMessage (): Promise<void> {
 }
 
 .prompt-input-wrapper {
+  position: relative;
   display: flex;
   background: var(--inputBgColor, rgba(128, 128, 128, 0.05));
   border: 1px solid var(--color-border, rgba(128, 128, 128, 0.25));
   border-radius: 8px;
   padding: 8px var(--spacing-3);
   box-sizing: border-box;
+}
+
+.mention-popover {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--floatBgColor, var(--editorBgColor));
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.25));
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  padding: 4px;
+  z-index: 30;
+}
+
+.mention-hint {
+  font-size: 10px;
+  color: var(--iconColor);
+  padding: 2px 8px 4px;
+}
+
+.mention-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--editorColor);
+  &.active,
+  &:hover {
+    background: var(--itemBgColor);
+  }
+}
+
+.mention-title {
+  flex-shrink: 0;
+}
+
+.mention-path {
+  color: var(--iconColor);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .prompt-input-wrapper textarea {
