@@ -247,6 +247,12 @@ extensibility model). WordBird's tool packs are JSON-defined but handlers
 must be registered in code — by design. MCP is the eventual third-party
 extension story; heavy and unneeded today.
 
+**Added 2026-07-13 — Claude subscription provider.** Writers with Claude
+Pro/Max connect without an API key: the `claude-code` provider embeds the
+Claude Agent SDK (the one ToS-compliant subscription path) and bridges
+all WordBird tools into it in-process, so the review queue, snapshots,
+and mode gating are provider-independent. See docs/CLAUDE_SUBSCRIPTION.md.
+
 ## 4. Recommended execution order (original)
 1. E2 book-run critic loop (largest coherence win per line of code)
 2. E1 Entities sidebar view (data layer already built)

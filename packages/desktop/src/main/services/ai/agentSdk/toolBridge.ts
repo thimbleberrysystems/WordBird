@@ -1,0 +1,138 @@
+/**
+ * WordBird tools → Claude Agent SDK bridge (claude-code provider).
+ *
+ * The Agent SDK runs the agent loop inside the Claude Code runtime, but
+ * every WordBird tool still executes HERE, in the main process, through
+ * AgentToolService.runForModel — the same path the LangGraph provider
+ * uses. That is what keeps the safety model intact for subscription
+ * users: propose_* results raise the identical review-queue proposals,
+ * plan/writer-question cards fire, `.wordbird/` protection and locked
+ * bible pages hold, and ask mode simply never registers a write tool.
+ *
+ * The SDK is ESM-only while the main process compiles to CommonJS, so the
+ * loaded module is passed in (lazy dynamic import happens in the runner).
+ */
+
+import { convertJsonSchemaToZod } from 'zod-from-json-schema'
+import type { AgentToolService } from '../AgentToolService'
+import type { AgentPermissionMode } from '@shared/types/langgraph'
+import {
+  SUPERVISOR_TOOL_NAMES,
+  SUPERVISOR_WRITE_TOOL_NAMES
+} from '../orchestrator/Orchestrator'
+import { AGENT_ROLES, READONLY_ROLES, READONLY_WORKER_TOOLS } from '../orchestrator/roles'
+
+/** MCP server name — SDK tool ids become mcp__wordbird__<tool>. */
+export const MCP_SERVER_NAME = 'wordbird'
+export const MCP_TOOL_PREFIX = `mcp__${MCP_SERVER_NAME}__`
+
+/** Same context discipline as the LangGraph tool node: announced cap. */
+export const TOOL_OUTPUT_CHAR_CAP = 24000
+
+/** The minimal surface we use from @anthropic-ai/claude-agent-sdk. */
+export interface AgentSdkModule {
+  tool: (
+    name: string,
+    description: string,
+    inputSchema: Record<string, unknown>,
+    handler: (
+      args: Record<string, unknown>,
+      extra: unknown
+    ) => Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }>
+  ) => unknown
+  createSdkMcpServer: (options: { name: string; tools: unknown[] }) => unknown
+  query: (params: { prompt: string; options?: Record<string, unknown> }) => AsyncGenerator<
+    Record<string, unknown>,
+    void
+  > & { interrupt?: () => Promise<unknown> }
+}
+
+export const stripMcpPrefix = (toolName: string): string =>
+  toolName.startsWith(MCP_TOOL_PREFIX) ? toolName.slice(MCP_TOOL_PREFIX.length) : toolName
+
+/**
+ * Tool names the main-thread agent may call in a given mode. Mirrors the
+ * LangGraph supervisor: reads + plans + ask_writer always; write tools
+ * only outside ask mode (ask is mechanically read-only).
+ */
+export const mainThreadToolNames = (
+  service: AgentToolService,
+  mode: AgentPermissionMode
+): string[] => {
+  const available = new Set(service.getDefinitions().map((d) => d.name))
+  const wanted =
+    mode === 'ask'
+      ? new Set([...SUPERVISOR_TOOL_NAMES, ...READONLY_WORKER_TOOLS])
+      : new Set(service.getDefinitions().map((d) => d.name))
+  return [...wanted].filter((name) => available.has(name))
+}
+
+/**
+ * Build the in-process MCP server exposing the mode-appropriate WordBird
+ * tools. Handlers run in this process via AgentToolService.runForModel.
+ */
+export const buildWordbirdMcpServer = (
+  sdk: AgentSdkModule,
+  service: AgentToolService,
+  mode: AgentPermissionMode
+): { server: unknown; toolNames: string[] } => {
+  const allowed = new Set(mainThreadToolNames(service, mode))
+  const tools: unknown[] = []
+  const toolNames: string[] = []
+
+  for (const definition of service.getDefinitions()) {
+    if (!allowed.has(definition.name)) continue
+    // The SDK takes a zod raw shape; our packs carry JSON schema.
+    const shape = (convertJsonSchemaToZod(definition.schema) as unknown as {
+      shape: Record<string, unknown>
+    }).shape
+    tools.push(
+      sdk.tool(definition.name, definition.description, shape, async(args) => {
+        try {
+          const result = await service.runForModel(definition.name, args ?? {})
+          let text =
+            typeof result === 'string' ? result : JSON.stringify(result ?? 'ok')
+          if (text.length > TOOL_OUTPUT_CHAR_CAP) {
+            text =
+              text.slice(0, TOOL_OUTPUT_CHAR_CAP) +
+              `\n…[output truncated at ${TOOL_OUTPUT_CHAR_CAP} characters]`
+          }
+          return { content: [{ type: 'text', text }] }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          return { content: [{ type: 'text', text: `Error: ${message}` }], isError: true }
+        }
+      })
+    )
+    toolNames.push(definition.name)
+  }
+
+  return {
+    server: sdk.createSdkMcpServer({ name: MCP_SERVER_NAME, tools }),
+    toolNames
+  }
+}
+
+/**
+ * WordBird's role catalog as SDK subagent definitions. In ask mode only
+ * the read-only roles exist and they carry the stripped read+web pack —
+ * the same policy the LangGraph orchestrator enforces.
+ */
+export const buildSdkAgents = (
+  mode: AgentPermissionMode
+): Record<string, { description: string; prompt: string; tools: string[] }> => {
+  const agents: Record<string, { description: string; prompt: string; tools: string[] }> = {}
+  for (const role of Object.values(AGENT_ROLES)) {
+    if (mode === 'ask' && !READONLY_ROLES.includes(role.role)) continue
+    const toolNames = mode === 'ask' ? READONLY_WORKER_TOOLS : role.allowedTools
+    agents[role.role] = {
+      description: `${role.displayName} — ${role.activityLabel.toLowerCase()}`,
+      prompt: role.systemPrompt,
+      tools: toolNames.map((name) => `${MCP_TOOL_PREFIX}${name}`)
+    }
+  }
+  return agents
+}
+
+/** Every write-capable tool name (used in tests to prove ask-mode strips them). */
+export const WRITE_TOOL_NAMES: string[] = [...SUPERVISOR_WRITE_TOOL_NAMES]

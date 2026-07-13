@@ -757,6 +757,8 @@
       },
       "selectProvider": "Select model provider",
       "enterApiKey": "Enter API key",
+      "claudeCodeToken": "Setup token (optional — leave empty to use your Claude Code login)",
+      "claudeCodeHint": "Uses your Claude Pro/Max subscription through the Claude Agent SDK — usage counts against your plan limits. Log in once with the Claude Code CLI, or run `claude setup-token` and paste the token here. Never paste an Anthropic API key.",
       "enterEndpoint": "Enter endpoint URL",
       "temperature": "Creativity (temperature)",
       "maxTokens": "Maximum reply length (tokens)",

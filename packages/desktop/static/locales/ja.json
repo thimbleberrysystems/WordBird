@@ -757,6 +757,8 @@
       },
       "selectProvider": "モデルプロバイダーを選択",
       "enterApiKey": "APIキーを入力",
+      "claudeCodeToken": "セットアップトークン（省略可 — 空欄で Claude Code のログインを使用）",
+      "claudeCodeHint": "Claude Agent SDK 経由で Claude Pro/Max サブスクリプションを使用します — 使用量はプランの上限にカウントされます。Claude Code CLI で一度ログインするか、`claude setup-token` を実行してトークンをここに貼り付けてください。Anthropic の API キーは絶対に貼り付けないでください。",
       "enterEndpoint": "エンドポイントURLを入力",
       "temperature": "創造性（temperature）",
       "maxTokens": "最大応答長（トークン）",

@@ -491,6 +491,10 @@
         "apiKey": "",
         "baseUrl": "https://openrouter.ai/api/v1",
         "model": "openai/gpt-4o"
+      },
+      "claude-code": {
+        "apiKey": "",
+        "model": "sonnet"
       }
     }
   },

@@ -757,6 +757,8 @@
       },
       "selectProvider": "모델 제공자 선택",
       "enterApiKey": "API 키 입력",
+      "claudeCodeToken": "설정 토큰(선택 사항 — 비워 두면 Claude Code 로그인을 사용합니다)",
+      "claudeCodeHint": "Claude Agent SDK를 통해 Claude Pro/Max 구독을 사용합니다 — 사용량은 플랜 한도에 포함됩니다. Claude Code CLI로 한 번 로그인하거나 `claude setup-token`을 실행해 토큰을 여기에 붙여넣으세요. Anthropic API 키는 절대 붙여넣지 마세요.",
       "enterEndpoint": "엔드포인트 URL 입력",
       "temperature": "창의성 (temperature)",
       "maxTokens": "최대 응답 길이 (토큰)",

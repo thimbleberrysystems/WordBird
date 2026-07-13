@@ -244,7 +244,7 @@ export class AgentToolService {
         )
       }
 
-      const langChainTool = this._toLangChainTool(definition, handler)
+      const langChainTool = this._toLangChainTool(definition)
       this._tools.set(definition.id, { definition, handler, langChainTool })
     }
     log.info(`[AgentToolService] Loaded ${this._tools.size} tools from pack`)
@@ -289,62 +289,80 @@ export class AgentToolService {
     return isEditProposalPayload(value)
   }
 
-  private _toLangChainTool(
-    definition: IAgentToolDefinition,
-    handler: AgentToolHandler
-  ): DynamicStructuredTool {
+  /**
+   * Run one tool for a model and post-process the result exactly like the
+   * LangGraph path does (UI refresh + proposal short-circuits). Shared by
+   * the LangChain wrapper and the Agent SDK MCP bridge so both providers
+   * flow through the SAME review pipeline. Keyed by tool NAME (what the
+   * model calls), which equals the definition id for every shipped pack.
+   */
+  async runForModel(
+    toolName: string,
+    args: Record<string, unknown>,
+    signal?: AbortSignal
+  ): Promise<unknown> {
+    const loaded =
+      this._tools.get(toolName) ??
+      Array.from(this._tools.values()).find((item) => item.definition.name === toolName)
+    if (!loaded) throw new Error(`Unknown agent tool: ${toolName}`)
+
+    const context: AgentToolContext = {
+      projectRoot: this._currentProjectRoot,
+      signal
+    }
+    const result = await loaded.handler(args, context)
+
+    // Direct disk mutations must reflect in the UI immediately.
+    if (this._projectChangedEmitter && PROJECT_MUTATING_TOOLS.has(loaded.definition.name)) {
+      try {
+        this._projectChangedEmitter(this._currentProjectRoot)
+      } catch {
+        // UI refresh is advisory — never fail the tool over it.
+      }
+    }
+
+    if (this._editProposalEmitter && isEditProposalPayload(result)) {
+      await this._editProposalEmitter(result)
+      return `Edit proposal created with ID: ${result.edit.id}`
+    }
+
+    // Live plan files surface in the main editor the moment they are
+    // written — the writer watches the plan take shape while chatting.
+    if (this._planSavedEmitter && isPlanSavedPayload(result)) {
+      await this._planSavedEmitter(result)
+    }
+
+    if (this._writerQuestionEmitter && isWriterQuestionPayload(result)) {
+      await this._writerQuestionEmitter(result)
+      return (
+        'Question card shown to the writer with your options (plus a free-form field). ' +
+        'END YOUR TURN NOW — their answer arrives as the next message.'
+      )
+    }
+
+    if (this._planProposalEmitter && isPlanProposalPayload(result)) {
+      await this._planProposalEmitter(result)
+      return (
+        `Plan saved as ${result.planProposal.path} (id ${result.planProposal.id}). ` +
+        'The writer now sees an approval card — stop and wait for their decision.'
+      )
+    }
+
+    if (result && typeof result === 'object') {
+      return JSON.stringify(result)
+    }
+
+    return result
+  }
+
+  private _toLangChainTool(definition: IAgentToolDefinition): DynamicStructuredTool {
+    // Handler lookup happens lazily in runForModel — by invocation time the
+    // tool is registered in _tools.
     const zodSchema = convertJsonSchemaToZod(definition.schema)
 
     return tool(
-      async(args: Record<string, unknown>, config?: RunnableConfig) => {
-        const context: AgentToolContext = {
-          projectRoot: this._currentProjectRoot,
-          signal: config?.signal
-        }
-        const result = await handler(args, context)
-
-        // Direct disk mutations must reflect in the UI immediately.
-        if (this._projectChangedEmitter && PROJECT_MUTATING_TOOLS.has(definition.name)) {
-          try {
-            this._projectChangedEmitter(this._currentProjectRoot)
-          } catch {
-            // UI refresh is advisory — never fail the tool over it.
-          }
-        }
-
-        if (this._editProposalEmitter && isEditProposalPayload(result)) {
-          await this._editProposalEmitter(result)
-          return `Edit proposal created with ID: ${result.edit.id}`
-        }
-
-        // Live plan files surface in the main editor the moment they are
-        // written — the writer watches the plan take shape while chatting.
-        if (this._planSavedEmitter && isPlanSavedPayload(result)) {
-          await this._planSavedEmitter(result)
-        }
-
-        if (this._writerQuestionEmitter && isWriterQuestionPayload(result)) {
-          await this._writerQuestionEmitter(result)
-          return (
-            'Question card shown to the writer with your options (plus a free-form field). ' +
-            'END YOUR TURN NOW — their answer arrives as the next message.'
-          )
-        }
-
-        if (this._planProposalEmitter && isPlanProposalPayload(result)) {
-          await this._planProposalEmitter(result)
-          return (
-            `Plan saved as ${result.planProposal.path} (id ${result.planProposal.id}). ` +
-            'The writer now sees an approval card — stop and wait for their decision.'
-          )
-        }
-
-        if (result && typeof result === 'object') {
-          return JSON.stringify(result)
-        }
-
-        return result
-      },
+      async(args: Record<string, unknown>, config?: RunnableConfig) =>
+        this.runForModel(definition.id, args, config?.signal),
       {
         name: definition.name,
         description: definition.description,

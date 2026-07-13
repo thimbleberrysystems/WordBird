@@ -297,10 +297,29 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
 
 ### Biscuit agent runtime (main process)
 - `main/services/ai/LangGraphManager.ts` — provider clients (OpenAI/Anthropic/
-  Gemini/OpenRouter/Ollama), credential validation at connect, durable
+  Gemini/OpenRouter/Ollama + the claude-code subscription provider below),
+  credential validation at connect, durable
   threads, permission modes, IPC surface. Resolves the model's real context
   window at connect (OpenRouter context_length / Ollama /api/show / family
   table / `contextWindow` override) → `orchestrator.setContextBudget`.
+- `main/services/ai/agentSdk/` — the **claude-code provider** (Claude
+  Pro/Max subscription via the Claude Agent SDK — the only ToS-compliant
+  subscription path; OAuth tokens must never hit the HTTP API directly).
+  `AgentSDKRunner.ts` presents the Orchestrator facade (setMode/
+  setContextBudget/buildGraph().invoke/cancel/compact) but delegates the
+  loop to the SDK runtime, resuming one SDK session per WordBird thread
+  (`.wordbird/agent-state/sdk-sessions.json`). `toolBridge.ts` exposes the
+  whole tool pack as in-process MCP tools (mcp__wordbird__*) executing
+  through AgentToolService.runForModel — the SAME proposal pipeline, so
+  review queue/snapshots/mode gating are provider-independent. Claude
+  Code built-ins (Bash/Read/Write/Edit/Web*) are disallowed; WordBird
+  roles map to SDK subagents (Task); DESTRUCTIVE_TOOLS are deliberately
+  left OFF allowedTools so canUseTool gates them (bare allowedTools
+  entries shadow the callback). Env hygiene: ANTHROPIC_API_KEY/AUTH_TOKEN
+  stripped, pasted setup-token rides CLAUDE_CODE_OAUTH_TOKEN. Docs:
+  docs/CLAUDE_SUBSCRIPTION.md; live spec
+  test/live/claude-subscription.spec.ts (runs off a token OR a local
+  Claude Code login).
 - `main/services/ai/bookRun.ts` — the auto-continuation loop ("book run"):
   in auto mode the supervisor ends a segment with a final `CONTINUE: <next>`
   line while the live plan has unchecked items and the loop grants another

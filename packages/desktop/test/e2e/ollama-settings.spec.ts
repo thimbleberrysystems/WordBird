@@ -55,5 +55,15 @@ test.describe('AI provider settings', () => {
     await expect(options.filter({ hasText: 'Ollama (Local)' })).toHaveCount(1)
     await expect(options.filter({ hasText: 'Bundled' })).toHaveCount(0)
     await expect(options.filter({ hasText: 'User Hosted' })).toHaveCount(0)
+    // Subscription users get a first-class entry (Agent SDK-backed).
+    await expect(options.filter({ hasText: 'Claude subscription (Claude Code)' })).toHaveCount(1)
+
+    // Selecting it swaps the API-key field for the optional setup-token
+    // field (with the plan-limits hint) and hides temperature/max-tokens —
+    // the Claude Code runtime manages those itself.
+    await options.filter({ hasText: 'Claude subscription (Claude Code)' }).click()
+    await expect(prefPage.locator('.pref-ai')).toContainText('Setup token', { timeout: 10000 })
+    await expect(prefPage.locator('.pref-ai')).toContainText('claude setup-token')
+    await expect(prefPage.locator('.pref-ai')).not.toContainText('Creativity (temperature)')
   })
 })

@@ -757,6 +757,8 @@
       },
       "selectProvider": "选择模型提供方",
       "enterApiKey": "输入 API 密钥",
+      "claudeCodeToken": "设置令牌（可选 — 留空则使用你的 Claude Code 登录）",
+      "claudeCodeHint": "通过 Claude Agent SDK 使用你的 Claude Pro/Max 订阅 — 用量计入套餐限额。用 Claude Code CLI 登录一次，或运行 `claude setup-token` 并将令牌粘贴到此处。切勿粘贴 Anthropic API 密钥。",
       "enterEndpoint": "输入端点 URL",
       "temperature": "创造力（temperature）",
       "maxTokens": "最大回复长度（token）",

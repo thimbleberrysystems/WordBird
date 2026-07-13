@@ -59,7 +59,10 @@ class DataCenter extends TypedEmitter<DataCenterEvents> {
       'anthropic_apiKey',
       'google_apiKey',
       'ollama_apiKey',
-      'openrouter_apiKey'
+      'openrouter_apiKey',
+      // Claude subscription setup-token (claude setup-token) — as much a
+      // secret as any API key.
+      'claude-code_apiKey'
     ]
     this.hasDataCenterFile = fs.existsSync(
       path.join(this.dataCenterPath, `./${DATA_CENTER_NAME}.json`)

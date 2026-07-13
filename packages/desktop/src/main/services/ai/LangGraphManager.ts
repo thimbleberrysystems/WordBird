@@ -22,6 +22,7 @@ import type {
 } from '../../../shared/types/langgraph'
 import type { AIProvider } from '../../../shared/constants/ai'
 import {
+  CLAUDE_CODE_MODELS,
   PROVIDER_BASE_URLS,
   PROVIDER_DEFAULT_MODELS,
   normalizeProvider
@@ -34,6 +35,8 @@ import { EditResolutionTracker } from './EditResolutionTracker'
 import { driveBookRun, AUTO_CONTINUE_MESSAGE } from './bookRun'
 import { FileCheckpointSaver } from './FileCheckpointSaver'
 import { Orchestrator } from './orchestrator/Orchestrator'
+import type { OrchestratorCallbacks } from './orchestrator/Orchestrator'
+import { AgentSDKRunner } from './agentSdk/AgentSDKRunner'
 import { contextBuilder } from './ContextBuilder'
 import type Accessor from '../../app/accessor'
 
@@ -69,7 +72,9 @@ export class LangGraphManager {
   private _systemPromptAdded: boolean = false
   private _checkpointer: FileCheckpointSaver | null = null
   private _threadId: string | null = null
-  private _orchestrator: Orchestrator | null = null
+  // LangGraph orchestrator for API-key providers; Agent SDK runner for the
+  // claude-code (Claude subscription) provider. Same facade either way.
+  private _orchestrator: Orchestrator | AgentSDKRunner | null = null
   private _permissionMode: AgentPermissionMode = 'approvals'
   private _editTracker = new EditResolutionTracker(() => this._agentStateDir())
   /** Per-model context windows learned from provider APIs (OpenRouter/Ollama). */
@@ -460,7 +465,13 @@ export class LangGraphManager {
     }
 
     const id = model.toLowerCase()
-    if (config.provider === 'anthropic' || id.includes('claude')) return 200000
+    if (
+      config.provider === 'anthropic' ||
+      config.provider === 'claude-code' ||
+      id.includes('claude')
+    ) {
+      return 200000
+    }
     if (config.provider === 'google' || id.includes('gemini')) return 1000000
     if (config.provider === 'openai') {
       if (id.startsWith('gpt-4.1')) return 1000000
@@ -478,7 +489,11 @@ export class LangGraphManager {
     this._currentModel = config.model || null
 
     try {
-      await this._validateCredentials(provider, apiKey, baseUrl)
+      // claude-code has no HTTP surface to probe — the Agent SDK runner
+      // validates end-to-end below, after it is constructed.
+      if (provider !== 'claude-code') {
+        await this._validateCredentials(provider, apiKey, baseUrl)
+      }
       await this.fetchModels(provider, apiKey, baseUrl)
 
       // Reply cap: the writer's setting (or the prose-sized default),
@@ -523,43 +538,61 @@ export class LangGraphManager {
       )
       this._threadId = this._loadOrCreateThreadId()
 
-      // Dynamic orchestrator: the supervisor spawns role-scoped sub-agents
-      // at runtime (see orchestrator/). The model factory creates a fresh
-      // client per graph so workers and supervisor never share bind state.
-      this._orchestrator = new Orchestrator({
-        modelFactory: () => this._createChatModel(config) as never,
-        tools: this._agentToolService.getLangChainTools(),
-        callbacks: {
-          emitActivity: (event) => {
-            this._broadcast('mt::ai:activity', event)
-          },
-          requestApproval: (request) => this._requestApproval(request),
-          // Per-turn project grounding: outline + book summary + open
-          // continuity issues, shared by supervisor and workers — plus the
-          // review-loop status (edits awaiting review / recent outcomes).
-          buildBrief: async() => {
-            const brief = await contextBuilder.buildProjectBrief(getActiveAgentProjectRoot())
-            const review = this._editTracker.briefSummary()
-            if (!review) return brief
-            const line = `EDIT REVIEW STATUS: ${review}`
-            return brief ? `${brief}\n\n${line}` : line
-          },
-          emitContextUsage: (usage) => {
-            this._broadcast('mt::ai:context-usage', usage)
-          },
-          emitTokenUsage: (usage) => {
-            this._broadcast('mt::ai:token-usage', usage)
-          },
-          emitAgentStatus: (status) => {
-            this._broadcast('mt::ai:agent-status', status)
-          },
-          drainSteering: () => this._steeringQueue.splice(0),
-          // Scene N→N+1 handoff for drafters (seamless consecutive scenes).
-          buildHandoff: (task) =>
-            contextBuilder.buildSceneHandoff(getActiveAgentProjectRoot(), task)
+      const callbacks: OrchestratorCallbacks = {
+        emitActivity: (event) => {
+          this._broadcast('mt::ai:activity', event)
         },
-        checkpointer: this._checkpointer ?? undefined
-      })
+        requestApproval: (request) => this._requestApproval(request),
+        // Per-turn project grounding: outline + book summary + open
+        // continuity issues, shared by supervisor and workers — plus the
+        // review-loop status (edits awaiting review / recent outcomes).
+        buildBrief: async() => {
+          const brief = await contextBuilder.buildProjectBrief(getActiveAgentProjectRoot())
+          const review = this._editTracker.briefSummary()
+          if (!review) return brief
+          const line = `EDIT REVIEW STATUS: ${review}`
+          return brief ? `${brief}\n\n${line}` : line
+        },
+        emitContextUsage: (usage) => {
+          this._broadcast('mt::ai:context-usage', usage)
+        },
+        emitTokenUsage: (usage) => {
+          this._broadcast('mt::ai:token-usage', usage)
+        },
+        emitAgentStatus: (status) => {
+          this._broadcast('mt::ai:agent-status', status)
+        },
+        drainSteering: () => this._steeringQueue.splice(0),
+        // Scene N→N+1 handoff for drafters (seamless consecutive scenes).
+        buildHandoff: (task) =>
+          contextBuilder.buildSceneHandoff(getActiveAgentProjectRoot(), task)
+      }
+
+      if (provider === 'claude-code') {
+        // Claude subscription: the Agent SDK loop replaces LangGraph, but
+        // every WordBird tool still runs in this process (toolBridge) so
+        // the review queue, snapshots, and mode gating are unchanged.
+        const runner = new AgentSDKRunner({
+          config,
+          callbacks,
+          toolService: this._agentToolService,
+          stateDir: this._agentStateDir(),
+          projectRoot: () => getActiveAgentProjectRoot()
+        })
+        // End-to-end validation (spawns the runtime, exercises the login).
+        await runner.probe()
+        this._orchestrator = runner
+      } else {
+        // Dynamic orchestrator: the supervisor spawns role-scoped sub-agents
+        // at runtime (see orchestrator/). The model factory creates a fresh
+        // client per graph so workers and supervisor never share bind state.
+        this._orchestrator = new Orchestrator({
+          modelFactory: () => this._createChatModel(config) as never,
+          tools: this._agentToolService.getLangChainTools(),
+          callbacks,
+          checkpointer: this._checkpointer ?? undefined
+        })
+      }
       this._orchestrator.setMode(this._permissionMode)
       // Size every context budget to the model's real window (P0.3): a
       // 200k-context model gets room for a novel-length thread; a small
@@ -605,6 +638,12 @@ export class LangGraphManager {
   async fetchModels(rawProvider: AIProvider, apiKey: string, baseUrl?: string): Promise<string[]> {
     const provider = normalizeProvider(rawProvider)
     const actualBaseUrl = baseUrl || PROVIDER_BASE_URLS[provider]
+
+    // Subscription auth has no /models endpoint — the runtime resolves
+    // these aliases itself (plus any full model id the writer types).
+    if (provider === 'claude-code') {
+      return [...CLAUDE_CODE_MODELS]
+    }
 
     try {
       if (provider === 'openai' || provider === 'ollama' || provider === 'openrouter') {
@@ -763,11 +802,14 @@ export class LangGraphManager {
     // With a checkpointer, the thread itself holds the conversation state —
     // only forward messages the thread hasn't seen (everything after the
     // last assistant turn); the renderer still sends its full display
-    // history for compatibility.
+    // history for compatibility. The SDK runner's state lives in its own
+    // resumable session, not the checkpointer.
     const threadHasState =
-      !!this._checkpointer &&
-      !!this._threadId &&
-      (await this._checkpointer.hasThread(this._threadId))
+      orchestrator instanceof AgentSDKRunner
+        ? !!this._threadId && orchestrator.hasThread(this._threadId)
+        : !!this._checkpointer &&
+          !!this._threadId &&
+          (await this._checkpointer.hasThread(this._threadId))
 
     let outgoing = messages
     if (threadHasState) {

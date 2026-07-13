@@ -757,6 +757,8 @@
       },
       "selectProvider": "Sélectionner le fournisseur de modèles",
       "enterApiKey": "Saisir la clé API",
+      "claudeCodeToken": "Jeton de configuration (facultatif — laisser vide pour utiliser votre connexion Claude Code)",
+      "claudeCodeHint": "Utilise votre abonnement Claude Pro/Max via le Claude Agent SDK — la consommation est décomptée des limites de votre forfait. Connectez-vous une fois avec la CLI Claude Code, ou exécutez `claude setup-token` et collez le jeton ici. Ne collez jamais une clé API Anthropic.",
       "enterEndpoint": "Saisir l'URL du point de terminaison",
       "temperature": "Créativité (temperature)",
       "maxTokens": "Longueur maximale de réponse (jetons)",

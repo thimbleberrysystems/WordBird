@@ -757,6 +757,8 @@
       },
       "selectProvider": "Seleccionar proveedor de modelos",
       "enterApiKey": "Introducir clave de API",
+      "claudeCodeToken": "Token de configuración (opcional — déjalo vacío para usar tu sesión de Claude Code)",
+      "claudeCodeHint": "Usa tu suscripción Claude Pro/Max a través del Claude Agent SDK — el uso cuenta para los límites de tu plan. Inicia sesión una vez con la CLI de Claude Code, o ejecuta `claude setup-token` y pega el token aquí. Nunca pegues una clave de API de Anthropic.",
       "enterEndpoint": "Introducir URL del endpoint",
       "temperature": "Creatividad (temperature)",
       "maxTokens": "Longitud máxima de respuesta (tokens)",

@@ -358,7 +358,7 @@ interface BindableModel extends Runnable {
   bindTools?: (tools: unknown[]) => Runnable
 }
 
-const SUPERVISOR_TOOL_NAMES = [
+export const SUPERVISOR_TOOL_NAMES = [
   'list_structure',
   'read_summary',
   'search_manuscript',
@@ -387,7 +387,7 @@ const SUPERVISOR_TOOL_NAMES = [
 // writer's diff/review queue — the supervisor still cannot change anything
 // silently. Without these, models that fail to orchestrate a drafter
 // degrade to pasting prose into the chat and asking the writer to copy it.
-const SUPERVISOR_WRITE_TOOL_NAMES = [
+export const SUPERVISOR_WRITE_TOOL_NAMES = [
   'propose_new_unit',
   'propose_new_file',
   'propose_project_file_edit',
@@ -402,7 +402,7 @@ const SUPERVISOR_WRITE_TOOL_NAMES = [
 // Deletion is irreversible-feeling even with snapshots — and a whole-
 // project rewind rewrites everything at once: EVERY one of these asks the
 // writer first, in every mode, auto included.
-const DESTRUCTIVE_TOOLS = ['delete_unit', 'delete_file', 'restore_snapshot']
+export const DESTRUCTIVE_TOOLS = ['delete_unit', 'delete_file', 'restore_snapshot']
 
 const SPAWN_TOOL_NAME = 'spawn_agents'
 
@@ -424,7 +424,13 @@ const spawnSchema = z.object({
     .describe('Sub-agents to run in parallel in this wave.')
 })
 
-const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): string =>
+// Exported for the Agent SDK runner (claude-code provider): same doctrine,
+// different spawn mechanism (the SDK's Task tool instead of spawn_agents).
+export const buildSupervisorPrompt = (
+  mode: AgentPermissionMode,
+  maxWorkers: number,
+  spawnToolName: string = SPAWN_TOOL_NAME
+): string =>
   'You are Biscuit, the AI writing companion inside WordBird, a novel-writing app. ' +
   'You orchestrate a team of specialist sub-agents to serve a novelist:\n' +
   Object.values(AGENT_ROLES)
@@ -434,7 +440,7 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   '- Do it YOURSELF when it is a question you can answer from the brief, a couple of ' +
   'reads/searches, or ONE small write (a paragraph-scale edit, a metadata fix, a plan ' +
   'update). Writing a FULL scene is NOT small — that goes to a drafter.\n' +
-  `- SPAWN AGENTS (${SPAWN_TOOL_NAME}, up to ${maxWorkers} per wave) when the job spans several ` +
+  `- SPAWN AGENTS (${spawnToolName}, up to ${maxWorkers} per wave) when the job spans several ` +
   'units or needs a specialist: exploring/verifying across many scenes → explorer; facts ' +
   'from the real world → researcher; scene-length or larger prose → drafter; ' +
   'consistency sweeps → auditor; polish passes → line-editor; structural rework → ' +
@@ -458,7 +464,7 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'researcher could not confirm.\n' +
   '- PROSE BELONGS IN FILES, NEVER IN CHAT. When the writer asks you to write or save ' +
   'anything (a scene, a chapter, notes), you MUST produce it through a tool. Scene-length ' +
-  'prose or larger ALWAYS goes through a drafter (spawn_agents) — drafters carry the ' +
+  `prose or larger ALWAYS goes through a drafter (${spawnToolName}) — drafters carry the ` +
   'scene-craft training and their focused context writes better prose than you can ' +
   'inline. Drafter assignments have NO size ceiling: hand one an ordered list of unit ' +
   'ids/synopses and it will draft a whole chapter or act scene by scene; for a whole ' +

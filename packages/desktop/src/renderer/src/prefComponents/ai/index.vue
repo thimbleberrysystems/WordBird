@@ -16,7 +16,16 @@
     <compound v-if="currentConfig">
       <template #children>
         <text-box
-          v-if="!PROVIDERS_WITHOUT_KEY.includes(aiProvider as AIProvider)"
+          v-if="aiProvider === 'claude-code'"
+          :description="t('preferences.ai.claudeCodeToken')"
+          :input="currentConfig.apiKey || ''"
+          placeholder="sk-ant-oat01-…"
+          type="password"
+          :notes="t('preferences.ai.claudeCodeHint')"
+          :on-change="(val) => updateConfig({ apiKey: val })"
+        />
+        <text-box
+          v-else-if="!PROVIDERS_WITHOUT_KEY.includes(aiProvider as AIProvider)"
           :description="t('preferences.ai.enterApiKey')"
           :input="currentConfig.apiKey || ''"
           placeholder="sk-..."
@@ -32,7 +41,9 @@
           :on-change="(val) => updateConfig({ baseUrl: val })"
         />
 
+        <!-- The Claude Code runtime manages sampling and output size itself. -->
         <cur-range
+          v-if="aiProvider !== 'claude-code'"
           :description="t('preferences.ai.temperature')"
           :value="currentConfig.temperature ?? 0.7"
           :min="0"
@@ -42,6 +53,7 @@
         />
 
         <text-box
+          v-if="aiProvider !== 'claude-code'"
           :description="t('preferences.ai.maxTokens')"
           :input="String(currentConfig.maxTokens ?? 8192)"
           :notes="t('preferences.ai.maxTokensNotes')"
