@@ -1149,6 +1149,28 @@
       }
     },
     {
+      "id": "preview_snapshot",
+      "name": "preview_snapshot",
+      "displayName": "Preview a snapshot",
+      "description": "See a snapshot WITHOUT restoring anything: a project-wide comparison against the current files — which files a restore would revert to older versions, which files written since would be deleted, and which deleted files would come back. ALWAYS run this and report the consequences to the writer before proposing restore_snapshot; it is also the fast answer to \"what does that old snapshot look like overall?\".",
+      "handler": "preview_snapshot",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "snapshotId": {
+            "type": "string",
+            "description": "Snapshot id from list_snapshots."
+          }
+        },
+        "required": [
+          "snapshotId"
+        ]
+      }
+    },
+    {
       "id": "restore_snapshot",
       "name": "restore_snapshot",
       "displayName": "Rewind the whole project",

@@ -1020,6 +1020,39 @@ const diffSnapshotFile = async(
   return { path: target, snapshotId, identical: false, diff: capped.text, truncated: capped.truncated }
 }
 
+const capList = (list: string[], max = 50): { items: string[]; more: number } => ({
+  items: list.slice(0, max),
+  more: Math.max(0, list.length - max)
+})
+
+const previewSnapshot = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const { snapshotService } = await import('../novel/SnapshotService')
+  const snapshotId = str(args, 'snapshotId')
+  const preview = await snapshotService.previewRestore(root, snapshotId)
+  const changes =
+    preview.modified.length +
+    preview.addedSinceSnapshot.length +
+    preview.removedSinceSnapshot.length
+  return {
+    snapshotId,
+    identicalToNow: changes === 0,
+    // Restore-perspective, so the numbers read as consequences:
+    wouldRevert: capList(preview.modified),
+    wouldDelete: capList(preview.addedSinceSnapshot),
+    wouldResurrect: capList(preview.removedSinceSnapshot),
+    note:
+      changes === 0
+        ? 'The project is identical to this snapshot — a restore would change nothing.'
+        : 'Preview only — nothing was changed. Report these consequences to the writer ' +
+          'before any restore_snapshot; for a single file, prefer read_snapshot_file + ' +
+          'an edit proposal.'
+  }
+}
+
 const restoreSnapshot = async(
   args: Record<string, unknown>,
   context: AgentToolContext
@@ -1396,6 +1429,7 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('list_snapshots', listSnapshots)
   service.registerHandler('read_snapshot_file', readSnapshotFile)
   service.registerHandler('diff_snapshot_file', diffSnapshotFile)
+  service.registerHandler('preview_snapshot', previewSnapshot)
   service.registerHandler('restore_snapshot', restoreSnapshot)
   service.registerHandler('list_continuity_issues', listContinuityIssues)
   service.registerHandler('resolve_continuity_issue', resolveContinuityIssue)

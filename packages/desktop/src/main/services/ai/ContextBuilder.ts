@@ -94,10 +94,19 @@ const HANDOFF_WORDS = 500
 
 export class ContextBuilder {
   private _sessionContext: ISessionContext | null = null
-  /** When the brief was last built per project — drives the changed-files line. */
+  /** Fallback marker for callers that never signal turn boundaries. */
   private _lastBriefAt = new Map<string, number>()
   /** One-shot project events (rewinds, etc.) surfaced in the next brief. */
   private _projectEvents = new Map<string, string[]>()
+  /** When the previous turn ENDED — the freshness window opens here. */
+  private _lastTurnEndedAt = new Map<string, number>()
+  /**
+   * Per-turn snapshot of the freshness signals, computed ONCE at turn
+   * start so every brief build of the turn — each supervisor iteration
+   * and every worker — sees the SAME warning (a per-build reset made the
+   * warning visible exactly once, so most readers missed it).
+   */
+  private _turnFreshness = new Map<string, { changed: string[]; events: string[] }>()
 
   /** Where the writer is looking (view + open scene); set from the renderer. */
   setSessionContext(context: ISessionContext | null): void {
@@ -112,12 +121,32 @@ export class ContextBuilder {
   }
 
   /**
-   * Files the writer (or anything outside this agent session) touched since
-   * the previous brief — the agent's memory of them is stale.
+   * A writer turn is starting: freeze the freshness signals for the whole
+   * turn. Files changed since the END of the previous turn are stale-memory
+   * candidates; the agent's own mid-turn edits stay out of the next window
+   * (endTurn closes it after they happen).
    */
-  private _changedSinceLastBrief(projectRoot: string): string[] {
-    const since = this._lastBriefAt.get(projectRoot)
-    this._lastBriefAt.set(projectRoot, Date.now())
+  beginTurn(projectRoot: string): void {
+    const changed = this._collectChangedSince(
+      projectRoot,
+      this._lastTurnEndedAt.get(projectRoot)
+    )
+    const events = this._projectEvents.get(projectRoot) ?? []
+    this._projectEvents.delete(projectRoot)
+    this._turnFreshness.set(projectRoot, { changed, events })
+  }
+
+  /** The turn finished (success or failure) — close the freshness window. */
+  endTurn(projectRoot: string): void {
+    this._lastTurnEndedAt.set(projectRoot, Date.now())
+    this._turnFreshness.delete(projectRoot)
+  }
+
+  /**
+   * Files touched outside the agent session since `since` — the agent's
+   * memory of them is stale. Pure read: never mutates markers.
+   */
+  private _collectChangedSince(projectRoot: string, since: number | undefined): string[] {
     if (!since) return []
     const changed: string[] = []
     const walk = (dir: string): void => {
@@ -146,6 +175,21 @@ export class ContextBuilder {
     }
     walk(projectRoot)
     return changed
+  }
+
+  /**
+   * The freshness signals for this brief build: the turn-frozen snapshot
+   * when a turn is active, else the legacy per-build fallback (direct
+   * orchestrator use, tests, live harness).
+   */
+  private _freshnessForBuild(projectRoot: string): { changed: string[]; events: string[] } {
+    const turn = this._turnFreshness.get(projectRoot)
+    if (turn) return turn
+    const since = this._lastBriefAt.get(projectRoot)
+    this._lastBriefAt.set(projectRoot, Date.now())
+    const events = this._projectEvents.get(projectRoot) ?? []
+    this._projectEvents.delete(projectRoot)
+    return { changed: this._collectChangedSince(projectRoot, since), events }
   }
 
   /**
@@ -322,16 +366,13 @@ export class ContextBuilder {
         }
       }
 
-      // Out-of-band events (rewinds from the History panel, etc.) — shown
-      // once, in the very next brief.
-      const events = this._projectEvents.get(projectRoot)
-      if (events && events.length > 0) {
-        this._projectEvents.delete(projectRoot)
+      // Freshness signals: out-of-band events (History-panel rewinds) and
+      // files changed outside this agent session. Turn-frozen, so every
+      // supervisor iteration and every worker sees the same warning.
+      const { changed, events } = this._freshnessForBuild(projectRoot)
+      if (events.length > 0) {
         sections.push(`PROJECT EVENTS SINCE YOUR LAST TURN:\n${events.map((e) => `- ${e}`).join('\n')}`)
       }
-
-      // Files that changed outside this agent session — stale-memory guard.
-      const changed = this._changedSinceLastBrief(projectRoot)
       if (changed.length > 0) {
         sections.push(
           'CHANGED SINCE YOUR LAST TURN (writer edits, applied reviews, or a rewind — ' +

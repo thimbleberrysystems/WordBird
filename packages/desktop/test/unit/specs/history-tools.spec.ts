@@ -98,6 +98,46 @@ describe('snapshot history tools', () => {
     expect(same.identical).toBe(true)
   })
 
+  it('preview_snapshot reports revert/delete/resurrect WITHOUT touching files', async() => {
+    write('manuscript/chapter-one/doomed.md', 'This file will be deleted after the snapshot.\n')
+    await snapshotService.snapshot(root, 'baseline')
+    const baseline = (await snapshotService.list(root)).find((s) => s.message === 'baseline')!
+
+    // After the snapshot: modify one file, add one, delete one.
+    write('manuscript/chapter-one/opening.md', 'The MODIFIED version.\n')
+    write('manuscript/chapter-one/brand-new.md', 'Written after the snapshot.\n')
+    fs.rmSync(path.join(root, 'manuscript/chapter-one/doomed.md'))
+
+    const preview = (await run('preview_snapshot', { snapshotId: baseline.id })) as {
+      identicalToNow: boolean
+      wouldRevert: { items: string[] }
+      wouldDelete: { items: string[] }
+      wouldResurrect: { items: string[] }
+      note: string
+    }
+    expect(preview.identicalToNow).toBe(false)
+    expect(preview.wouldRevert.items).toContain('manuscript/chapter-one/opening.md')
+    expect(preview.wouldDelete.items).toContain('manuscript/chapter-one/brand-new.md')
+    expect(preview.wouldResurrect.items).toContain('manuscript/chapter-one/doomed.md')
+    expect(preview.note).toContain('nothing was changed')
+
+    // Preview must not have touched the working tree.
+    expect(
+      fs.readFileSync(path.join(root, 'manuscript/chapter-one/opening.md'), 'utf8')
+    ).toContain('MODIFIED')
+    expect(fs.existsSync(path.join(root, 'manuscript/chapter-one/brand-new.md'))).toBe(true)
+    expect(fs.existsSync(path.join(root, 'manuscript/chapter-one/doomed.md'))).toBe(false)
+  })
+
+  it('preview of an identical snapshot says so', async() => {
+    await snapshotService.snapshot(root, 'clean')
+    const clean = (await snapshotService.list(root)).find((s) => s.message === 'clean')!
+    const preview = (await run('preview_snapshot', { snapshotId: clean.id })) as {
+      identicalToNow: boolean
+    }
+    expect(preview.identicalToNow).toBe(true)
+  })
+
   it('restore_snapshot rewinds the working tree (service level)', async() => {
     await snapshotService.snapshot(root, 'good state')
     const good = (await snapshotService.list(root)).find((s) => s.message === 'good state')!
@@ -168,7 +208,7 @@ describe('snapshot history tools', () => {
 })
 
 describe('freshness signals', () => {
-  it('the brief lists files changed since the previous brief', async() => {
+  it('the brief lists files changed since the previous brief (fallback path)', async() => {
     const builder = new ContextBuilder()
     const first = await builder.buildProjectBrief(root)
     expect(first).not.toContain('CHANGED SINCE YOUR LAST TURN')
@@ -184,7 +224,63 @@ describe('freshness signals', () => {
     expect(third).not.toContain('CHANGED SINCE YOUR LAST TURN')
   })
 
-  it('rewind events surface once in the next brief', async() => {
+  it('turn-scoped: the SAME warning reaches every brief build of the turn', async() => {
+    const builder = new ContextBuilder()
+    // Turn 1 establishes the window.
+    builder.beginTurn(root)
+    await builder.buildProjectBrief(root)
+    builder.endTurn(root)
+
+    // Writer edits between turns.
+    await new Promise((resolve) => setTimeout(resolve, 15))
+    write('manuscript/chapter-one/opening.md', 'Writer hand edit between turns.\n')
+
+    // Turn 2: supervisor iteration AND a worker both see the warning.
+    builder.beginTurn(root)
+    const supervisorBrief = await builder.buildProjectBrief(root)
+    const workerBrief = await builder.buildProjectBrief(root)
+    expect(supervisorBrief).toContain('CHANGED SINCE YOUR LAST TURN')
+    expect(supervisorBrief).toContain('opening.md')
+    expect(workerBrief).toContain('CHANGED SINCE YOUR LAST TURN')
+    expect(workerBrief).toContain('opening.md')
+    builder.endTurn(root)
+  })
+
+  it("turn-scoped: the agent's own mid-turn edits are NOT flagged next turn", async() => {
+    const builder = new ContextBuilder()
+    builder.beginTurn(root)
+    await builder.buildProjectBrief(root)
+    // The agent itself writes a file DURING the turn.
+    write('manuscript/chapter-one/agent-authored.md', 'Drafted by an agent mid-turn.\n')
+    builder.endTurn(root)
+
+    builder.beginTurn(root)
+    const nextTurn = await builder.buildProjectBrief(root)
+    expect(nextTurn).not.toContain('CHANGED SINCE YOUR LAST TURN')
+    builder.endTurn(root)
+  })
+
+  it('turn-scoped: rewind events persist across every build of the turn', async() => {
+    const builder = new ContextBuilder()
+    builder.beginTurn(root)
+    builder.endTurn(root)
+    builder.recordProjectEvent(root, 'The writer REWOUND the project to snapshot abc12345.')
+
+    builder.beginTurn(root)
+    const first = await builder.buildProjectBrief(root)
+    const second = await builder.buildProjectBrief(root)
+    expect(first).toContain('REWOUND')
+    expect(second).toContain('REWOUND')
+    builder.endTurn(root)
+
+    // Consumed with the turn — the following turn is quiet.
+    builder.beginTurn(root)
+    const after = await builder.buildProjectBrief(root)
+    expect(after).not.toContain('PROJECT EVENTS')
+    builder.endTurn(root)
+  })
+
+  it('rewind events surface once in the next brief (fallback path)', async() => {
     const builder = new ContextBuilder()
     await builder.buildProjectBrief(root)
     builder.recordProjectEvent(root, 'The writer REWOUND the project to snapshot abc12345.')
@@ -233,5 +329,7 @@ describe('freshness signals', () => {
     expect(system).toContain('FRESHNESS')
     expect(system).toContain('CHANGED SINCE YOUR LAST TURN')
     expect(system).toContain('restore_snapshot')
+    // Preview-before-restore is a hard rule.
+    expect(system).toContain('ALWAYS preview_snapshot first')
   })
 })

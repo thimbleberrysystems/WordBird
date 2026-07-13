@@ -446,7 +446,7 @@ live('16 · history is a tool: agents answer from the snapshot mini-git', () => 
     // Grounded in the real diff — the rewrite swapped rain-slick → MOONLIT.
     expect(reply.toLowerCase()).toMatch(/moonlit|rain-slick/)
     const usedHistory = harness.activity.some((event) =>
-      /list_snapshots|diff_snapshot_file|read_snapshot_file/.test(
+      /list_snapshots|diff_snapshot_file|read_snapshot_file|preview_snapshot/.test(
         `${event.label} ${event.detail ?? ''}`
       )
     )

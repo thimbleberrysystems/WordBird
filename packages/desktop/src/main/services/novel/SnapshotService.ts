@@ -247,6 +247,36 @@ export class SnapshotService {
   }
 
   /**
+   * Preview a snapshot WITHOUT touching the working tree: compare the
+   * snapshot's tree against the current files (same .gitignore rules the
+   * snapshots themselves use). Restoring would revert `modified`, delete
+   * `addedSinceSnapshot`, and resurrect `removedSinceSnapshot`.
+   */
+  async previewRestore(
+    dir: string,
+    snapshotId: string
+  ): Promise<{
+      modified: string[]
+      addedSinceSnapshot: string[]
+      removedSinceSnapshot: string[]
+    }> {
+    await this._ensureRepo(dir)
+    const matrix = await git.statusMatrix({ fs, dir, ref: snapshotId })
+    const modified: string[] = []
+    const addedSinceSnapshot: string[] = []
+    const removedSinceSnapshot: string[] = []
+    for (const [filepath, head, workdir] of matrix) {
+      if (head === 1 && workdir === 0) removedSinceSnapshot.push(filepath)
+      else if (head === 0 && workdir === 2) addedSinceSnapshot.push(filepath)
+      else if (head === 1 && workdir === 2) modified.push(filepath)
+    }
+    modified.sort()
+    addedSinceSnapshot.sort()
+    removedSinceSnapshot.sort()
+    return { modified, addedSinceSnapshot, removedSinceSnapshot }
+  }
+
+  /**
    * Rewind the project to a snapshot. Writes that snapshot's files into
    * the working tree without moving HEAD, then records the result as a
    * new snapshot so the rewind itself can be undone.

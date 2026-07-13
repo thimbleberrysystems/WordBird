@@ -271,12 +271,19 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   via isomorphic-git: snapshot/list/non-destructive rewind + `readFileAt`
   (any file at any snapshot). Auto-snapshots guard every destructive agent
   operation. AGENT-FACING HISTORY: list_snapshots / read_snapshot_file /
-  diff_snapshot_file (read tools, all roles) and restore_snapshot
-  (destructive-gated — writer approval in every mode). Recovering lost
-  prose = read the old version + a normal review-gated edit proposal.
-  FRESHNESS: the brief carries CHANGED SINCE YOUR LAST TURN (files whose
-  mtime moved between briefs → agent memory of them is stale) and one-shot
-  PROJECT EVENTS (History-panel rewinds); list_files reports modifiedAt.
+  diff_snapshot_file / preview_snapshot (whole-snapshot vs working tree —
+  what a restore would revert/delete/resurrect, via statusMatrix ref; the
+  prompt requires preview before any restore proposal) as read tools for
+  all roles, and restore_snapshot (destructive-gated — writer approval in
+  every mode). Recovering lost prose = read the old version + a normal
+  review-gated edit proposal.
+  FRESHNESS (turn-scoped): ContextBuilder.beginTurn/endTurn — called by
+  LangGraphManager.sendMessage — freeze CHANGED SINCE YOUR LAST TURN and
+  PROJECT EVENTS once per writer turn so EVERY brief build (supervisor
+  iterations, workers, book-run segments) carries the same warning, and
+  the agent's own mid-turn edits are not flagged back at it next turn;
+  callers that skip the boundaries fall back to per-build computation.
+  list_files reports modifiedAt.
 - `main/services/novel/BookExporter.ts` — whole-book EPUB/DOCX output (pure
   JS: marked + epub-gen-memory + html-to-docx, no pandoc); the binder's
   Compile dropdown routes through `mt::novel:compile` with `format`.

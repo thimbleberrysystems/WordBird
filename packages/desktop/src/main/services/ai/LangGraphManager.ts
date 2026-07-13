@@ -801,6 +801,13 @@ export class LangGraphManager {
         }
       )
 
+    // Freeze the freshness signals for this whole turn: every brief build
+    // (supervisor iterations + workers + book-run segments) sees the same
+    // changed-files/events warning; the window closes at turn end so the
+    // agent's own mid-turn edits don't false-alarm next turn.
+    const turnRoot = getActiveAgentProjectRoot()
+    if (turnRoot) contextBuilder.beginTurn(turnRoot)
+
     this._turnRunning = true
     this._emitRunState()
     let content: string
@@ -831,6 +838,7 @@ export class LangGraphManager {
       throw error
     } finally {
       this._turnRunning = false
+      if (turnRoot) contextBuilder.endTurn(turnRoot)
       // A pause must never outlive its turn — the next turn starts unfrozen.
       this._orchestrator?.resumeFromPause()
       this._steeringQueue = []

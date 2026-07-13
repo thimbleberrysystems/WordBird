@@ -30,6 +30,7 @@ const READ_TOOLS = [
   'list_snapshots',
   'read_snapshot_file',
   'diff_snapshot_file',
+  'preview_snapshot',
   'get_revision'
 ]
 

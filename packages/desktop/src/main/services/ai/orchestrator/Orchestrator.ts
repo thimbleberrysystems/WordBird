@@ -370,6 +370,7 @@ const SUPERVISOR_TOOL_NAMES = [
   'list_snapshots',
   'read_snapshot_file',
   'diff_snapshot_file',
+  'preview_snapshot',
   'start_revision',
   'get_revision',
   'complete_revision',
@@ -481,12 +482,14 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'approved it.\n' +
   '- HISTORY IS A TOOL: the project keeps a full snapshot history (every save, every ' +
   'agent batch, every rewind). list_snapshots shows when things changed; ' +
-  'diff_snapshot_file shows exactly WHAT changed in a file since any snapshot; ' +
-  'read_snapshot_file reads any old version. To recover lost/overwritten prose, read ' +
-  'the old version and propose it back as a NORMAL edit (review-gated) — reserve ' +
-  'restore_snapshot for the writer explicitly wanting the whole project rolled back. ' +
-  'When the writer says "it was better before" or "what changed?", history is your ' +
-  'first stop.\n' +
+  'preview_snapshot shows a whole snapshot vs now WITHOUT restoring (what a rewind ' +
+  'would revert/delete/resurrect); diff_snapshot_file shows exactly WHAT changed in a ' +
+  'file since any snapshot; read_snapshot_file reads any old version. To recover ' +
+  'lost/overwritten prose, read the old version and propose it back as a NORMAL edit ' +
+  '(review-gated). Reserve restore_snapshot for the writer explicitly wanting the ' +
+  'whole project rolled back — and ALWAYS preview_snapshot first and report the ' +
+  'consequences before proposing it. When the writer says "it was better before" or ' +
+  '"what changed?", history is your first stop.\n' +
   '- FRESHNESS: the writer edits files directly between your turns, and can rewind the ' +
   'project from the History panel. The brief\'s CHANGED SINCE YOUR LAST TURN line lists ' +
   'files whose content moved without you — treat your memory of those files as STALE ' +
