@@ -15,6 +15,24 @@
       >
         {{ t('views.chronologicalOrder') }}
       </button>
+      <!-- Thread lanes (Dabble-plot-grid style): filter to one subplot. -->
+      <select
+        v-if="threads.length > 0"
+        v-model="activeThread"
+        class="thread-select"
+        :title="t('views.threadFilterTip')"
+      >
+        <option value="">
+          {{ t('views.allThreads') }}
+        </option>
+        <option
+          v-for="thread in threads"
+          :key="thread"
+          :value="thread"
+        >
+          {{ thread }}
+        </option>
+      </select>
     </div>
 
     <div class="timeline-track">
@@ -48,6 +66,10 @@
           <div class="entry-meta">
             <span v-if="scene.pov">{{ scene.pov }}</span>
             <span v-if="scene.location">· {{ scene.location }}</span>
+            <span
+              v-if="scene.thread"
+              class="entry-thread"
+            >{{ scene.thread }}</span>
           </div>
           <div
             v-if="scene.synopsis"
@@ -78,6 +100,7 @@ const novelStore = useNovelStore()
 const { structure } = storeToRefs(novelStore)
 
 const order = ref<'narrative' | 'chronological'>('narrative')
+const activeThread = ref('')
 
 const scenes = computed<INovelUnit[]>(() => {
   const out: INovelUnit[] = []
@@ -91,13 +114,22 @@ const scenes = computed<INovelUnit[]>(() => {
   return out
 })
 
+/** Distinct subplot/thread lanes present in the manuscript. */
+const threads = computed<string[]>(() =>
+  [...new Set(scenes.value.map((s) => s.thread).filter((v): v is string => !!v))].sort()
+)
+
 // Chronological is a best-effort lexicographic sort on the free-text
 // `when` field (ISO dates and "Day 12"-style labels both sort usefully);
-// scenes without a `when` keep narrative order at the end.
+// scenes without a `when` keep narrative order at the end. An active
+// thread lane narrows the track to that subplot.
 const orderedScenes = computed<INovelUnit[]>(() => {
-  if (order.value === 'narrative') return scenes.value
-  const dated = scenes.value.filter((s) => s.when)
-  const undated = scenes.value.filter((s) => !s.when)
+  const inLane = activeThread.value
+    ? scenes.value.filter((s) => s.thread === activeThread.value)
+    : scenes.value
+  if (order.value === 'narrative') return inLane
+  const dated = inLane.filter((s) => s.when)
+  const undated = inLane.filter((s) => !s.when)
   const sorted = [...dated].sort((a, b) =>
     String(a.when).localeCompare(String(b.when), undefined, { numeric: true })
   )
@@ -255,6 +287,32 @@ const saveWhen = (scene: INovelUnit, event: Event): void => {
   color: var(--iconColor);
   display: flex;
   gap: 4px;
+}
+
+.entry-thread {
+  margin-left: auto;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: var(--itemBgColor);
+  color: var(--themeColor, var(--wbInfoColor));
+  font-size: 10px;
+  line-height: 16px;
+}
+
+.thread-select {
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--itemBgColor);
+  background: transparent;
+  color: var(--iconColor);
+  cursor: pointer;
+  outline: none;
+  &:hover {
+    color: var(--themeColor);
+    border-color: var(--themeColor);
+  }
 }
 
 .entry-synopsis {

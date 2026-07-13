@@ -200,6 +200,23 @@ export interface IpcInvokeChannels {
     args: [root: string, issueId: string]
     ret: { ok: boolean; error?: string }
   }
+  'mt::novel:word-stats': {
+    args: [root: string]
+    ret: Array<{ date: string; written: number }>
+  }
+  'mt::novel:entity-index': {
+    args: [root: string]
+    ret: {
+      builtAt: number
+      signature: string
+      entities: Array<{
+        name: string
+        aliases: string[]
+        page: string
+        appearances: Array<{ unitId: string; title: string; path: string; count: number }>
+      }>
+    }
+  }
   'mt::novel:snapshots': { args: [root: string, limit?: number]; ret: ISnapshotListResult }
   'mt::novel:restore-snapshot': {
     args: [root: string, snapshotId: string]

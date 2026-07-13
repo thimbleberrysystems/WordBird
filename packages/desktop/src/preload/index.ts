@@ -274,7 +274,9 @@ const novelAPI = {
   continuityIssues: (root: string) => invoke('mt::novel:continuity-issues', root),
   listRevisions: (root: string) => invoke('mt::novel:list-revisions', root),
   resolveIssue: (root: string, issueId: string) =>
-    invoke('mt::novel:resolve-issue', root, issueId)
+    invoke('mt::novel:resolve-issue', root, issueId),
+  wordStats: (root: string) => invoke('mt::novel:word-stats', root),
+  entityIndex: (root: string) => invoke('mt::novel:entity-index', root)
 }
 
 const aiAPI = {

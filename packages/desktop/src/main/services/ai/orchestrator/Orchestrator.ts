@@ -366,6 +366,7 @@ const SUPERVISOR_TOOL_NAMES = [
   'read_bible',
   'list_files',
   'list_continuity_issues',
+  'list_facts',
   'start_revision',
   'get_revision',
   'complete_revision',
@@ -386,6 +387,7 @@ const SUPERVISOR_WRITE_TOOL_NAMES = [
   'propose_new_file',
   'propose_project_file_edit',
   'set_writing_method',
+  'record_fact',
   'delete_unit',
   'delete_file'
 ]
@@ -511,7 +513,9 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'present). Give every scene a DISTINCT, descriptive title — "The Cellar Door", never ' +
   '"Opening Scene" or "Scene 2" — titles become filenames the writer lives with. ' +
   'AFTERCARE after accepted edits — update_summary for the unit (book.md when ' +
-  'the shape moved) and propose_bible_update for new canon. Strongly encouraged, but it ' +
+  'the shape moved), propose_bible_update for new canon, and record_fact for each ' +
+  'durable atomic fact the scene established (traits, relationships, deaths, secrets — ' +
+  'the ledger is what catches contradictions at chapter 40). Strongly encouraged, but it ' +
   'yields if the writer says skip it.\n' +
   '3) STRUCTURE FRAMEWORK (whenever bible/structure.md exists, any method): when planning ' +
   'or health-checking, map scenes to beats, tick covered beats ([x]) via ' +
@@ -527,7 +531,14 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
   'continuity + timeline consistency (out-of-order or missing `when` values) + stale ' +
   'summaries + beat coverage when a beat sheet exists. Log real findings with ' +
   'log_continuity_issue so they land in the writer\'s Continuity panel.\n' +
-  '7) VIEW AWARENESS: the brief may name the writer\'s current view — match that ' +
+  '7) LEARN MY VOICE: when the writer asks you to learn/capture their voice — or when ' +
+  'prose exists but bible/style.md does not — offer to distill it: spawn a line-editor ' +
+  'to study 2-4 scenes the writer picks (or the strongest existing ones), extract ' +
+  'diction, sentence rhythm, POV/tense habits, dialogue-tag style, imagery patterns, and ' +
+  'words/tics to avoid, QUOTING short examples from their prose, and propose the result ' +
+  'as bible/style.md through the normal review. Style.md is then law for every drafter ' +
+  'and line-editor. Re-run on request as the writer\'s voice evolves.\n' +
+  '8) VIEW AWARENESS: the brief may name the writer\'s current view — match that ' +
   'altitude by default. page → prose work on the open scene; corkboard → synopses and ' +
   'status (offer synopsis fills for blank cards); outline → metadata sweeps (POV/location/' +
   'status completeness); timeline → `when` fields, chronology, flashback ordering. The ' +
@@ -586,7 +597,14 @@ const buildSupervisorPrompt = (mode: AgentPermissionMode, maxWorkers: number): s
         'Each segment: do the next chunk of work, tick completed plan items, then ' +
         'CONTINUE again. OMIT the marker when the plan is complete, when you need the ' +
         'writer\'s input (a question or approval), or when something went wrong — that ' +
-        'ends the run normally. Never use the marker outside plan execution.\n')
+        'ends the run normally. Never use the marker outside plan execution.\n' +
+        'CRITIC PASS (non-negotiable in book runs): any segment that drafted prose ends ' +
+        'with an auditor sweep of exactly the scenes just drafted — continuity against ' +
+        'the bible and facts, where_appears/entity spot-checks, story-time order, beat ' +
+        'coverage when a beat sheet exists. FIX what the auditor finds (or log it with ' +
+        'log_continuity_issue) BEFORE the CONTINUE marker — never stack new scenes on ' +
+        'unreviewed ones. Research on long-form generation shows this single habit ' +
+        'roughly halves continuity errors.\n')
 
 export class Orchestrator {
   private _mode: AgentPermissionMode = 'approvals'

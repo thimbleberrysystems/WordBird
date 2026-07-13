@@ -50,6 +50,40 @@ export const splitChapters = (markdown: string): ChapterSlice[] => {
 const toHtml = (markdown: string): string =>
   marked.parse(markdown, { async: false }) as string
 
+/**
+ * Book typography for the EPUB (Atticus-style defaults): classic serif
+ * body, indented paragraphs with no gap (except after breaks), styled
+ * chapter openings, and centered scene-break marks. E-readers may override
+ * fonts, but structure and spacing survive.
+ */
+const BOOK_CSS = `
+  body { font-family: "Georgia", "Times New Roman", serif; line-height: 1.6; }
+  h1, h2 {
+    text-align: center;
+    font-weight: normal;
+    letter-spacing: 0.06em;
+    margin: 2.5em 0 1.8em;
+    page-break-before: always;
+  }
+  h1 { font-size: 1.5em; }
+  h2 { font-size: 1.25em; }
+  p { margin: 0; text-indent: 1.4em; text-align: justify; }
+  h1 + p, h2 + p, hr + p { text-indent: 0; }
+  h1 + p::first-letter, h2 + p::first-letter {
+    font-size: 2.6em;
+    line-height: 1;
+    float: left;
+    padding-right: 0.06em;
+  }
+  hr {
+    border: none;
+    text-align: center;
+    margin: 1.4em 0;
+  }
+  hr::after { content: "* * *"; letter-spacing: 0.4em; }
+  blockquote { font-style: italic; margin: 1em 2em; }
+`
+
 export const exportEpub = async(markdown: string, meta: BookMeta): Promise<Buffer> => {
   const { default: epub } = await import('epub-gen-memory')
   const slices = splitChapters(markdown)
@@ -64,6 +98,7 @@ export const exportEpub = async(markdown: string, meta: BookMeta): Promise<Buffe
     {
       title: meta.title,
       author: meta.author ?? '',
+      css: BOOK_CSS,
       // No network fetches — the book is self-contained.
       fetchTimeout: 1
     },

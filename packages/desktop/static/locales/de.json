@@ -294,7 +294,8 @@
       "binder": "Manuskript",
       "history": "Verlauf",
       "continuity": "Kontinuität",
-      "agents": "Agenten"
+      "agents": "Agenten",
+      "entities": "Figuren & Orte"
     }
   },
   "commandPalette": {
@@ -1483,7 +1484,8 @@
     "actionFailed": "Diese Änderung wurde nicht gespeichert: {error}",
     "compileMd": "Als Markdown kompilieren",
     "compileEpub": "Als EPUB kompilieren (E-Book)",
-    "compileDocx": "Als Word kompilieren (.docx)"
+    "compileDocx": "Als Word kompilieren (.docx)",
+    "historyTip": "Wörter pro Tag (letzte 14 Tage) — aktuelle Serie: {streak}"
   },
   "history": {
     "title": "Verlauf",
@@ -1511,7 +1513,15 @@
     "timeline": "Zeitleiste",
     "narrativeOrder": "Erzählreihenfolge",
     "chronologicalOrder": "Story-Zeit",
-    "whenPlaceholder": "wann?"
+    "whenPlaceholder": "wann?",
+    "colThread": "Handlung",
+    "colLabel": "Etikett",
+    "colNotes": "Notizen",
+    "noNotes": "Keine Notizen",
+    "allThreads": "Alle Handlungsstränge",
+    "threadFilterTip": "Nur einen Handlungsstrang anzeigen",
+    "allLabels": "Alle Etiketten",
+    "labelFilterTip": "Karten nach Etikett filtern"
   },
   "continuity": {
     "title": "Kontinuität",
@@ -1632,5 +1642,12 @@
     "save": "Speichern",
     "saveTip": "Speichern (Strg+S) — jede Speicherung wird ein Schnappschuss im Verlauf",
     "saved": "Alle Änderungen gespeichert"
+  },
+  "entities": {
+    "title": "Figuren & Orte",
+    "notInProse": "noch nicht im Text",
+    "aliases": "Aliasse",
+    "openPage": "Bibel-Seite öffnen",
+    "empty": "Noch keine Einträge — lege Bibel-Seiten an (Figuren, Orte), dann erscheinen sie hier mit jeder Szene, in der sie vorkommen."
   }
 }

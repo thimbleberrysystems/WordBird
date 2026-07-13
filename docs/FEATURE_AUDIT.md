@@ -56,7 +56,7 @@ with the best) · **PARTIAL** (works, but the best do more) · **GAP**
 | Orchestration | supervisor + 6 roles (explorer, researcher, drafter, auditor, line-editor, plotter); parallel waves; heavy roles get 4× step budget; **drafter assignments unbounded** (chapter/act/novel-run) |
 | Scene handoff | drafter N+1 receives tail of scene N |
 | Book run | CONTINUE protocol drives plan-to-completion in auto mode; ceilings raise approval cards and RESUME on approval; no-progress detector; restart-resumable |
-| Tools | 39: reads/search/where_appears, propose_* writes, bible/summaries/continuity/revisions/plans, file mgmt + deletes, web/wiki/dictionary (SSRF-guarded), ask_writer, set_writing_method |
+| Tools | 41: reads/search/where_appears, propose_* writes, bible/summaries/continuity/facts (record_fact/list_facts)/revisions/plans, file mgmt + deletes, web/wiki/dictionary (SSRF-guarded), ask_writer, set_writing_method |
 | Permission modes | ask (mechanically read-only) / approvals / auto — per-project persisted, synced across windows; deletes always confirm |
 | Review loop | per-change + apply-all diffs, inline hunks; acceptance/rejection fed back to the model; queue persists across restarts |
 | Prompt system | PROJECT_CONVENTIONS, method-branched PLAYBOOKS ("DEFAULTS, never doctrine"), CONTEXT PREP hard rule, research triggers, scene craft (Swain), pass discipline, view awareness |
@@ -172,7 +172,33 @@ goals with history). Nice-to-have.
 
 ---
 
-## 3. Recommended execution order
+## 3. Gap closure status (2026-07-13, same day)
+
+All eight gaps were implemented immediately after this audit:
+- **E1 DONE** — Entities sidebar view (appearances per scene, aliases,
+  click-through to scenes/bible pages; live-refreshes on agent edits).
+- **E2 DONE** — CRITIC PASS: book-run segments that drafted prose must end
+  with an auditor sweep (bible + fact ledger + timeline + beats) before
+  the CONTINUE marker. Spec-locked, auto-mode only.
+- **E3 DONE** — LEARN MY VOICE playbook: line-editor distills style.md
+  from writer-chosen sample scenes through the review queue.
+- **E4 DONE** — `thread` unit metadata: Timeline lane filter, corkboard
+  thread/label filters, Outline column, agent-readable/writable, shown in
+  the brief's outline.
+- **E5 DONE (labels/notes)** — `label` + `notes` unit metadata with
+  Outline editing and corkboard label filter. Split-editor view remains
+  deferred: it needs dual-Muya-instance work and is tracked as the one
+  open organization gap.
+- **E6 DONE** — EPUB ships with book typography (serif, chapter openings,
+  drop caps, centered scene breaks, justified indents).
+- **E7 DONE (v1)** — typed fact ledger (FactService): record_fact /
+  list_facts, aftercare records canon, auditors verify against it, brief
+  announces the count. Graph relations/automated contradiction scoring
+  remain the v2 research follow-up.
+- **E8 DONE** — 14-day writing-history sparkline + streak in the binder
+  (data from the existing .wordbird/stats.json).
+
+## 4. Recommended execution order (original)
 1. E2 book-run critic loop (largest coherence win per line of code)
 2. E1 Entities sidebar view (data layer already built)
 3. E3 learn-my-voice → style.md

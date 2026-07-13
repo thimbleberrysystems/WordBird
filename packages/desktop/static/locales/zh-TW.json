@@ -294,7 +294,8 @@
       "binder": "書稿",
       "history": "歷史",
       "continuity": "連貫性",
-      "agents": "代理"
+      "agents": "代理",
+      "entities": "實體"
     }
   },
   "commandPalette": {
@@ -1485,7 +1486,8 @@
     "actionFailed": "該變更未能儲存：{error}",
     "compileMd": "編譯為 Markdown",
     "compileEpub": "編譯為 EPUB（電子書）",
-    "compileDocx": "編譯為 Word（.docx）"
+    "compileDocx": "編譯為 Word（.docx）",
+    "historyTip": "每日寫作字數（最近14天）——目前連續天數：{streak}"
   },
   "history": {
     "title": "歷史",
@@ -1513,7 +1515,15 @@
     "timeline": "時間線",
     "narrativeOrder": "敘事順序",
     "chronologicalOrder": "故事時間",
-    "whenPlaceholder": "何時？"
+    "whenPlaceholder": "何時？",
+    "colThread": "線索",
+    "colLabel": "標籤",
+    "colNotes": "備註",
+    "noNotes": "暫無備註",
+    "allThreads": "全部線索",
+    "threadFilterTip": "只顯示一條支線",
+    "allLabels": "全部標籤",
+    "labelFilterTip": "按標籤篩選卡片"
   },
   "continuity": {
     "title": "連貫性",
@@ -1634,5 +1644,12 @@
     "save": "儲存",
     "saveTip": "儲存 (Ctrl+S) — 每次儲存都會成為歷史中的快照",
     "saved": "所有變更已儲存"
+  },
+  "entities": {
+    "title": "實體",
+    "notInProse": "尚未出現在正文",
+    "aliases": "別名",
+    "openPage": "打開聖典頁面",
+    "empty": "還沒有實體——建立聖典頁面（人物、地點）後，它們會連同出現的場景一起顯示在這裡。"
   }
 }

@@ -131,6 +131,30 @@ export const updateDailyWordStats = async(
   return day.start
 }
 
+/** Written-per-day history for the last `days` days (analytics sparkline). */
+export const readDailyWordHistory = async(
+  root: string,
+  days = 30
+): Promise<Array<{ date: string; written: number }>> => {
+  const statsPath = path.join(root, '.wordbird', 'stats.json')
+  let stats: IDailyStats = { days: {} }
+  try {
+    const parsed = JSON.parse(await fsPromises.readFile(statsPath, 'utf8')) as IDailyStats
+    if (parsed && typeof parsed.days === 'object' && parsed.days) stats = parsed
+  } catch {
+    return []
+  }
+  const out: Array<{ date: string; written: number }> = []
+  const cursor = new Date()
+  for (let i = 0; i < days; i++) {
+    const key = localDateKey(cursor)
+    const day = stats.days[key]
+    out.unshift({ date: key, written: day ? Math.max(0, day.last - day.start) : 0 })
+    cursor.setDate(cursor.getDate() - 1)
+  }
+  return out
+}
+
 export interface UnitLookup {
   unit: INovelUnit
   parent: INovelUnit | null

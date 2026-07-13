@@ -294,7 +294,8 @@
       "binder": "原稿",
       "history": "履歴",
       "continuity": "整合性",
-      "agents": "エージェント"
+      "agents": "エージェント",
+      "entities": "エンティティ"
     }
   },
   "commandPalette": {
@@ -1483,7 +1484,8 @@
     "actionFailed": "この変更は保存されませんでした：{error}",
     "compileMd": "Markdownに書き出し",
     "compileEpub": "EPUBに書き出し（電子書籍）",
-    "compileDocx": "Wordに書き出し（.docx）"
+    "compileDocx": "Wordに書き出し（.docx）",
+    "historyTip": "1日あたりの執筆語数（直近14日）— 連続記録：{streak}"
   },
   "history": {
     "title": "履歴",
@@ -1511,7 +1513,15 @@
     "timeline": "タイムライン",
     "narrativeOrder": "物語順",
     "chronologicalOrder": "時系列",
-    "whenPlaceholder": "いつ？"
+    "whenPlaceholder": "いつ？",
+    "colThread": "スレッド",
+    "colLabel": "ラベル",
+    "colNotes": "メモ",
+    "noNotes": "メモなし",
+    "allThreads": "すべてのスレッド",
+    "threadFilterTip": "1つのサブプロットだけ表示",
+    "allLabels": "すべてのラベル",
+    "labelFilterTip": "ラベルでカードを絞り込む"
   },
   "continuity": {
     "title": "整合性",
@@ -1632,5 +1642,12 @@
     "save": "保存",
     "saveTip": "保存 (Ctrl+S) — 保存のたびに履歴のスナップショットになります",
     "saved": "すべての変更を保存済み"
+  },
+  "entities": {
+    "title": "エンティティ",
+    "notInProse": "本文に未登場",
+    "aliases": "別名",
+    "openPage": "バイブルページを開く",
+    "empty": "まだエンティティがありません。バイブルページ（人物・場所）を作成すると、登場するシーンとともにここに表示されます。"
   }
 }

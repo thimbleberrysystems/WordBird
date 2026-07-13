@@ -10,7 +10,12 @@ import { ipcMain } from 'electron'
 import path from 'path'
 import log from 'electron-log'
 import { isValidProjectPath } from '../filesystem/markdown'
-import { structureService, totalWords, updateDailyWordStats } from '../services/novel/StructureService'
+import {
+  structureService,
+  totalWords,
+  updateDailyWordStats,
+  readDailyWordHistory
+} from '../services/novel/StructureService'
 import { snapshotService } from '../services/novel/SnapshotService'
 import { continuityService } from '../services/novel/ContinuityService'
 import { revisionService } from '../services/novel/RevisionService'
@@ -221,6 +226,33 @@ export const registerNovelHandlers = (): void => {
       }
     }
   )
+
+  // Written-per-day history for the binder's analytics sparkline.
+  ipcMain.handle(
+    'mt::novel:word-stats',
+    async(_e, root: string): Promise<Array<{ date: string; written: number }>> => {
+      const safeRoot = guardRoot(root)
+      if (!safeRoot) return []
+      try {
+        return await readDailyWordHistory(safeRoot)
+      } catch {
+        return []
+      }
+    }
+  )
+
+  // The deterministic entity index behind the Entities sidebar view.
+  ipcMain.handle('mt::novel:entity-index', async(_e, root: string) => {
+    const safeRoot = guardRoot(root)
+    if (!safeRoot) return { builtAt: 0, signature: '', entities: [] }
+    try {
+      const { getEntityIndex } = await import('../services/novel/EntityIndex')
+      return await getEntityIndex(safeRoot)
+    } catch (error) {
+      log.error('[novel] entity index failed:', error)
+      return { builtAt: 0, signature: '', entities: [] }
+    }
+  })
 
   ipcMain.handle(
     'mt::novel:compile',

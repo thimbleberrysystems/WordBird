@@ -59,6 +59,12 @@ export interface INovelUnit {
   synopsis?: string
   /** In-story moment (free text: "Day 3", "1889-06-12", "That night"). */
   when?: string
+  /** Narrative thread/subplot lane ("Main", "Heist", "Romance B-plot"). */
+  thread?: string
+  /** Writer-defined label/keyword for filtering ("act1", "revise", …). */
+  label?: string
+  /** Private writer notes for this unit (Scrivener-style document notes). */
+  notes?: string
   /** Cached word count of the backing file (leaf units only). */
   wordCount?: number
   children?: INovelUnit[]
@@ -96,6 +102,9 @@ export interface INovelUnitUpdate {
   location?: string
   synopsis?: string
   when?: string
+  thread?: string
+  label?: string
+  notes?: string
 }
 
 /** A continuity problem recorded by the agent (or writer) for review. */

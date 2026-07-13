@@ -250,7 +250,7 @@
       "id": "update_unit_meta",
       "name": "update_unit_meta",
       "displayName": "Update unit metadata",
-      "description": "Update a unit's binder metadata: title, status (idea/draft/revised/final), POV character, location, synopsis, or when (the in-story moment, e.g. 'Day 3' or '1889-06-12', used by the timeline). Does not touch prose.",
+      "description": "Update a unit's binder metadata: title, status (idea/draft/revised/final), POV character, location, synopsis, or when (the in-story moment, e.g. 'Day 3' or '1889-06-12', used by the timeline). Does not touch prose. Also sets thread (subplot lane), label (binder keyword), and notes (document notes).",
       "handler": "update_unit_meta",
       "enabled": true,
       "scope": "project",
@@ -284,6 +284,18 @@
           },
           "when": {
             "type": "string"
+          },
+          "thread": {
+            "type": "string",
+            "description": "Narrative thread/subplot lane this unit belongs to (e.g. \"Main\", \"Heist\", \"Romance B-plot\") — drives the Timeline lanes."
+          },
+          "label": {
+            "type": "string",
+            "description": "Writer-defined label/keyword for filtering in the binder (e.g. \"act1\", \"revise\")."
+          },
+          "notes": {
+            "type": "string",
+            "description": "Private writer notes attached to this unit (not prose; visible in the Outline view)."
           }
         },
         "required": [
@@ -445,6 +457,66 @@
             "description": "Project-relative directory to list (omit for the whole project)."
           }
         }
+      }
+    },
+    {
+      "id": "record_fact",
+      "name": "record_fact",
+      "displayName": "Record a story fact",
+      "description": "Record one durable canon fact in the typed story ledger as a subject–relation–object triple (e.g. subject \"Zara Voss\", relation \"eye color\", object \"grey\"). Use during drafting aftercare for facts future scenes must not contradict: physical traits, relationships, dates, injuries, deaths, secrets and who knows them, object locations. Duplicates are ignored. Keep each fact atomic — one triple per call.",
+      "handler": "record_fact",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "description": "Who/what the fact is about (character, place, object)."
+          },
+          "relation": {
+            "type": "string",
+            "description": "The property or relationship (e.g. \"eye color\", \"sister of\", \"died in\")."
+          },
+          "object": {
+            "type": "string",
+            "description": "The value (e.g. \"grey\", \"Odalys Finch\", \"chapter 12 storm\")."
+          },
+          "sourceUnitId": {
+            "type": "string",
+            "description": "Unit id where this fact is established (evidence trail)."
+          },
+          "note": {
+            "type": "string",
+            "description": "Optional clarification (e.g. \"secret — only Zara knows\")."
+          }
+        },
+        "required": [
+          "subject",
+          "relation",
+          "object"
+        ]
+      }
+    },
+    {
+      "id": "list_facts",
+      "name": "list_facts",
+      "displayName": "List story facts",
+      "description": "Query the typed story-fact ledger. Pass `about` to filter by any word in the subject, relation, or object (e.g. about=\"Zara\" returns every recorded fact touching Zara). Auditors: check new prose against these before approving continuity; drafters: check before asserting canon details.",
+      "handler": "list_facts",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "about": {
+            "type": "string",
+            "description": "Filter facts whose subject/relation/object contains this text (omit for all)."
+          }
+        },
+        "required": []
       }
     },
     {

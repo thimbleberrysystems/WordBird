@@ -294,7 +294,8 @@
       "binder": "书稿",
       "history": "历史",
       "continuity": "连贯性",
-      "agents": "智能体"
+      "agents": "智能体",
+      "entities": "实体"
     }
   },
   "commandPalette": {
@@ -1483,7 +1484,8 @@
     "actionFailed": "该更改未能保存：{error}",
     "compileMd": "编译为 Markdown",
     "compileEpub": "编译为 EPUB（电子书）",
-    "compileDocx": "编译为 Word（.docx）"
+    "compileDocx": "编译为 Word（.docx）",
+    "historyTip": "每日写作字数（最近14天）——当前连续天数：{streak}"
   },
   "history": {
     "title": "历史",
@@ -1511,7 +1513,15 @@
     "timeline": "时间线",
     "narrativeOrder": "叙事顺序",
     "chronologicalOrder": "故事时间",
-    "whenPlaceholder": "何时？"
+    "whenPlaceholder": "何时？",
+    "colThread": "线索",
+    "colLabel": "标签",
+    "colNotes": "备注",
+    "noNotes": "暂无备注",
+    "allThreads": "全部线索",
+    "threadFilterTip": "只显示一条支线",
+    "allLabels": "全部标签",
+    "labelFilterTip": "按标签筛选卡片"
   },
   "continuity": {
     "title": "连贯性",
@@ -1632,5 +1642,12 @@
     "save": "保存",
     "saveTip": "保存 (Ctrl+S) — 每次保存都会成为历史中的快照",
     "saved": "所有更改已保存"
+  },
+  "entities": {
+    "title": "实体",
+    "notInProse": "尚未出现在正文",
+    "aliases": "别名",
+    "openPage": "打开圣典页面",
+    "empty": "还没有实体——创建圣典页面（人物、地点）后，它们会连同出现的场景一起显示在这里。"
   }
 }

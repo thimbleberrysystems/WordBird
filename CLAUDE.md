@@ -335,9 +335,20 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
 - `main/services/novel/EntityIndex.ts` — deterministic entity index (no
   LLM): bible pages (name + aliases) × prose units → appearance counts,
   persisted at `.wordbird/index/entities.json`, rebuilt lazily on an
-  mtime/size signature. Feeds WHO'S WHERE and the `where_appears` tool.
+  mtime/size signature. Feeds WHO'S WHERE, the `where_appears` tool, AND
+  the writer-facing Entities sidebar view (`mt::novel:entity-index`).
   The supervisor prompt carries a CONTEXT PREP hard rule: no propose_* on
   existing prose without in-turn read/search evidence.
+- `main/services/novel/FactService.ts` — the typed story-fact ledger
+  (`.wordbird/continuity/facts.json`): atomic subject–relation–object
+  triples with a source unit. `record_fact` (drafters/auditors/supervisor,
+  aftercare records durable canon) + `list_facts` (all readers; brief
+  announces the count). Auditors check new prose against it; book runs end
+  every drafting segment with a mandatory auditor CRITIC PASS before the
+  CONTINUE marker. Unit metadata now also carries `thread` (subplot lanes
+  in the Timeline + corkboard filters), `label` (binder keyword), and
+  `notes` (document notes in the Outline) — all agent-readable/writable
+  via list_structure/update_unit_meta.
 - `main/services/ai/FileCheckpointSaver.ts` — file-backed LangGraph
   checkpointer under `.wordbird/agent-state/` (excluded from snapshots);
   prunes to the newest 20 checkpoints per thread so novel-length threads

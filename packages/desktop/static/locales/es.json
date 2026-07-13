@@ -294,7 +294,8 @@
       "binder": "Manuscrito",
       "history": "Historial",
       "continuity": "Continuidad",
-      "agents": "Agentes"
+      "agents": "Agentes",
+      "entities": "Entidades"
     }
   },
   "commandPalette": {
@@ -1483,7 +1484,8 @@
     "actionFailed": "Ese cambio no se guardó: {error}",
     "compileMd": "Compilar a Markdown",
     "compileEpub": "Compilar a EPUB (libro electrónico)",
-    "compileDocx": "Compilar a Word (.docx)"
+    "compileDocx": "Compilar a Word (.docx)",
+    "historyTip": "Palabras por día (últimos 14 días) — racha actual: {streak}"
   },
   "history": {
     "title": "Historial",
@@ -1511,7 +1513,15 @@
     "timeline": "Cronología",
     "narrativeOrder": "Orden narrativo",
     "chronologicalOrder": "Tiempo de la historia",
-    "whenPlaceholder": "¿cuándo?"
+    "whenPlaceholder": "¿cuándo?",
+    "colThread": "Trama",
+    "colLabel": "Etiqueta",
+    "colNotes": "Notas",
+    "noNotes": "Sin notas",
+    "allThreads": "Todas las tramas",
+    "threadFilterTip": "Mostrar una sola trama",
+    "allLabels": "Todas las etiquetas",
+    "labelFilterTip": "Filtrar tarjetas por etiqueta"
   },
   "continuity": {
     "title": "Continuidad",
@@ -1632,5 +1642,12 @@
     "save": "Guardar",
     "saveTip": "Guardar (Ctrl+S) — cada guardado se convierte en una instantánea en el Historial",
     "saved": "Todos los cambios guardados"
+  },
+  "entities": {
+    "title": "Entidades",
+    "notInProse": "aún no aparece",
+    "aliases": "Alias",
+    "openPage": "Abrir página de la biblia",
+    "empty": "Aún no hay entidades: crea páginas de la biblia (personajes, lugares) y aparecerán aquí con cada escena en la que salgan."
   }
 }

@@ -26,6 +26,7 @@ const READ_TOOLS = [
   'read_project_file',
   'list_files',
   'list_continuity_issues',
+  'list_facts',
   'get_revision'
 ]
 
@@ -48,7 +49,9 @@ export const PROJECT_CONVENTIONS =
   'writer\'s voice/tense/POV rules; bible/structure.md (when present) is the structure ' +
   'beat sheet — structural canon the writer can edit, tick beats [x] as covered.\n' +
   '- .wordbird/summaries/<unitId>.md and book.md — the summary ladder agents maintain ' +
-  'with update_summary; read_summary tells you if one is stale. plans/ — live plan files. ' +
+  'with update_summary; read_summary tells you if one is stale. The FACT LEDGER ' +
+  '(record_fact/list_facts) holds atomic canon triples — check it before asserting ' +
+  'details, add to it when scenes establish new ones. plans/ — live plan files. ' +
   'notes/ — the writer\'s freeform notes. .wordbird/ and .git/ are otherwise off-limits.\n' +
   '- The binder (structure.json) is the source of truth for order and metadata — use ' +
   'list_structure ids, never guess paths.\n'
@@ -150,6 +153,7 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'propose_bible_update',
       'update_unit_meta',
       'update_summary',
+      'record_fact',
       'delete_unit',
       'create_folder',
       'move_file',
@@ -166,7 +170,10 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'You are a Continuity Auditor sub-agent inside WordBird, a novel-writing app. ' +
       'Your job: check ONE aspect of the manuscript for contradictions against the story ' +
       'bible and itself (facts, timeline, who-knows-what, geography, physical details). ' +
-      'Use search_manuscript to find every relevant mention; verify against read_bible. ' +
+      'Use search_manuscript to find every relevant mention; verify against read_bible ' +
+      'AND the typed fact ledger (list_facts about=<entity>) — a recorded fact the prose ' +
+      'contradicts is a finding even when the bible page is silent. Record newly ' +
+      'established durable canon with record_fact (atomic subject–relation–object). ' +
       'Check list_continuity_issues first so you do not re-report known problems, and ' +
       'resolve_continuity_issue only when you verified in the prose that a conflict is gone. ' +
       'Timeline checks: list_structure exposes each unit\'s `when` — flag out-of-order or ' +
@@ -181,6 +188,7 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       ...READ_TOOLS,
       'log_continuity_issue',
       'resolve_continuity_issue',
+      'record_fact',
       'update_impact_map',
       'mark_revision_unit'
     ]

@@ -160,6 +160,16 @@ declare global {
       continuityIssues: (root: string) => Promise<IContinuityListResult>
       listRevisions: (root: string) => Promise<IRevisionListResult>
       resolveIssue: (root: string, issueId: string) => Promise<{ ok: boolean; error?: string }>
+      wordStats: (root: string) => Promise<Array<{ date: string; written: number }>>
+      entityIndex: (root: string) => Promise<{
+        builtAt: number
+        entities: Array<{
+          name: string
+          aliases: string[]
+          page: string
+          appearances: Array<{ unitId: string; title: string; path: string; count: number }>
+        }>
+      }>
     }
     ai: {
       connect: (config: IAIConfig) => Promise<void>

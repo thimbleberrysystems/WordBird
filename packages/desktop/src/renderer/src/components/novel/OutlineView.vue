@@ -15,11 +15,20 @@
           <th class="col-status">
             {{ t('views.colStatus') }}
           </th>
+          <th class="col-thread">
+            {{ t('views.colThread') }}
+          </th>
+          <th class="col-label">
+            {{ t('views.colLabel') }}
+          </th>
           <th class="col-words">
             {{ t('views.colWords') }}
           </th>
           <th class="col-synopsis">
             {{ t('views.colSynopsis') }}
+          </th>
+          <th class="col-notes">
+            {{ t('views.colNotes') }}
           </th>
         </tr>
       </thead>
@@ -32,7 +41,7 @@
             v-if="row.isHeader"
             class="group-row"
           >
-            <td colspan="6">
+            <td colspan="9">
               {{ row.label }}
             </td>
           </tr>
@@ -81,6 +90,20 @@
                 </option>
               </select>
             </td>
+            <td class="col-thread">
+              <input
+                class="cell-input"
+                :value="row.unit.thread ?? ''"
+                @change="save(row.unit, 'thread', $event)"
+              >
+            </td>
+            <td class="col-label">
+              <input
+                class="cell-input"
+                :value="row.unit.label ?? ''"
+                @change="save(row.unit, 'label', $event)"
+              >
+            </td>
             <td class="col-words">
               {{ row.unit.wordCount ?? 0 }}
             </td>
@@ -90,6 +113,14 @@
                 :value="row.unit.synopsis ?? ''"
                 :placeholder="t('views.noSynopsis')"
                 @change="save(row.unit, 'synopsis', $event)"
+              >
+            </td>
+            <td class="col-notes">
+              <input
+                class="cell-input"
+                :value="row.unit.notes ?? ''"
+                :placeholder="t('views.noNotes')"
+                @change="save(row.unit, 'notes', $event)"
               >
             </td>
           </tr>
@@ -217,6 +248,15 @@ const save = (unit: INovelUnit, field: keyof INovelUnitUpdate, event: Event): vo
 .col-pov,
 .col-location {
   width: 110px;
+}
+
+.col-thread,
+.col-label {
+  width: 100px;
+}
+
+.col-notes {
+  min-width: 160px;
 }
 
 .col-status {

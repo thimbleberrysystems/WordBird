@@ -62,6 +62,7 @@
       <toc v-else-if="rightColumn === 'toc'" />
       <history v-else-if="rightColumn === 'history'" />
       <continuity v-else-if="rightColumn === 'continuity'" />
+      <entities-view v-else-if="rightColumn === 'entities'" />
       <agents-view v-else-if="rightColumn === 'agents'" />
     </div>
     <div
@@ -87,6 +88,7 @@ import Toc from './toc.vue'
 import History from './history.vue'
 import Continuity from './continuity.vue'
 import AgentsView from './agents.vue'
+import EntitiesView from './entities.vue'
 import { useAgentsStore } from '@/store/agents'
 import { DArrowLeft } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'

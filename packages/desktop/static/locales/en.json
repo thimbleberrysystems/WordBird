@@ -294,7 +294,8 @@
       "binder": "Manuscript",
       "history": "History",
       "continuity": "Continuity",
-      "agents": "Agents"
+      "agents": "Agents",
+      "entities": "Entities"
     }
   },
   "commandPalette": {
@@ -1484,7 +1485,8 @@
     "actionFailed": "That change didn't save: {error}",
     "compileMd": "Compile to Markdown",
     "compileEpub": "Compile to EPUB (e-book)",
-    "compileDocx": "Compile to Word (.docx)"
+    "compileDocx": "Compile to Word (.docx)",
+    "historyTip": "Words written per day (last 14 days) — current streak: {streak}"
   },
   "history": {
     "title": "History",
@@ -1512,7 +1514,15 @@
     "timeline": "Timeline",
     "narrativeOrder": "Narrative order",
     "chronologicalOrder": "Story time",
-    "whenPlaceholder": "when?"
+    "whenPlaceholder": "when?",
+    "colThread": "Thread",
+    "colLabel": "Label",
+    "colNotes": "Notes",
+    "noNotes": "No notes",
+    "allThreads": "All threads",
+    "threadFilterTip": "Show one subplot/thread lane",
+    "allLabels": "All labels",
+    "labelFilterTip": "Filter cards by label"
   },
   "continuity": {
     "title": "Continuity",
@@ -1633,5 +1643,12 @@
     "save": "Save",
     "saveTip": "Save (Ctrl+S) — every save becomes a snapshot in History",
     "saved": "All changes saved"
+  },
+  "entities": {
+    "title": "Entities",
+    "notInProse": "not in prose yet",
+    "aliases": "Aliases",
+    "openPage": "Open bible page",
+    "empty": "No entities yet — create bible pages (characters, places) and they appear here with every scene they touch."
   }
 }

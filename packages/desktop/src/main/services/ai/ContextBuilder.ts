@@ -59,6 +59,7 @@ export const renderOutline = (units: INovelUnit[], maxLines = MAX_OUTLINE_LINES)
       if (unit.pov) meta.push(`POV: ${unit.pov}`)
       if (unit.when) meta.push(`@${unit.when}`)
       if (unit.location) meta.push(`loc: ${unit.location}`)
+      if (unit.thread) meta.push(`thread: ${unit.thread}`)
       const suffix = meta.length ? ` (${meta.join(', ')})` : ''
       lines.push(`${indent}- [${unit.type}] ${unit.title}${suffix} <id:${unit.id}>`)
       if (unit.children) walk(unit.children, depth + 1)
@@ -148,12 +149,22 @@ export class ContextBuilder {
       const biblePages = countFiles(path.join(projectRoot, 'bible'), '.md')
       const summaries = countFiles(path.join(projectRoot, '.wordbird', 'summaries'), '.md')
       const plans = countFiles(path.join(projectRoot, 'plans'), '.md')
+      let factCount = 0
+      try {
+        const { factService } = await import('../novel/FactService')
+        factCount = await factService.count(projectRoot)
+      } catch {
+        // Ledger unreadable — treat as empty.
+      }
 
       const sections: string[] = []
       sections.push(
         'PROJECT BRIEF (auto-generated — the novel as it stands right now):\n' +
         `Layout: ${structure.flavor} · ${leaves.length} prose unit${leaves.length === 1 ? '' : 's'} · ${words(totalWords)} words total · ` +
-        `${biblePages} bible page${biblePages === 1 ? '' : 's'} · ${summaries} summar${summaries === 1 ? 'y' : 'ies'} · ${plans} plan${plans === 1 ? '' : 's'}`
+        `${biblePages} bible page${biblePages === 1 ? '' : 's'} · ${summaries} summar${summaries === 1 ? 'y' : 'ies'} · ${plans} plan${plans === 1 ? '' : 's'}` +
+        (factCount > 0
+          ? ` · ${factCount} recorded fact${factCount === 1 ? '' : 's'} (list_facts)`
+          : '')
       )
 
       // The writer's METHOD drives which playbook applies.

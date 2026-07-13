@@ -294,7 +294,8 @@
       "binder": "원고",
       "history": "기록",
       "continuity": "연속성",
-      "agents": "에이전트"
+      "agents": "에이전트",
+      "entities": "엔티티"
     }
   },
   "commandPalette": {
@@ -1483,7 +1484,8 @@
     "actionFailed": "변경 사항이 저장되지 않았습니다: {error}",
     "compileMd": "Markdown으로 컴파일",
     "compileEpub": "EPUB으로 컴파일 (전자책)",
-    "compileDocx": "Word로 컴파일 (.docx)"
+    "compileDocx": "Word로 컴파일 (.docx)",
+    "historyTip": "일별 집필 단어 수(최근 14일) — 현재 연속 기록: {streak}"
   },
   "history": {
     "title": "기록",
@@ -1511,7 +1513,15 @@
     "timeline": "타임라인",
     "narrativeOrder": "서사 순서",
     "chronologicalOrder": "이야기 시간",
-    "whenPlaceholder": "언제?"
+    "whenPlaceholder": "언제?",
+    "colThread": "스레드",
+    "colLabel": "라벨",
+    "colNotes": "메모",
+    "noNotes": "메모 없음",
+    "allThreads": "모든 스레드",
+    "threadFilterTip": "하나의 서브플롯만 표시",
+    "allLabels": "모든 라벨",
+    "labelFilterTip": "라벨로 카드 필터링"
   },
   "continuity": {
     "title": "연속성",
@@ -1632,5 +1642,12 @@
     "save": "저장",
     "saveTip": "저장 (Ctrl+S) — 저장할 때마다 히스토리의 스냅샷이 됩니다",
     "saved": "모든 변경 사항 저장됨"
+  },
+  "entities": {
+    "title": "엔티티",
+    "notInProse": "아직 본문에 없음",
+    "aliases": "별칭",
+    "openPage": "바이블 페이지 열기",
+    "empty": "아직 엔티티가 없습니다. 바이블 페이지(인물, 장소)를 만들면 등장하는 장면과 함께 여기에 표시됩니다."
   }
 }

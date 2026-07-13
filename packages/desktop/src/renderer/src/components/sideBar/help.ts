@@ -6,6 +6,7 @@ import {
   Memo as TocIcon,
   Clock as HistoryIcon,
   Warning as ContinuityIcon,
+  User as EntitiesIcon,
   Setting as SettingIcon
 } from '@element-plus/icons-vue'
 import { t } from '@/i18n'
@@ -46,6 +47,11 @@ export const sideBarIcons: SideBarIconEntry[] = [
     id: 'agents',
     name: () => t('sideBar.icons.agents'),
     icon: AgentsIcon
+  },
+  {
+    id: 'entities',
+    name: () => t('sideBar.icons.entities'),
+    icon: EntitiesIcon
   },
   {
     id: 'continuity',

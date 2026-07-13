@@ -1,5 +1,45 @@
 <template>
   <div class="corkboard">
+    <!-- Thread/label filter chips (plot-grid style: view one subplot). -->
+    <div
+      v-if="threads.length > 0 || labels.length > 0"
+      class="cork-filters"
+    >
+      <select
+        v-if="threads.length > 0"
+        v-model="activeThread"
+        class="filter-select"
+        :title="t('views.threadFilterTip')"
+      >
+        <option value="">
+          {{ t('views.allThreads') }}
+        </option>
+        <option
+          v-for="thread in threads"
+          :key="thread"
+          :value="thread"
+        >
+          {{ thread }}
+        </option>
+      </select>
+      <select
+        v-if="labels.length > 0"
+        v-model="activeLabel"
+        class="filter-select"
+        :title="t('views.labelFilterTip')"
+      >
+        <option value="">
+          {{ t('views.allLabels') }}
+        </option>
+        <option
+          v-for="label in labels"
+          :key="label"
+          :value="label"
+        >
+          {{ label }}
+        </option>
+      </select>
+    </div>
     <div
       v-for="section in sections"
       :key="section.id"
@@ -82,6 +122,34 @@ interface CorkSection {
   scenes: INovelUnit[]
 }
 
+// Thread/label filters (empty = show all). Filtered cards keep their
+// section so drag-reorder targets stay meaningful.
+const activeThread = ref('')
+const activeLabel = ref('')
+
+const allScenes = computed<INovelUnit[]>(() => {
+  const out: INovelUnit[] = []
+  const walk = (units: INovelUnit[]): void => {
+    for (const unit of units) {
+      if (unit.path) out.push(unit)
+      else if (unit.children) walk(unit.children)
+    }
+  }
+  walk(structure.value?.units ?? [])
+  return out
+})
+
+const threads = computed<string[]>(() =>
+  [...new Set(allScenes.value.map((s) => s.thread).filter((v): v is string => !!v))].sort()
+)
+const labels = computed<string[]>(() =>
+  [...new Set(allScenes.value.map((s) => s.label).filter((v): v is string => !!v))].sort()
+)
+
+const matchesFilters = (scene: INovelUnit): boolean =>
+  (!activeThread.value || scene.thread === activeThread.value) &&
+  (!activeLabel.value || scene.label === activeLabel.value)
+
 // Flatten the structure into sections of scene cards: each container
 // chapter becomes a section; loose top-level scenes (scene-pool / flat)
 // pool into one section.
@@ -95,7 +163,7 @@ const sections = computed<CorkSection[]>(() => {
         if (unit.type === 'part') {
           walk(unit.children ?? [], [...trail, unit.title])
         } else {
-          const scenes = (unit.children ?? []).filter((c) => c.path)
+          const scenes = (unit.children ?? []).filter((c) => c.path && matchesFilters(c))
           result.push({
             id: unit.id,
             title: [...trail, unit.title].join(' · '),
@@ -105,7 +173,7 @@ const sections = computed<CorkSection[]>(() => {
           // Nested containers under a chapter are rare; recurse for safety.
           walk((unit.children ?? []).filter((c) => !c.path), [...trail, unit.title])
         }
-      } else if (unit.path) {
+      } else if (unit.path && matchesFilters(unit)) {
         loose.push(unit)
       }
     }
@@ -115,7 +183,9 @@ const sections = computed<CorkSection[]>(() => {
   if (loose.length > 0) {
     result.push({ id: '__loose__', title: t('views.scenes'), parentId: null, scenes: loose })
   }
-  return result
+  // While filtering, hide sections that have no matching cards.
+  const filtering = !!(activeThread.value || activeLabel.value)
+  return filtering ? result.filter((section) => section.scenes.length > 0) : result
 })
 
 onMounted(() => {
@@ -160,6 +230,29 @@ const saveSynopsis = (scene: INovelUnit, event: Event): void => {
   overflow-y: auto;
   padding: 40px 32px 32px;
   background: var(--editorBgColor);
+}
+
+.cork-filters {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.filter-select {
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--itemBgColor);
+  background: transparent;
+  color: var(--iconColor);
+  cursor: pointer;
+  outline: none;
+  &:hover {
+    color: var(--themeColor);
+    border-color: var(--themeColor);
+  }
 }
 
 .cork-section {

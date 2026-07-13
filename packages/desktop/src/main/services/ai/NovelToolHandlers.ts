@@ -134,6 +134,9 @@ interface UnitSummaryNode {
   pov?: string
   location?: string
   when?: string
+  thread?: string
+  label?: string
+  notes?: string
   synopsis?: string
   wordCount?: number
   children?: UnitSummaryNode[]
@@ -151,6 +154,9 @@ const toSummaryNode = (unit: INovelUnit): UnitSummaryNode => ({
   // them again (the timeline was invisible to the AI).
   location: unit.location,
   when: unit.when,
+  thread: unit.thread,
+  label: unit.label,
+  notes: unit.notes,
   // On a 1000-scene novel, full synopses would dominate the context.
   synopsis: unit.synopsis && unit.synopsis.length > MAX_SYNOPSIS_CHARS
     ? unit.synopsis.slice(0, MAX_SYNOPSIS_CHARS) + '…'
@@ -486,16 +492,66 @@ const updateUnitMeta = async(
   const root = requireRoot(context)
   const unitId = str(args, 'unitId')
   const update: Record<string, string> = {}
-  for (const key of ['title', 'status', 'pov', 'location', 'synopsis', 'when'] as const) {
+  const FIELDS = [
+    'title', 'status', 'pov', 'location', 'synopsis', 'when', 'thread', 'label', 'notes'
+  ] as const
+  for (const key of FIELDS) {
     const value = optStr(args, key)
     if (value !== undefined) update[key] = value
   }
   if (Object.keys(update).length === 0) {
-    throw new Error('Provide at least one of title/status/pov/location/synopsis/when.')
+    throw new Error(`Provide at least one of ${FIELDS.join('/')}.`)
   }
   const structure = await structureService.loadReconciled(root)
   await structureService.updateUnit(root, structure, unitId, update)
   return { updated: true, unitId, ...update }
+}
+
+// ---- story fact ledger (typed world state, v1) ----
+
+const recordFact = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const { factService } = await import('../novel/FactService')
+  const subject = str(args, 'subject')
+  const relation = str(args, 'relation')
+  const object = str(args, 'object')
+  const { fact, duplicate } = await factService.record(root, {
+    subject,
+    relation,
+    object,
+    sourceUnitId: optStr(args, 'sourceUnitId'),
+    note: optStr(args, 'note')
+  })
+  return {
+    recorded: !duplicate,
+    duplicate,
+    fact,
+    note: duplicate
+      ? 'An identical fact already exists — nothing added.'
+      : 'Fact recorded in the story ledger.'
+  }
+}
+
+const listFacts = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const { factService } = await import('../novel/FactService')
+  const about = optStr(args, 'about')
+  const facts = await factService.list(root, about)
+  return {
+    about: about ?? null,
+    count: facts.length,
+    facts: facts.slice(0, 200),
+    note:
+      facts.length === 0
+        ? 'No recorded facts match. The ledger grows as drafting aftercare records canon.'
+        : undefined
+  }
 }
 
 // ---- story bible tools ----
@@ -1243,6 +1299,8 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('update_summary', updateSummary)
   service.registerHandler('read_summary', readSummary)
   service.registerHandler('log_continuity_issue', logContinuityIssue)
+  service.registerHandler('record_fact', recordFact)
+  service.registerHandler('list_facts', listFacts)
   service.registerHandler('list_continuity_issues', listContinuityIssues)
   service.registerHandler('resolve_continuity_issue', resolveContinuityIssue)
   service.registerHandler('list_files', listFiles)

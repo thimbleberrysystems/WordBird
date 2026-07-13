@@ -15,6 +15,20 @@
         @click="editTarget"
       >{{ totalLabel }}</span>
     </div>
+    <!-- 14-day writing history (hover a bar for the day's words). -->
+    <div
+      v-if="history.some((d) => d.written > 0)"
+      class="binder-history"
+      :title="t('binder.historyTip', { streak: String(streak) })"
+    >
+      <div
+        v-for="day in history"
+        :key="day.date"
+        class="history-bar"
+        :style="{ height: `${historyBarHeight(day.written)}px` }"
+        :title="`${day.date}: ${day.written}`"
+      />
+    </div>
     <!-- Scrivener-style manuscript target: thin progress bar under the header -->
     <div
       v-if="wordTarget > 0"
@@ -189,6 +203,37 @@ const editTarget = async (): Promise<void> => {
   }
 }
 
+// ---- 14-day writing history (from main's .wordbird/stats.json) ----
+const history = ref<Array<{ date: string; written: number }>>([])
+
+const loadHistory = async (): Promise<void> => {
+  const root = projectStore.currentProjectPath
+  if (!root) {
+    history.value = []
+    return
+  }
+  try {
+    history.value = (await window.electron.novel.wordStats(root)).slice(-14)
+  } catch {
+    history.value = []
+  }
+}
+
+const historyBarHeight = (written: number): number => {
+  const max = Math.max(...history.value.map((d) => d.written), 1)
+  return written > 0 ? Math.max(2, Math.round((written / max) * 18)) : 1
+}
+
+/** Consecutive days (ending today) with words written. */
+const streak = computed(() => {
+  let count = 0
+  for (let i = history.value.length - 1; i >= 0; i--) {
+    if (history.value[i].written > 0) count += 1
+    else break
+  }
+  return count
+})
+
 // Which top-level "add" buttons make sense per flavor.
 const showAddPart = computed(() => flavor.value === 'chapters-scenes')
 const showAddChapter = computed(
@@ -199,6 +244,7 @@ const showAddScene = computed(() => flavor.value === 'scene-pool')
 onMounted(() => {
   novelStore.refresh()
   loadTarget()
+  loadHistory()
 })
 
 watch(
@@ -206,8 +252,11 @@ watch(
   () => {
     novelStore.refresh()
     loadTarget()
+    loadHistory()
   }
 )
+// The history bars move with today's writing.
+watch(totalWordCount, () => loadHistory())
 
 // Word counts move as the writer saves — refresh whenever the binder
 // becomes the visible sidebar view.
@@ -369,6 +418,22 @@ const handleCompile = async (format: 'md' | 'epub' | 'docx' = 'md'): Promise<voi
 
 .binder-today.negative {
   color: var(--wbWarningColor);
+}
+
+.binder-history {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 20px;
+  padding: 0 12px 4px;
+}
+
+.history-bar {
+  flex: 1;
+  min-width: 3px;
+  border-radius: 1px;
+  background: var(--themeColor, var(--wbInfoColor));
+  opacity: 0.55;
 }
 
 .binder-target-bar {
