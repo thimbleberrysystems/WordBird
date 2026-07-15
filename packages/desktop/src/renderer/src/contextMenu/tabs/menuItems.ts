@@ -27,6 +27,22 @@ export const getCloseOthers = () => ({
   }
 })
 
+export const getCloseToRight = () => ({
+  label: t('contextMenu.tabs.closeToRight'),
+  id: 'closeTabsToRight',
+  click(menuItem: TabMenuItem, _browserWindow?: unknown) {
+    contextMenu.closeToRight(menuItem._tabId)
+  }
+})
+
+export const getCloseToLeft = () => ({
+  label: t('contextMenu.tabs.closeToLeft'),
+  id: 'closeTabsToLeft',
+  click(menuItem: TabMenuItem, _browserWindow?: unknown) {
+    contextMenu.closeToLeft(menuItem._tabId)
+  }
+})
+
 export const getCloseSaved = () => ({
   label: t('contextMenu.tabs.closeSavedTabs'),
   id: 'closeSavedTabs',

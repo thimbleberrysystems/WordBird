@@ -2,6 +2,8 @@ import {
   SEPARATOR,
   getCloseThis,
   getCloseOthers,
+  getCloseToRight,
+  getCloseToLeft,
   getCloseSaved,
   getCloseAll,
   getRENAME,
@@ -9,6 +11,7 @@ import {
   getShowInFolder
 } from './menuItems'
 import { popupContextMenu } from '../popupMenu'
+import { useEditorStore } from '../../store/editor'
 
 type MenuItemShape = {
   type?: string
@@ -40,6 +43,8 @@ export const showContextMenu = (event: ContextMenuClickEvent, tab: TabLike): voi
   const { pathname } = tab
   const closeThis = getCloseThis()
   const closeOthers = getCloseOthers()
+  const closeToRight = getCloseToRight()
+  const closeToLeft = getCloseToLeft()
   const closeSaved = getCloseSaved()
   const closeAll = getCloseAll()
   const rename = getRENAME()
@@ -50,9 +55,18 @@ export const showContextMenu = (event: ContextMenuClickEvent, tab: TabLike): voi
     item.enabled = !!pathname
   })
 
+  // Grey out directional closes at the ends of the strip (browser behavior).
+  const tabs = useEditorStore().tabs
+  const index = tabs.findIndex((f) => f.id === tab.id)
+  ;(closeToRight as MenuItemShape).enabled = index !== -1 && index < tabs.length - 1
+  ;(closeToLeft as MenuItemShape).enabled = index > 0
+  ;(closeOthers as MenuItemShape).enabled = tabs.length > 1
+
   const items = [
     closeThis,
     closeOthers,
+    closeToRight,
+    closeToLeft,
     closeSaved,
     closeAll,
     SEPARATOR,

@@ -115,6 +115,20 @@ const closeOthers = (tabId: unknown) => {
   }
 }
 
+const closeToRight = (tabId: unknown) => {
+  const tab = tabs.value.find((f) => f.id === tabId)
+  if (tab) {
+    editorStore.CLOSE_TABS_TO_THE_RIGHT(tab)
+  }
+}
+
+const closeToLeft = (tabId: unknown) => {
+  const tab = tabs.value.find((f) => f.id === tabId)
+  if (tab) {
+    editorStore.CLOSE_TABS_TO_THE_LEFT(tab)
+  }
+}
+
 const closeSaved = () => {
   editorStore.CLOSE_SAVED_TABS()
 }
@@ -157,6 +171,8 @@ const handleContextMenu = (event: MouseEvent, tab: IFileState) => {
 onMounted(() => {
   bus.on('TABS::close-this', closeTab)
   bus.on('TABS::close-others', closeOthers)
+  bus.on('TABS::close-right', closeToRight)
+  bus.on('TABS::close-left', closeToLeft)
   bus.on('TABS::close-saved', closeSaved)
   bus.on('TABS::close-all', closeAll)
   bus.on('TABS::rename', rename)
@@ -222,6 +238,8 @@ onBeforeUnmount(() => {
   // Remove event listeners
   bus.off('TABS::close-this', closeTab)
   bus.off('TABS::close-others', closeOthers)
+  bus.off('TABS::close-right', closeToRight)
+  bus.off('TABS::close-left', closeToLeft)
   bus.off('TABS::close-saved', closeSaved)
   bus.off('TABS::close-all', closeAll)
   bus.off('TABS::rename', rename)

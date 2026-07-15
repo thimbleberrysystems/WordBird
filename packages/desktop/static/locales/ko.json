@@ -245,6 +245,8 @@
     "tabs": {
       "close": "닫기",
       "closeOthers": "다른 탭 닫기",
+      "closeToRight": "오른쪽 탭 닫기",
+      "closeToLeft": "왼쪽 탭 닫기",
       "closeSavedTabs": "저장된 탭 닫기",
       "closeAllTabs": "모든 탭 닫기",
       "rename": "이름 바꾸기",

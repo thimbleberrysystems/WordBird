@@ -245,6 +245,8 @@
     "tabs": {
       "close": "Fermer",
       "closeOthers": "Fermer les autres",
+      "closeToRight": "Fermer les onglets à droite",
+      "closeToLeft": "Fermer les onglets à gauche",
       "closeSavedTabs": "Fermer les onglets sauvegardés",
       "closeAllTabs": "Fermer tous les onglets",
       "rename": "Renommer",

@@ -1043,6 +1043,24 @@ export const useEditorStore = defineStore('editor', {
         })
     },
 
+    // Notepad++/browser-style partial closes. Snapshot with slice() first:
+    // CLOSE_TAB mutates this.tabs while we iterate.
+    CLOSE_TABS_TO_THE_RIGHT(file: IFileState): void {
+      const index = this.tabs.findIndex((f) => f.id === file.id)
+      if (index === -1) return
+      this.tabs.slice(index + 1).forEach((tab) => {
+        this.CLOSE_TAB(tab)
+      })
+    },
+
+    CLOSE_TABS_TO_THE_LEFT(file: IFileState): void {
+      const index = this.tabs.findIndex((f) => f.id === file.id)
+      if (index <= 0) return
+      this.tabs.slice(0, index).forEach((tab) => {
+        this.CLOSE_TAB(tab)
+      })
+    },
+
     CLOSE_SAVED_TABS(): void {
       this.tabs
         .filter((f) => f.isSaved)

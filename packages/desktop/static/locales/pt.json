@@ -245,6 +245,8 @@
     "tabs": {
       "close": "Fechar",
       "closeOthers": "Fechar outras",
+      "closeToRight": "Fechar abas à direita",
+      "closeToLeft": "Fechar abas à esquerda",
       "closeSavedTabs": "Fechar abas salvas",
       "closeAllTabs": "Fechar todas as abas",
       "rename": "Renomear",

@@ -245,6 +245,8 @@
     "tabs": {
       "close": "Schließen",
       "closeOthers": "Andere schließen",
+      "closeToRight": "Tabs rechts schließen",
+      "closeToLeft": "Tabs links schließen",
       "closeSavedTabs": "Gespeicherte Tabs schließen",
       "closeAllTabs": "Alle Tabs schließen",
       "rename": "Umbenennen",

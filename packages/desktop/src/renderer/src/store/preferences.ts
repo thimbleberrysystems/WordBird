@@ -223,7 +223,7 @@ export const usePreferencesStore = defineStore('preferences', {
     sideBarVisibility: false,
     tabBarVisibility: false,
     sourceCodeModeEnabled: false,
-    openedFilesInSidebar: true,
+    openedFilesInSidebar: false,
 
     searchExclusions: [],
     searchMaxFileSize: '',

@@ -245,6 +245,8 @@
     "tabs": {
       "close": "關閉",
       "closeOthers": "關閉其他",
+      "closeToRight": "關閉右側標籤頁",
+      "closeToLeft": "關閉左側標籤頁",
       "closeSavedTabs": "關閉已儲存的標籤頁",
       "closeAllTabs": "關閉所有標籤頁",
       "rename": "重新命名",

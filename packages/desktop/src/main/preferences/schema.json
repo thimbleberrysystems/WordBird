@@ -423,9 +423,9 @@
     "default": false
   },
   "openedFilesInSidebar": {
-    "description": "General--Whether to show opened files in the sidebar.",
+    "description": "General--Whether to show opened files in the sidebar (they are always available as editor tabs).",
     "type": "boolean",
-    "default": true
+    "default": false
   },
   "searchExclusions": {
     "description": "Searcher--List of glob patterns to exclude from search.--internal",

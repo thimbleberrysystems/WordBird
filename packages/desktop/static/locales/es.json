@@ -245,6 +245,8 @@
     "tabs": {
       "close": "Cerrar",
       "closeOthers": "Cerrar otros",
+      "closeToRight": "Cerrar pestañas a la derecha",
+      "closeToLeft": "Cerrar pestañas a la izquierda",
       "closeSavedTabs": "Cerrar pestañas guardadas",
       "closeAllTabs": "Cerrar todas las pestañas",
       "rename": "Renombrar",

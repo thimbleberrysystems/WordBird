@@ -8,6 +8,14 @@ export const closeOthers = (tabId: string): void => {
   bus.emit('TABS::close-others', tabId)
 }
 
+export const closeToRight = (tabId: string): void => {
+  bus.emit('TABS::close-right', tabId)
+}
+
+export const closeToLeft = (tabId: string): void => {
+  bus.emit('TABS::close-left', tabId)
+}
+
 export const closeSaved = (): void => {
   bus.emit('TABS::close-saved')
 }
