@@ -1,5 +1,16 @@
 appId: com.thimbleberrysystems.wordbird
 productName: WordBird
+# Explicit publish target. Without it (and with no `repository` in
+# package.json) electron-builder cannot resolve a publish config, and its
+# update-info generator crashes dereferencing a null channel
+# ("Cannot read properties of null (reading 'channel')"). The release
+# workflow still builds with `--publish never` — the softprops job uploads
+# the artifacts — but this lets the auto-updater metadata (latest*.yml)
+# generate correctly against GitHub Releases.
+publish:
+  provider: github
+  owner: thimbleberrysystems
+  repo: WordBird
 directories:
   buildResources: build
   output: ../../dist

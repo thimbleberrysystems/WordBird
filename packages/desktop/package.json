@@ -1,7 +1,11 @@
 {
   "name": "marktext",
   "version": "0.21.0",
-  "description": "WordBird — WYSIWYG markdown editor with Biscuit AI assistant",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thimbleberrysystems/WordBird.git"
+  },
+  "description": "WordBird \u2014 WYSIWYG markdown editor with Biscuit AI assistant",
   "main": "./out/main/index.js",
   "author": {
     "name": "Thimbleberrysystems",
