@@ -372,9 +372,7 @@ export const SUPERVISOR_TOOL_NAMES = [
   'diff_snapshot_file',
   'preview_snapshot',
   'lint_prose',
-  'start_revision',
   'get_revision',
-  'complete_revision',
   'save_plan',
   'update_plan',
   'list_plans',
@@ -388,6 +386,13 @@ export const SUPERVISOR_TOOL_NAMES = [
 // silently. Without these, models that fail to orchestrate a drafter
 // degrade to pasting prose into the chat and asking the writer to copy it.
 export const SUPERVISOR_WRITE_TOOL_NAMES = [
+  // Revision lifecycle writes .wordbird/revisions/ — an execution-mode
+  // capability, not an ask-mode one (plans/ stays ask's only writable
+  // surface). snapshot_project is here so the prompt's "take a snapshot
+  // before sweeping changes" is actually possible (it was unreachable).
+  'start_revision',
+  'complete_revision',
+  'snapshot_project',
   'propose_new_unit',
   'propose_new_file',
   'propose_project_file_edit',
@@ -604,7 +609,7 @@ export const buildSupervisorPrompt = (
   'search there before asking them to repeat themselves.\n' +
   '- Prefer summaries (read_summary) over full prose to orient; read full units only when the task ' +
   'demands the actual text. Have summaries refreshed (update_summary) after prose changes.\n' +
-  '- Before sweeping multi-file changes, have an agent take snapshot_project so the writer can rewind.\n' +
+  '- Before sweeping multi-file changes, take snapshot_project yourself so the writer can rewind.\n' +
   '- New canon discovered while working should be recorded via a drafter with propose_bible_update.\n' +
   '\nLIVE PLANS (any mode): for multi-step endeavors keep a plan file in plans/ — ' +
   'save_plan early, update_plan as the conversation refines it (the writer can edit the ' +

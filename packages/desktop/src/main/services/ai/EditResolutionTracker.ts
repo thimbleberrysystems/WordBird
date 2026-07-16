@@ -26,6 +26,9 @@ interface PendingEntry {
   payload: IAgentEditProposalPayload
   threadId: string | null
   at: number
+  /** Project root active when the proposal was recorded — the apply gate
+   * refuses to write a proposal into a DIFFERENT project. */
+  projectRoot?: string | null
 }
 
 export interface ResolvedEntry {
@@ -100,12 +103,26 @@ export class EditResolutionTracker {
     }
   }
 
-  recordProposal(payload: IAgentEditProposalPayload, threadId: string | null): void {
+  recordProposal(
+    payload: IAgentEditProposalPayload,
+    threadId: string | null,
+    projectRoot?: string | null
+  ): void {
     this._ensureLoaded()
     // Re-emitted proposal ids replace their earlier entry.
     this._pending = this._pending.filter((p) => p.payload.edit.id !== payload.edit.id)
-    this._pending.push({ payload, threadId, at: Date.now() })
+    this._pending.push({ payload, threadId, at: Date.now(), projectRoot: projectRoot ?? null })
     this._scheduleWrite()
+  }
+
+  /** The still-pending proposal behind an apply request, or null. */
+  getPending(
+    id: string
+  ): { payload: IAgentEditProposalPayload; projectRoot: string | null } | null {
+    this._ensureLoaded()
+    const entry = this._pending.find((p) => p.payload.edit.id === id)
+    if (!entry) return null
+    return { payload: entry.payload, projectRoot: entry.projectRoot ?? null }
   }
 
   resolve(resolution: IAgentEditResolution): void {

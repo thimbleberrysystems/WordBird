@@ -130,8 +130,7 @@ import { Close as CloseIcon } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import {
   applyAllPendingEdits,
-  planMultiFileApply,
-  editDiskPath
+  planMultiFileApply
 } from '@/services/agentMultiFileApply'
 
 const { t } = useI18n()
@@ -394,7 +393,7 @@ async function handleAgentApplyAll (): Promise<void> {
       applyContentToFile(edit.newContent)
       hideInlineDiff()
     },
-    writeToDisk: (pathname, content) => window.electron.ai.writeFile(pathname, content),
+    applyToDisk: (edit) => window.electron.ai.applyEdit(edit.id),
     markApplied: (id) => agentStore.updateEditStatus(id, 'applied')
   })
 
@@ -432,7 +431,7 @@ async function handleAgentApplyOne (editId: unknown): Promise<void> {
     applyContentToFile(edit.newContent)
     hideInlineDiff()
   } else {
-    const result = await window.electron.ai.writeFile(editDiskPath(edit), edit.newContent)
+    const result = await window.electron.ai.applyEdit(edit.id)
     if (!result.ok) {
       ElMessage.error(`Could not apply: ${result.error || 'write failed'}`)
       return

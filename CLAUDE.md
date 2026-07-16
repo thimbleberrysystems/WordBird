@@ -417,8 +417,20 @@ batch is one Rewind away). Writer questions with enumerable answers go
 through the ask_writer tool → selectable option card in chat. Structural/file operations
 are direct but auto-snapshot first. Every manual save also records a
 snapshot; history is bounded by the snapshotHistoryLimit preference
-(coalescing, 0 = unlimited). `.wordbird/` and `.git/` are untouchable by tools.
-Locked bible pages (`locked: true` front matter) are immutable to agents.
+(coalescing, 0 = unlimited). `.wordbird/` and `.git/` are untouchable by tools —
+enforced by `main/services/ai/pathGuards.ts` at BOTH layers: proposal
+creation (every file tool, generic ones included) and the apply gate.
+Closed-file applies go through `mt::ai:apply-edit(editId)`: main looks the
+PENDING proposal up (EditResolutionTracker, which records the proposal's
+project root), validates the target (real-path containment — symlinks
+can't escape — no internals, .md/.markdown/.txt only, never locked canon),
+and writes the proposal's own content; the renderer cannot supply a path
+or content. Locked bible pages (`locked: true` front matter) are immutable
+to agents on EVERY edit route (generic propose_* tools included) and at
+apply time. SDK subagent definitions never list DESTRUCTIVE_TOOLS (a
+listed tool is pre-approved inside the subagent, shadowing canUseTool) —
+deletions fall through to the writer-approval card in both providers.
+Contract locked by test/unit/specs/tool-safety.spec.ts.
 Plans live in `plans/` (writer-editable); `propose_plan` raises the approval
 card that switches modes and starts execution.
 

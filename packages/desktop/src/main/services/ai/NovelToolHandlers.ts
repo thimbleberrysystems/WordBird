@@ -28,6 +28,7 @@ import { updateProjectMeta, isPlanningStyle, isStructureTemplate } from '../nove
 import { STRUCTURE_TEMPLATES } from '../novel/structureTemplates'
 import { continuityService } from '../novel/ContinuityService'
 import { revisionService, RevisionService } from '../novel/RevisionService'
+import { isLockedCanon } from './pathGuards'
 import type { AgentToolContext, AgentToolService } from './AgentToolService'
 import type { INovelUnit, IContinuityIssue } from '../../../shared/types/novel'
 
@@ -655,16 +656,8 @@ const readBible = async(
   return { entries }
 }
 
-/**
- * A bible page is locked canon when its YAML front matter contains
- * `locked: true`. Locked pages are read-only for the agent — only the
- * writer may change them (directly in the editor).
- */
-export const isLockedCanon = (content: string): boolean => {
-  const fm = /^---\n([\s\S]*?)\n---/.exec(content)
-  if (!fm) return false
-  return /^\s*locked\s*:\s*true\s*$/m.test(fm[1])
-}
+// Locked-canon check lives in pathGuards (shared with the apply gate).
+export { isLockedCanon }
 
 const proposeBibleUpdate = async(
   args: Record<string, unknown>,

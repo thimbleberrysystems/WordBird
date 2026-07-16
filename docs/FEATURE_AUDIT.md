@@ -247,6 +247,15 @@ extensibility model). WordBird's tool packs are JSON-defined but handlers
 must be registered in code — by design. MCP is the eventual third-party
 extension story; heavy and unneeded today.
 
+**Added 2026-07-17 — tool-safety overhaul (audit F0–F8).** A holistic
+audit of the full enforcement chain found and closed: an unvalidated
+apply-layer write IPC (now apply-by-proposal-id with full validation),
+generic file tools bypassing .wordbird/.git and locked-canon rules,
+SDK subagents pre-approving destructive tools, symlink escape from
+lexical containment, an unreachable snapshot_project, ask-mode revision
+writes, and dishonest confirm metadata. pathGuards.ts is the shared law;
+tool-safety.spec.ts locks it.
+
 **Added 2026-07-13 — Claude subscription provider.** Writers with Claude
 Pro/Max connect without an API key: the `claude-code` provider embeds the
 Claude Agent SDK (the one ToS-compliant subscription path) and bridges

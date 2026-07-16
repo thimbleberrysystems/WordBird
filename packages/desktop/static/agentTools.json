@@ -176,7 +176,7 @@
       "handler": "propose_text_edit",
       "enabled": true,
       "scope": "project",
-      "confirm": "never",
+      "confirm": "renderer",
       "schema": {
         "type": "object",
         "properties": {
@@ -264,7 +264,7 @@
       "handler": "restructure_unit",
       "enabled": true,
       "scope": "project",
-      "confirm": "renderer",
+      "confirm": "never",
       "schema": {
         "type": "object",
         "properties": {
@@ -605,7 +605,7 @@
       "handler": "resolve_continuity_issue",
       "enabled": true,
       "scope": "project",
-      "confirm": "renderer",
+      "confirm": "never",
       "schema": {
         "type": "object",
         "properties": {
@@ -685,7 +685,7 @@
       "handler": "move_file",
       "enabled": true,
       "scope": "project",
-      "confirm": "renderer",
+      "confirm": "never",
       "schema": {
         "type": "object",
         "properties": {
@@ -717,7 +717,7 @@
       "handler": "delete_file",
       "enabled": true,
       "scope": "project",
-      "confirm": "renderer",
+      "confirm": "never",
       "schema": {
         "type": "object",
         "properties": {
@@ -744,7 +744,7 @@
       "handler": "delete_unit",
       "enabled": true,
       "scope": "project",
-      "confirm": "renderer",
+      "confirm": "never",
       "schema": {
         "type": "object",
         "properties": {
@@ -925,7 +925,7 @@
       "handler": "propose_plan",
       "enabled": true,
       "scope": "project",
-      "confirm": "never",
+      "confirm": "renderer",
       "schema": {
         "type": "object",
         "properties": {
@@ -947,7 +947,7 @@
       "handler": "start_revision",
       "enabled": true,
       "scope": "project",
-      "confirm": "renderer",
+      "confirm": "never",
       "schema": {
         "type": "object",
         "properties": {
@@ -1094,7 +1094,7 @@
       "handler": "complete_revision",
       "enabled": true,
       "scope": "project",
-      "confirm": "renderer",
+      "confirm": "never",
       "schema": {
         "type": "object",
         "properties": {
@@ -1348,7 +1348,7 @@
       "handler": "ask_writer",
       "enabled": true,
       "scope": "project",
-      "confirm": "never",
+      "confirm": "renderer",
       "schema": {
         "type": "object",
         "properties": {

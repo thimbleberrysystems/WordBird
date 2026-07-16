@@ -3,6 +3,7 @@ import fsPromises from 'fs/promises'
 import path from 'path'
 import { registerNovelAgentToolHandlers } from './NovelToolHandlers'
 import { registerWebAgentToolHandlers } from './WebToolHandlers'
+import { assertNotInternalPath, assertNotLockedCanon, assertRealInside } from './pathGuards'
 import type { AgentToolContext } from './AgentToolService'
 import type { AgentToolService } from './AgentToolService'
 
@@ -64,6 +65,10 @@ const resolveProjectFile = (fname: string, context: AgentToolContext): ProjectFi
   if (!isPathInsideDirectory(projectRoot, filePath)) {
     throw new Error('Agent tool file path is outside the active WordBird project.')
   }
+  // Same law as every novel tool: internals untouchable, containment
+  // judged on REAL paths so symlinks cannot escape the project.
+  assertNotInternalPath(projectRoot, filePath)
+  assertRealInside(projectRoot, filePath)
 
   return {
     projectRoot,
@@ -147,7 +152,7 @@ const readAgentFile = async(
   const fname = getStringArg(args, 'fname')
   const start = getOptionalIntegerArg(args, 'start')
   const end = getOptionalIntegerArg(args, 'end')
-  const { projectRoot, filePath, relativePath } = resolveProjectFile(fname, context)
+  const { filePath, relativePath } = resolveProjectFile(fname, context)
   const content = await readTextFile(filePath)
   const range = normalizeLineRange(content, start, end)
 
@@ -166,8 +171,6 @@ const readAgentFile = async(
 
   return {
     path: relativePath,
-    projectRoot,
-    filePath,
     content: selected,
     start: range.start,
     end: range.end,
@@ -186,6 +189,7 @@ const proposeProjectFileEdit = async(
   const end = getOptionalIntegerArg(args, 'end')
   const reason = getOptionalStringArg(args, 'reason')
   const { filePath, relativePath } = resolveProjectFile(fname, context)
+  assertNotLockedCanon(filePath)
   const oldContent = await readTextFile(filePath)
 
   if (start !== undefined && end !== undefined && start > end) {
@@ -229,6 +233,7 @@ const proposeTextEdit = async(
     throw new Error('oldText and newText are identical — nothing to change.')
   }
   const { filePath, relativePath } = resolveProjectFile(fname, context)
+  assertNotLockedCanon(filePath)
   const oldContent = await readTextFile(filePath)
 
   // Count occurrences of the anchor.

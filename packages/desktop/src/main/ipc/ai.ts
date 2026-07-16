@@ -4,6 +4,8 @@ import { langGraphManager } from '../services/ai/LangGraphManager'
 import { openBiscuitWindow } from '../windows/biscuit'
 import { contextBuilder } from '../services/ai/ContextBuilder'
 import { writeMarkdownFileWithDefaults } from '../filesystem/markdown'
+import { validateAgentApply } from '../services/ai/pathGuards'
+import { getActiveAgentProjectRoot } from '../services/ai/AgentProjectRootResolver'
 import type {
   AIProvider,
   IAIConfig,
@@ -178,14 +180,27 @@ export const registerAIHandlers = (): void => {
     return langGraphManager.getPendingEdits()
   })
 
-  // Write an AI edit straight to disk — used by the global "Apply All" for
-  // files that are not open in the editor.
+  // Apply an AI edit to disk BY PROPOSAL ID — used for files that are not
+  // open in the editor (accept-one, Apply All, auto mode). The renderer
+  // cannot choose the path or the content: main looks the pending proposal
+  // up, validates the target (project containment on REAL paths, no
+  // .wordbird/.git, markdown/text only, never locked canon), and writes
+  // the proposal's own newContent. "Write anything" is not an IPC here.
   ipcMain.handle(
-    'mt::ai:write-file',
-    async(_e, pathname: string, content: string): Promise<{ ok: boolean; error?: string }> => {
+    'mt::ai:apply-edit',
+    async(_e, editId: string): Promise<{ ok: boolean; error?: string }> => {
       try {
-        if (!pathname) throw new Error('No file path provided')
-        await writeMarkdownFileWithDefaults(pathname, content)
+        if (!editId || typeof editId !== 'string') throw new Error('No edit id provided')
+        const pending = langGraphManager.getPendingEdit(editId)
+        if (!pending) {
+          throw new Error('Unknown or already-settled proposal — nothing to apply.')
+        }
+        const target = validateAgentApply({
+          originalPath: pending.payload.originalPath,
+          recordedRoot: pending.projectRoot,
+          activeRoot: getActiveAgentProjectRoot()
+        })
+        await writeMarkdownFileWithDefaults(target, pending.payload.edit.newContent)
         // An accepted edit landed on disk — refresh trees in every window.
         for (const win of BrowserWindow.getAllWindows()) {
           if (!win.isDestroyed()) {
@@ -194,8 +209,8 @@ export const registerAIHandlers = (): void => {
         }
         return { ok: true }
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Failed to write file'
-        log.error('[AI] write-file failed:', message)
+        const message = error instanceof Error ? error.message : 'Failed to apply edit'
+        log.error('[AI] apply-edit refused:', message)
         return { ok: false, error: message }
       }
     }

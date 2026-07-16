@@ -17,6 +17,7 @@ import { convertJsonSchemaToZod } from 'zod-from-json-schema'
 import type { AgentToolService } from '../AgentToolService'
 import type { AgentPermissionMode } from '@shared/types/langgraph'
 import {
+  DESTRUCTIVE_TOOLS,
   SUPERVISOR_TOOL_NAMES,
   SUPERVISOR_WRITE_TOOL_NAMES
 } from '../orchestrator/Orchestrator'
@@ -124,7 +125,13 @@ export const buildSdkAgents = (
   const agents: Record<string, { description: string; prompt: string; tools: string[] }> = {}
   for (const role of Object.values(AGENT_ROLES)) {
     if (mode === 'ask' && !READONLY_ROLES.includes(role.role)) continue
-    const toolNames = mode === 'ask' ? READONLY_WORKER_TOOLS : role.allowedTools
+    // Destructive tools NEVER ride a subagent definition: a listed tool is
+    // pre-approved inside that subagent (allowlist entries shadow
+    // canUseTool — the SDK's own warning), which would skip the writer's
+    // deletion approval card. Left unlisted, the call falls through to
+    // canUseTool and gets gated like everywhere else.
+    const baseTools = mode === 'ask' ? READONLY_WORKER_TOOLS : role.allowedTools
+    const toolNames = baseTools.filter((name) => !DESTRUCTIVE_TOOLS.includes(name))
     agents[role.role] = {
       description: `${role.displayName} — ${role.activityLabel.toLowerCase()}`,
       prompt: role.systemPrompt,

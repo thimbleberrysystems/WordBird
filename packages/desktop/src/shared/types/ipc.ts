@@ -137,7 +137,7 @@ export interface IpcInvokeChannels {
   'mt::ai:disconnect': { args: []; ret: void }
   'mt::ai:send-message': { args: [ILangGraphMessage[]]; ret: ILangGraphResponse }
   'mt::ai:execute-tool': { args: [IAgentToolCall]; ret: IAgentToolResult }
-  'mt::ai:write-file': { args: [string, string]; ret: { ok: boolean; error?: string } }
+  'mt::ai:apply-edit': { args: [editId: string]; ret: { ok: boolean; error?: string } }
   'mt::ai:get-pending-edits': { args: []; ret: IAgentEditProposalPayload[] }
   'mt::ai:abort': { args: []; ret: { success: boolean } }
   'mt::ai:reset-thread': { args: []; ret: { threadId: string } }

@@ -63,8 +63,8 @@ export function planMultiFileApply(
 export interface MultiFileApplyHandlers {
   /** Apply the open file's edit through the editor (in-memory + save). */
   applyCurrent: (edit: AgentEditReview) => void
-  /** Write an edit's new content straight to its file on disk. */
-  writeToDisk: (pathname: string, content: string) => Promise<{ ok: boolean; error?: string }>
+  /** Apply a closed file's edit on disk (main validates + writes by id). */
+  applyToDisk: (edit: AgentEditReview) => Promise<{ ok: boolean; error?: string }>
   /** Mark an edit resolved in the store. */
   markApplied: (id: string) => void
 }
@@ -98,7 +98,7 @@ export async function applyAllPendingEdits(
   for (const edit of diskEdits) {
     const path = editDiskPath(edit)
     try {
-      const res = await handlers.writeToDisk(path, edit.newContent)
+      const res = await handlers.applyToDisk(edit)
       if (res.ok) {
         handlers.markApplied(edit.id)
         applied += 1

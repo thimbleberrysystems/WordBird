@@ -71,7 +71,7 @@ describe('planMultiFileApply', () => {
 describe('applyAllPendingEdits', () => {
   it('applies the open file via editor and writes the others to disk', async() => {
     const applyCurrent = vi.fn()
-    const writeToDisk = vi.fn().mockResolvedValue({ ok: true })
+    const applyToDisk = vi.fn().mockResolvedValue({ ok: true })
     const markApplied = vi.fn()
 
     const edits = [
@@ -82,15 +82,15 @@ describe('applyAllPendingEdits', () => {
 
     const res = await applyAllPendingEdits(edits, '/p/b.md', {
       applyCurrent,
-      writeToDisk,
+      applyToDisk,
       markApplied
     })
 
     expect(applyCurrent).toHaveBeenCalledOnce()
     expect(applyCurrent).toHaveBeenCalledWith(expect.objectContaining({ id: 'b' }))
-    expect(writeToDisk).toHaveBeenCalledTimes(2)
-    expect(writeToDisk).toHaveBeenCalledWith('/p/a.md', 'A')
-    expect(writeToDisk).toHaveBeenCalledWith('/p/c.md', 'C')
+    expect(applyToDisk).toHaveBeenCalledTimes(2)
+    expect(applyToDisk).toHaveBeenCalledWith(expect.objectContaining({ newContent: 'A' }))
+    expect(applyToDisk).toHaveBeenCalledWith(expect.objectContaining({ newContent: 'C' }))
     expect(markApplied).toHaveBeenCalledTimes(3)
     expect(res.applied).toBe(3)
     expect(res.failed).toEqual([])
@@ -98,7 +98,7 @@ describe('applyAllPendingEdits', () => {
 
   it('reports disk write failures without marking them applied', async() => {
     const markApplied = vi.fn()
-    const writeToDisk = vi
+    const applyToDisk = vi
       .fn()
       .mockResolvedValueOnce({ ok: false, error: 'EACCES' })
       .mockResolvedValueOnce({ ok: true })
@@ -110,7 +110,7 @@ describe('applyAllPendingEdits', () => {
 
     const res = await applyAllPendingEdits(edits, null, {
       applyCurrent: vi.fn(),
-      writeToDisk,
+      applyToDisk,
       markApplied
     })
 
@@ -123,7 +123,7 @@ describe('applyAllPendingEdits', () => {
   it('captures thrown errors from the disk writer', async() => {
     const res = await applyAllPendingEdits([edit({ id: 'a', originalPath: '/p/a.md' })], null, {
       applyCurrent: vi.fn(),
-      writeToDisk: vi.fn().mockRejectedValue(new Error('disk gone')),
+      applyToDisk: vi.fn().mockRejectedValue(new Error('disk gone')),
       markApplied: vi.fn()
     })
     expect(res.applied).toBe(0)

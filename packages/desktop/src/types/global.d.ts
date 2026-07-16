@@ -231,7 +231,7 @@ declare global {
         handler: (progress: { percent?: number; status?: string; digest?: string }) => void
       ) => () => void
       executeTool: (call: IAgentToolCall) => Promise<IAgentToolResult>
-      writeFile: (pathname: string, content: string) => Promise<{ ok: boolean; error?: string }>
+      applyEdit: (editId: string) => Promise<{ ok: boolean; error?: string }>
       resolveEdit: (resolution: { id: string; filePath: string; accepted: boolean }) => void
       getPendingEdits: () => Promise<
         Array<{ edit: IAgentEditProposal; oldContent: string; originalPath: string }>

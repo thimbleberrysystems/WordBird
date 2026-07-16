@@ -216,7 +216,7 @@ export class LangGraphManager {
 
   /** Record + broadcast an edit proposal (single path for both emit sites). */
   private _emitEditProposal(payload: IAgentEditProposalPayload): void {
-    this._editTracker.recordProposal(payload, this._threadId)
+    this._editTracker.recordProposal(payload, this._threadId, getActiveAgentProjectRoot())
     this._broadcast('mt::ai:edit-proposal', payload)
   }
 
@@ -224,6 +224,13 @@ export class LangGraphManager {
   resolveEdit(resolution: IAgentEditResolution): void {
     if (!resolution || typeof resolution.id !== 'string') return
     this._editTracker.resolve(resolution)
+  }
+
+  /** The pending proposal behind an apply request (the apply gate's lookup). */
+  getPendingEdit(
+    id: string
+  ): { payload: IAgentEditProposalPayload; projectRoot: string | null } | null {
+    return this._editTracker.getPending(id)
   }
 
   /** Proposals still awaiting review (renderer rehydration after restart). */
