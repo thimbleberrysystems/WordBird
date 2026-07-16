@@ -247,6 +247,14 @@ extensibility model). WordBird's tool packs are JSON-defined but handlers
 must be registered in code — by design. MCP is the eventual third-party
 extension story; heavy and unneeded today.
 
+**Added 2026-07-17 — Decisions log.** Settled creative choices with
+reasons in bible/decisions.md (record_decision/list_decisions; recent
+ones ride every brief; doctrine forbids relitigating). Deliberately a
+normal project file, so writer edits, out-of-band-change freshness
+flags, open-file/selection vantage, review-gated amendments, and
+snapshots all apply for free. Closes the "fresh agent resurrects the
+idea you killed in March" failure mode.
+
 **Added 2026-07-17 — Skills + workspace separation.** Writer-authored
 technique files in skills/ (Claude Code skills pattern for prose):
 front-matter name/description, catalog in every brief, use_skill loads

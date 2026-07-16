@@ -540,6 +540,45 @@
       }
     },
     {
+      "id": "record_decision",
+      "name": "record_decision",
+      "description": "Record a SETTLED creative choice with its reason in bible/decisions.md (writer-editable). Use when the writer makes a definitive call ('the sister stays dead', 'never explain the magic on-page') — recorded decisions are never relitigated.",
+      "handler": "record_decision",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "description": "The settled choice, one sentence."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why the writer chose this (optional but valuable)."
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      }
+    },
+    {
+      "id": "list_decisions",
+      "name": "list_decisions",
+      "description": "List the settled creative decisions (bible/decisions.md). Check BEFORE proposing new directions — never propose against a recorded decision unless the writer re-opens it.",
+      "handler": "list_decisions",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
       "id": "list_facts",
       "name": "list_facts",
       "displayName": "List story facts",

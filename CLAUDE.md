@@ -353,7 +353,7 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   draft-next-scene with mandatory aftercare, extend, polish, health check)
   and spawn heuristics (do small things directly; spawn specialists for
   multi-unit work).
-- Tools (50): `main/services/ai/AgentToolHandlers.ts` (core file read/edit
+- Tools (52): `main/services/ai/AgentToolHandlers.ts` (core file read/edit
   + `propose_text_edit` — anchored exact-quote search/replace, the Aider
   SEARCH/REPLACE pattern, with occurrence disambiguation; the prompt-pinned
   path for surgical prose fixes, whole-file `propose_project_file_edit` is
@@ -368,7 +368,12 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   catalog in every brief, bodies loaded on demand, writer-PINNED skills
   (≤3, `.wordbird/agent-state/session.json`, binder pin UI +
   mt::novel:pin-skill) ride every brief in full — biscuit.md is the
-  always-on channel, skills are the on-demand one), `WebToolHandlers.ts` (web/wiki/dictionary; SSRF guards incl.
+  always-on channel, skills are the on-demand one; `record_decision`/
+  `list_decisions` — the DECISIONS LOG, `novel/Decisions.ts`: settled
+  creative choices + reasons in bible/decisions.md, a NORMAL writer-
+  editable file so freshness/vantage/review-gated edits/snapshots all
+  apply; brief carries recent ones; doctrine: never relitigate a
+  recorded decision), `WebToolHandlers.ts` (web/wiki/dictionary; SSRF guards incl.
   DNS-pinned lookups + per-hop redirect re-validation, and URL PROVENANCE
   à la Anthropic's web_fetch — only URLs the writer supplied or a search
   returned this session are fetchable; registry seeded by

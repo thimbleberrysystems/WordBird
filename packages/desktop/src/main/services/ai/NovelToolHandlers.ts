@@ -30,6 +30,7 @@ import { continuityService } from '../novel/ContinuityService'
 import { revisionService, RevisionService } from '../novel/RevisionService'
 import { isLockedCanon } from './pathGuards'
 import { listSkills, readSkill } from '../novel/Skills'
+import { appendDecision, listDecisions } from '../novel/Decisions'
 import type { AgentToolContext, AgentToolService } from './AgentToolService'
 import type { INovelUnit, IContinuityIssue } from '../../../shared/types/novel'
 
@@ -557,6 +558,40 @@ const listFacts = async(
 }
 
 // ---- deterministic prose lint (the "run the tests" of fiction) ----
+
+// ---- Decisions log (settled creative choices — never relitigated) ----
+
+const recordDecisionTool = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const decision = str(args, 'decision')
+  const reason = optStr(args, 'reason')
+  const entry = appendDecision(root, decision, reason)
+  return {
+    recorded: entry,
+    total: listDecisions(root).length,
+    note:
+      'Recorded in bible/decisions.md (writer-editable). This choice is settled — ' +
+      'do not re-open it unless the writer does.'
+  }
+}
+
+const listDecisionsTool = async(
+  _args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const decisions = listDecisions(root)
+  return {
+    decisions,
+    note:
+      decisions.length === 0
+        ? 'No recorded decisions yet. record_decision when the writer settles a creative question.'
+        : 'These are SETTLED. Never propose against them unless the writer re-opens one.'
+  }
+}
 
 // ---- Skills (writer-authored, on-demand technique files) ----
 
@@ -1517,6 +1552,8 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('lint_prose', lintProseTool)
   service.registerHandler('list_skills', listSkillsTool)
   service.registerHandler('use_skill', useSkillTool)
+  service.registerHandler('record_decision', recordDecisionTool)
+  service.registerHandler('list_decisions', listDecisionsTool)
   service.registerHandler('list_snapshots', listSnapshots)
   service.registerHandler('read_snapshot_file', readSnapshotFile)
   service.registerHandler('diff_snapshot_file', diffSnapshotFile)

@@ -185,7 +185,8 @@ const PROJECT_MUTATING_TOOLS = new Set([
   'update_summary',
   'set_writing_method',
   'save_plan',
-  'update_plan'
+  'update_plan',
+  'record_decision'
 ])
 
 export class AgentToolService {

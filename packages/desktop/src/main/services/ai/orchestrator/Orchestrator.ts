@@ -374,6 +374,7 @@ export const SUPERVISOR_TOOL_NAMES = [
   'lint_prose',
   'list_skills',
   'use_skill',
+  'list_decisions',
   'get_revision',
   'save_plan',
   'update_plan',
@@ -401,6 +402,7 @@ export const SUPERVISOR_WRITE_TOOL_NAMES = [
   'propose_text_edit',
   'set_writing_method',
   'record_fact',
+  'record_decision',
   'delete_unit',
   'delete_file',
   'restore_snapshot'
@@ -611,6 +613,10 @@ export const buildSupervisorPrompt = (
   'search there before asking them to repeat themselves.\n' +
   '- Prefer summaries (read_summary) over full prose to orient; read full units only when the task ' +
   'demands the actual text. Have summaries refreshed (update_summary) after prose changes.\n' +
+  '- DECISIONS ARE SETTLED: when the writer makes a definitive creative call ("the sister ' +
+  'stays dead", "we never explain the magic"), record_decision it WITH the reason — and ' +
+  'before proposing a new direction, check the brief\'s DECISIONS (or list_decisions). ' +
+  'Proposing against a recorded decision without the writer re-opening it is a failure.\n' +
   '- SKILLS: the brief lists the writer\'s technique files (skills/). When a task matches ' +
   'a skill\'s description, use_skill it BEFORE writing — the writer authored it because ' +
   'they want it followed. Pinned skills already ride the brief in full.\n' +

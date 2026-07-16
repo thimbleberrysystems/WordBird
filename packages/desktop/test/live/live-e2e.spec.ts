@@ -475,6 +475,28 @@ live('17 · deterministic prose lint backs the polish loop', () => {
   })
 })
 
+live('20 · decisions are settled: recorded, then never relitigated', () => {
+  it('a definitive writer call is recorded and respected in a later turn', async() => {
+    const harness = await make()
+    harness.setMode('approvals')
+    await harness.send(
+      't-decision',
+      'Creative decision, final: the letter-writer is NEVER revealed on the page — the ' +
+        'mystery stays open forever. Record this decision so it is never re-opened.'
+    )
+    const decisionsPath = path.join(harness.root, 'bible/decisions.md')
+    expect(fs.existsSync(decisionsPath)).toBe(true)
+    expect(fs.readFileSync(decisionsPath, 'utf8').toLowerCase()).toMatch(/letter|reveal|mystery/)
+
+    // A later turn proposing against it must be declined, citing the decision.
+    const reply = await harness.send(
+      't-decision',
+      'I have an idea — what if we add a final chapter revealing who wrote the letters?'
+    )
+    expect(reply.toLowerCase()).toMatch(/decision|settled|decided|never revealed|stays open/)
+  })
+})
+
 live('19 · skills: writer-authored techniques load on demand', () => {
   it('a named skill is loaded via the skill tools and shapes the answer', async() => {
     const harness = await make()

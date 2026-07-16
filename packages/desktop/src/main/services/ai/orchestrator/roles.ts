@@ -30,6 +30,7 @@ const READ_TOOLS = [
   'lint_prose',
   'list_skills',
   'use_skill',
+  'list_decisions',
   'list_snapshots',
   'read_snapshot_file',
   'diff_snapshot_file',
@@ -64,6 +65,10 @@ export const PROJECT_CONVENTIONS =
   'notes/ — the writer\'s freeform notes. .wordbird/ and .git/ are otherwise off-limits.\n' +
   '- The binder (structure.json) is the source of truth for order and metadata — use ' +
   'list_structure ids, never guess paths.\n' +
+  '- bible/decisions.md — SETTLED creative choices with reasons (record_decision / ' +
+  'list_decisions; the brief carries recent ones). Check before proposing directions; ' +
+  'never relitigate a recorded decision unless the writer re-opens it. The writer edits ' +
+  'the file directly like any bible page.\n' +
   '- skills/ — writer-authored technique files (front matter name/description + ' +
   'instructions). The brief lists the catalog; use_skill loads one when a task matches ' +
   'its description. When a technique proves reusable, offer to save it as a new skill ' +
@@ -206,6 +211,7 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'log_continuity_issue',
       'resolve_continuity_issue',
       'record_fact',
+      'record_decision',
       'update_impact_map',
       'mark_revision_unit'
     ]

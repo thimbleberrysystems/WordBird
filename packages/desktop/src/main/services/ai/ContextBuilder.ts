@@ -18,6 +18,7 @@ import { getEntityIndex } from '../novel/EntityIndex'
 import { continuityService } from '../novel/ContinuityService'
 import { revisionService, RevisionService } from '../novel/RevisionService'
 import { listSkills, readSkill, readPinnedSkills, MAX_SKILL_BODY_CHARS } from '../novel/Skills'
+import { listDecisions } from '../novel/Decisions'
 import { readProjectMeta } from '../novel/ProjectMeta'
 import type { INovelUnit } from '../../../shared/types/novel'
 
@@ -318,6 +319,27 @@ export class ContextBuilder {
         }
       } catch {
         // Skills are additive — a bad skills/ dir never breaks the brief.
+      }
+
+      // Settled creative choices: agents must never relitigate these.
+      try {
+        const decisions = listDecisions(projectRoot)
+        if (decisions.length > 0) {
+          const MAX_SHOWN = 8
+          const recent = decisions
+            .slice(-MAX_SHOWN)
+            .map((d) => `- ${d.decision}${d.reason ? ` (why: ${d.reason})` : ''}`)
+            .join('\n')
+          const more =
+            decisions.length > MAX_SHOWN
+              ? `\n…+${decisions.length - MAX_SHOWN} earlier (list_decisions)`
+              : ''
+          sections.push(
+            `DECISIONS (settled by the writer — never propose against these):\n${recent}${more}`
+          )
+        }
+      } catch {
+        // Decisions are additive — never break the brief.
       }
 
       // The writer's METHOD drives which playbook applies.
