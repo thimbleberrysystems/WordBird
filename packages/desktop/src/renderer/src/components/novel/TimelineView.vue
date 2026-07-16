@@ -59,6 +59,7 @@
         <div
           class="entry-card"
           @click="novelStore.openUnit(scene)"
+          @contextmenu.prevent="showCardMenu($event, scene)"
         >
           <div class="entry-title">
             {{ scene.title }}
@@ -93,6 +94,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import EmptyState from '../common/EmptyState.vue'
+import { popupContextMenu } from '../../contextMenu/popupMenu'
 import { useNovelStore } from '@/store/novel'
 import { t } from '../../i18n'
 import type { INovelUnit } from '@shared/types/novel'
@@ -144,6 +146,13 @@ onMounted(() => {
 const saveWhen = (scene: INovelUnit, event: Event): void => {
   const when = (event.target as HTMLInputElement).value
   novelStore.updateUnit(scene.id, { when })
+}
+
+const showCardMenu = (event: MouseEvent, unit: INovelUnit): void => {
+  popupContextMenu(
+    [{ label: t('binder.open'), click: () => novelStore.openUnit(unit) }],
+    { x: event.clientX, y: event.clientY }
+  )
 }
 </script>
 

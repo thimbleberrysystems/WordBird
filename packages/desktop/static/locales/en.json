@@ -252,6 +252,14 @@
       "rename": "Rename",
       "copyPath": "Copy path",
       "showInFolder": "Show in folder"
+    },
+    "editor": {
+      "askBiscuit": "Ask Biscuit about this selection",
+      "askBiscuitPrompt": "Look at this passage and share your thoughts:",
+      "copy": "Copy",
+      "cut": "Cut",
+      "paste": "Paste",
+      "selectAll": "Select All"
     }
   },
   "search": {

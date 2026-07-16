@@ -14,6 +14,7 @@
     <div
       ref="editorRef"
       class="editor-component"
+      @contextmenu.prevent="showEditorContextMenu"
     />
     <div
       v-show="imageViewerVisible"
@@ -102,6 +103,7 @@ import TableBarTools from 'muya/lib/ui/tableTools'
 import FrontMenu from 'muya/lib/ui/frontMenu'
 import EditorSearch from '../search/index.vue'
 import bus from '@/bus'
+import { showEditorContextMenu } from '../../contextMenu/editor'
 import { clearDiffStateInMuya } from '@/services/agentEditorApply'
 import { injectInlineDiff, type InlineDiffHandle } from '@/services/agentDiffDom'
 import { acceptHunk, discardHunk } from '@/services/agentDiffHunks'

@@ -252,6 +252,14 @@
       "rename": "重命名",
       "copyPath": "复制路径",
       "showInFolder": "在文件夹中显示"
+    },
+    "editor": {
+      "askBiscuit": "就此选区询问 Biscuit",
+      "askBiscuitPrompt": "看看这段文字并说说你的看法：",
+      "copy": "复制",
+      "cut": "剪切",
+      "paste": "粘贴",
+      "selectAll": "全选"
     }
   },
   "search": {

@@ -252,6 +252,14 @@
       "rename": "Renomear",
       "copyPath": "Copiar caminho",
       "showInFolder": "Mostrar na pasta"
+    },
+    "editor": {
+      "askBiscuit": "Perguntar ao Biscuit sobre esta seleção",
+      "askBiscuitPrompt": "Veja este trecho e compartilhe suas impressões:",
+      "copy": "Copiar",
+      "cut": "Recortar",
+      "paste": "Colar",
+      "selectAll": "Selecionar tudo"
     }
   },
   "search": {

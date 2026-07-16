@@ -107,6 +107,7 @@
       class="binder-tree"
       @dragover.prevent
       @drop.prevent="handleRootDrop"
+      @contextmenu.prevent.self="showBinderMenu"
     >
       <binder-node
         v-for="unit in structure?.units ?? []"
@@ -672,6 +673,20 @@ const handleCompile = async (format: 'md' | 'epub' | 'docx' = 'md'): Promise<voi
   } finally {
     compiling.value = false
   }
+}
+
+const showBinderMenu = (event: MouseEvent): void => {
+  const items = []
+  if (showAddPart.value) {
+    items.push({ label: `+ ${t('binder.part')}`, click: () => addTopLevel('part') })
+  }
+  if (showAddChapter.value) {
+    items.push({ label: `+ ${t('binder.chapter')}`, click: () => addTopLevel('chapter') })
+  }
+  if (showAddScene.value) {
+    items.push({ label: `+ ${t('binder.scene')}`, click: () => addTopLevel('scene') })
+  }
+  if (items.length > 0) popupContextMenu(items, { x: event.clientX, y: event.clientY })
 }
 </script>
 

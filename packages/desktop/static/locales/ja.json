@@ -252,6 +252,14 @@
       "rename": "名前を変更",
       "copyPath": "パスをコピー",
       "showInFolder": "フォルダで表示"
+    },
+    "editor": {
+      "askBiscuit": "この選択範囲について Biscuit に聞く",
+      "askBiscuitPrompt": "この一節を見て感想を聞かせて：",
+      "copy": "コピー",
+      "cut": "切り取り",
+      "paste": "貼り付け",
+      "selectAll": "すべて選択"
     }
   },
   "search": {

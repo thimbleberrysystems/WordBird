@@ -24,6 +24,19 @@ const buildMenu = (template: MenuTemplate | undefined, windowId: number): Menu =
       menu.append(new MenuItem({ type: 'separator' }))
       continue
     }
+    // Role items (cut/copy/paste/selectAll…) are handled by Electron
+    // itself — that is what makes paste possible from a renderer-built
+    // context menu without any clipboard plumbing of our own.
+    if (item.role) {
+      menu.append(
+        new MenuItem({
+          role: item.role as 'cut' | 'copy' | 'paste' | 'selectAll',
+          label: item.label,
+          enabled: item.enabled !== false
+        })
+      )
+      continue
+    }
     const id = item.id
     menu.append(
       new MenuItem({

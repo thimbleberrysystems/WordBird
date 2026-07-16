@@ -252,6 +252,14 @@
       "rename": "Umbenennen",
       "copyPath": "Pfad kopieren",
       "showInFolder": "Im Ordner anzeigen"
+    },
+    "editor": {
+      "askBiscuit": "Biscuit zu dieser Auswahl fragen",
+      "askBiscuitPrompt": "Sieh dir diese Passage an und teile deine Gedanken:",
+      "copy": "Kopieren",
+      "cut": "Ausschneiden",
+      "paste": "Einfügen",
+      "selectAll": "Alles auswählen"
     }
   },
   "search": {

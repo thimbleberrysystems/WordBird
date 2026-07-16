@@ -60,6 +60,7 @@
           :class="{ 'drop-target': dropTargetId === scene.id }"
           draggable="true"
           @click="novelStore.openUnit(scene)"
+          @contextmenu.prevent.stop="showCardMenu($event, scene)"
           @dragstart="dragStart(scene, $event)"
           @dragover.prevent.stop="dropTargetId = scene.id"
           @dragleave="dropTargetId = null"
@@ -110,6 +111,8 @@ import { computed, ref, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useNovelStore } from '@/store/novel'
 import EmptyState from '../common/EmptyState.vue'
+import { popupContextMenu } from '../../contextMenu/popupMenu'
+import { ElMessageBox } from 'element-plus'
 import bus from '../../bus'
 import { t } from '../../i18n'
 import type { INovelUnit } from '@shared/types/novel'
@@ -229,6 +232,31 @@ const saveSynopsis = (scene: INovelUnit, event: Event): void => {
 
 const askBiscuitToDraft = (): void => {
   bus.emit('biscuit-ask', t('empty.corkboardPrompt'))
+}
+
+const showCardMenu = (event: MouseEvent, scene: INovelUnit): void => {
+  popupContextMenu(
+    [
+      { label: t('binder.open'), click: () => novelStore.openUnit(scene) },
+      { type: 'separator' },
+      {
+        label: t('binder.delete'),
+        click: async () => {
+          try {
+            await ElMessageBox.confirm(
+              t('binder.deleteConfirm', { title: scene.title }),
+              t('binder.delete'),
+              { type: 'warning' }
+            )
+          } catch {
+            return
+          }
+          await novelStore.deleteUnit(scene.id, true)
+        }
+      }
+    ],
+    { x: event.clientX, y: event.clientY }
+  )
 }
 </script>
 

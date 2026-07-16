@@ -57,6 +57,7 @@
           <tr
             v-else
             class="scene-row"
+            @contextmenu.prevent="showRowMenu($event, row.unit)"
           >
             <td
               class="col-title clickable"
@@ -143,6 +144,8 @@
 import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import EmptyState from '../common/EmptyState.vue'
+import { popupContextMenu } from '../../contextMenu/popupMenu'
+import { ElMessageBox } from 'element-plus'
 import { useNovelStore } from '@/store/novel'
 import { t } from '../../i18n'
 import type { INovelUnit, INovelUnitUpdate } from '@shared/types/novel'
@@ -185,6 +188,31 @@ onMounted(() => {
 const save = (unit: INovelUnit, field: keyof INovelUnitUpdate, event: Event): void => {
   const value = (event.target as HTMLInputElement | HTMLSelectElement).value
   novelStore.updateUnit(unit.id, { [field]: value })
+}
+
+const showRowMenu = (event: MouseEvent, unit: INovelUnit): void => {
+  popupContextMenu(
+    [
+      { label: t('binder.open'), click: () => novelStore.openUnit(unit) },
+      { type: 'separator' },
+      {
+        label: t('binder.delete'),
+        click: async () => {
+          try {
+            await ElMessageBox.confirm(
+              t('binder.deleteConfirm', { title: unit.title }),
+              t('binder.delete'),
+              { type: 'warning' }
+            )
+          } catch {
+            return
+          }
+          await novelStore.deleteUnit(unit.id, true)
+        }
+      }
+    ],
+    { x: event.clientX, y: event.clientY }
+  )
 }
 </script>
 

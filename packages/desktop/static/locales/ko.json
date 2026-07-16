@@ -252,6 +252,14 @@
       "rename": "이름 바꾸기",
       "copyPath": "경로 복사",
       "showInFolder": "폴더에서 보기"
+    },
+    "editor": {
+      "askBiscuit": "이 선택 영역에 대해 Biscuit에게 묻기",
+      "askBiscuitPrompt": "이 구절을 보고 의견을 들려줘:",
+      "copy": "복사",
+      "cut": "잘라내기",
+      "paste": "붙여넣기",
+      "selectAll": "모두 선택"
     }
   },
   "search": {

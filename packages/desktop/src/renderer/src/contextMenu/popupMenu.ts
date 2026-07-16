@@ -11,6 +11,8 @@ export type MenuClickHandler = (payload: unknown) => void
 export interface ContextMenuItem {
   id?: string
   label?: string
+  /** Electron role (cut/copy/paste/selectAll…) — handled natively. */
+  role?: string
   // Loose `string` here lets the menu factories emit plain `'separator'`
   // literals without `as const`. The serializer only special-cases 'separator'.
   type?: string
@@ -42,6 +44,7 @@ const serialize = (
       id,
       label: item.label,
       type: item.type as MenuTemplateItem['type'],
+      role: item.role,
       accelerator: item.accelerator,
       enabled: item.enabled !== false,
       checked: !!item.checked,
