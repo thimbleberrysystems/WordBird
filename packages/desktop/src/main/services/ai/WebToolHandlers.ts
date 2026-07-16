@@ -3,11 +3,17 @@
  * key) and `web_fetch` (fetch a page and reduce it to readable text).
  *
  * Guardrails: http(s) only, no credentials in URLs, private/loopback
- * hosts rejected, response size and time capped, HTML reduced to text
- * before it reaches the model.
+ * hosts rejected BOTH by name and by what DNS actually resolves them to
+ * (anti-rebinding: the same lookup that validates is the one the socket
+ * connects with), redirects followed manually with every hop re-guarded,
+ * response size and time capped, HTML reduced to text before it reaches
+ * the model.
  */
 
 import axios from 'axios'
+import type { AddressFamily, LookupAddress } from 'axios'
+import dns from 'dns'
+import net from 'net'
 import type { AgentToolContext, AgentToolService } from './AgentToolService'
 
 const MAX_RESPONSE_BYTES = 1_500_000
@@ -35,6 +41,37 @@ const optInt = (args: Record<string, unknown>, key: string): number | undefined 
 const PRIVATE_HOST_RE =
   /^(localhost|.*\.local|.*\.internal|0\.0\.0\.0|127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|169\.254\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|\[::1\]|::1)$/i
 
+/**
+ * Is this IP address (v4 or v6) something an SSRF must never reach?
+ * Loopback, RFC1918, link-local/cloud-metadata, unspecified, v6
+ * unique-local + link-local, and v4-mapped v6 forms of all of the above.
+ */
+export const isPrivateAddress = (ip: string): boolean => {
+  let candidate = ip.trim().toLowerCase()
+  // ::ffff:127.0.0.1 — unwrap v4-mapped v6 and judge the v4.
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(candidate)
+  if (mapped) candidate = mapped[1]
+
+  if (net.isIPv4(candidate)) {
+    const octets = candidate.split('.').map(Number)
+    const [a, b] = octets
+    if (a === 127 || a === 10 || a === 0) return true
+    if (a === 192 && b === 168) return true
+    if (a === 169 && b === 254) return true // link-local incl. 169.254.169.254
+    if (a === 172 && b >= 16 && b <= 31) return true
+    if (a === 100 && b >= 64 && b <= 127) return true // CGNAT 100.64/10
+    return false
+  }
+  if (net.isIPv6(candidate)) {
+    if (candidate === '::1' || candidate === '::') return true
+    if (candidate.startsWith('fc') || candidate.startsWith('fd')) return true // ULA fc00::/7
+    if (/^fe[89ab]/.test(candidate)) return true // link-local fe80::/10
+    return false
+  }
+  // Not parseable as an IP — callers treat that as unsafe by default.
+  return true
+}
+
 export const assertSafeUrl = (raw: string): URL => {
   let url: URL
   try {
@@ -51,8 +88,67 @@ export const assertSafeUrl = (raw: string): URL => {
   if (PRIVATE_HOST_RE.test(url.hostname)) {
     throw new Error('Local and private-network hosts are not allowed.')
   }
+  // Literal-IP hosts are judged as addresses, not just against the name
+  // regex (catches e.g. http://[fd00::1]/ or unusual private v4 ranges).
+  const bareHost = url.hostname.replace(/^\[|\]$/g, '')
+  if (net.isIP(bareHost) && isPrivateAddress(bareHost)) {
+    throw new Error('Local and private-network hosts are not allowed.')
+  }
   return url
 }
+
+type RawLookup = (
+  hostname: string,
+  options: dns.LookupAllOptions,
+  callback: (err: NodeJS.ErrnoException | null, addresses: dns.LookupAddress[]) => void
+) => void
+
+/**
+ * DNS-pinned SSRF guard: the lookup that VALIDATES the resolution is the
+ * lookup the socket CONNECTS with, so a hostname cannot pass a check and
+ * then re-resolve to 127.0.0.1 (DNS rebinding). If any resolved address
+ * is private, the connection is refused outright.
+ */
+export const makeSafeLookup = (rawLookup: RawLookup = dns.lookup as unknown as RawLookup) => {
+  // Signature mirrors axios's lookup contract exactly (its LookupAddress,
+  // its 4|6 AddressFamily) so the config site needs no casts.
+  return (
+    hostname: string,
+    options: object,
+    callback: (
+      err: Error | null,
+      address: LookupAddress | LookupAddress[],
+      family?: AddressFamily
+    ) => void
+  ): void => {
+    const all = Boolean((options as dns.LookupOptions).all)
+    rawLookup(hostname, { ...(options as dns.LookupOptions), all: true }, (err, addresses) => {
+      if (err) return callback(err, [])
+      const list = Array.isArray(addresses) ? addresses : []
+      if (list.length === 0) {
+        return callback(new Error(`DNS returned no addresses for ${hostname}`), [])
+      }
+      const bad = list.find((a) => isPrivateAddress(a.address))
+      if (bad) {
+        return callback(
+          new Error(
+            `Refusing to connect: ${hostname} resolves to the private address ${bad.address}.`
+          ),
+          []
+        )
+      }
+      const toEntry = (a: dns.LookupAddress): { address: string; family?: AddressFamily } => ({
+        address: a.address,
+        family: a.family === 6 ? 6 : 4
+      })
+      if (all) return callback(null, list.map(toEntry))
+      const first = toEntry(list[0])
+      callback(null, first, first.family)
+    })
+  }
+}
+
+const safeLookup = makeSafeLookup()
 
 const decodeEntities = (text: string): string =>
   text
@@ -85,37 +181,63 @@ const extractTitle = (html: string): string => {
   return match ? decodeEntities(match[1]).replace(/\s+/g, ' ').trim().slice(0, 300) : ''
 }
 
+const MAX_REDIRECT_HOPS = 3
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308])
+
 const webFetch = async(
   args: Record<string, unknown>,
   _context: AgentToolContext
 ): Promise<unknown> => {
-  const url = assertSafeUrl(str(args, 'url'))
+  let url = assertSafeUrl(str(args, 'url'))
 
-  const response = await axios.get(url.toString(), {
-    timeout: FETCH_TIMEOUT_MS,
-    maxContentLength: MAX_RESPONSE_BYTES,
-    maxRedirects: 3,
-    responseType: 'text',
-    headers: { 'User-Agent': USER_AGENT, Accept: 'text/html,text/plain,*/*;q=0.8' },
-    // Treat every status as resolved so we can report it cleanly.
-    validateStatus: () => true
-  })
+  // Redirects are followed MANUALLY so every hop goes back through the
+  // guard — axios's own maxRedirects would happily follow a public page's
+  // 302 into 169.254.169.254. Each connection also uses the DNS-pinned
+  // lookup, so validation and connection can never disagree.
+  for (let hop = 0; hop <= MAX_REDIRECT_HOPS; hop++) {
+    const response = await axios.get(url.toString(), {
+      timeout: FETCH_TIMEOUT_MS,
+      maxContentLength: MAX_RESPONSE_BYTES,
+      maxRedirects: 0,
+      lookup: safeLookup,
+      responseType: 'text',
+      headers: { 'User-Agent': USER_AGENT, Accept: 'text/html,text/plain,*/*;q=0.8' },
+      // Treat every status (incl. 3xx) as resolved so we can handle it.
+      validateStatus: () => true
+    })
 
-  if (response.status >= 400) {
-    return { url: url.toString(), status: response.status, error: `HTTP ${response.status}` }
+    if (REDIRECT_STATUSES.has(response.status)) {
+      const location = String(response.headers.location ?? '')
+      if (!location) {
+        return { url: url.toString(), status: response.status, error: 'Redirect without Location' }
+      }
+      // Relative Locations resolve against the current URL; the result is
+      // re-guarded exactly like a writer-supplied URL.
+      url = assertSafeUrl(new URL(location, url).toString())
+      continue
+    }
+
+    if (response.status >= 400) {
+      return { url: url.toString(), status: response.status, error: `HTTP ${response.status}` }
+    }
+
+    const body = String(response.data ?? '')
+    const contentType = String(response.headers['content-type'] ?? '')
+    const isHtml = contentType.includes('html') || /^\s*</.test(body)
+    const text = isHtml ? htmlToText(body) : body
+
+    return {
+      url: url.toString(),
+      status: response.status,
+      title: isHtml ? extractTitle(body) : '',
+      text: text.slice(0, MAX_TEXT_CHARS),
+      truncated: text.length > MAX_TEXT_CHARS
+    }
   }
-
-  const body = String(response.data ?? '')
-  const contentType = String(response.headers['content-type'] ?? '')
-  const isHtml = contentType.includes('html') || /^\s*</.test(body)
-  const text = isHtml ? htmlToText(body) : body
 
   return {
     url: url.toString(),
-    status: response.status,
-    title: isHtml ? extractTitle(body) : '',
-    text: text.slice(0, MAX_TEXT_CHARS),
-    truncated: text.length > MAX_TEXT_CHARS
+    error: `Gave up after ${MAX_REDIRECT_HOPS} redirects.`
   }
 }
 
