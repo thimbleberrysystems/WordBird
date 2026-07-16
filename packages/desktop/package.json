@@ -1,11 +1,11 @@
 {
   "name": "marktext",
-  "version": "0.21.0",
+  "version": "0.21.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/thimbleberrysystems/WordBird.git"
   },
-  "description": "WordBird \u2014 WYSIWYG markdown editor with Biscuit AI assistant",
+  "description": "WordBird — WYSIWYG markdown editor with Biscuit AI assistant",
   "main": "./out/main/index.js",
   "author": {
     "name": "Thimbleberrysystems",
@@ -134,7 +134,7 @@
     "@vue/test-utils": "^2.4.11",
     "cross-env": "^10.1.0",
     "electron": "^42.1.0",
-    "electron-builder": "^26.8.1",
+    "electron-builder": "^26.15.6",
     "electron-vite": "^5.0.0",
     "jsdom": "^29.1.1",
     "patch-package": "^8.0.1",
