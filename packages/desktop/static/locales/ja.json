@@ -1495,7 +1495,13 @@
     "historyTip": "1日あたりの執筆語数（直近14日）— 連続記録：{streak}",
     "skills": "スキル",
     "pinTip": "ピン留め：このスキルは毎ターン Biscuit に渡されます（最大 {max}）— コンテキストを消費し、確実に参照されます",
-    "skillUsedTip": "このセッションで Biscuit がこのスキルを使用しました"
+    "skillUsedTip": "このセッションで Biscuit がこのスキルを使用しました",
+    "addPlanTip": "新しいプラン",
+    "addSkillTip": "新しいスキル — タスクが合うときに Biscuit が従うテクニックファイル",
+    "open": "開く",
+    "rename": "名前を変更",
+    "newFolder": "新しいフォルダ",
+    "deleteFileConfirm": "{name} を削除しますか？ファイルは履歴にスナップショットされています。"
   },
   "history": {
     "title": "履歴",

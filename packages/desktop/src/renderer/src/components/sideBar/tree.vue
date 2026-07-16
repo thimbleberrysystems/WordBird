@@ -215,6 +215,19 @@ const createWorkspaceFolder = async (name: string): Promise<void> => {
   if (!root) return
   try {
     await window.fileUtils.ensureDir(window.path.join(root, name))
+    // A starter file makes the new folder immediately editable (and shows
+    // the skill format instead of leaving the writer to guess it).
+    if (name === 'skills') {
+      const starter = window.path.join(root, 'skills', 'my-skill.md')
+      const exists = await window.fileUtils.isFile(starter)
+      if (!exists) {
+        await window.fileUtils.outputFile(
+          starter,
+          '---\nname: My technique\ndescription: One line saying WHEN Biscuit should reach for this.\n---\n\nWrite the instructions here.\n'
+        )
+        window.electron.ipcRenderer.send('mt::open-file', starter, {})
+      }
+    }
   } catch (err) {
     console.error('Create workspace folder failed:', err)
   }

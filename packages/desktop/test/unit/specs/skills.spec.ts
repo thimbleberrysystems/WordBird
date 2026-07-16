@@ -106,6 +106,17 @@ describe('listSkills / readSkill / pins', () => {
     expect(readSkill(root, 'nope')).toBeNull()
   })
 
+  it('walks subfolders — writers can organize skills into directories', () => {
+    write('skills/fight.md', FIGHT_SKILL)
+    write('skills/dialogue/banter.md', '---\nname: Banter\ndescription: Quips.\n---\n\nShort lines.\n')
+
+    const skills = listSkills(root)
+    expect(skills.map((s) => s.file)).toContain('dialogue/banter.md')
+    // Lookup works by relative path and by name; body loads from the subdir.
+    expect(readSkill(root, 'dialogue/banter.md')?.meta.name).toBe('Banter')
+    expect(readSkill(root, 'banter')?.body).toContain('Short lines')
+  })
+
   it('pins are read from session state, capped at the maximum', () => {
     pin('a.md', 'b.md', 'c.md', 'd.md')
     expect(readPinnedSkills(root)).toHaveLength(MAX_PINNED_SKILLS)

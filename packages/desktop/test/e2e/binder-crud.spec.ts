@@ -116,6 +116,20 @@ test.describe('Binder CRUD (real project)', () => {
       .toBe('fight-scenes.md')
   })
 
+  test('the skills header + creates a templated skill and opens it', async() => {
+    const skillsSection = page.locator('.binder .binder-skills')
+    await skillsSection.locator('.plans-add').click()
+    // The new file appears in the list and opens as a tab with the template.
+    await expect(skillsSection).toContainText('my-skill.md', { timeout: 10000 })
+    await expect
+      .poll(async() =>
+        page.locator('.tabs-container > li', { hasText: 'my-skill.md' }).count()
+      )
+      .toBeGreaterThan(0)
+    const onDisk = fs.readFileSync(path.join(root, 'skills/my-skill.md'), 'utf8')
+    expect(onDisk).toContain('name: My technique')
+  })
+
   test('skills appear in the prompt @-picker', async() => {
     await page.waitForSelector('.right-prompt textarea', { timeout: 15000 })
     const input = page.locator('.right-prompt textarea')

@@ -1496,7 +1496,13 @@
     "historyTip": "Words written per day (last 14 days) — current streak: {streak}",
     "skills": "Skills",
     "pinTip": "Pin: this skill rides every Biscuit turn (max {max}) — costs context, guarantees attention",
-    "skillUsedTip": "Biscuit used this skill in this session"
+    "skillUsedTip": "Biscuit used this skill in this session",
+    "addPlanTip": "New plan file",
+    "addSkillTip": "New skill — a technique file Biscuit follows when the task matches",
+    "open": "Open",
+    "rename": "Rename",
+    "newFolder": "New folder",
+    "deleteFileConfirm": "Delete {name}? The file is snapshotted in History."
   },
   "history": {
     "title": "History",

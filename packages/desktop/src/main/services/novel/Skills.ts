@@ -35,7 +35,7 @@ const SKILL_FILE_RE = /\.(md|markdown)$/i
 /** Tolerant front-matter parse: name/description when present, filename
  * stem otherwise; a fenceless file's first heading doubles as the name. */
 export const parseSkillMeta = (content: string, fname: string): SkillMeta => {
-  const stem = fname.replace(SKILL_FILE_RE, '')
+  const stem = fname.split('/').pop()!.replace(SKILL_FILE_RE, '')
   let name = ''
   let description = ''
   const fm = /^---\n([\s\S]*?)\n---/.exec(content)
@@ -65,24 +65,40 @@ export const parseSkillMeta = (content: string, fname: string): SkillMeta => {
 export const skillBody = (content: string): string =>
   content.replace(/^---\n[\s\S]*?\n---\n?/, '').trim()
 
+const MAX_SKILL_DEPTH = 3
+
 export const listSkills = (projectRoot: string): SkillMeta[] => {
-  const dir = path.join(projectRoot, 'skills')
-  let entries: fs.Dirent[]
-  try {
-    entries = fs.readdirSync(dir, { withFileTypes: true })
-  } catch {
-    return []
-  }
+  const base = path.join(projectRoot, 'skills')
   const skills: SkillMeta[] = []
-  for (const entry of entries) {
-    if (!entry.isFile() || !SKILL_FILE_RE.test(entry.name)) continue
+  // Writers may organize skills into subfolders (combat/, dialogue/, …) —
+  // the catalog walks them; `file` is the relative posix path (stable id
+  // for pinning and lookup).
+  const walk = (dir: string, depth: number): void => {
+    if (depth > MAX_SKILL_DEPTH) return
+    let entries: fs.Dirent[]
     try {
-      const content = fs.readFileSync(path.join(dir, entry.name), 'utf8')
-      skills.push(parseSkillMeta(content, entry.name))
+      entries = fs.readdirSync(dir, { withFileTypes: true })
     } catch {
-      // Unreadable skill file — skip rather than break the catalog.
+      return
+    }
+    for (const entry of entries) {
+      if (entry.name.startsWith('.')) continue
+      const full = path.join(dir, entry.name)
+      if (entry.isDirectory()) {
+        walk(full, depth + 1)
+        continue
+      }
+      if (!entry.isFile() || !SKILL_FILE_RE.test(entry.name)) continue
+      try {
+        const content = fs.readFileSync(full, 'utf8')
+        const rel = path.relative(base, full).split(path.sep).join('/')
+        skills.push(parseSkillMeta(content, rel))
+      } catch {
+        // Unreadable skill file — skip rather than break the catalog.
+      }
     }
   }
+  walk(base, 0)
   return skills.sort((a, b) => a.name.localeCompare(b.name))
 }
 

@@ -1495,7 +1495,13 @@
     "historyTip": "Palabras por día (últimos 14 días) — racha actual: {streak}",
     "skills": "Habilidades",
     "pinTip": "Fijar: esta habilidad acompaña cada turno de Biscuit (máx. {max}) — cuesta contexto, garantiza atención",
-    "skillUsedTip": "Biscuit usó esta habilidad en esta sesión"
+    "skillUsedTip": "Biscuit usó esta habilidad en esta sesión",
+    "addPlanTip": "Nuevo plan",
+    "addSkillTip": "Nueva habilidad — una técnica que Biscuit sigue cuando la tarea coincide",
+    "open": "Abrir",
+    "rename": "Renombrar",
+    "newFolder": "Nueva carpeta",
+    "deleteFileConfirm": "¿Eliminar {name}? El archivo está en el historial de instantáneas."
   },
   "history": {
     "title": "Historial",

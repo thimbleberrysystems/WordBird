@@ -12,10 +12,11 @@
       draggable="true"
       @click="handleClick"
       @dblclick.stop="startRename"
-      @dragstart="handleDragStart"
-      @dragover.prevent="handleDragOver"
+      @contextmenu.prevent.stop="showRowMenu"
+      @dragstart.stop="handleDragStart"
+      @dragover.prevent.stop="handleDragOver"
       @dragleave="dropZone = null"
-      @drop.prevent="handleDrop"
+      @drop.prevent.stop="handleDrop"
       @dragend="dropZone = null"
     >
       <el-icon
@@ -25,6 +26,15 @@
         @click.stop="expanded = !expanded"
       >
         <CaretRight />
+      </el-icon>
+      <el-icon
+        v-if="isContainer"
+        class="type-icon"
+        :class="unit.type"
+        :title="unit.type"
+      >
+        <Collection v-if="unit.type === 'part'" />
+        <Notebook v-else />
       </el-icon>
       <span
         v-else
@@ -46,6 +56,7 @@
       <span
         v-else
         class="title"
+        :class="`title--${unit.type}`"
         :title="unit.title"
       >{{ unit.title }}</span>
 
@@ -96,7 +107,8 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
-import { CaretRight, Plus, Close } from '@element-plus/icons-vue'
+import { CaretRight, Plus, Close, Collection, Notebook } from '@element-plus/icons-vue'
+import { popupContextMenu } from '../../contextMenu/popupMenu'
 import { useNovelStore } from '@/store/novel'
 import { useEditorStore } from '@/store/editor'
 import { useProjectStore } from '@/store/project'
@@ -181,6 +193,36 @@ const confirmRename = (): void => {
 
 const cancelRename = (): void => {
   renaming.value = false
+}
+
+// ---- Right-click menu: everything the hover icons offer, discoverable ----
+
+const showRowMenu = (event: MouseEvent): void => {
+  const items = []
+  if (!isContainer.value) {
+    items.push({
+      label: t('binder.open'),
+      click: () => novelStore.openUnit(props.unit)
+    })
+  }
+  items.push({
+    label: t('binder.rename'),
+    click: () => startRename()
+  })
+  if (canAddChild.value) {
+    items.push({
+      label: `+ ${props.unit.type === 'part' ? t('binder.chapter') : t('binder.scene')}`,
+      click: () => emit('add-child', props.unit)
+    })
+  }
+  items.push(
+    { type: 'separator' },
+    {
+      label: t('binder.delete'),
+      click: () => emit('remove', props.unit)
+    }
+  )
+  popupContextMenu(items, { x: event.clientX, y: event.clientY })
 }
 
 // ---- Drag & drop reordering ----
@@ -363,4 +405,22 @@ const siblingListIds = (): string[] => {
   padding: 2px 4px;
   outline: none;
 }
+
+.type-icon {
+  width: 14px;
+  flex-shrink: 0;
+  color: var(--iconColor);
+  &.part {
+    color: var(--themeColor);
+  }
+}
+
+.title--part {
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+.title--chapter {
+  font-weight: 550;
+}
+
 </style>

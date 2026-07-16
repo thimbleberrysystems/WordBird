@@ -1495,7 +1495,13 @@
     "historyTip": "Mots par jour (14 derniers jours) — série en cours : {streak}",
     "skills": "Compétences",
     "pinTip": "Épingler : cette compétence accompagne chaque tour de Biscuit (max {max}) — coûte du contexte, garantit l’attention",
-    "skillUsedTip": "Biscuit a utilisé cette compétence dans cette session"
+    "skillUsedTip": "Biscuit a utilisé cette compétence dans cette session",
+    "addPlanTip": "Nouveau plan",
+    "addSkillTip": "Nouvelle compétence — une fiche technique que Biscuit suit quand la tâche correspond",
+    "open": "Ouvrir",
+    "rename": "Renommer",
+    "newFolder": "Nouveau dossier",
+    "deleteFileConfirm": "Supprimer {name} ? Le fichier est conservé dans l’historique."
   },
   "history": {
     "title": "Historique",

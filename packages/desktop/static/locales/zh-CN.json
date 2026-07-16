@@ -1495,7 +1495,13 @@
     "historyTip": "每日写作字数（最近14天）——当前连续天数：{streak}",
     "skills": "技能",
     "pinTip": "固定：该技能会随每个 Biscuit 回合注入（最多 {max} 个）— 占用上下文，但保证被遵循",
-    "skillUsedTip": "Biscuit 在本次会话中使用了该技能"
+    "skillUsedTip": "Biscuit 在本次会话中使用了该技能",
+    "addPlanTip": "新建计划",
+    "addSkillTip": "新建技能 — 任务匹配时 Biscuit 会遵循的技巧文件",
+    "open": "打开",
+    "rename": "重命名",
+    "newFolder": "新建文件夹",
+    "deleteFileConfirm": "删除 {name}？该文件已在历史快照中保存。"
   },
   "history": {
     "title": "历史",

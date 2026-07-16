@@ -1495,7 +1495,13 @@
     "historyTip": "Wörter pro Tag (letzte 14 Tage) — aktuelle Serie: {streak}",
     "skills": "Skills",
     "pinTip": "Anheften: dieser Skill begleitet jeden Biscuit-Zug (max. {max}) — kostet Kontext, garantiert Beachtung",
-    "skillUsedTip": "Biscuit hat diesen Skill in dieser Sitzung verwendet"
+    "skillUsedTip": "Biscuit hat diesen Skill in dieser Sitzung verwendet",
+    "addPlanTip": "Neue Plandatei",
+    "addSkillTip": "Neuer Skill — eine Technikdatei, der Biscuit bei passenden Aufgaben folgt",
+    "open": "Öffnen",
+    "rename": "Umbenennen",
+    "newFolder": "Neuer Ordner",
+    "deleteFileConfirm": "{name} löschen? Die Datei ist in der History gesichert."
   },
   "history": {
     "title": "Verlauf",

@@ -1495,7 +1495,13 @@
     "historyTip": "Palavras por dia (últimos 14 dias) — sequência atual: {streak}",
     "skills": "Habilidades",
     "pinTip": "Fixar: esta habilidade acompanha cada turno do Biscuit (máx. {max}) — custa contexto, garante atenção",
-    "skillUsedTip": "Biscuit usou esta habilidade nesta sessão"
+    "skillUsedTip": "Biscuit usou esta habilidade nesta sessão",
+    "addPlanTip": "Novo plano",
+    "addSkillTip": "Nova habilidade — uma técnica que o Biscuit segue quando a tarefa combina",
+    "open": "Abrir",
+    "rename": "Renomear",
+    "newFolder": "Nova pasta",
+    "deleteFileConfirm": "Excluir {name}? O arquivo está no histórico de snapshots."
   },
   "history": {
     "title": "Histórico",

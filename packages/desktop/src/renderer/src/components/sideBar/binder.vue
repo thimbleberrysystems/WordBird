@@ -133,6 +133,7 @@
       <div
         class="plans-header"
         @click="plansExpanded = !plansExpanded"
+        @contextmenu.prevent.stop="showWorkspaceMenu($event, 'plans')"
       >
         <span
           class="plans-caret"
@@ -140,6 +141,13 @@
         >▸</span>
         {{ t('binder.plans') }}
         <span class="plans-count">{{ planFiles.length }}</span>
+        <button
+          class="plans-add"
+          :title="t('binder.addPlanTip')"
+          @click.stop="addWorkspaceFile('plans')"
+        >
+          +
+        </button>
       </div>
       <p
         v-if="plansExpanded && planFiles.length === 0"
@@ -153,6 +161,7 @@
           :key="plan.pathname"
           :title="plan.pathname"
           @click="openPlanFile(plan.pathname)"
+          @contextmenu.prevent.stop="showWorkspaceMenu($event, 'plans', plan)"
         >
           {{ plan.name }}
         </li>
@@ -164,6 +173,7 @@
       <div
         class="plans-header"
         @click="skillsExpanded = !skillsExpanded"
+        @contextmenu.prevent.stop="showWorkspaceMenu($event, 'skills')"
       >
         <span
           class="plans-caret"
@@ -171,6 +181,13 @@
         >▸</span>
         {{ t('binder.skills') }}
         <span class="plans-count">{{ pinnedSkills.length }}/{{ MAX_PINS }} · {{ skillFiles.length }}</span>
+        <button
+          class="plans-add"
+          :title="t('binder.addSkillTip')"
+          @click.stop="addWorkspaceFile('skills')"
+        >
+          +
+        </button>
       </div>
       <p
         v-if="skillsExpanded && skillFiles.length === 0"
@@ -184,6 +201,7 @@
           :key="skill.pathname"
           :title="skill.pathname"
           @click="openPlanFile(skill.pathname)"
+          @contextmenu.prevent.stop="showWorkspaceMenu($event, 'skills', skill)"
         >
           <span class="skill-name">{{ skill.name }}</span>
           <span
@@ -214,6 +232,7 @@ import { useNovelStore } from '@/store/novel'
 import { useEditorStore } from '@/store/editor'
 import { useProjectStore } from '@/store/project'
 import { useLayoutStore } from '@/store/layout'
+import { popupContextMenu } from '../../contextMenu/popupMenu'
 import { t } from '../../i18n'
 import type { INovelUnit, NovelUnitType } from '@shared/types/novel'
 
@@ -225,16 +244,40 @@ const { structure, flavor, totalWordCount, todayStart } = storeToRefs(novelStore
 
 // ---- Plans section (derived live from the watched project tree) ----
 const plansExpanded = ref(true)
-const planFiles = computed<Array<{ name: string; pathname: string }>>(() => {
-  const tree = projectStore.projectTree as {
-    folders?: Array<{ name: string; files?: Array<{ name: string; pathname: string }> }>
-  } | null
-  const plansDir = tree?.folders?.find((f) => f.name === 'plans')
-  return (plansDir?.files ?? [])
-    .filter((f) => /\.(md|markdown|txt)$/i.test(f.name))
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name))
-})
+interface WorkspaceEntry {
+  /** Display label — relative path inside the workspace dir. */
+  name: string
+  pathname: string
+}
+
+interface TreeFolderNode {
+  name: string
+  files?: Array<{ name: string; pathname: string }>
+  folders?: TreeFolderNode[]
+}
+
+/** Walk a workspace folder (subfolders welcome) into flat rows labelled
+ * with their relative path — combat/duels.md reads as exactly that. */
+const collectWorkspaceFiles = (dirName: string, extRe: RegExp): WorkspaceEntry[] => {
+  const tree = projectStore.projectTree as { folders?: TreeFolderNode[] } | null
+  const dir = tree?.folders?.find((f) => f.name === dirName)
+  if (!dir) return []
+  const out: WorkspaceEntry[] = []
+  const walk = (node: TreeFolderNode, prefix: string): void => {
+    for (const file of node.files ?? []) {
+      if (extRe.test(file.name)) out.push({ name: prefix + file.name, pathname: file.pathname })
+    }
+    for (const sub of node.folders ?? []) {
+      walk(sub, `${prefix}${sub.name}/`)
+    }
+  }
+  walk(dir, '')
+  return out.sort((a, b) => a.name.localeCompare(b.name))
+}
+
+const planFiles = computed<WorkspaceEntry[]>(() =>
+  collectWorkspaceFiles('plans', /\.(md|markdown|txt)$/i)
+)
 
 // ---- Skills: list + pin state + "Biscuit used it" glyph ----
 const MAX_PINS = 3
@@ -242,16 +285,9 @@ const skillsExpanded = ref(true)
 const pinnedSkills = ref<string[]>([])
 const usedSkills = ref(new Set<string>())
 
-const skillFiles = computed<Array<{ name: string; pathname: string }>>(() => {
-  const tree = projectStore.projectTree as {
-    folders?: Array<{ name: string; files?: Array<{ name: string; pathname: string }> }>
-  } | null
-  const dir = tree?.folders?.find((f) => f.name === 'skills')
-  return (dir?.files ?? [])
-    .filter((f) => /\.(md|markdown)$/i.test(f.name))
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name))
-})
+const skillFiles = computed<WorkspaceEntry[]>(() =>
+  collectWorkspaceFiles('skills', /\.(md|markdown)$/i)
+)
 
 const refreshPins = async (): Promise<void> => {
   const root = projectStore.currentProjectPath
@@ -293,6 +329,107 @@ const agentActivityHandler = (event: unknown): void => {
 onMounted(() => {
   window.electron.ai.onActivity?.(agentActivityHandler)
 })
+
+const SKILL_TEMPLATE =
+  '---\n' +
+  'name: My technique\n' +
+  'description: One line saying WHEN Biscuit should reach for this.\n' +
+  '---\n\n' +
+  'Write the instructions here — concrete rules, examples, do/don\u2019t lists.\n' +
+  'Biscuit loads this file when a task matches the description above,\n' +
+  'and you can pin it (📍) so it rides every turn.\n'
+
+const PLAN_TEMPLATE =
+  '# Plan\n\n- [ ] First step\n\nBiscuit reads and updates this file as it works; edit it freely.\n'
+
+const addWorkspaceFile = async (kind: 'plans' | 'skills'): Promise<void> => {
+  const root = projectStore.currentProjectPath
+  if (!root) return
+  const base = kind === 'skills' ? 'my-skill' : 'new-plan'
+  const template = kind === 'skills' ? SKILL_TEMPLATE : PLAN_TEMPLATE
+  try {
+    await window.fileUtils.ensureDir(window.path.join(root, kind))
+    // First non-colliding name: my-skill.md, my-skill-2.md, …
+    let name = `${base}.md`
+    for (let i = 2; i < 100; i++) {
+      const exists = await window.fileUtils.isFile(window.path.join(root, kind, name))
+      if (!exists) break
+      name = `${base}-${i}.md`
+    }
+    const pathname = window.path.join(root, kind, name)
+    await window.fileUtils.outputFile(pathname, template)
+    if (kind === 'skills') skillsExpanded.value = true
+    else plansExpanded.value = true
+    openPlanFile(pathname)
+  } catch (err) {
+    console.error('Create workspace file failed:', err)
+  }
+}
+
+// ---- Right-click: files get open/new/delete; headers get new file/folder ----
+
+const deleteWorkspaceFile = async (entry: WorkspaceEntry): Promise<void> => {
+  try {
+    await ElMessageBox.confirm(
+      t('binder.deleteFileConfirm', { name: entry.name }),
+      t('binder.delete'),
+      { type: 'warning' }
+    )
+  } catch {
+    return
+  }
+  try {
+    await window.fileUtils.unlink(entry.pathname)
+  } catch (err) {
+    console.error('Delete failed:', err)
+  }
+}
+
+const newWorkspaceFolder = async (kind: 'plans' | 'skills'): Promise<void> => {
+  const root = projectStore.currentProjectPath
+  if (!root) return
+  let name = ''
+  try {
+    const result = await ElMessageBox.prompt(t('binder.newFolder'), t('binder.newFolder'), {
+      inputPattern: /^[^\\/:*?"<>|.][^\\/:*?"<>|]*$/,
+      inputErrorMessage: t('binder.newFolder')
+    })
+    name = result.value.trim()
+  } catch {
+    return
+  }
+  if (!name) return
+  try {
+    await window.fileUtils.ensureDir(window.path.join(root, kind, name))
+  } catch (err) {
+    console.error('Create folder failed:', err)
+  }
+}
+
+const showWorkspaceMenu = (
+  event: MouseEvent,
+  kind: 'plans' | 'skills',
+  entry?: WorkspaceEntry
+): void => {
+  const items = []
+  if (entry) {
+    items.push({ label: t('binder.open'), click: () => openPlanFile(entry.pathname) })
+  }
+  items.push(
+    {
+      label: kind === 'skills' ? t('binder.addSkillTip') : t('binder.addPlanTip'),
+      click: () => addWorkspaceFile(kind)
+    },
+    { label: t('binder.newFolder'), click: () => newWorkspaceFolder(kind) }
+  )
+  if (entry) {
+    items.push(
+      { type: 'separator' },
+      { label: t('binder.delete'), click: () => deleteWorkspaceFile(entry) }
+    )
+  }
+  popupContextMenu(items, { x: event.clientX, y: event.clientY })
+}
 
 const openPlanFile = (pathname: string): void => {
   const editorStore = useEditorStore()
@@ -733,5 +870,20 @@ const handleCompile = async (format: 'md' | 'epub' | 'docx' = 'md'): Promise<voi
   font-size: 11.5px;
   line-height: 1.45;
   color: var(--editorColor30, var(--editorColor50));
+}
+
+.plans-add {
+  border: none;
+  background: transparent;
+  color: var(--iconColor);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  opacity: 0.5;
+  &:hover {
+    opacity: 1;
+    color: var(--themeColor);
+  }
 }
 </style>
