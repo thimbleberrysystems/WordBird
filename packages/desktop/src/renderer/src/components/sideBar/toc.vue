@@ -6,6 +6,13 @@
     <div class="title">
       {{ t('sideBar.toc.title') }}
     </div>
+    <empty-state
+      v-if="!toc.length"
+      small
+      icon="🧭"
+      :title="t('empty.tocTitle')"
+      :hint="t('empty.tocHint')"
+    />
     <el-tree
       v-if="toc.length"
       :data="toc"
@@ -20,6 +27,7 @@
 </template>
 
 <script setup lang="ts">
+import EmptyState from '../common/EmptyState.vue'
 import { useEditorStore } from '@/store/editor'
 import { usePreferencesStore } from '@/store/preferences'
 import bus from '../../bus'

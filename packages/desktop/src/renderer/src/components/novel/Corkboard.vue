@@ -94,12 +94,14 @@
         </div>
       </div>
     </div>
-    <p
+    <empty-state
       v-if="sections.length === 0"
-      class="cork-empty"
-    >
-      {{ t('binder.empty') }}
-    </p>
+      icon="🗂"
+      :title="t('empty.corkboardTitle')"
+      :hint="t('empty.corkboardHint')"
+      :action-label="t('empty.corkboardAction')"
+      @action="askBiscuitToDraft"
+    />
   </div>
 </template>
 
@@ -107,6 +109,8 @@
 import { computed, ref, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useNovelStore } from '@/store/novel'
+import EmptyState from '../common/EmptyState.vue'
+import bus from '../../bus'
 import { t } from '../../i18n'
 import type { INovelUnit } from '@shared/types/novel'
 
@@ -221,6 +225,10 @@ const dropOnSection = async (section: CorkSection, event: DragEvent): Promise<vo
 const saveSynopsis = (scene: INovelUnit, event: Event): void => {
   const synopsis = (event.target as HTMLTextAreaElement).value
   novelStore.updateUnit(scene.id, { synopsis })
+}
+
+const askBiscuitToDraft = (): void => {
+  bus.emit('biscuit-ask', t('empty.corkboardPrompt'))
 }
 </script>
 

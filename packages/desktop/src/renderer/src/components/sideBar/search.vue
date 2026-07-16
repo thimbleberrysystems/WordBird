@@ -88,22 +88,28 @@
       v-else
       class="empty"
     >
-      <div class="no-data">
-        <el-button
-          v-if="showNoFolderOpenedMessage"
-          text
-          bg
-          type="primary"
-          @click="openFolder"
-        >
-          {{ t('sideBar.search.openFolder') }}
-        </el-button>
-      </div>
+      <el-button
+        v-if="showNoFolderOpenedMessage"
+        text
+        bg
+        type="primary"
+        @click="openFolder"
+      >
+        {{ t('sideBar.search.openFolder') }}
+      </el-button>
+      <empty-state
+        v-else
+        small
+        icon="🔎"
+        :title="t('empty.searchTitle')"
+        :hint="t('empty.searchHint')"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import EmptyState from '../common/EmptyState.vue'
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useLayoutStore } from '@/store/layout'
 import { useProjectStore } from '@/store/project'

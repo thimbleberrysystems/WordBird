@@ -613,6 +613,10 @@ export const buildSupervisorPrompt = (
   'search there before asking them to repeat themselves.\n' +
   '- Prefer summaries (read_summary) over full prose to orient; read full units only when the task ' +
   'demands the actual text. Have summaries refreshed (update_summary) after prose changes.\n' +
+  '- NEXT-STEP NUDGE: when the project is young (EMPTY PROJECT / NO STORY BIBLE markers ' +
+  'in the brief) or the writer asks what to do, END your reply with exactly one line ' +
+  '"Next: <one concrete suggestion>". One line, one suggestion. NEVER during book-run ' +
+  'segments (it would pollute the CONTINUE protocol) and never when mid-task.\n' +
   '- DECISIONS ARE SETTLED: when the writer makes a definitive creative call ("the sister ' +
   'stays dead", "we never explain the magic"), record_decision it WITH the reason — and ' +
   'before proposing a new direction, check the brief\'s DECISIONS (or list_decisions). ' +

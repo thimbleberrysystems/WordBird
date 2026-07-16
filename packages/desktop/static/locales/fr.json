@@ -299,7 +299,8 @@
       "agents": "Agents",
       "entities": "Entités"
     },
-    "workspace": "Espace de travail de Biscuit"
+    "workspace": "Espace de travail de Biscuit",
+    "workspaceTip": "La fabrique du livre : les plans de Biscuit et vos compétences, à part du livre lui-même"
   },
   "commandPalette": {
     "placeholder": "Tapez une commande à exécuter",
@@ -1530,7 +1531,11 @@
     "allThreads": "Tous les fils",
     "threadFilterTip": "Afficher un seul fil narratif",
     "allLabels": "Toutes les étiquettes",
-    "labelFilterTip": "Filtrer les cartes par étiquette"
+    "labelFilterTip": "Filtrer les cartes par étiquette",
+    "pageTip": "Écrire — la page du manuscrit",
+    "corkboardTip": "Tableau de liège — chaque scène en carte",
+    "outlineTip": "Plan — les scènes en tableau éditable",
+    "timelineTip": "Chronologie — les scènes dans le temps du récit"
   },
   "continuity": {
     "title": "Continuité",
@@ -1659,5 +1664,29 @@
     "aliases": "Alias",
     "openPage": "Ouvrir la page de la bible",
     "empty": "Aucune entité pour l'instant — créez des pages de bible (personnages, lieux) et elles apparaîtront ici avec chaque scène concernée."
+  },
+  "empty": {
+    "corkboardAction": "Demander à Biscuit une scène d’ouverture",
+    "corkboardHint": "Chaque scène devient ici une carte — synopsis, statut et POV en un coup d’œil.",
+    "corkboardPrompt": "Rédige une scène d’ouverture pour cette histoire et ajoute-la au chapitre un.",
+    "corkboardTitle": "Pas encore de scènes à épingler",
+    "noProjectHint": "Ouvrez un dossier de projet WordBird, ou créez-en un depuis le menu Fichier.",
+    "noProjectOpen": "Ouvrir un projet",
+    "noProjectTitle": "Aucun projet ouvert",
+    "outlineHint": "Les scènes apparaissent ici en lignes éditables : statut, POV, lieu, temps, intrigues.",
+    "outlineTitle": "Rien à structurer pour l’instant",
+    "plansHint": "Biscuit range ici ses plans de travail — ils apparaissent lors de tâches en plusieurs étapes.",
+    "projectHomeAsk": "Laisser Biscuit tout préparer",
+    "projectHomeAskPrompt": "Aide-moi à préparer ce roman : interroge-moi brièvement sur mon histoire, puis crée la bible et le premier chapitre avec une scène d’ouverture.",
+    "projectHomeCreate": "Créer votre premier chapitre",
+    "projectHomeHint": "Un manuscrit tout neuf. Créez votre premier chapitre, ou laissez Biscuit monter le projet autour de votre idée.",
+    "searchHint": "Chaque scène, page de bible, note et plan — tapez ci-dessus pour chercher.",
+    "searchTitle": "Chercher dans tout le projet",
+    "skillsHint": "Vos fiches de technique réutilisables. Ajoutez-en une et Biscuit la suit quand la tâche correspond.",
+    "timelineHint": "Les scènes avec un « quand » s’alignent ici dans l’ordre de l’histoire — définissez-le dans le plan ou sur une carte.",
+    "timelineTitle": "Pas encore de temps du récit",
+    "tocHint": "Les titres du document ouvert apparaissent ici en sommaire cliquable.",
+    "tocTitle": "Aucun titre",
+    "workspaceEmpty": "vide"
   }
 }

@@ -299,7 +299,8 @@
       "agents": "代理",
       "entities": "實體"
     },
-    "workspace": "Biscuit 工作區"
+    "workspace": "Biscuit 工作區",
+    "workspaceTip": "書是怎麼寫成的：Biscuit 的計畫與你的技能，與書稿本身分開顯示"
   },
   "commandPalette": {
     "placeholder": "輸入要執行的命令",
@@ -1532,7 +1533,11 @@
     "allThreads": "全部線索",
     "threadFilterTip": "只顯示一條支線",
     "allLabels": "全部標籤",
-    "labelFilterTip": "按標籤篩選卡片"
+    "labelFilterTip": "按標籤篩選卡片",
+    "pageTip": "寫作 — 書稿頁面",
+    "corkboardTip": "軟木板 — 每個場景一張卡片",
+    "outlineTip": "大綱 — 可編輯的場景表格",
+    "timelineTip": "時間軸 — 按故事時間排列的場景"
   },
   "continuity": {
     "title": "連貫性",
@@ -1661,5 +1666,29 @@
     "aliases": "別名",
     "openPage": "打開聖典頁面",
     "empty": "還沒有實體——建立聖典頁面（人物、地點）後，它們會連同出現的場景一起顯示在這裡。"
+  },
+  "empty": {
+    "corkboardAction": "讓 Biscuit 寫一個開場場景",
+    "corkboardHint": "每個場景在這裡都會變成卡片 — 一眼看到梗概、狀態和視角。",
+    "corkboardPrompt": "為這個故事寫一個開場場景並加入第一章。",
+    "corkboardTitle": "還沒有可釘的場景",
+    "noProjectHint": "開啟一個 WordBird 專案資料夾，或從「檔案」選單新建。",
+    "noProjectOpen": "開啟專案",
+    "noProjectTitle": "未開啟專案",
+    "outlineHint": "場景會以可編輯的列出現：狀態、視角、地點、時間、線索。",
+    "outlineTitle": "還沒有可編排的內容",
+    "plansHint": "Biscuit 的工作計畫存放在這裡 — 進行多步驟工作時會出現。",
+    "projectHomeAsk": "讓 Biscuit 來搭建",
+    "projectHomeAskPrompt": "幫我搭建這部小說：先簡單訪談我了解故事，然後建立故事聖經和帶開場場景的第一章。",
+    "projectHomeCreate": "建立第一章",
+    "projectHomeHint": "全新的書稿。建立你的第一章，或讓 Biscuit 圍繞你的想法搭建整個專案。",
+    "searchHint": "每個場景、聖經頁面、筆記和計畫 — 在上方輸入即可搜尋。",
+    "searchTitle": "搜尋整個專案",
+    "skillsHint": "你的可重用技巧檔案。加入後，任務匹配時 Biscuit 會遵循。",
+    "timelineHint": "帶「何時」的場景會按故事順序排列 — 在大綱或卡片上設定。",
+    "timelineTitle": "還沒有故事時間",
+    "tocHint": "開啟文件的標題會在這裡顯示為可點擊的目錄。",
+    "tocTitle": "沒有標題",
+    "workspaceEmpty": "空"
   }
 }

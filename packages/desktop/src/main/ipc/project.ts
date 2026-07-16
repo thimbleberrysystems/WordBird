@@ -35,25 +35,6 @@ const chooseDirectory = async(win: BrowserWindow | null): Promise<string | null>
 // Per-flavor novel project scaffolding. All flavors share the story bible
 // and notes; they differ only in how prose files are laid out on disk
 // (see @shared/types/novel for the flavor descriptions).
-const BIBLE_README =
-  '# Story Bible\n\n' +
-  'Everything that is true about your story lives here — characters, places,\n' +
-  'plot threads, and research. Biscuit reads these pages to stay consistent\n' +
-  'with your canon and keeps them up to date as the story grows.\n\n' +
-  '- `characters/` — one page per character\n' +
-  '- `places/` — locations and settings\n' +
-  '- `threads/` — plot threads, arcs, and open questions\n' +
-  '- `research/` — real-world research notes with sources\n\n' +
-  '## Locking canon\n\n' +
-  'Add `locked: true` to a page\'s front matter to make it hard canon:\n\n' +
-  '```\n---\nlocked: true\n---\n```\n\n' +
-  'Biscuit can read locked pages but may never change them — if prose\n' +
-  'conflicts with locked canon, the prose gets fixed, not the canon.\n\n' +
-  '## Aliases\n\n' +
-  'List every name a character or place goes by so searches and revisions\n' +
-  'never miss a reference:\n\n' +
-  '```\n---\naliases: [Liz, Lizzy, the Widow Hale]\n---\n# Elizabeth Hale\n```\n'
-
 const COMMON_FOLDERS = [
   'skills',
   'bible/characters',
@@ -65,8 +46,6 @@ const COMMON_FOLDERS = [
 
 const STYLE_TEMPLATE =
   '# Style Guide\n\n' +
-  'Biscuit reads this page before writing or polishing prose. Fill in what\n' +
-  'matters to you; delete what doesn\'t.\n\n' +
   '## Voice & tense\n\n- Point of view: (e.g. third limited, single POV per scene)\n' +
   '- Tense: (e.g. past)\n- Narrator voice: (e.g. wry, restrained; no purple prose)\n\n' +
   '## Prose rules\n\n- Dialogue tags: (e.g. said/asked only)\n' +
@@ -74,10 +53,10 @@ const STYLE_TEMPLATE =
   '- Profanity/content boundaries:\n\n' +
   '## Character voices\n\n- (Name): speech habits, vocabulary, rhythm\n'
 
+// Boilerplate diet: guidance lives in the views' empty states now, not
+// in scaffolded READMEs the writer has to delete.
 const COMMON_FILES: Record<string, string> = {
-  'bible/README.md': BIBLE_README,
   'bible/style.md': STYLE_TEMPLATE,
-  'README.md': '# {{name}}\n\nA novel written with WordBird.',
   // Compiled output and agent thread state are derived/machine-local —
   // keep them out of snapshots.
   '.gitignore': 'exports/\n.wordbird/agent-state/\n'

@@ -299,7 +299,8 @@
       "agents": "Agenten",
       "entities": "Figuren & Orte"
     },
-    "workspace": "Biscuit-Arbeitsbereich"
+    "workspace": "Biscuit-Arbeitsbereich",
+    "workspaceTip": "Wie das Buch entsteht: Biscuits Pläne und deine Skills, getrennt vom Buch selbst"
   },
   "commandPalette": {
     "placeholder": "Befehl zum Ausführen eingeben",
@@ -1530,7 +1531,11 @@
     "allThreads": "Alle Handlungsstränge",
     "threadFilterTip": "Nur einen Handlungsstrang anzeigen",
     "allLabels": "Alle Etiketten",
-    "labelFilterTip": "Karten nach Etikett filtern"
+    "labelFilterTip": "Karten nach Etikett filtern",
+    "pageTip": "Schreiben — die Manuskriptseite",
+    "corkboardTip": "Pinnwand — jede Szene als Karte",
+    "outlineTip": "Gliederung — Szenen als editierbare Tabelle",
+    "timelineTip": "Zeitleiste — Szenen in Erzählzeit"
   },
   "continuity": {
     "title": "Kontinuität",
@@ -1659,5 +1664,29 @@
     "aliases": "Aliasse",
     "openPage": "Bibel-Seite öffnen",
     "empty": "Noch keine Einträge — lege Bibel-Seiten an (Figuren, Orte), dann erscheinen sie hier mit jeder Szene, in der sie vorkommen."
+  },
+  "empty": {
+    "corkboardAction": "Biscuit eine Eröffnungsszene entwerfen lassen",
+    "corkboardHint": "Jede Szene wird hier zur Karte — Synopsis, Status und POV auf einen Blick.",
+    "corkboardPrompt": "Entwirf eine Eröffnungsszene für diese Geschichte und füge sie Kapitel eins hinzu.",
+    "corkboardTitle": "Noch keine Szenen zum Anpinnen",
+    "noProjectHint": "Öffne einen WordBird-Projektordner oder lege im Datei-Menü einen neuen an.",
+    "noProjectOpen": "Projekt öffnen",
+    "noProjectTitle": "Kein Projekt geöffnet",
+    "outlineHint": "Szenen erscheinen hier als editierbare Zeilen: Status, POV, Ort, Zeit, Handlungsfäden.",
+    "outlineTitle": "Noch nichts zu gliedern",
+    "plansHint": "Biscuit legt hier seine Arbeitspläne ab — sie erscheinen bei mehrschrittiger Arbeit.",
+    "projectHomeAsk": "Biscuit einrichten lassen",
+    "projectHomeAskPrompt": "Hilf mir, diesen Roman aufzusetzen: Befrage mich kurz zu meiner Geschichte und lege dann Story-Bibel und das erste Kapitel mit einer Eröffnungsszene an.",
+    "projectHomeCreate": "Erstes Kapitel anlegen",
+    "projectHomeHint": "Ein frisches Manuskript. Lege dein erstes Kapitel an — oder lass Biscuit das Projekt rund um deine Idee aufsetzen.",
+    "searchHint": "Jede Szene, Bibel-Seite, Notiz und jeder Plan — oben tippen und suchen.",
+    "searchTitle": "Das ganze Projekt durchsuchen",
+    "skillsHint": "Deine wiederverwendbaren Technik-Dateien. Lege eine an und Biscuit folgt ihr bei passenden Aufgaben.",
+    "timelineHint": "Szenen mit „wann“ reihen sich hier in Story-Reihenfolge — setze es in der Gliederung oder auf einer Karte.",
+    "timelineTitle": "Noch keine Erzählzeit",
+    "tocHint": "Überschriften des offenen Dokuments erscheinen hier als klickbare Gliederung.",
+    "tocTitle": "Keine Überschriften",
+    "workspaceEmpty": "leer"
   }
 }

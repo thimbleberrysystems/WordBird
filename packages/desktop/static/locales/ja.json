@@ -299,7 +299,8 @@
       "agents": "エージェント",
       "entities": "エンティティ"
     },
-    "workspace": "Biscuit ワークスペース"
+    "workspace": "Biscuit ワークスペース",
+    "workspaceTip": "本の作り方：Biscuit のプランとあなたのスキル。本文とは分けて表示"
   },
   "commandPalette": {
     "placeholder": "実行するコマンドを入力",
@@ -1530,7 +1531,11 @@
     "allThreads": "すべてのスレッド",
     "threadFilterTip": "1つのサブプロットだけ表示",
     "allLabels": "すべてのラベル",
-    "labelFilterTip": "ラベルでカードを絞り込む"
+    "labelFilterTip": "ラベルでカードを絞り込む",
+    "pageTip": "執筆 — 原稿ページ",
+    "corkboardTip": "コルクボード — 各シーンをカードで",
+    "outlineTip": "アウトライン — 編集可能な表でシーンを",
+    "timelineTip": "タイムライン — 物語時間順のシーン"
   },
   "continuity": {
     "title": "整合性",
@@ -1659,5 +1664,29 @@
     "aliases": "別名",
     "openPage": "バイブルページを開く",
     "empty": "まだエンティティがありません。バイブルページ（人物・場所）を作成すると、登場するシーンとともにここに表示されます。"
+  },
+  "empty": {
+    "corkboardAction": "Biscuit に冒頭シーンを書いてもらう",
+    "corkboardHint": "各シーンがここでカードになります — あらすじ・ステータス・POV を一目で。",
+    "corkboardPrompt": "この物語の冒頭シーンを書いて、第1章に追加して。",
+    "corkboardTitle": "ピン留めするシーンはまだありません",
+    "noProjectHint": "WordBird プロジェクトフォルダを開くか、ファイルメニューから新規作成してください。",
+    "noProjectOpen": "プロジェクトを開く",
+    "noProjectTitle": "プロジェクトが開かれていません",
+    "outlineHint": "シーンが編集可能な行として並びます：ステータス・POV・場所・時間・スレッド。",
+    "outlineTitle": "まだアウトラインがありません",
+    "plansHint": "Biscuit の作業プランがここに入ります — 複数ステップの作業で自動的に現れます。",
+    "projectHomeAsk": "Biscuit にセットアップを頼む",
+    "projectHomeAskPrompt": "この小説のセットアップを手伝って：物語について簡単にインタビューして、ストーリーバイブルと冒頭シーン付きの第1章を作成して。",
+    "projectHomeCreate": "最初の章を作る",
+    "projectHomeHint": "まっさらな原稿です。最初の章を作るか、あなたのアイデアを軸に Biscuit にプロジェクトを組み立てさせましょう。",
+    "searchHint": "すべてのシーン・バイブル・ノート・プラン — 上に入力して検索。",
+    "searchTitle": "プロジェクト全体を検索",
+    "skillsHint": "再利用できるテクニックファイル。追加すれば、合うタスクで Biscuit が従います。",
+    "timelineHint": "「いつ」を持つシーンが物語順に並びます — アウトラインかカードで設定してください。",
+    "timelineTitle": "物語の時間はまだありません",
+    "tocHint": "開いているドキュメントの見出しが、クリックできる目次としてここに表示されます。",
+    "tocTitle": "見出しがありません",
+    "workspaceEmpty": "空"
   }
 }

@@ -69,17 +69,20 @@ class EditorWindow extends BaseWindow {
   createWindow(
     rootDirectory: string | null = null,
     fileList: string[] = [],
-    markdownList: string[] = [],
+    // Kept for signature stability; no caller ever passes content and the
+    // blank-tab bootstrap that consumed it is gone.
+    _markdownList: string[] = [],
     options: Partial<BrowserWindowConstructorOptions> = {},
     bufferStoreInfo: BufferStoreInfo | null = null
   ): BrowserWindow {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const accessor = this._accessor as any
     const { menu: appMenu, env, preferences, editorBufferStore } = accessor
-    // Only add a blank tab if we are NOT opening a project folder and have no files
-    // If no project is open, we want to show the "no project" view instead of a blank tab
-    const addBlankTab =
-      !bufferStoreInfo && !!rootDirectory && fileList.length === 0 && markdownList.length === 0
+    // Never bootstrap a blank tab: a bare launch shows the Recent view and
+    // an opened project shows Project Home — the old condition (inverted
+    // against its own comment) buried the project behind an Untitled tab.
+    // New-window/new-tab commands still create blanks on demand.
+    const addBlankTab = false
 
     const mainWindowState = windowStateKeeper({
       defaultWidth: 1200,
@@ -432,6 +435,18 @@ class EditorWindow extends BaseWindow {
       preferences.setItems({ lastOpenedFolder: pathname })
       appMenu.addRecentlyUsedDocument(pathname)
       this._openedRootDirectory = pathname
+
+      // WordBird projects always have their workspace dirs, so plans/ and
+      // skills/ are discoverable even in projects created before they
+      // existed. Idempotent; only for real projects (.wordbird marker).
+      try {
+        if (fs.existsSync(path.join(pathname, '.wordbird'))) {
+          fs.mkdirSync(path.join(pathname, 'plans'), { recursive: true })
+          fs.mkdirSync(path.join(pathname, 'skills'), { recursive: true })
+        }
+      } catch {
+        // Never block opening a project over workspace scaffolding.
+      }
       ipcMain.emit('watcher-watch-directory', browserWindow, pathname)
       browserWindow?.webContents.send('mt::open-directory', pathname)
     } else {

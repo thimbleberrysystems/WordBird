@@ -5,6 +5,7 @@
       :key="option.id"
       class="view-chip"
       :class="{ active: viewMode === option.id }"
+      :title="option.tip()"
       @click="novelStore.setViewMode(option.id)"
     >
       {{ option.label }}
@@ -20,11 +21,11 @@ import { t } from '../../i18n'
 const novelStore = useNovelStore()
 const { viewMode } = storeToRefs(novelStore)
 
-const options: Array<{ id: NovelViewMode; label: string }> = [
-  { id: 'page', label: t('views.page') },
-  { id: 'corkboard', label: t('views.corkboard') },
-  { id: 'outline', label: t('views.outline') },
-  { id: 'timeline', label: t('views.timeline') }
+const options: Array<{ id: NovelViewMode; label: string; tip: () => string }> = [
+  { id: 'page', label: t('views.page'), tip: () => t('views.pageTip') },
+  { id: 'corkboard', label: t('views.corkboard'), tip: () => t('views.corkboardTip') },
+  { id: 'outline', label: t('views.outline'), tip: () => t('views.outlineTip') },
+  { id: 'timeline', label: t('views.timeline'), tip: () => t('views.timelineTip') }
 ]
 </script>
 

@@ -1,6 +1,15 @@
 <template>
   <div class="outline-view">
-    <table class="outline-table">
+    <empty-state
+      v-if="rows.length === 0"
+      icon="📋"
+      :title="t('empty.outlineTitle')"
+      :hint="t('empty.outlineHint')"
+    />
+    <table
+      v-else
+      class="outline-table"
+    >
       <thead>
         <tr>
           <th class="col-title">
@@ -127,18 +136,13 @@
         </template>
       </tbody>
     </table>
-    <p
-      v-if="rows.length === 0"
-      class="outline-empty"
-    >
-      {{ t('binder.empty') }}
-    </p>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
+import EmptyState from '../common/EmptyState.vue'
 import { useNovelStore } from '@/store/novel'
 import { t } from '../../i18n'
 import type { INovelUnit, INovelUnitUpdate } from '@shared/types/novel'

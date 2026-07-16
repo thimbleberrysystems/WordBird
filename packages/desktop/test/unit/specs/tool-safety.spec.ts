@@ -296,6 +296,13 @@ describe('supervisor tool lists', () => {
   it('the snapshot doctrine is now something the supervisor can actually do', () => {
     expect(buildSupervisorPrompt('approvals', 6)).toContain('take snapshot_project yourself')
   })
+
+  it('the next-step nudge is bounded: young projects only, never in book runs', () => {
+    const prompt = buildSupervisorPrompt('approvals', 6)
+    expect(prompt).toContain('NEXT-STEP NUDGE')
+    expect(prompt).toContain('"Next: <one concrete suggestion>"')
+    expect(prompt).toContain('NEVER during book-run segments')
+  })
 })
 
 // ---- F4: confirm metadata is honest ----------------------------------------------------

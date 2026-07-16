@@ -79,12 +79,12 @@
           </div>
         </div>
       </div>
-      <p
+      <empty-state
         v-if="orderedScenes.length === 0"
-        class="timeline-empty"
-      >
-        {{ t('binder.empty') }}
-      </p>
+        icon="🕰"
+        :title="t('empty.timelineTitle')"
+        :hint="t('empty.timelineHint')"
+      />
     </div>
   </div>
 </template>
@@ -92,6 +92,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
+import EmptyState from '../common/EmptyState.vue'
 import { useNovelStore } from '@/store/novel'
 import { t } from '../../i18n'
 import type { INovelUnit } from '@shared/types/novel'

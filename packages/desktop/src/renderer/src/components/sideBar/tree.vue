@@ -110,26 +110,62 @@
           :file="file"
           :depth="depth"
         />
+      </div>
 
-        <!-- Biscuit workspace: how the book gets made (plans/, skills/),
-             kept visually apart from the book itself. -->
+      <!-- Biscuit workspace: how the book gets made (plans/, skills/).
+           PINNED below the scrolling book tree so a long manuscript can
+           never bury it; plans/skills rows always render (virtual when
+           the folder is missing) so the capability is discoverable. -->
+      <div
+        v-show="showDirectories"
+        class="workspace-section"
+      >
+        <div class="workspace-divider" />
         <div
-          v-if="workspaceFolders.length > 0"
-          class="workspace-section"
+          class="workspace-label"
+          :title="t('sideBar.workspaceTip')"
         >
-          <div class="workspace-divider" />
-          <div class="workspace-label">
-            {{ t('sideBar.workspace') }}
-          </div>
-          <folder
-            v-for="folder of workspaceFolders"
-            :key="folder.id"
-            :folder="folder"
-            :depth="depth"
-          />
+          {{ t('sideBar.workspace') }}
+        </div>
+        <div class="workspace-scroll">
+          <template
+            v-for="entry in workspaceEntries"
+            :key="entry.name"
+          >
+            <folder
+              v-if="entry.folder"
+              :folder="entry.folder"
+              :depth="depth"
+            />
+            <div
+              v-else
+              class="workspace-virtual"
+              :title="t(entry.name === 'plans' ? 'empty.plansHint' : 'empty.skillsHint')"
+            >
+              <span class="workspace-virtual__name">{{ entry.name }}/</span>
+              <span class="workspace-virtual__empty">{{ t('empty.workspaceEmpty') }}</span>
+              <button
+                class="workspace-virtual__create"
+                @click.stop="createWorkspaceFolder(entry.name)"
+              >
+                +
+              </button>
+            </div>
+          </template>
         </div>
       </div>
     </div>
+
+    <!-- No project open: the old markup for this state was lost — only its
+         orphaned CSS survived — leaving a blank panel. -->
+    <empty-state
+      v-if="!projectTree"
+      icon="📁"
+      :title="t('empty.noProjectTitle')"
+      :hint="t('empty.noProjectHint')"
+      :action-label="t('empty.noProjectOpen')"
+      @action="openProjectFolder"
+    />
   </div>
 </template>
 
@@ -140,6 +176,7 @@ import { useProjectStore } from '@/store/project'
 import { useEditorStore } from '@/store/editor'
 import { usePreferencesStore } from '@/store/preferences'
 import Folder from './treeFolder.vue'
+import EmptyState from '../common/EmptyState.vue'
 import File from './treeFile.vue'
 import OpenedFile from './treeOpenedTab.vue'
 import bus from '../../bus'
@@ -166,9 +203,22 @@ const props = defineProps<{
 const bookFolders = computed(() =>
   (props.projectTree?.folders ?? []).filter((f) => !WORKSPACE_DIRS.includes(f.name))
 )
-const workspaceFolders = computed(() =>
-  (props.projectTree?.folders ?? []).filter((f) => WORKSPACE_DIRS.includes(f.name))
+const workspaceEntries = computed(() =>
+  WORKSPACE_DIRS.map((name) => ({
+    name,
+    folder: (props.projectTree?.folders ?? []).find((f) => f.name === name) ?? null
+  }))
 )
+
+const createWorkspaceFolder = async (name: string): Promise<void> => {
+  const root = props.projectTree?.pathname
+  if (!root) return
+  try {
+    await window.fileUtils.ensureDir(window.path.join(root, name))
+  } catch (err) {
+    console.error('Create workspace folder failed:', err)
+  }
+}
 
 const depth = 0
 const showDirectories = ref(true)
@@ -248,6 +298,14 @@ onMounted(() => {
     }
   })
 })
+
+const openProjectFolder = async (): Promise<void> => {
+  try {
+    await window.electron.project.load()
+  } catch (err) {
+    console.error('Open project failed:', err)
+  }
+}
 </script>
 
 <style scoped>
@@ -387,14 +445,6 @@ onMounted(() => {
 .project-tree div.title:hover > a {
   opacity: 1;
 }
-.open-project {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  align-items: center;
-  padding-bottom: 100px;
-}
 
 .open-project .centered-group {
   display: flex;
@@ -432,17 +482,6 @@ onMounted(() => {
 .tree-wrapper {
   position: relative;
 }
-.empty-project {
-  font-size: 14px;
-  display: flex;
-  flex-direction: column;
-  padding-top: 40px;
-  align-items: center;
-  color: var(--sideBarTextColor);
-  & button {
-    margin-top: 10px;
-  }
-}
 
 .empty-project > a {
   color: var(--highlightThemeColor);
@@ -469,5 +508,45 @@ onMounted(() => {
   text-transform: uppercase;
   color: var(--editorColor30, var(--editorColor50));
   user-select: none;
+}
+
+.project-tree {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.workspace-section {
+  flex: 0 0 auto;
+}
+.workspace-scroll {
+  max-height: 30vh;
+  overflow-y: auto;
+}
+.workspace-virtual {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 15px;
+  font-size: 13px;
+  color: var(--editorColor50);
+  & .workspace-virtual__empty {
+    font-size: 11px;
+    color: var(--editorColor30, var(--editorColor50));
+  }
+  & .workspace-virtual__create {
+    margin-left: auto;
+    border: none;
+    background: transparent;
+    color: var(--iconColor);
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0.5;
+    &:hover {
+      opacity: 1;
+      color: var(--themeColor);
+    }
+  }
 }
 </style>

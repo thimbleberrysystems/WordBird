@@ -299,7 +299,8 @@
       "agents": "Agentes",
       "entities": "Entidades"
     },
-    "workspace": "Espacio de trabajo de Biscuit"
+    "workspace": "Espacio de trabajo de Biscuit",
+    "workspaceTip": "Cómo se hace el libro: los planes de Biscuit y tus habilidades, aparte del libro en sí"
   },
   "commandPalette": {
     "placeholder": "Escriba un comando para ejecutar",
@@ -1530,7 +1531,11 @@
     "allThreads": "Todas las tramas",
     "threadFilterTip": "Mostrar una sola trama",
     "allLabels": "Todas las etiquetas",
-    "labelFilterTip": "Filtrar tarjetas por etiqueta"
+    "labelFilterTip": "Filtrar tarjetas por etiqueta",
+    "pageTip": "Escribir — la página del manuscrito",
+    "corkboardTip": "Corcho — cada escena como tarjeta",
+    "outlineTip": "Esquema — escenas en tabla editable",
+    "timelineTip": "Cronología — escenas en tiempo de historia"
   },
   "continuity": {
     "title": "Continuidad",
@@ -1659,5 +1664,29 @@
     "aliases": "Alias",
     "openPage": "Abrir página de la biblia",
     "empty": "Aún no hay entidades: crea páginas de la biblia (personajes, lugares) y aparecerán aquí con cada escena en la que salgan."
+  },
+  "empty": {
+    "corkboardAction": "Pedir a Biscuit una escena inicial",
+    "corkboardHint": "Cada escena se convierte aquí en una tarjeta: sinopsis, estado y POV de un vistazo.",
+    "corkboardPrompt": "Redacta una escena inicial para esta historia y añádela al capítulo uno.",
+    "corkboardTitle": "Aún no hay escenas que fijar",
+    "noProjectHint": "Abre una carpeta de proyecto WordBird o crea una nueva desde el menú Archivo.",
+    "noProjectOpen": "Abrir un proyecto",
+    "noProjectTitle": "Ningún proyecto abierto",
+    "outlineHint": "Las escenas aparecen aquí como filas editables: estado, POV, lugar, tiempo, tramas.",
+    "outlineTitle": "Aún no hay nada que esquematizar",
+    "plansHint": "Biscuit guarda aquí sus planes de trabajo — aparecen al planificar tareas de varios pasos.",
+    "projectHomeAsk": "Pedir a Biscuit que lo prepare",
+    "projectHomeAskPrompt": "Ayúdame a montar esta novela: entrevístame brevemente sobre mi historia y luego crea la biblia y el primer capítulo con una escena inicial.",
+    "projectHomeCreate": "Crear tu primer capítulo",
+    "projectHomeHint": "Un manuscrito nuevo. Crea tu primer capítulo o deja que Biscuit monte el proyecto alrededor de tu idea.",
+    "searchHint": "Cada escena, página de la biblia, nota y plan — escribe arriba para buscar.",
+    "searchTitle": "Buscar en todo el proyecto",
+    "skillsHint": "Tus técnicas reutilizables. Añade una y Biscuit la seguirá cuando la tarea coincida.",
+    "timelineHint": "Las escenas con «cuándo» se ordenan aquí en tiempo de historia — defínelo en el esquema o en una tarjeta.",
+    "timelineTitle": "Aún no hay tiempo narrativo",
+    "tocHint": "Los encabezados del documento abierto aparecen aquí como un índice clicable.",
+    "tocTitle": "Sin encabezados",
+    "workspaceEmpty": "vacío"
   }
 }

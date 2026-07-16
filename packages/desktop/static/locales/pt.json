@@ -299,7 +299,8 @@
       "agents": "Agentes",
       "entities": "Entidades"
     },
-    "workspace": "Espaço de trabalho do Biscuit"
+    "workspace": "Espaço de trabalho do Biscuit",
+    "workspaceTip": "Como o livro é feito: os planos do Biscuit e suas habilidades, separados do livro em si"
   },
   "commandPalette": {
     "placeholder": "Digite um comando para executar",
@@ -1530,7 +1531,11 @@
     "allThreads": "Todas as tramas",
     "threadFilterTip": "Mostrar apenas uma trama",
     "allLabels": "Todos os rótulos",
-    "labelFilterTip": "Filtrar cartões por rótulo"
+    "labelFilterTip": "Filtrar cartões por rótulo",
+    "pageTip": "Escrever — a página do manuscrito",
+    "corkboardTip": "Quadro — cada cena como cartão",
+    "outlineTip": "Esquema — cenas em tabela editável",
+    "timelineTip": "Cronologia — cenas no tempo da história"
   },
   "continuity": {
     "title": "Continuidade",
@@ -1659,5 +1664,29 @@
     "aliases": "Aliases",
     "openPage": "Abrir página da bíblia",
     "empty": "Ainda não há entidades — crie páginas da bíblia (personagens, lugares) e elas aparecerão aqui com cada cena em que surgem."
+  },
+  "empty": {
+    "corkboardAction": "Pedir ao Biscuit uma cena de abertura",
+    "corkboardHint": "Cada cena vira um cartão aqui — sinopse, status e POV num relance.",
+    "corkboardPrompt": "Escreva uma cena de abertura para esta história e adicione ao capítulo um.",
+    "corkboardTitle": "Ainda não há cenas para fixar",
+    "noProjectHint": "Abra uma pasta de projeto WordBird ou crie uma nova no menu Arquivo.",
+    "noProjectOpen": "Abrir um projeto",
+    "noProjectTitle": "Nenhum projeto aberto",
+    "outlineHint": "As cenas aparecem como linhas editáveis: status, POV, lugar, tempo, tramas.",
+    "outlineTitle": "Nada para esquematizar ainda",
+    "plansHint": "O Biscuit guarda aqui seus planos de trabalho — aparecem em tarefas de várias etapas.",
+    "projectHomeAsk": "Pedir ao Biscuit para preparar",
+    "projectHomeAskPrompt": "Ajude-me a montar este romance: entreviste-me brevemente sobre a história e depois crie a bíblia e o primeiro capítulo com uma cena de abertura.",
+    "projectHomeCreate": "Criar seu primeiro capítulo",
+    "projectHomeHint": "Um manuscrito novo. Crie seu primeiro capítulo, ou deixe o Biscuit montar o projeto em torno da sua ideia.",
+    "searchHint": "Cada cena, página da bíblia, nota e plano — digite acima para pesquisar.",
+    "searchTitle": "Pesquisar o projeto inteiro",
+    "skillsHint": "Suas técnicas reutilizáveis. Adicione uma e o Biscuit a seguirá quando a tarefa combinar.",
+    "timelineHint": "Cenas com “quando” se alinham aqui em ordem da história — defina no esquema ou num cartão.",
+    "timelineTitle": "Ainda sem tempo narrativo",
+    "tocHint": "Os títulos do documento aberto aparecem aqui como um sumário clicável.",
+    "tocTitle": "Sem títulos",
+    "workspaceEmpty": "vazio"
   }
 }

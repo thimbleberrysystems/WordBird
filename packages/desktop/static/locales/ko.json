@@ -299,7 +299,8 @@
       "agents": "에이전트",
       "entities": "엔티티"
     },
-    "workspace": "Biscuit 작업 공간"
+    "workspace": "Biscuit 작업 공간",
+    "workspaceTip": "책이 만들어지는 방식: Biscuit의 플랜과 나의 스킬, 본문과 분리 표시"
   },
   "commandPalette": {
     "placeholder": "실행할 명령을 입력하세요",
@@ -1530,7 +1531,11 @@
     "allThreads": "모든 스레드",
     "threadFilterTip": "하나의 서브플롯만 표시",
     "allLabels": "모든 라벨",
-    "labelFilterTip": "라벨로 카드 필터링"
+    "labelFilterTip": "라벨로 카드 필터링",
+    "pageTip": "집필 — 원고 페이지",
+    "corkboardTip": "코르크보드 — 장면을 카드로",
+    "outlineTip": "아웃라인 — 편집 가능한 표",
+    "timelineTip": "타임라인 — 이야기 시간 순 장면"
   },
   "continuity": {
     "title": "연속성",
@@ -1659,5 +1664,29 @@
     "aliases": "별칭",
     "openPage": "바이블 페이지 열기",
     "empty": "아직 엔티티가 없습니다. 바이블 페이지(인물, 장소)를 만들면 등장하는 장면과 함께 여기에 표시됩니다."
+  },
+  "empty": {
+    "corkboardAction": "Biscuit에게 오프닝 장면 부탁하기",
+    "corkboardHint": "각 장면이 여기 카드가 됩니다 — 시놉시스·상태·POV를 한눈에.",
+    "corkboardPrompt": "이 이야기의 오프닝 장면을 써서 1장에 추가해줘.",
+    "corkboardTitle": "아직 붙일 장면이 없습니다",
+    "noProjectHint": "WordBird 프로젝트 폴더를 열거나 파일 메뉴에서 새로 만드세요.",
+    "noProjectOpen": "프로젝트 열기",
+    "noProjectTitle": "열린 프로젝트가 없습니다",
+    "outlineHint": "장면이 편집 가능한 행으로 나타납니다: 상태·POV·장소·시간·스레드.",
+    "outlineTitle": "아직 정리할 내용이 없습니다",
+    "plansHint": "Biscuit의 작업 플랜이 여기에 보관됩니다 — 다단계 작업 시 나타납니다.",
+    "projectHomeAsk": "Biscuit에게 설정 맡기기",
+    "projectHomeAskPrompt": "이 소설의 설정을 도와줘: 내 이야기에 대해 간단히 인터뷰한 뒤 스토리 바이블과 오프닝 장면이 있는 1장을 만들어줘.",
+    "projectHomeCreate": "첫 장 만들기",
+    "projectHomeHint": "새 원고입니다. 첫 장을 만들거나, Biscuit에게 아이디어를 중심으로 프로젝트를 구성하게 하세요.",
+    "searchHint": "모든 장면·바이블·노트·플랜 — 위에 입력해 검색하세요.",
+    "searchTitle": "프로젝트 전체 검색",
+    "skillsHint": "재사용 가능한 기법 파일. 추가하면 맞는 작업에서 Biscuit이 따릅니다.",
+    "timelineHint": "“언제”가 있는 장면이 이야기 순서로 정렬됩니다 — 아웃라인이나 카드에서 설정하세요.",
+    "timelineTitle": "아직 이야기 시간이 없습니다",
+    "tocHint": "열린 문서의 제목들이 클릭 가능한 목차로 표시됩니다.",
+    "tocTitle": "제목 없음",
+    "workspaceEmpty": "비어 있음"
   }
 }

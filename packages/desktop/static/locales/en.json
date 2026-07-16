@@ -299,7 +299,8 @@
       "agents": "Agents",
       "entities": "Entities"
     },
-    "workspace": "Biscuit workspace"
+    "workspace": "Biscuit workspace",
+    "workspaceTip": "How the book gets made: Biscuit’s plans and your skills, kept apart from the book itself"
   },
   "commandPalette": {
     "placeholder": "Type a command to execute",
@@ -1531,7 +1532,11 @@
     "allThreads": "All threads",
     "threadFilterTip": "Show one subplot/thread lane",
     "allLabels": "All labels",
-    "labelFilterTip": "Filter cards by label"
+    "labelFilterTip": "Filter cards by label",
+    "pageTip": "Write — the manuscript page",
+    "corkboardTip": "Corkboard — every scene as a card",
+    "outlineTip": "Outline — scenes as an editable table",
+    "timelineTip": "Timeline — scenes in story time"
   },
   "continuity": {
     "title": "Continuity",
@@ -1660,5 +1665,29 @@
     "aliases": "Aliases",
     "openPage": "Open bible page",
     "empty": "No entities yet — create bible pages (characters, places) and they appear here with every scene they touch."
+  },
+  "empty": {
+    "corkboardAction": "Ask Biscuit to draft an opening scene",
+    "corkboardHint": "Every scene becomes a card here — synopsis, status, and POV at a glance.",
+    "corkboardPrompt": "Draft an opening scene for this story and add it to chapter one.",
+    "corkboardTitle": "No scenes to pin up yet",
+    "noProjectHint": "Open a WordBird project folder, or create a new one from the File menu.",
+    "noProjectOpen": "Open a project",
+    "noProjectTitle": "No project open",
+    "outlineHint": "Scenes appear here as rows you can edit: status, POV, location, time, threads.",
+    "outlineTitle": "Nothing to outline yet",
+    "plansHint": "Biscuit keeps its working plans here — they appear as it plans multi-step work.",
+    "projectHomeAsk": "Ask Biscuit to set it up",
+    "projectHomeAskPrompt": "Help me set up this novel: interview me briefly about my story, then create the story bible and the first chapter with an opening scene.",
+    "projectHomeCreate": "Create your first chapter",
+    "projectHomeHint": "A fresh manuscript. Create your first chapter, or let Biscuit set the whole project up around your idea.",
+    "searchHint": "Every scene, bible page, note, and plan — type above to search.",
+    "searchTitle": "Search the whole project",
+    "skillsHint": "Your reusable technique files. Add one and Biscuit follows it when the task matches.",
+    "timelineHint": "Scenes with a “when” line up here in story order — set one in the Outline or on a card.",
+    "timelineTitle": "No story time yet",
+    "tocHint": "Headings in the open document appear here as a clickable outline.",
+    "tocTitle": "No headings",
+    "workspaceEmpty": "empty"
   }
 }

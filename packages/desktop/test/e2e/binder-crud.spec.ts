@@ -46,6 +46,15 @@ test.describe('Binder CRUD (real project)', () => {
     fs.rmSync(root, { recursive: true, force: true })
   })
 
+  test('project home fills the previously-blank center pane', async() => {
+    // A project with no file open used to render NOTHING in the editor
+    // area — now it's a launchpad.
+    await expect(page.locator('.project-home')).toBeVisible({ timeout: 15000 })
+    await expect(page.locator('.project-home')).toContainText('first chapter', {
+      ignoreCase: true
+    })
+  })
+
   test('the binder renders the manuscript tree', async() => {
     if (!(await page.locator('.side-bar').isVisible())) {
       await clickMenuById(app, 'sideBarMenuItem')
@@ -76,6 +85,9 @@ test.describe('Binder CRUD (real project)', () => {
     await expect(workspace).toContainText('plans')
     await expect(workspace).toContainText('skills')
     await expect(workspace).not.toContainText('manuscript')
+    // PINNED below the scroll area, not buried inside it: the section must
+    // not live within the scrolling tree wrapper.
+    await expect(page.locator('.tree-wrapper .workspace-section')).toHaveCount(0)
     // The book tree above still holds the manuscript.
     await expect(page.locator('.project-tree')).toContainText('manuscript')
     // Back to the binder for the next tests.

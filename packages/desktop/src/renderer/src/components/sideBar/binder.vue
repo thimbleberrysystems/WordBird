@@ -129,10 +129,7 @@
     <!-- Plans: Biscuit's (writer-co-owned) working plans in plans/ — the
          binder is where writers live, so plans must be visible here, not
          only in the raw Files view. -->
-    <div
-      v-if="planFiles.length > 0"
-      class="binder-plans"
-    >
+    <div class="binder-plans">
       <div
         class="plans-header"
         @click="plansExpanded = !plansExpanded"
@@ -144,6 +141,12 @@
         {{ t('binder.plans') }}
         <span class="plans-count">{{ planFiles.length }}</span>
       </div>
+      <p
+        v-if="plansExpanded && planFiles.length === 0"
+        class="workspace-hint"
+      >
+        {{ t('empty.plansHint') }}
+      </p>
       <ul v-show="plansExpanded">
         <li
           v-for="plan in planFiles"
@@ -157,10 +160,7 @@
     </div>
 
     <!-- Skills: writer-authored techniques. Pin = ride every model turn. -->
-    <div
-      v-if="skillFiles.length > 0"
-      class="binder-plans binder-skills"
-    >
+    <div class="binder-plans binder-skills">
       <div
         class="plans-header"
         @click="skillsExpanded = !skillsExpanded"
@@ -172,6 +172,12 @@
         {{ t('binder.skills') }}
         <span class="plans-count">{{ pinnedSkills.length }}/{{ MAX_PINS }} · {{ skillFiles.length }}</span>
       </div>
+      <p
+        v-if="skillsExpanded && skillFiles.length === 0"
+        class="workspace-hint"
+      >
+        {{ t('empty.skillsHint') }}
+      </p>
       <ul v-show="skillsExpanded">
         <li
           v-for="skill in skillFiles"
@@ -719,5 +725,13 @@ const handleCompile = async (format: 'md' | 'epub' | 'docx' = 'md'): Promise<voi
       opacity: 1;
     }
   }
+}
+
+.workspace-hint {
+  margin: 0;
+  padding: 2px 12px 4px 30px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--editorColor30, var(--editorColor50));
 }
 </style>
