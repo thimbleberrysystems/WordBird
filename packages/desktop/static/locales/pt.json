@@ -1473,6 +1473,7 @@
     "delete": "Excluir",
     "deleteConfirm": "Excluir \"{title}\" e seus arquivos? Um instantâneo pode trazê-los de volta.",
     "compile": "Compilar",
+    "plans": "Planos",
     "compiled": "Manuscrito compilado em {path}",
     "empty": "Nada aqui ainda — adicione um capítulo para começar.",
     "setTargetTip": "Clique para definir uma meta de palavras do manuscrito",

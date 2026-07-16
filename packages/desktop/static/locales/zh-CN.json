@@ -1473,6 +1473,7 @@
     "delete": "删除",
     "deleteConfirm": "删除“{title}”及其文件？可通过快照恢复。",
     "compile": "编译",
+    "plans": "计划",
     "compiled": "书稿已输出到 {path}",
     "empty": "这里还没有内容——添加一个章节开始吧。",
     "setTargetTip": "点击设置书稿目标字数",

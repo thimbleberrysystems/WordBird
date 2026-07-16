@@ -125,6 +125,36 @@
         {{ t('binder.empty') }}
       </p>
     </div>
+
+    <!-- Plans: Biscuit's (writer-co-owned) working plans in plans/ — the
+         binder is where writers live, so plans must be visible here, not
+         only in the raw Files view. -->
+    <div
+      v-if="planFiles.length > 0"
+      class="binder-plans"
+    >
+      <div
+        class="plans-header"
+        @click="plansExpanded = !plansExpanded"
+      >
+        <span
+          class="plans-caret"
+          :class="{ open: plansExpanded }"
+        >▸</span>
+        {{ t('binder.plans') }}
+        <span class="plans-count">{{ planFiles.length }}</span>
+      </div>
+      <ul v-show="plansExpanded">
+        <li
+          v-for="plan in planFiles"
+          :key="plan.pathname"
+          :title="plan.pathname"
+          @click="openPlanFile(plan.pathname)"
+        >
+          {{ plan.name }}
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
@@ -145,6 +175,33 @@ const projectStore = useProjectStore()
 const layoutStore = useLayoutStore()
 
 const { structure, flavor, totalWordCount, todayStart } = storeToRefs(novelStore)
+
+// ---- Plans section (derived live from the watched project tree) ----
+const plansExpanded = ref(true)
+const planFiles = computed<Array<{ name: string; pathname: string }>>(() => {
+  const tree = projectStore.projectTree as {
+    folders?: Array<{ name: string; files?: Array<{ name: string; pathname: string }> }>
+  } | null
+  const plansDir = tree?.folders?.find((f) => f.name === 'plans')
+  return (plansDir?.files ?? [])
+    .filter((f) => /\.(md|markdown|txt)$/i.test(f.name))
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+})
+
+const openPlanFile = (pathname: string): void => {
+  const editorStore = useEditorStore()
+  const openedTab = editorStore.tabs.find((f) =>
+    window.fileUtils.isSamePathSync(f.pathname, pathname)
+  )
+  if (openedTab) {
+    if (editorStore.currentFile?.pathname !== openedTab.pathname) {
+      editorStore.UPDATE_CURRENT_FILE(openedTab)
+    }
+  } else {
+    window.electron.ipcRenderer.send('mt::open-file', pathname, {})
+  }
+}
 const compiling = ref(false)
 
 // ---- Manuscript word target (per project, writer-set) ----
@@ -481,5 +538,52 @@ const handleCompile = async (format: 'md' | 'epub' | 'docx' = 'md'): Promise<voi
   padding: 16px 12px;
   font-size: 12px;
   color: var(--iconColor);
+}
+
+.binder-plans {
+  border-top: 1px solid var(--itemBgColor);
+  padding: 6px 0 10px;
+  font-size: 13px;
+
+  & .plans-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    color: var(--editorColor50);
+    cursor: pointer;
+    user-select: none;
+    &:hover {
+      color: var(--editorColor);
+    }
+  }
+  & .plans-caret {
+    display: inline-block;
+    transition: transform 0.15s;
+    &.open {
+      transform: rotate(90deg);
+    }
+  }
+  & .plans-count {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--editorColor30);
+  }
+  & ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  & li {
+    padding: 3px 12px 3px 30px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    color: var(--editorColor80, var(--editorColor));
+    &:hover {
+      background: var(--floatHoverColor, var(--itemBgColor));
+    }
+  }
 }
 </style>

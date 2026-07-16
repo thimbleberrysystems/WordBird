@@ -1473,6 +1473,7 @@
     "delete": "Löschen",
     "deleteConfirm": "„{title}“ und zugehörige Dateien löschen? Ein Schnappschuss kann sie zurückbringen.",
     "compile": "Zusammenstellen",
+    "plans": "Pläne",
     "compiled": "Manuskript erstellt unter {path}",
     "empty": "Noch nichts hier — füge ein Kapitel hinzu.",
     "setTargetTip": "Klicken, um ein Wortziel für das Manuskript zu setzen",

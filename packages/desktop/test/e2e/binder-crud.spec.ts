@@ -21,6 +21,7 @@ const makeProject = (): string => {
   }
   write('.wordbird/project.json', JSON.stringify({ name: 'E2E', flavor: 'chapters-scenes' }))
   write('manuscript/chapter-one/the-alley.md', 'Zara stepped into the alley.\n')
+  write('plans/draft-act-one.md', '# Plan\n\n- [ ] step one\n')
   return root
 }
 
@@ -47,6 +48,19 @@ test.describe('Binder CRUD (real project)', () => {
     }
     await expect(page.locator('.binder')).toBeVisible({ timeout: 15000 })
     await expect(page.locator('.binder')).toContainText('chapter', { ignoreCase: true })
+  })
+
+  test('plans are visible in the binder and open on click', async() => {
+    const plansSection = page.locator('.binder .binder-plans')
+    await expect(plansSection).toBeVisible({ timeout: 15000 })
+    await expect(plansSection).toContainText('draft-act-one.md')
+    await plansSection.locator('li', { hasText: 'draft-act-one.md' }).click()
+    // The plan opens as a normal editor tab.
+    await expect
+      .poll(async() =>
+        page.locator('.tabs-container > li', { hasText: 'draft-act-one.md' }).count()
+      )
+      .toBeGreaterThan(0)
   })
 
   test('the view switcher lives in the title bar, clear of the tab strip', async() => {

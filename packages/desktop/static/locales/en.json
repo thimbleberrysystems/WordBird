@@ -1474,6 +1474,7 @@
     "delete": "Delete",
     "deleteConfirm": "Delete \"{title}\" and its files? A snapshot can bring it back.",
     "compile": "Compile",
+    "plans": "Plans",
     "compiled": "Manuscript compiled to {path}",
     "empty": "Nothing here yet — add a chapter to begin.",
     "setTargetTip": "Click to set a manuscript word target",

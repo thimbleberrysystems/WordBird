@@ -1475,6 +1475,7 @@
     "delete": "刪除",
     "deleteConfirm": "刪除「{title}」及其檔案？可透過快照復原。",
     "compile": "編譯",
+    "plans": "計畫",
     "compiled": "書稿已輸出到 {path}",
     "empty": "這裡還沒有內容——新增一個章節開始吧。",
     "setTargetTip": "點擊設定書稿目標字數",
