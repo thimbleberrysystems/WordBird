@@ -475,6 +475,30 @@ live('17 · deterministic prose lint backs the polish loop', () => {
   })
 })
 
+live('19 · skills: writer-authored techniques load on demand', () => {
+  it('a named skill is loaded via the skill tools and shapes the answer', async() => {
+    const harness = await make()
+    fs.mkdirSync(path.join(harness.root, 'skills'), { recursive: true })
+    fs.writeFileSync(
+      path.join(harness.root, 'skills/cliffhanger-endings.md'),
+      '---\nname: Cliffhanger endings\ndescription: How this writer ends chapters.\n---\n\n' +
+        'Every chapter must end mid-beat, on the phrase or image of an unanswered ' +
+        'question — never after the resolution. The final line must name the danger.\n'
+    )
+    harness.setMode('ask')
+    const reply = await harness.send(
+      't-skill',
+      'Using my cliffhanger-endings skill, tell me in two sentences how chapter one should end.'
+    )
+    const usedSkillTool = harness.activity.some((event) =>
+      /use_skill|list_skills/.test(`${event.label} ${event.detail ?? ''}`)
+    )
+    expect(usedSkillTool).toBe(true)
+    // The answer reflects the skill's distinctive doctrine, not generic advice.
+    expect(reply.toLowerCase()).toMatch(/mid-beat|unanswered|danger|resolution/)
+  })
+})
+
 live('18 · web research flows through the provenance gate', () => {
   it('a researcher searches, fetches only returned URLs, and cites sources', async() => {
     const harness = await make()

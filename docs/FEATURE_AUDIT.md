@@ -247,6 +247,15 @@ extensibility model). WordBird's tool packs are JSON-defined but handlers
 must be registered in code — by design. MCP is the eventual third-party
 extension story; heavy and unneeded today.
 
+**Added 2026-07-17 — Skills + workspace separation.** Writer-authored
+technique files in skills/ (Claude Code skills pattern for prose):
+front-matter name/description, catalog in every brief, use_skill loads
+bodies on demand, writer-pinned skills (≤3) ride every turn in full —
+the on-demand complement to always-on biscuit.md. Binder shows
+Plans/Skills with pin toggles + used-glyphs; the Files tree separates
+the Biscuit workspace (plans/, skills/) under a divider; skills join the
+prompt's @-picker. Agents can PROPOSE new skills via the review queue.
+
 **Added 2026-07-17 — tool-safety overhaul (audit F0–F8).** A holistic
 audit of the full enforcement chain found and closed: an unvalidated
 apply-layer write IPC (now apply-by-proposal-id with full validation),

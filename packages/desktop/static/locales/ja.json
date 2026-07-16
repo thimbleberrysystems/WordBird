@@ -298,7 +298,8 @@
       "continuity": "整合性",
       "agents": "エージェント",
       "entities": "エンティティ"
-    }
+    },
+    "workspace": "Biscuit ワークスペース"
   },
   "commandPalette": {
     "placeholder": "実行するコマンドを入力",
@@ -1490,7 +1491,10 @@
     "compileMd": "Markdownに書き出し",
     "compileEpub": "EPUBに書き出し（電子書籍）",
     "compileDocx": "Wordに書き出し（.docx）",
-    "historyTip": "1日あたりの執筆語数（直近14日）— 連続記録：{streak}"
+    "historyTip": "1日あたりの執筆語数（直近14日）— 連続記録：{streak}",
+    "skills": "スキル",
+    "pinTip": "ピン留め：このスキルは毎ターン Biscuit に渡されます（最大 {max}）— コンテキストを消費し、確実に参照されます",
+    "skillUsedTip": "このセッションで Biscuit がこのスキルを使用しました"
   },
   "history": {
     "title": "履歴",

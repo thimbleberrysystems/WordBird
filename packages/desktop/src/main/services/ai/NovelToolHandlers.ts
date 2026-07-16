@@ -29,6 +29,7 @@ import { STRUCTURE_TEMPLATES } from '../novel/structureTemplates'
 import { continuityService } from '../novel/ContinuityService'
 import { revisionService, RevisionService } from '../novel/RevisionService'
 import { isLockedCanon } from './pathGuards'
+import { listSkills, readSkill } from '../novel/Skills'
 import type { AgentToolContext, AgentToolService } from './AgentToolService'
 import type { INovelUnit, IContinuityIssue } from '../../../shared/types/novel'
 
@@ -556,6 +557,49 @@ const listFacts = async(
 }
 
 // ---- deterministic prose lint (the "run the tests" of fiction) ----
+
+// ---- Skills (writer-authored, on-demand technique files) ----
+
+const listSkillsTool = async(
+  _args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const skills = listSkills(root)
+  return {
+    skills,
+    note:
+      skills.length === 0
+        ? 'No skills yet. The writer (or you, via propose_new_file into skills/) can add ' +
+          'markdown technique files with front matter name/description.'
+        : 'Load a body with use_skill when a task matches its description.'
+  }
+}
+
+const useSkillTool = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const name = str(args, 'name')
+  const found = readSkill(root, name)
+  if (!found) {
+    const available = listSkills(root).map((skill) => skill.name)
+    throw new Error(
+      `No skill named "${name}". ` +
+      (available.length > 0
+        ? `Available skills: ${available.join(', ')}.`
+        : 'This project has no skills yet (skills/*.md).')
+    )
+  }
+  const capped = capForContext(found.body, 'use a narrower skill file')
+  return {
+    name: found.meta.name,
+    file: found.meta.file,
+    instructions: capped.text,
+    truncated: capped.truncated
+  }
+}
 
 const lintProseTool = async(
   args: Record<string, unknown>,
@@ -1471,6 +1515,8 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('record_fact', recordFact)
   service.registerHandler('list_facts', listFacts)
   service.registerHandler('lint_prose', lintProseTool)
+  service.registerHandler('list_skills', listSkillsTool)
+  service.registerHandler('use_skill', useSkillTool)
   service.registerHandler('list_snapshots', listSnapshots)
   service.registerHandler('read_snapshot_file', readSnapshotFile)
   service.registerHandler('diff_snapshot_file', diffSnapshotFile)

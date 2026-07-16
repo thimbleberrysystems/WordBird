@@ -372,6 +372,8 @@ export const SUPERVISOR_TOOL_NAMES = [
   'diff_snapshot_file',
   'preview_snapshot',
   'lint_prose',
+  'list_skills',
+  'use_skill',
   'get_revision',
   'save_plan',
   'update_plan',
@@ -609,6 +611,9 @@ export const buildSupervisorPrompt = (
   'search there before asking them to repeat themselves.\n' +
   '- Prefer summaries (read_summary) over full prose to orient; read full units only when the task ' +
   'demands the actual text. Have summaries refreshed (update_summary) after prose changes.\n' +
+  '- SKILLS: the brief lists the writer\'s technique files (skills/). When a task matches ' +
+  'a skill\'s description, use_skill it BEFORE writing — the writer authored it because ' +
+  'they want it followed. Pinned skills already ride the brief in full.\n' +
   '- Before sweeping multi-file changes, take snapshot_project yourself so the writer can rewind.\n' +
   '- New canon discovered while working should be recorded via a drafter with propose_bible_update.\n' +
   '\nLIVE PLANS (any mode): for multi-step endeavors keep a plan file in plans/ — ' +

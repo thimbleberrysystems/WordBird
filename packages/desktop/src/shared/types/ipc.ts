@@ -204,6 +204,11 @@ export interface IpcInvokeChannels {
     args: [root: string]
     ret: Array<{ date: string; written: number }>
   }
+  'mt::novel:pinned-skills': { args: [root: string]; ret: { pinned: string[] } }
+  'mt::novel:pin-skill': {
+    args: [root: string, file: string, pinned: boolean]
+    ret: { ok: boolean; pinned: string[]; error?: string }
+  }
   'mt::novel:entity-index': {
     args: [root: string]
     ret: {

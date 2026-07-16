@@ -7,6 +7,7 @@
  */
 
 import { ipcMain } from 'electron'
+import fs from 'fs'
 import path from 'path'
 import log from 'electron-log'
 import { isValidProjectPath } from '../filesystem/markdown'
@@ -244,6 +245,52 @@ export const registerNovelHandlers = (): void => {
         return await readDailyWordHistory(safeRoot)
       } catch {
         return []
+      }
+    }
+  )
+
+  // Writer-pinned skills: pinned bodies ride every model turn (capped).
+  ipcMain.handle('mt::novel:pinned-skills', async(_e, root: string) => {
+    const safeRoot = guardRoot(root)
+    if (!safeRoot) return { pinned: [] }
+    const { readPinnedSkills } = await import('../services/novel/Skills')
+    return { pinned: readPinnedSkills(safeRoot) }
+  })
+
+  ipcMain.handle(
+    'mt::novel:pin-skill',
+    async(_e, root: string, file: string, pinned: boolean) => {
+      const safeRoot = guardRoot(root)
+      if (!safeRoot || typeof file !== 'string' || !file) {
+        return { ok: false, pinned: [] as string[] }
+      }
+      const { readPinnedSkills, MAX_PINNED_SKILLS } = await import('../services/novel/Skills')
+      const current = readPinnedSkills(safeRoot)
+      let next = current.filter((f) => f !== file)
+      if (pinned) {
+        if (current.includes(file)) {
+          next = current
+        } else if (current.length >= MAX_PINNED_SKILLS) {
+          return { ok: false, pinned: current, error: `Up to ${MAX_PINNED_SKILLS} skills can be pinned.` }
+        } else {
+          next = [...current, file]
+        }
+      }
+      try {
+        const sessionDir = path.join(safeRoot, '.wordbird', 'agent-state')
+        const sessionPath = path.join(sessionDir, 'session.json')
+        let session: Record<string, unknown> = {}
+        try {
+          session = JSON.parse(fs.readFileSync(sessionPath, 'utf8')) as Record<string, unknown>
+        } catch {
+          // fresh session file
+        }
+        fs.mkdirSync(sessionDir, { recursive: true })
+        fs.writeFileSync(sessionPath, JSON.stringify({ ...session, pinnedSkills: next }), 'utf8')
+        return { ok: true, pinned: next }
+      } catch (error) {
+        log.error('[novel] pin-skill failed:', error)
+        return { ok: false, pinned: current }
       }
     }
   )

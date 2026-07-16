@@ -353,7 +353,7 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   draft-next-scene with mandatory aftercare, extend, polish, health check)
   and spawn heuristics (do small things directly; spawn specialists for
   multi-unit work).
-- Tools (48): `main/services/ai/AgentToolHandlers.ts` (core file read/edit
+- Tools (50): `main/services/ai/AgentToolHandlers.ts` (core file read/edit
   + `propose_text_edit` — anchored exact-quote search/replace, the Aider
   SEARCH/REPLACE pattern, with occurrence disambiguation; the prompt-pinned
   path for surgical prose fixes, whole-file `propose_project_file_edit` is
@@ -363,7 +363,12 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   `novel/ProseLint.ts`: doubled words/near-repeats/filler/filter-phrases/
   passive+adverb density/monotony/hygiene + banned terms parsed from
   bible/style.md; line-editors lint before+after, CRITIC PASS lints drafted
-  scenes), `WebToolHandlers.ts` (web/wiki/dictionary; SSRF guards incl.
+  scenes; `list_skills`/`use_skill` — writer-authored technique files in
+  skills/, backed by `novel/Skills.ts`: front-matter name/description
+  catalog in every brief, bodies loaded on demand, writer-PINNED skills
+  (≤3, `.wordbird/agent-state/session.json`, binder pin UI +
+  mt::novel:pin-skill) ride every brief in full — biscuit.md is the
+  always-on channel, skills are the on-demand one), `WebToolHandlers.ts` (web/wiki/dictionary; SSRF guards incl.
   DNS-pinned lookups + per-hop redirect re-validation, and URL PROVENANCE
   à la Anthropic's web_fetch — only URLs the writer supplied or a search
   returned this session are fetchable; registry seeded by
@@ -379,7 +384,8 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   never persisted into thread state. Also builds the scene handoff. A
   project-root `biscuit.md` (CLAUDE.md pattern — writer-editable standing
   instructions) rides every brief verbatim, capped at 2000 chars; the
-  onboarding playbook offers to create it.
+  onboarding playbook offers to create it. SKILLS AVAILABLE (catalog) +
+  PINNED SKILLS (full bodies) sections follow it.
 - `main/services/novel/EntityIndex.ts` — deterministic entity index (no
   LLM): bible pages (name + aliases) × prose units → appearance counts,
   persisted at `.wordbird/index/entities.json`, rebuilt lazily on an

@@ -155,6 +155,47 @@
         </li>
       </ul>
     </div>
+
+    <!-- Skills: writer-authored techniques. Pin = ride every model turn. -->
+    <div
+      v-if="skillFiles.length > 0"
+      class="binder-plans binder-skills"
+    >
+      <div
+        class="plans-header"
+        @click="skillsExpanded = !skillsExpanded"
+      >
+        <span
+          class="plans-caret"
+          :class="{ open: skillsExpanded }"
+        >▸</span>
+        {{ t('binder.skills') }}
+        <span class="plans-count">{{ pinnedSkills.length }}/{{ MAX_PINS }} · {{ skillFiles.length }}</span>
+      </div>
+      <ul v-show="skillsExpanded">
+        <li
+          v-for="skill in skillFiles"
+          :key="skill.pathname"
+          :title="skill.pathname"
+          @click="openPlanFile(skill.pathname)"
+        >
+          <span class="skill-name">{{ skill.name }}</span>
+          <span
+            v-if="usedSkills.has(skill.name)"
+            class="skill-used-dot"
+            :title="t('binder.skillUsedTip')"
+          />
+          <button
+            class="skill-pin"
+            :class="{ pinned: pinnedSkills.includes(skill.name) }"
+            :title="t('binder.pinTip', { max: String(MAX_PINS) })"
+            @click.stop="togglePin(skill.name)"
+          >
+            {{ pinnedSkills.includes(skill.name) ? '📌' : '📍' }}
+          </button>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
@@ -187,6 +228,64 @@ const planFiles = computed<Array<{ name: string; pathname: string }>>(() => {
     .filter((f) => /\.(md|markdown|txt)$/i.test(f.name))
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name))
+})
+
+// ---- Skills: list + pin state + "Biscuit used it" glyph ----
+const MAX_PINS = 3
+const skillsExpanded = ref(true)
+const pinnedSkills = ref<string[]>([])
+const usedSkills = ref(new Set<string>())
+
+const skillFiles = computed<Array<{ name: string; pathname: string }>>(() => {
+  const tree = projectStore.projectTree as {
+    folders?: Array<{ name: string; files?: Array<{ name: string; pathname: string }> }>
+  } | null
+  const dir = tree?.folders?.find((f) => f.name === 'skills')
+  return (dir?.files ?? [])
+    .filter((f) => /\.(md|markdown)$/i.test(f.name))
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+})
+
+const refreshPins = async (): Promise<void> => {
+  const root = projectStore.currentProjectPath
+  if (!root) return
+  try {
+    const { pinned } = await window.electron.novel.pinnedSkills(root)
+    pinnedSkills.value = pinned
+  } catch {
+    pinnedSkills.value = []
+  }
+}
+
+const togglePin = async (file: string): Promise<void> => {
+  const root = projectStore.currentProjectPath
+  if (!root) return
+  const wantPinned = !pinnedSkills.value.includes(file)
+  const result = await window.electron.novel.pinSkill(root, file, wantPinned)
+  if (!result.ok && result.error) {
+    ElMessage.warning(result.error)
+  }
+  pinnedSkills.value = result.pinned
+}
+
+watch(() => projectStore.currentProjectPath, refreshPins, { immediate: true })
+
+// Passive "Biscuit reached for it" dot: watch the agent activity feed for
+// use_skill events this session.
+const agentActivityHandler = (event: unknown): void => {
+  const e = event as { label?: string; detail?: string } | null
+  if (!e?.label?.includes('use_skill') && !(e?.detail ?? '').includes('use_skill')) return
+  const text = `${e?.label ?? ''} ${e?.detail ?? ''}`
+  for (const skill of skillFiles.value) {
+    const stem = skill.name.replace(/\.(md|markdown)$/i, '')
+    if (text.includes(stem) || text.includes(skill.name)) {
+      usedSkills.value = new Set([...usedSkills.value, skill.name])
+    }
+  }
+}
+onMounted(() => {
+  window.electron.ai.onActivity?.(agentActivityHandler)
 })
 
 const openPlanFile = (pathname: string): void => {
@@ -583,6 +682,41 @@ const handleCompile = async (format: 'md' | 'epub' | 'docx' = 'md'): Promise<voi
     color: var(--editorColor80, var(--editorColor));
     &:hover {
       background: var(--floatHoverColor, var(--itemBgColor));
+    }
+  }
+}
+
+.binder-skills li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  & .skill-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1 1 auto;
+  }
+  & .skill-used-dot {
+    flex: 0 0 6px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--themeColor);
+    opacity: 0.7;
+  }
+  & .skill-pin {
+    flex: 0 0 auto;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 12px;
+    opacity: 0.35;
+    padding: 0 2px;
+    &:hover {
+      opacity: 1;
+    }
+    &.pinned {
+      opacity: 1;
     }
   }
 }

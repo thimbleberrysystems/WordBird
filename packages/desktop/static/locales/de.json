@@ -298,7 +298,8 @@
       "continuity": "Kontinuität",
       "agents": "Agenten",
       "entities": "Figuren & Orte"
-    }
+    },
+    "workspace": "Biscuit-Arbeitsbereich"
   },
   "commandPalette": {
     "placeholder": "Befehl zum Ausführen eingeben",
@@ -1490,7 +1491,10 @@
     "compileMd": "Als Markdown kompilieren",
     "compileEpub": "Als EPUB kompilieren (E-Book)",
     "compileDocx": "Als Word kompilieren (.docx)",
-    "historyTip": "Wörter pro Tag (letzte 14 Tage) — aktuelle Serie: {streak}"
+    "historyTip": "Wörter pro Tag (letzte 14 Tage) — aktuelle Serie: {streak}",
+    "skills": "Skills",
+    "pinTip": "Anheften: dieser Skill begleitet jeden Biscuit-Zug (max. {max}) — kostet Kontext, garantiert Beachtung",
+    "skillUsedTip": "Biscuit hat diesen Skill in dieser Sitzung verwendet"
   },
   "history": {
     "title": "Verlauf",

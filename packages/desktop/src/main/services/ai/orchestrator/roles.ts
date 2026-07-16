@@ -28,6 +28,8 @@ const READ_TOOLS = [
   'list_continuity_issues',
   'list_facts',
   'lint_prose',
+  'list_skills',
+  'use_skill',
   'list_snapshots',
   'read_snapshot_file',
   'diff_snapshot_file',
@@ -61,7 +63,11 @@ export const PROJECT_CONVENTIONS =
   'details, add to it when scenes establish new ones. plans/ — live plan files. ' +
   'notes/ — the writer\'s freeform notes. .wordbird/ and .git/ are otherwise off-limits.\n' +
   '- The binder (structure.json) is the source of truth for order and metadata — use ' +
-  'list_structure ids, never guess paths.\n'
+  'list_structure ids, never guess paths.\n' +
+  '- skills/ — writer-authored technique files (front matter name/description + ' +
+  'instructions). The brief lists the catalog; use_skill loads one when a task matches ' +
+  'its description. When a technique proves reusable, offer to save it as a new skill ' +
+  'via propose_new_file into skills/ (review-gated).\n'
 
 const SCENE_CRAFT =
   ' SCENE CRAFT (Swain): a proactive scene carries goal → conflict → disaster/turn; a ' +

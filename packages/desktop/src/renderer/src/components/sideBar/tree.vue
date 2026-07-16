@@ -89,7 +89,7 @@
         class="tree-wrapper"
       >
         <folder
-          v-for="folder of projectTree.folders"
+          v-for="folder of bookFolders"
           :key="folder.id"
           :folder="folder"
           :depth="depth"
@@ -110,6 +110,24 @@
           :file="file"
           :depth="depth"
         />
+
+        <!-- Biscuit workspace: how the book gets made (plans/, skills/),
+             kept visually apart from the book itself. -->
+        <div
+          v-if="workspaceFolders.length > 0"
+          class="workspace-section"
+        >
+          <div class="workspace-divider" />
+          <div class="workspace-label">
+            {{ t('sideBar.workspace') }}
+          </div>
+          <folder
+            v-for="folder of workspaceFolders"
+            :key="folder.id"
+            :folder="folder"
+            :depth="depth"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -131,7 +149,11 @@ import type { TreeNode, TabDescriptor } from './types'
 
 const { t } = useI18n()
 
-defineProps<{
+// The book vs the workshop: plans/ and skills/ are Biscuit's workspace,
+// shown under a divider so they never mix with manuscript/bible/notes.
+const WORKSPACE_DIRS = ['plans', 'skills']
+
+const props = defineProps<{
   // The project store seeds `projectTree` as `null` until a folder is
   // opened; the template renders the "open project" empty-state behind
   // `v-if="projectTree"`. Type the prop nullable to match runtime + the
@@ -140,6 +162,13 @@ defineProps<{
   openedFiles?: TabDescriptor[]
   tabs?: TabDescriptor[]
 }>()
+
+const bookFolders = computed(() =>
+  (props.projectTree?.folders ?? []).filter((f) => !WORKSPACE_DIRS.includes(f.name))
+)
+const workspaceFolders = computed(() =>
+  (props.projectTree?.folders ?? []).filter((f) => WORKSPACE_DIRS.includes(f.name))
+)
 
 const depth = 0
 const showDirectories = ref(true)
@@ -423,5 +452,22 @@ onMounted(() => {
 }
 .bold {
   font-weight: 600;
+}
+
+.workspace-section {
+  margin-top: 10px;
+}
+.workspace-divider {
+  height: 1px;
+  background: var(--itemBgColor);
+  margin: 8px 12px;
+}
+.workspace-label {
+  padding: 0 15px 4px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--editorColor30, var(--editorColor50));
+  user-select: none;
 }
 </style>

@@ -298,7 +298,8 @@
       "continuity": "Continuity",
       "agents": "Agents",
       "entities": "Entities"
-    }
+    },
+    "workspace": "Biscuit workspace"
   },
   "commandPalette": {
     "placeholder": "Type a command to execute",
@@ -1491,7 +1492,10 @@
     "compileMd": "Compile to Markdown",
     "compileEpub": "Compile to EPUB (e-book)",
     "compileDocx": "Compile to Word (.docx)",
-    "historyTip": "Words written per day (last 14 days) — current streak: {streak}"
+    "historyTip": "Words written per day (last 14 days) — current streak: {streak}",
+    "skills": "Skills",
+    "pinTip": "Pin: this skill rides every Biscuit turn (max {max}) — costs context, guarantees attention",
+    "skillUsedTip": "Biscuit used this skill in this session"
   },
   "history": {
     "title": "History",

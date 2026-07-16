@@ -298,7 +298,8 @@
       "continuity": "연속성",
       "agents": "에이전트",
       "entities": "엔티티"
-    }
+    },
+    "workspace": "Biscuit 작업 공간"
   },
   "commandPalette": {
     "placeholder": "실행할 명령을 입력하세요",
@@ -1490,7 +1491,10 @@
     "compileMd": "Markdown으로 컴파일",
     "compileEpub": "EPUB으로 컴파일 (전자책)",
     "compileDocx": "Word로 컴파일 (.docx)",
-    "historyTip": "일별 집필 단어 수(최근 14일) — 현재 연속 기록: {streak}"
+    "historyTip": "일별 집필 단어 수(최근 14일) — 현재 연속 기록: {streak}",
+    "skills": "스킬",
+    "pinTip": "고정: 이 스킬은 매 턴 Biscuit에 전달됩니다(최대 {max}) — 컨텍스트를 사용하지만 확실히 반영됩니다",
+    "skillUsedTip": "이 세션에서 Biscuit이 이 스킬을 사용했습니다"
   },
   "history": {
     "title": "기록",

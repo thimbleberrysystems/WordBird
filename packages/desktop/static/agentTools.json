@@ -584,6 +584,41 @@
       }
     },
     {
+      "id": "list_skills",
+      "name": "list_skills",
+      "description": "List the writer's skills (skills/*.md technique files): name, description, file. The brief carries this catalog too; load a body with use_skill when a task matches.",
+      "handler": "list_skills",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
+      "id": "use_skill",
+      "name": "use_skill",
+      "description": "Load a skill's full instructions by name (or filename). Use BEFORE writing when the task matches the skill's description — the writer authored it because they want it followed.",
+      "handler": "use_skill",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Skill name from the catalog (or its filename)."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    },
+    {
       "id": "list_continuity_issues",
       "name": "list_continuity_issues",
       "displayName": "List continuity issues",

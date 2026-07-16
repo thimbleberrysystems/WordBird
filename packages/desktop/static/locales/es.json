@@ -298,7 +298,8 @@
       "continuity": "Continuidad",
       "agents": "Agentes",
       "entities": "Entidades"
-    }
+    },
+    "workspace": "Espacio de trabajo de Biscuit"
   },
   "commandPalette": {
     "placeholder": "Escriba un comando para ejecutar",
@@ -1490,7 +1491,10 @@
     "compileMd": "Compilar a Markdown",
     "compileEpub": "Compilar a EPUB (libro electrónico)",
     "compileDocx": "Compilar a Word (.docx)",
-    "historyTip": "Palabras por día (últimos 14 días) — racha actual: {streak}"
+    "historyTip": "Palabras por día (últimos 14 días) — racha actual: {streak}",
+    "skills": "Habilidades",
+    "pinTip": "Fijar: esta habilidad acompaña cada turno de Biscuit (máx. {max}) — cuesta contexto, garantiza atención",
+    "skillUsedTip": "Biscuit usó esta habilidad en esta sesión"
   },
   "history": {
     "title": "Historial",

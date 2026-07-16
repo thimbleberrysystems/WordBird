@@ -55,6 +55,7 @@ const BIBLE_README =
   '```\n---\naliases: [Liz, Lizzy, the Widow Hale]\n---\n# Elizabeth Hale\n```\n'
 
 const COMMON_FOLDERS = [
+  'skills',
   'bible/characters',
   'bible/places',
   'bible/threads',

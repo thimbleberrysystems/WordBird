@@ -298,7 +298,8 @@
       "continuity": "连贯性",
       "agents": "智能体",
       "entities": "实体"
-    }
+    },
+    "workspace": "Biscuit 工作区"
   },
   "commandPalette": {
     "placeholder": "输入要执行的命令",
@@ -1490,7 +1491,10 @@
     "compileMd": "编译为 Markdown",
     "compileEpub": "编译为 EPUB（电子书）",
     "compileDocx": "编译为 Word（.docx）",
-    "historyTip": "每日写作字数（最近14天）——当前连续天数：{streak}"
+    "historyTip": "每日写作字数（最近14天）——当前连续天数：{streak}",
+    "skills": "技能",
+    "pinTip": "固定：该技能会随每个 Biscuit 回合注入（最多 {max} 个）— 占用上下文，但保证被遵循",
+    "skillUsedTip": "Biscuit 在本次会话中使用了该技能"
   },
   "history": {
     "title": "历史",

@@ -276,7 +276,10 @@ const novelAPI = {
   resolveIssue: (root: string, issueId: string) =>
     invoke('mt::novel:resolve-issue', root, issueId),
   wordStats: (root: string) => invoke('mt::novel:word-stats', root),
-  entityIndex: (root: string) => invoke('mt::novel:entity-index', root)
+  entityIndex: (root: string) => invoke('mt::novel:entity-index', root),
+  pinnedSkills: (root: string) => invoke('mt::novel:pinned-skills', root),
+  pinSkill: (root: string, file: string, pinned: boolean) =>
+    invoke('mt::novel:pin-skill', root, file, pinned)
 }
 
 const aiAPI = {

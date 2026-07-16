@@ -170,6 +170,12 @@ declare global {
           appearances: Array<{ unitId: string; title: string; path: string; count: number }>
         }>
       }>
+      pinnedSkills: (root: string) => Promise<{ pinned: string[] }>
+      pinSkill: (
+        root: string,
+        file: string,
+        pinned: boolean
+      ) => Promise<{ ok: boolean; pinned: string[]; error?: string }>
     }
     ai: {
       connect: (config: IAIConfig) => Promise<void>

@@ -17,6 +17,7 @@ import { structureService, collectLeaves } from '../novel/StructureService'
 import { getEntityIndex } from '../novel/EntityIndex'
 import { continuityService } from '../novel/ContinuityService'
 import { revisionService, RevisionService } from '../novel/RevisionService'
+import { listSkills, readSkill, readPinnedSkills, MAX_SKILL_BODY_CHARS } from '../novel/Skills'
 import { readProjectMeta } from '../novel/ProjectMeta'
 import type { INovelUnit } from '../../../shared/types/novel'
 
@@ -278,6 +279,45 @@ export class ContextBuilder {
         }
       } catch {
         // No biscuit.md — nothing standing.
+      }
+
+      // Skills: catalog every turn (cheap), pinned bodies in full (the
+      // writer explicitly loaded those — that's what the pin means).
+      try {
+        const skills = listSkills(projectRoot)
+        if (skills.length > 0) {
+          const MAX_CATALOG = 10
+          const catalog = skills
+            .slice(0, MAX_CATALOG)
+            .map((skill) => `${skill.name} — ${skill.description}`)
+            .join('\n')
+          const more = skills.length > MAX_CATALOG ? `\n…+${skills.length - MAX_CATALOG} more (list_skills)` : ''
+          sections.push(
+            `SKILLS AVAILABLE (writer-authored techniques — use_skill loads one when the task matches):\n${catalog}${more}`
+          )
+
+          const pinned = readPinnedSkills(projectRoot)
+          if (pinned.length > 0) {
+            const bodies: string[] = []
+            for (const file of pinned) {
+              const skill = readSkill(projectRoot, file)
+              if (!skill) {
+                bodies.push(`(${file} is pinned but missing — tell the writer)`)
+                continue
+              }
+              const body =
+                skill.body.length > MAX_SKILL_BODY_CHARS
+                  ? skill.body.slice(0, MAX_SKILL_BODY_CHARS) + '…[trimmed]'
+                  : skill.body
+              bodies.push(`## ${skill.meta.name}\n${body}`)
+            }
+            sections.push(
+              'PINNED SKILLS (the writer loaded these — follow them):\n' + bodies.join('\n\n')
+            )
+          }
+        }
+      } catch {
+        // Skills are additive — a bad skills/ dir never breaks the brief.
       }
 
       // The writer's METHOD drives which playbook applies.

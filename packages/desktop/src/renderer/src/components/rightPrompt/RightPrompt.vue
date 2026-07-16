@@ -639,6 +639,17 @@ const loadMentionSources = async (): Promise<void> => {
   }
   walk((novelStore.structure?.units ?? []) as never)
   const root = useProjectStore().currentProjectPath
+  // Skills: @fight loads the writer's technique file for this message.
+  {
+    const tree = useProjectStore().projectTree as {
+      folders?: Array<{ name: string; files?: Array<{ name: string; pathname: string }> }>
+    } | null
+    const skillsDir = tree?.folders?.find((f) => f.name === 'skills')
+    for (const file of skillsDir?.files ?? []) {
+      if (!/\.(md|markdown)$/i.test(file.name)) continue
+      items.push({ title: file.name.replace(/\.(md|markdown)$/i, ''), path: `skills/${file.name}` })
+    }
+  }
   // Open editor tabs (Cline's @file): reference whatever is on screen even
   // outside a novel project. Project files get project-relative paths.
   for (const tab of useEditorStore().tabs) {
