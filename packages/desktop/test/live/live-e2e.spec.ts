@@ -474,3 +474,24 @@ live('17 · deterministic prose lint backs the polish loop', () => {
     expect(reply.toLowerCase()).toMatch(/very|doubled|repeat/)
   })
 })
+
+live('18 · web research flows through the provenance gate', () => {
+  it('a researcher searches, fetches only returned URLs, and cites sources', async() => {
+    const harness = await make()
+    harness.setMode('ask')
+    const reply = await harness.send(
+      't-research',
+      'Research online: what fuel did lighthouse lamps burn in the 1890s? ' +
+        'Give a one-paragraph answer with at least one source URL.'
+    )
+    // Real web/wiki tool activity happened (search first — web_fetch of a
+    // guessed URL is mechanically refused and coaches the model to search).
+    const usedWeb = harness.activity.some((event) =>
+      /web_search|wiki_search|wiki_read|web_fetch/.test(`${event.label} ${event.detail ?? ''}`)
+    )
+    expect(usedWeb).toBe(true)
+    // The answer is grounded and cited.
+    expect(reply).toMatch(/https?:\/\//)
+    expect(reply.toLowerCase()).toMatch(/oil|kerosene|paraffin|whale|lard|petroleum|gas/)
+  })
+})

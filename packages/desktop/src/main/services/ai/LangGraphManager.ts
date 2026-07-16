@@ -30,6 +30,7 @@ import {
 import axios from 'axios'
 import { AgentToolService, AgentToolPackLoader } from './AgentToolService'
 import { registerBuiltInAgentToolHandlers } from './AgentToolHandlers'
+import { registerUrlProvenance, clearUrlProvenance } from './WebToolHandlers'
 import { getActiveAgentProjectRoot, setAgentToolAccessor } from './AgentProjectRootResolver'
 import { EditResolutionTracker } from './EditResolutionTracker'
 import { driveBookRun, AUTO_CONTINUE_MESSAGE } from './bookRun'
@@ -202,6 +203,8 @@ export class LangGraphManager {
     this._threadId = this._persistNewThreadId()
     this._systemPromptAdded = false
     this._orchestrator?.resetSessionUsage()
+    // New conversation, clean fetchable-URL slate.
+    clearUrlProvenance()
     // Proposals from the previous conversation must not leak into this one —
     // drop them everywhere (main-side queue + every renderer's review queue).
     this._editTracker.clearPending()
@@ -821,6 +824,12 @@ export class LangGraphManager {
     }
 
     const langchainMessages = outgoing.map(toLangchain)
+
+    // Writer-supplied URLs become fetchable (web_fetch provenance gate):
+    // only links the writer pasted or a search returned may be fetched.
+    for (const message of outgoing) {
+      if (message.role === 'user') registerUrlProvenance(message.content)
+    }
 
     // Review outcomes since the last turn open this one, so the model knows
     // exactly which of its edits the writer accepted or rejected. Delivered

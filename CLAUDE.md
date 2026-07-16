@@ -363,7 +363,11 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   `novel/ProseLint.ts`: doubled words/near-repeats/filler/filter-phrases/
   passive+adverb density/monotony/hygiene + banned terms parsed from
   bible/style.md; line-editors lint before+after, CRITIC PASS lints drafted
-  scenes), `WebToolHandlers.ts` (web/wiki/dictionary, SSRF guards).
+  scenes), `WebToolHandlers.ts` (web/wiki/dictionary; SSRF guards incl.
+  DNS-pinned lookups + per-hop redirect re-validation, and URL PROVENANCE
+  à la Anthropic's web_fetch — only URLs the writer supplied or a search
+  returned this session are fetchable; registry seeded by
+  LangGraphManager.sendMessage, cleared on resetThread).
   Definitions live in `static/agentTools.json`; handlers must be
   registered in code — JSON alone cannot add executable behavior. Tool
   outputs are context-capped (~24k chars) with announced truncation.
