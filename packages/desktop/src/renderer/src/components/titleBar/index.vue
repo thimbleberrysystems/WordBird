@@ -94,6 +94,13 @@
           </div>
         </el-tooltip>
       </div>
+      <!-- Novel view switcher (Page / Corkboard / Outline / Timeline):
+           lives here so it can never collide with the file tabs below. -->
+      <view-switcher
+        v-if="hasProject"
+        class="title-bar-views title-no-drag"
+        :style="{ right: viewSwitcherRight }"
+      />
       <div
         v-if="titleBarStyle === 'custom' && !isFullScreen && !isOsx"
         class="right-toolbar"
@@ -159,6 +166,8 @@ import { minimizePath, restorePath, maximizePath, closePath } from '../../assets
 import { PATH_SEPARATOR } from '../../config'
 import { isOsx as isOsxPlatform } from '@/util'
 import { useEditorStore } from '@/store/editor'
+import { useProjectStore } from '@/store/project'
+import ViewSwitcher from '@/components/novel/ViewSwitcher.vue'
 import bus from '@/bus'
 import { useI18n } from 'vue-i18n'
 import { ArrowRight } from '@element-plus/icons-vue'
@@ -182,6 +191,14 @@ const props = defineProps<{
 const preferencesStore = usePreferencesStore()
 const layoutStore = useLayoutStore()
 const editorStore = useEditorStore()
+
+const projectStore = useProjectStore()
+const hasProject = computed(() => !!projectStore.projectTree)
+// Clear of the window controls on frameless non-mac windows; snug to the
+// edge everywhere else (macOS traffic lights live on the LEFT).
+const viewSwitcherRight = computed(() =>
+  titleBarStyle.value === 'custom' && !isFullScreen.value && !isOsxPlatform ? '126px' : '12px'
+)
 const { t } = useI18n()
 
 const isOsx = isOsxPlatform
@@ -544,5 +561,11 @@ div.title > span {
   & .text {
     margin-left: 10px;
   }
+}
+
+.title-bar-views {
+  position: absolute;
+  top: 4px;
+  z-index: 5;
 }
 </style>

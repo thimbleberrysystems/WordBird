@@ -30,19 +30,15 @@ const options: Array<{ id: NovelViewMode; label: string }> = [
 
 <style scoped>
 .view-switcher {
-  position: absolute;
-  top: 8px;
-  /* Right-aligned: centered chips sat exactly under the centered filename
-     in the title bar and overlapped it. */
-  right: 16px;
-  display: flex;
+  /* Positioned by the parent (title bar) — it used to float over the tab
+     strip and collided with the tabs once enough files were open. */
+  display: inline-flex;
   gap: 2px;
   padding: 2px;
   border-radius: 12px;
   background: var(--floatBgColor, var(--itemBgColor));
   border: 1px solid var(--itemBgColor);
-  z-index: 20;
-  opacity: 0.35;
+  opacity: 0.75;
   transition: opacity 0.2s;
   &:hover {
     opacity: 1;

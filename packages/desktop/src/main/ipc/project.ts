@@ -86,26 +86,19 @@ const FLAVOR_TEMPLATES: Record<
   ProjectFlavor,
   { folders: string[]; files: Record<string, string> }
 > = {
+  // No placeholder chapters/scenes: the binder starts empty and the first
+  // unit is the writer's (or Biscuit's onboarding playbook's) to create.
   'chapters-scenes': {
-    folders: [...COMMON_FOLDERS, 'manuscript/chapter-one'],
-    files: {
-      ...COMMON_FILES,
-      'manuscript/chapter-one/opening-scene.md': ''
-    }
+    folders: [...COMMON_FOLDERS, 'manuscript'],
+    files: { ...COMMON_FILES }
   },
   'scene-pool': {
     folders: [...COMMON_FOLDERS, 'scenes'],
-    files: {
-      ...COMMON_FILES,
-      'scenes/opening-scene.md': ''
-    }
+    files: { ...COMMON_FILES }
   },
   flat: {
     folders: [...COMMON_FOLDERS],
-    files: {
-      ...COMMON_FILES,
-      'chapter-one.md': ''
-    }
+    files: { ...COMMON_FILES }
   }
 }
 

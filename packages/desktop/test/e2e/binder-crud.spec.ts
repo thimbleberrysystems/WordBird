@@ -49,6 +49,22 @@ test.describe('Binder CRUD (real project)', () => {
     await expect(page.locator('.binder')).toContainText('chapter', { ignoreCase: true })
   })
 
+  test('the view switcher lives in the title bar, clear of the tab strip', async() => {
+    // Moved out of the editor area — it used to float over the file tabs
+    // and collided once enough tabs were open.
+    const switcher = page.locator('.title-bar .view-switcher')
+    await expect(switcher).toBeVisible({ timeout: 15000 })
+    // Exactly one switcher, and its home is the title bar (the old float
+    // sat over the tab strip).
+    await expect(page.locator('.view-switcher')).toHaveCount(1)
+
+    // Switching views still works from its new home.
+    await switcher.locator('.view-chip', { hasText: 'Corkboard' }).click()
+    await expect(page.locator('.corkboard')).toBeVisible({ timeout: 10000 })
+    await switcher.locator('.view-chip', { hasText: 'Page' }).click()
+    await expect(page.locator('.corkboard')).toHaveCount(0)
+  })
+
   test('creating scenes writes ordinal filenames on title collision', async() => {
     // Drive the same preload bridge the binder UI uses — deterministic, no
     // menu hunting — then assert both the disk truth and the tree update.

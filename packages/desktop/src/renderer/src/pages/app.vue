@@ -23,7 +23,6 @@
       >
         <div class="editor-area">
           <recent v-if="showRecentPrompt" />
-          <view-switcher v-if="projectTree" />
           <corkboard v-if="projectTree && novelViewMode === 'corkboard'" />
           <outline-view v-else-if="projectTree && novelViewMode === 'outline'" />
           <timeline-view v-else-if="projectTree && novelViewMode === 'timeline'" />
@@ -66,7 +65,6 @@ import CommandPalette from '@/components/commandPalette/index.vue'
 import ExportSettingDialog from '@/components/exportSettings/index.vue'
 import Rename from '@/components/rename/index.vue'
 import ImportModal from '@/components/import/index.vue'
-import ViewSwitcher from '@/components/novel/ViewSwitcher.vue'
 import Corkboard from '@/components/novel/Corkboard.vue'
 import OutlineView from '@/components/novel/OutlineView.vue'
 import TimelineView from '@/components/novel/TimelineView.vue'
