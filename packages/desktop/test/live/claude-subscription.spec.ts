@@ -128,6 +128,99 @@ live('claude-code provider (Claude subscription via Agent SDK)', () => {
     expect(harness.editProposals).toHaveLength(0)
   })
 
+  it('resumed sessions keep the tool server alive (multi-turn on one thread)', async() => {
+    // Every real conversation after its first message rides `resume` — a
+    // stored SDK session id. The in-process MCP server must survive that
+    // path: a regression here surfaces as "Stream closed" on EVERY
+    // mcp__wordbird__ call while plain text keeps streaming.
+    const harness = await makeHarness()
+    harness.runner.setMode('ask')
+    const first = await harness.send(
+      't-sub-resume',
+      'Check the story bible: what colour are Zara Voss’s eyes? One word answer.'
+    )
+    expect(first).toMatch(/grey|gray/i)
+    const toolsAfterFirst = harness.activity.filter((event) => event.kind === 'tool').length
+    expect(toolsAfterFirst).toBeGreaterThanOrEqual(1)
+
+    const second = await harness.send(
+      't-sub-resume',
+      'Same bible page: what is Zara Voss’s occupation? Answer in a few words, ' +
+        'and read the page again rather than trusting memory.'
+    )
+    expect(second).toMatch(/lighthouse/i)
+    expect(second).not.toMatch(/stream closed|unreachable|tool server/i)
+    // The second turn must have executed a real tool call too.
+    const toolsAfterSecond = harness.activity.filter((event) => event.kind === 'tool').length
+    expect(toolsAfterSecond).toBeGreaterThan(toolsAfterFirst)
+  })
+
+  it('parallel subagents keep in-process tool calls alive (SDK #114 regression)', async() => {
+    // agent-sdk <=0.3.207 raced on concurrent subagent MCP calls: once any
+    // in-flight call outlived ~5s, EVERY later mcp__* call in those agents
+    // failed with "Stream closed" — a WordBird worker wave in miniature.
+    // Fixed in 0.3.211; this drives sdk.query directly to pin the fix.
+    const sdk = (await import('@anthropic-ai/claude-agent-sdk')) as unknown as {
+      query: (args: { prompt: string; options: Record<string, unknown> }) => AsyncIterable<unknown>
+      tool: (name: string, description: string, schema: unknown, handler: unknown) => unknown
+      createSdkMcpServer: (options: { name: string; tools: unknown[] }) => unknown
+    }
+    const fastProbe = sdk.tool('fast_probe', 'Returns the magic word instantly.', {}, async() => ({
+      content: [{ type: 'text', text: 'magic word: TANGERINE' }]
+    }))
+    const slowWait = sdk.tool('slow_wait', 'Waits 8s then returns a token.', {}, async() => {
+      await new Promise((resolve) => setTimeout(resolve, 8000))
+      return { content: [{ type: 'text', text: 'slow token: PERSIMMON' }] }
+    })
+    const env: Record<string, string | undefined> = { ...process.env }
+    delete env.ANTHROPIC_API_KEY
+    delete env.ANTHROPIC_AUTH_TOKEN
+    if (TOKEN) env.CLAUDE_CODE_OAUTH_TOKEN = TOKEN
+
+    const toolResults: string[] = []
+    const stream = sdk.query({
+      prompt:
+        'Spawn three "checker" subagents IN PARALLEL (one message, three Task invocations). ' +
+        'Each checker must call slow_wait, then fast_probe, and report both outputs. ' +
+        'Then summarize which calls failed.',
+      options: {
+        env,
+        model: 'haiku',
+        cwd: os.tmpdir(),
+        settingSources: [],
+        maxTurns: 30,
+        permissionMode: 'default',
+        mcpServers: {
+          repro: sdk.createSdkMcpServer({ name: 'repro', tools: [fastProbe, slowWait] })
+        },
+        agents: {
+          checker: {
+            description: 'Calls repro tools and reports results.',
+            prompt: 'You verify tools. Call exactly what the task says, report outputs tersely.',
+            tools: ['mcp__repro__fast_probe', 'mcp__repro__slow_wait'],
+            model: 'haiku'
+          }
+        },
+        allowedTools: ['Task', 'mcp__repro__fast_probe', 'mcp__repro__slow_wait']
+      }
+    })
+    for await (const raw of stream) {
+      const message = raw as {
+        type?: string
+        message?: { content?: Array<{ type?: string; content?: unknown }> }
+      }
+      if (message.type === 'user' && Array.isArray(message.message?.content)) {
+        for (const block of message.message.content) {
+          if (block.type === 'tool_result') toolResults.push(JSON.stringify(block.content))
+        }
+      }
+    }
+    // The race needs real concurrency to show; require enough calls ran.
+    expect(toolResults.length).toBeGreaterThanOrEqual(4)
+    const closed = toolResults.filter((text) => /stream closed/i.test(text))
+    expect(closed).toEqual([])
+  }, 600000)
+
   it('surgical edits arrive as review-queue proposals, never direct writes', async() => {
     const harness = await makeHarness()
     harness.runner.setMode('approvals')
