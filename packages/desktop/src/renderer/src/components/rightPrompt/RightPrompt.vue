@@ -1075,7 +1075,8 @@ const respondApproval = async (approved: boolean): Promise<void> => {
 const starterPrompts: Array<() => string> = [
   () => t('biscuit.starterBrainstorm'),
   () => t('biscuit.starterStatus'),
-  () => t('biscuit.starterContinuity')
+  () => t('biscuit.starterContinuity'),
+  () => t('biscuit.starterHealth')
 ]
 
 const sendStarter = (text: string): void => {

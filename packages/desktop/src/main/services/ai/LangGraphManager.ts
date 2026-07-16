@@ -34,6 +34,14 @@ import { registerUrlProvenance, clearUrlProvenance } from './WebToolHandlers'
 import { getActiveAgentProjectRoot, setAgentToolAccessor } from './AgentProjectRootResolver'
 import { EditResolutionTracker } from './EditResolutionTracker'
 import { driveBookRun, AUTO_CONTINUE_MESSAGE } from './bookRun'
+import {
+  WRITE_TOOL_EVENT_NAMES,
+  STEWARD_SIGNAL_TOOLS,
+  acceptancePrepend,
+  driveCoherencePass,
+  emptyObservations,
+  type TurnObservations
+} from './coherencePass'
 import { FileCheckpointSaver } from './FileCheckpointSaver'
 import { Orchestrator } from './orchestrator/Orchestrator'
 import type { OrchestratorCallbacks } from './orchestrator/Orchestrator'
@@ -253,6 +261,8 @@ export class LangGraphManager {
   // ---- Pause / resume / steering / manual compaction ----
   private _steeringQueue: string[] = []
   private _turnRunning = false
+  /** What this turn changed — feeds the mechanical coherence pass. */
+  private _turnObservations: TurnObservations = emptyObservations()
 
   private _emitRunState(): void {
     const state = !this._turnRunning
@@ -550,6 +560,19 @@ export class LangGraphManager {
 
       const callbacks: OrchestratorCallbacks = {
         emitActivity: (event) => {
+          // Coherence observation: what changed, and did a steward run?
+          const toolName = event.label.replace(/^[^:]*:\s*/, '')
+          if (event.kind === 'tool' && WRITE_TOOL_EVENT_NAMES.has(toolName)) {
+            this._turnObservations.writes.push(
+              `${toolName}${event.detail ? ` ${event.detail.slice(0, 80)}` : ''}`
+            )
+          }
+          if (
+            (event.kind === 'spawn' && event.role === 'steward') ||
+            (event.kind === 'tool' && STEWARD_SIGNAL_TOOLS.has(toolName))
+          ) {
+            this._turnObservations.stewardRan = true
+          }
           this._broadcast('mt::ai:activity', event)
         },
         requestApproval: (request) => this._requestApproval(request),
@@ -847,6 +870,18 @@ export class LangGraphManager {
       langchainMessages.unshift(new HumanMessage(reviewNote))
     }
 
+    // Fresh observation window for this writer turn.
+    this._turnObservations = emptyObservations()
+
+    // Approvals-mode coherence trigger: a just-accepted batch means the
+    // manuscript changed — the turn OPENS with the steward pass.
+    if (this._permissionMode !== 'ask') {
+      const coherenceNote = acceptancePrepend(reviewNote)
+      if (coherenceNote) {
+        langchainMessages.splice(1, 0, new HumanMessage(coherenceNote))
+      }
+    }
+
     const invokeOnce = (msgs: Array<HumanMessage | AIMessage | SystemMessage>): Promise<unknown> =>
       agent.invoke(
         { messages: msgs },
@@ -875,6 +910,23 @@ export class LangGraphManager {
       // Book run: in auto mode the supervisor may end with a CONTINUE marker
       // while a live plan has work left — keep granting segments (bounded).
       content = await this._driveBookRun(content, invokeOnce, signal)
+
+      // Mechanical coherence pass (auto mode): if this turn changed 2+
+      // things and no steward ran, ONE bounded follow-up runs the sweep.
+      const coherenceReply = await driveCoherencePass(
+        this._turnObservations,
+        this._permissionMode,
+        {
+          invokeNext: async(instruction) => {
+            const followUp = await invokeOnce([new HumanMessage(instruction)])
+            return this._extractResponseContent(followUp)
+          },
+          emitStatus: (label, detail) => this._emitBookRunStatus(label, detail)
+        }
+      )
+      if (coherenceReply) {
+        content = `${content}\n\n${coherenceReply}`
+      }
     } catch (error) {
       // Running out of supersteps is a budget, not a failure: the thread
       // is checkpointed up to the last completed step (housekeeping repairs

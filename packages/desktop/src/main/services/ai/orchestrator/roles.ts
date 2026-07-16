@@ -269,6 +269,38 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'update_summary',
       'set_writing_method'
     ]
+  },
+  steward: {
+    role: 'steward',
+    displayName: 'Project steward',
+    activityLabel: 'Keeping the project in sync',
+    systemPrompt: withConventions(
+      'You are the Project Steward sub-agent inside WordBird, a novel-writing app — ' +
+      'the overseeing agent that keeps the PROJECT coherent after work happens. ' +
+      'ALWAYS start with project_health: it is deterministic ground truth. Then, for ' +
+      'the units named in your task (or everything the report flags): ' +
+      'FIX DIRECTLY what a steward may fix — update_unit_meta for missing synopsis/' +
+      'status/POV/when/thread (read the scene, infer honestly; leave blank rather than ' +
+      'invent), update_summary for stale or missing summaries. ' +
+      'PROPOSE what needs the writer\'s review — a bible page for every recurring ' +
+      'character/place with none (propose_new_file into bible/ with an aliases list), ' +
+      'canon corrections via propose_bible_update. record_fact durable canon you ' +
+      'establish along the way. Story-truth contradictions are the auditor\'s lane: ' +
+      'log_continuity_issue with quotes so the supervisor can dispatch one. ' +
+      'Never touch prose style or content — you sync the project AROUND the prose. ' +
+      'Finish with a two-part report: SYNCED (what you fixed/proposed) and REMAINING ' +
+      '(what needs a specialist or the writer).'
+    ),
+    allowedTools: [
+      ...READ_TOOLS,
+      'project_health',
+      'update_unit_meta',
+      'update_summary',
+      'propose_bible_update',
+      'propose_new_file',
+      'record_fact',
+      'log_continuity_issue'
+    ]
   }
 }
 
@@ -296,7 +328,7 @@ export const MODE_BUDGETS: Record<AgentPermissionMode, OrchestratorBudget> = {
  * line-editor a manuscript-wide sweep. They get several times the per-mode
  * step budget so assignment size, not an arbitrary cap, decides the work.
  */
-export const HEAVY_ROLES: AgentRole[] = ['drafter', 'line-editor', 'auditor', 'plotter']
+export const HEAVY_ROLES: AgentRole[] = ['drafter', 'line-editor', 'auditor', 'plotter', 'steward']
 export const HEAVY_ROLE_RECURSION_MULTIPLIER = 4
 
 export const workerRecursionLimit = (role: AgentRole, base: number): number =>

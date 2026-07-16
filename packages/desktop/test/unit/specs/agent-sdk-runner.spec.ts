@@ -250,7 +250,7 @@ describe('mode gating over the real tool pack', () => {
     }
 
     const autoAgents = buildSdkAgents('auto')
-    expect(Object.keys(autoAgents)).toHaveLength(6)
+    expect(Object.keys(autoAgents)).toHaveLength(7) // six specialists + the steward
     expect(autoAgents.drafter.tools).toContain(`${MCP_TOOL_PREFIX}propose_text_edit`)
   })
 })

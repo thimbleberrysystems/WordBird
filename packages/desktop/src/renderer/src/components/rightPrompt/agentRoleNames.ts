@@ -7,5 +7,6 @@ export const AGENT_ROLE_NAMES: Record<AgentRole, string> = {
   drafter: 'Drafter',
   auditor: 'Continuity auditor',
   'line-editor': 'Line editor',
-  plotter: 'Plotter'
+  plotter: 'Plotter',
+  steward: 'Project steward'
 }

@@ -1658,7 +1658,8 @@
     "steerFailed": "Couldn't deliver your note to Biscuit — it's back in the input box.",
     "stalledTitle": "No response from the model",
     "stalled": "Nothing has come back for a while. The run may be stalled — press Stop to cancel it (nothing is lost), or keep waiting if your model is just slow.",
-    "mentionHint": "Reference a scene or bible page — ↑↓ to pick, Enter to insert"
+    "mentionHint": "Reference a scene or bible page — ↑↓ to pick, Enter to insert",
+    "starterHealth": "Run a project health check and fix what’s out of sync"
   },
   "review": {
     "pendingOne": "1 pending edit",

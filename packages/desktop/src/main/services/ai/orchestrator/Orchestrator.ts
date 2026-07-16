@@ -375,6 +375,7 @@ export const SUPERVISOR_TOOL_NAMES = [
   'list_skills',
   'use_skill',
   'list_decisions',
+  'project_health',
   'get_revision',
   'save_plan',
   'update_plan',
@@ -420,7 +421,7 @@ const spawnSchema = z.object({
     .array(
       z.object({
         role: z
-          .enum(['explorer', 'researcher', 'drafter', 'auditor', 'line-editor', 'plotter'])
+          .enum(['explorer', 'researcher', 'drafter', 'auditor', 'line-editor', 'plotter', 'steward'])
           .describe('Which specialist to spawn.'),
         task: z
           .string()
@@ -572,10 +573,11 @@ export const buildSupervisorPrompt = (
   '5) REVISION PASSES (polish): ordered sweeps, ONE concern per pass, never mixed — ' +
   'structural (order/arcs: plotter) → scene integrity (goal-conflict-disaster: auditor) → ' +
   'dialogue → line (line-editor, bible/style.md as law) → proof. Small batches per turn.\n' +
-  '6) HEALTH CHECK (offer after every few new scenes, or between tasks): auditor sweep for ' +
-  'continuity + timeline consistency (out-of-order or missing `when` values) + stale ' +
-  'summaries + beat coverage when a beat sheet exists. Log real findings with ' +
-  'log_continuity_issue so they land in the writer\'s Continuity panel.\n' +
+  '6) HEALTH CHECK (offer after every few new scenes, or between tasks): spawn a STEWARD — ' +
+  'it starts from project_health (deterministic sync report) and fixes metadata/summaries/' +
+  'bible coverage itself; add an auditor in the same wave for story-truth (contradictions, ' +
+  'timeline, beat coverage). Real unresolvable findings land in the writer\'s Continuity ' +
+  'panel via log_continuity_issue.\n' +
   '7) LEARN MY VOICE: when the writer asks you to learn/capture their voice — or when ' +
   'prose exists but bible/style.md does not — offer to distill it: spawn a line-editor ' +
   'to study 2-4 scenes the writer picks (or the strongest existing ones), extract ' +
@@ -617,6 +619,16 @@ export const buildSupervisorPrompt = (
   'in the brief) or the writer asks what to do, END your reply with exactly one line ' +
   '"Next: <one concrete suggestion>". One line, one suggestion. NEVER during book-run ' +
   'segments (it would pollute the CONTINUE protocol) and never when mid-task.\n' +
+  '- COHERENCE PASS (every execution mode): when a turn created or edited 2+ units, or ' +
+  'introduced a NEW character/place, END it by spawning a steward scoped to exactly what ' +
+  'changed (name the units). The steward syncs metadata/summaries/bible coverage — prose ' +
+  'is not done until the project around it agrees. Skip for single small edits. A large ' +
+  'batch of ACCEPTED edits (see EDIT REVIEW) is a coherence-pass trigger too. ' +
+  'FINDINGS GET FIXED, NOT FILED: treat the steward\'s report as a dispatch list — spawn ' +
+  'the matching specialist THIS turn for real findings (auditor to verify and fix ' +
+  'contradictions, line-editor for prose-quality findings), within wave budgets. Only ' +
+  'writer-decisions (canon conflicts only the writer can arbitrate) stay in ' +
+  'log_continuity_issue for the Continuity panel.\n' +
   '- DECISIONS ARE SETTLED: when the writer makes a definitive creative call ("the sister ' +
   'stays dead", "we never explain the magic"), record_decision it WITH the reason — and ' +
   'before proposing a new direction, check the brief\'s DECISIONS (or list_decisions). ' +
@@ -662,7 +674,9 @@ export const buildSupervisorPrompt = (
         'FIX what the auditor finds (or log it with ' +
         'log_continuity_issue) BEFORE the CONTINUE marker — never stack new scenes on ' +
         'unreviewed ones. Research on long-form generation shows this single habit ' +
-        'roughly halves continuity errors.\n')
+        'roughly halves continuity errors. The FINAL segment of a run additionally ends ' +
+        'with a STEWARD pass over everything the run touched (metadata, summaries, bible ' +
+        'coverage) — the book is not finished until the project around it agrees.\n')
 
 export class Orchestrator {
   private _mode: AgentPermissionMode = 'approvals'

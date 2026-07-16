@@ -247,6 +247,14 @@ extensibility model). WordBird's tool packs are JSON-defined but handlers
 must be registered in code — by design. MCP is the eventual third-party
 extension story; heavy and unneeded today.
 
+**Added 2026-07-18 — The Steward (overseeing agent).** Deterministic
+ProjectHealth engine (missing scene metadata, stale summaries, unlisted
+recurring names, binder-vs-disk drift) + a steward role that fixes what
+it may and proposes the rest, enforced at three layers (doctrine,
+mechanical harness follow-up/prepend, standing brief line). Closes the
+writer-reported gap: after agents work, the PROJECT stays coherent —
+views, bible, summaries — automatically.
+
 **Added 2026-07-17 — Decisions log.** Settled creative choices with
 reasons in bible/decisions.md (record_decision/list_decisions; recent
 ones ride every brief; doctrine forbids relitigating). Deliberately a

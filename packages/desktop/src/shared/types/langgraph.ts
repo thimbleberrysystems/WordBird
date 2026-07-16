@@ -125,6 +125,7 @@ export type AgentRole =
   | 'auditor'
   | 'line-editor'
   | 'plotter'
+  | 'steward'
 
 export interface IAgentSpawnRequest {
   role: AgentRole

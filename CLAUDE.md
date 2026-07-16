@@ -345,7 +345,8 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   AbortControllers (`cancelAgent`); drafter spawns get a scene N→N+1
   handoff (tail of the preceding scene, built by ContextBuilder).
 - `main/services/ai/orchestrator/roles.ts` — agent catalog (explorer,
-  researcher, drafter, auditor, line-editor, plotter) with allowed-tool lists;
+  researcher, drafter, auditor, line-editor, plotter, steward — the
+  OVERSEEING agent that keeps the project in sync) with allowed-tool lists;
   a matrix test asserts every tool maps to a registered handler. Exports
   PROJECT_CONVENTIONS (the layout blueprint — manuscript/bible/summaries/
   plans conventions) carried by the supervisor AND every worker; the
@@ -353,7 +354,7 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   draft-next-scene with mandatory aftercare, extend, polish, health check)
   and spawn heuristics (do small things directly; spawn specialists for
   multi-unit work).
-- Tools (52): `main/services/ai/AgentToolHandlers.ts` (core file read/edit
+- Tools (53): `main/services/ai/AgentToolHandlers.ts` (core file read/edit
   + `propose_text_edit` — anchored exact-quote search/replace, the Aider
   SEARCH/REPLACE pattern, with occurrence disambiguation; the prompt-pinned
   path for surgical prose fixes, whole-file `propose_project_file_edit` is
@@ -408,6 +409,20 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   in the Timeline + corkboard filters), `label` (binder keyword), and
   `notes` (document notes in the Outline) — all agent-readable/writable
   via list_structure/update_unit_meta.
+- THE OVERSEEING LAYER: `main/services/novel/ProjectHealth.ts` —
+  deterministic sync report (missing scene metadata = what corkboard/
+  outline/timeline render, stale summaries, recurring names with no
+  bible page via conservative mining, binder-vs-disk drift, empty-final,
+  open plan items), content-hash cached; `project_health` read tool
+  (ask mode included); the STEWARD role starts from it, fixes metadata/
+  summaries directly and proposes bible pages via review. Enforcement is
+  three-layered: L1 COHERENCE PASS doctrine (multi-write turns end with
+  a steward; findings get DISPATCHED to specialists, not filed), L2
+  `main/services/ai/coherencePass.ts` — mechanical, provider-independent
+  (auto mode: one bounded follow-up invoke when a turn wrote 2+ things
+  without a steward; approvals mode: 2+ ACCEPTED edits prepend the pass
+  to the next turn), L3 the PROJECT HEALTH brief line (standing pressure
+  until clean). The writer never has to ask.
 - `main/services/ai/FileCheckpointSaver.ts` — file-backed LangGraph
   checkpointer under `.wordbird/agent-state/` (excluded from snapshots);
   prunes to the newest 20 checkpoints per thread so novel-length threads

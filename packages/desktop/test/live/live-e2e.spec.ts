@@ -475,6 +475,40 @@ live('17 · deterministic prose lint backs the polish loop', () => {
   })
 })
 
+live('21 · the steward: health check finds and fixes sync gaps', () => {
+  it('project_health drives real fixes for missing metadata / bible coverage', async() => {
+    const harness = await make()
+    // Dirty the project: a recurring character with no bible page, prose
+    // in two files, and strip a scene's synopsis via the real service.
+    fs.writeFileSync(
+      path.join(harness.root, 'manuscript/chapter-one/opening.md'),
+      'Zara waited. Ilsabet Crane watched from the dunes, and Ilsabet Crane said nothing.\n'
+    )
+    fs.writeFileSync(
+      path.join(harness.root, 'manuscript/chapter-one/the-letter.md'),
+      'The letter was unsigned. Ilsabet Crane burned it before dawn.\n'
+    )
+    harness.setMode('approvals')
+    const reply = await harness.send(
+      't-steward',
+      'Run a project health check and fix what you can — metadata, summaries, missing ' +
+        'bible pages. Report what you synced.'
+    )
+    const usedHealth = harness.activity.some((event) =>
+      /project_health/.test(`${event.label} ${event.detail ?? ''}`)
+    )
+    expect(usedHealth).toBe(true)
+    // Real fixing happened: metadata/summary writes or a proposed bible page
+    // for the unlisted character.
+    const fixed =
+      harness.activity.some((event) =>
+        /update_unit_meta|update_summary/.test(`${event.label} ${event.detail ?? ''}`)
+      ) || harness.editProposals.some((p) => JSON.stringify(p).includes('Ilsabet'))
+    expect(fixed).toBe(true)
+    expect(reply.length).toBeGreaterThan(40)
+  })
+})
+
 live('20 · decisions are settled: recorded, then never relitigated', () => {
   it('a definitive writer call is recorded and respected in a later turn', async() => {
     const harness = await make()

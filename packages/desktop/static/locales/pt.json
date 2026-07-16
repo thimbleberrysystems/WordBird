@@ -1657,7 +1657,8 @@
     "steerFailed": "Não foi possível entregar sua nota ao Biscuit — ela voltou para a caixa de entrada.",
     "stalledTitle": "Sem resposta do modelo",
     "stalled": "Nada retornou por um tempo. A execução pode estar travada — pressione Parar para cancelá-la (nada se perde) ou continue aguardando se o seu modelo for apenas lento.",
-    "mentionHint": "Referencie uma cena ou página da bíblia — ↑↓ para escolher, Enter para inserir"
+    "mentionHint": "Referencie uma cena ou página da bíblia — ↑↓ para escolher, Enter para inserir",
+    "starterHealth": "Faça uma verificação de saúde do projeto e corrija o que estiver fora de sincronia"
   },
   "review": {
     "pendingOne": "1 edição pendente",

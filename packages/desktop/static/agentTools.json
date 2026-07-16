@@ -579,6 +579,20 @@
       }
     },
     {
+      "id": "project_health",
+      "name": "project_health",
+      "description": "Deterministic project-sync report: scenes missing synopsis/status/POV/when/thread (what the corkboard/outline/timeline render), stale summaries, recurring names with no bible page, binder-vs-disk drift, empty-final units, open plan items. Run it FIRST in any coherence/steward pass; fix findings, do not just report them.",
+      "handler": "project_health",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
       "id": "list_facts",
       "name": "list_facts",
       "displayName": "List story facts",

@@ -19,6 +19,7 @@ import { continuityService } from '../novel/ContinuityService'
 import { revisionService, RevisionService } from '../novel/RevisionService'
 import { listSkills, readSkill, readPinnedSkills, MAX_SKILL_BODY_CHARS } from '../novel/Skills'
 import { listDecisions } from '../novel/Decisions'
+import { checkProjectHealth, healthBriefLine } from '../novel/ProjectHealth'
 import { readProjectMeta } from '../novel/ProjectMeta'
 import type { INovelUnit } from '../../../shared/types/novel'
 
@@ -340,6 +341,16 @@ export class ContextBuilder {
         }
       } catch {
         // Decisions are additive — never break the brief.
+      }
+
+      // Deterministic sync status: standing pressure until the project is
+      // clean (survives crashes, model failures, skipped passes).
+      try {
+        const health = await checkProjectHealth(projectRoot)
+        const line = healthBriefLine(health)
+        if (line) sections.push(line)
+      } catch {
+        // Health is advisory — never break the brief.
       }
 
       // The writer's METHOD drives which playbook applies.

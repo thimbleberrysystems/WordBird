@@ -31,6 +31,7 @@ import { revisionService, RevisionService } from '../novel/RevisionService'
 import { isLockedCanon } from './pathGuards'
 import { listSkills, readSkill } from '../novel/Skills'
 import { appendDecision, listDecisions } from '../novel/Decisions'
+import { checkProjectHealth } from '../novel/ProjectHealth'
 import type { AgentToolContext, AgentToolService } from './AgentToolService'
 import type { INovelUnit, IContinuityIssue } from '../../../shared/types/novel'
 
@@ -558,6 +559,24 @@ const listFacts = async(
 }
 
 // ---- deterministic prose lint (the "run the tests" of fiction) ----
+
+// ---- Project health (deterministic sync report — the steward's start) ----
+
+const projectHealthTool = async(
+  _args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const report = await checkProjectHealth(root)
+  const capped = capForContext(JSON.stringify(report.findings, null, 1), 'narrow with list_structure')
+  return {
+    clean: report.clean,
+    findings: capped.truncated ? capped.text : report.findings,
+    note: report.clean
+      ? 'No warnings — the project is in sync.'
+      : 'Deterministic findings. Fix what your role may fix; dispatch or log the rest.'
+  }
+}
 
 // ---- Decisions log (settled creative choices — never relitigated) ----
 
@@ -1554,6 +1573,7 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('use_skill', useSkillTool)
   service.registerHandler('record_decision', recordDecisionTool)
   service.registerHandler('list_decisions', listDecisionsTool)
+  service.registerHandler('project_health', projectHealthTool)
   service.registerHandler('list_snapshots', listSnapshots)
   service.registerHandler('read_snapshot_file', readSnapshotFile)
   service.registerHandler('diff_snapshot_file', diffSnapshotFile)
