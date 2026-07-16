@@ -190,6 +190,12 @@ jobs:
               echo "- May contain bugs and unfinished features."
               echo ""
             fi
+            echo "## ⚠️ Note for Windows users"
+            echo "Installers are unsigned (open-source build, no paid certificate), so your browser may warn"
+            echo "\"couldn't be scanned\" or \"not commonly downloaded\", and SmartScreen may flag the first launch."
+            echo "This is a reputation check, not a virus detection. Choose **Keep** on the download, then"
+            echo "**More info → Run anyway** at install — and verify the SHA-256 below if you want certainty."
+            echo ""
             echo "## ⚠️ Note for macOS users"
             echo "Builds are unsigned (no Apple Developer ID). After dragging WordBird into Applications, clear the quarantine flag once:"
             echo '```'
