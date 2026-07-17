@@ -216,6 +216,57 @@ describe('snapshot_project', () => {
   })
 })
 
+describe('duplicate-work guards (parallel agents converge, never fork)', () => {
+  it('record_decision refuses to double-log the same choice', async() => {
+    await run('record_decision', { decision: 'Zara never learns to swim.', reason: 'theme' })
+    const second = (await run('record_decision', {
+      decision: '  zara NEVER learns to swim. '
+    })) as { recorded: unknown; duplicate?: boolean }
+    expect(second.duplicate).toBe(true)
+    expect(second.recorded).toBe(false)
+  })
+
+  it('log_continuity_issue points at the existing open issue instead of re-filing', async() => {
+    const first = (await run('log_continuity_issue', {
+      title: 'Storm timing conflict',
+      description: 'Ch1 says dawn, Ch3 says dusk.'
+    })) as { issueId: string }
+    const second = (await run('log_continuity_issue', {
+      title: 'storm  timing CONFLICT',
+      description: 'Found the same thing.'
+    })) as { logged: boolean; duplicate: boolean; issueId: string }
+    expect(second.logged).toBe(false)
+    expect(second.duplicate).toBe(true)
+    expect(second.issueId).toBe(first.issueId)
+  })
+
+  it('propose_new_unit refuses a same-titled sibling unless allowDuplicate', async() => {
+    const structure = await structureService.loadReconciled(root)
+    const chapterId = structure.units[0].id
+    const first = (await run('propose_new_unit', {
+      type: 'scene',
+      title: 'The Ambush',
+      parentId: chapterId
+    })) as { unitId: string }
+    const dup = (await run('propose_new_unit', {
+      type: 'scene',
+      title: '  the AMBUSH ',
+      parentId: chapterId
+    })) as { created: boolean; duplicate: boolean; unitId: string }
+    expect(dup.created).toBe(false)
+    expect(dup.duplicate).toBe(true)
+    expect(dup.unitId).toBe(first.unitId)
+
+    const distinct = (await run('propose_new_unit', {
+      type: 'scene',
+      title: 'The Ambush',
+      parentId: chapterId,
+      allowDuplicate: true
+    })) as { unitId?: string; created?: boolean }
+    expect(distinct.unitId).not.toBe(first.unitId)
+  })
+})
+
 describe('tool-run observer (the coherence choke point)', () => {
   const TOOL_PACK = path.join(__dirname, '../../../static/agentTools.json')
 

@@ -159,6 +159,30 @@ describe('Orchestrator', () => {
     expect(approvals).toHaveLength(0)
   })
 
+  it('duplicate spawns in one wave collapse to a single worker', async() => {
+    const model = new ScriptedModel([
+      // Two identical explorers (whitespace/case noise) + one distinct.
+      spawnCall([
+        { role: 'explorer', task: 'Find every mention of rain.' },
+        { role: 'explorer', task: '  find every MENTION of rain. ' },
+        { role: 'explorer', task: 'Find every mention of snow.' }
+      ]),
+      new AIMessage('rain report'),
+      new AIMessage('snow report'),
+      new AIMessage('done')
+    ])
+    const orchestrator = makeOrchestrator(model)
+    orchestrator.setMode('auto')
+
+    await invokeGraph(orchestrator, 'weather sweep')
+    // Only TWO workers actually started (the duplicate was skipped)…
+    expect(activities.filter((a) => a.kind === 'agent-start')).toHaveLength(2)
+    // …and the skip is narrated.
+    expect(
+      activities.some((a) => /duplicate agent/i.test(`${a.label} ${a.detail ?? ''}`))
+    ).toBe(true)
+  })
+
   it('spawning never raises approval cards — researchers run freely in ask mode', async() => {
     approveNext = false
     const model = new ScriptedModel([

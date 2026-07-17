@@ -338,9 +338,12 @@ describe('a scripted SDK turn', () => {
 
     const options = harness.sdk.calls[0].options
     const allowed = options.allowedTools as string[]
-    expect(allowed).toContain('Task')
+    // Task is deliberately OFF the allowlist: a bare entry would shadow
+    // canUseTool, where duplicate spawns are bounced. It stays callable —
+    // canUseTool allows non-duplicate spawns (pinned below).
+    expect(allowed).not.toContain('Task')
     expect(allowed).toContain(`${MCP_TOOL_PREFIX}propose_text_edit`)
-    expect(allowed.every((t) => t === 'Task' || t.startsWith(MCP_TOOL_PREFIX))).toBe(true)
+    expect(allowed.every((t) => t.startsWith(MCP_TOOL_PREFIX))).toBe(true)
     // Destructive tools must NOT be pre-approved: a bare allowedTools entry
     // shadows canUseTool, which would skip the writer-approval gate.
     for (const destructive of ['delete_unit', 'delete_file', 'restore_snapshot']) {
@@ -565,6 +568,54 @@ describe('provider parity', () => {
     expect(fromSubagent.behavior).toBe('allow')
     const supervisorTool = await canUseTool(`${MCP_TOOL_PREFIX}search_manuscript`, {}, {})
     expect(supervisorTool.behavior).toBe('allow')
+  })
+})
+
+describe('duplicate-spawn guard (canUseTool on Task)', () => {
+  it('an identical (type, task) spawn is bounced; distinct ones pass', async() => {
+    const harness = await makeHarness([initMessage('s'), successResult('ok')])
+    cleanupRoots.push(harness.root)
+    harness.runner.setMode('auto')
+    await harness.runner.buildGraph().invoke(
+      { messages: [{ content: 'hi' }] },
+      { configurable: { thread_id: 't-dup' } }
+    )
+    const canUseTool = harness.sdk.calls[0].options.canUseTool as (
+      name: string,
+      input: Record<string, unknown>,
+      extra?: { agentID?: string }
+    ) => Promise<{ behavior: string; message?: string }>
+
+    const spawn = { subagent_type: 'researcher', prompt: 'Research 1890s lighthouse fuel.' }
+    expect((await canUseTool('Task', spawn)).behavior).toBe('allow')
+    // Same task again (whitespace/case noise included) → bounced.
+    const dup = await canUseTool('Task', {
+      subagent_type: 'researcher',
+      prompt: '  research 1890s LIGHTHOUSE fuel.  '
+    })
+    expect(dup.behavior).toBe('deny')
+    expect(dup.message).toMatch(/identical agent/i)
+    // A different task or a different role passes.
+    expect(
+      (await canUseTool('Task', { subagent_type: 'researcher', prompt: 'Research tides.' }))
+        .behavior
+    ).toBe('allow')
+    expect(
+      (
+        await canUseTool('Task', {
+          subagent_type: 'auditor',
+          prompt: 'Research 1890s lighthouse fuel.'
+        })
+      ).behavior
+    ).toBe('allow')
+
+    // A NEW turn starts a clean slate.
+    await harness.runner.buildGraph().invoke(
+      { messages: [{ content: 'again' }] },
+      { configurable: { thread_id: 't-dup' } }
+    )
+    const nextCanUse = harness.sdk.calls[1].options.canUseTool as typeof canUseTool
+    expect((await nextCanUse('Task', spawn)).behavior).toBe('allow')
   })
 })
 

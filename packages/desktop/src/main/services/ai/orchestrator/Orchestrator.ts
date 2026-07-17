@@ -1405,6 +1405,24 @@ export class Orchestrator {
     if (spawns.length === 0) {
       return 'No valid agents were requested. Check the role names and try again.'
     }
+    // Mechanical duplicate guard: two agents with the same role AND the
+    // same task would do identical work twice — keep the first, free the
+    // slot. (Doctrine says don't; this makes sure.)
+    const seenTasks = new Set<string>()
+    const uniqueSpawns = spawns.filter((spawn) => {
+      const key = `${spawn.role}:${spawn.task.toLowerCase().replace(/\s+/g, ' ').trim()}`
+      if (seenTasks.has(key)) return false
+      seenTasks.add(key)
+      return true
+    })
+    if (uniqueSpawns.length < spawns.length) {
+      this._activity(
+        'status',
+        `${spawns.length - uniqueSpawns.length} duplicate agent(s) skipped`,
+        'Identical role+task in one wave runs once'
+      )
+      spawns = uniqueSpawns
+    }
     if (spawns.length > budget.maxWorkersPerWave) {
       spawns = spawns.slice(0, budget.maxWorkersPerWave)
     }

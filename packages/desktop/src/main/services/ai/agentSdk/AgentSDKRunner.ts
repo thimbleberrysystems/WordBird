@@ -99,6 +99,8 @@ export class AgentSDKRunner {
   private _sdkModule: AgentSdkModule | null
   private _contextWindow = 200000
   private _turnUsage: ITokenTally = emptyTally()
+  /** Spawned (type, task) pairs this turn — duplicate Task calls bounce. */
+  private readonly _turnTaskKeys = new Set<string>()
   private _sessionUsage: ITokenTally = emptyTally()
   private _activeQuery: { interrupt?: () => Promise<unknown> } | null = null
 
@@ -293,8 +295,10 @@ export class AgentSDKRunner {
       // (the SDK warns about exactly this shadowing) — leaving them out
       // routes delete_unit/delete_file/restore_snapshot through the
       // writer-approval gate below while every other tool runs freely.
+      // SPAWN_TOOL (Task) is deliberately NOT allow-listed: a bare entry
+      // would shadow canUseTool, and canUseTool is where duplicate spawns
+      // (same subagent type + same task, twice in one turn) get bounced.
       allowedTools: [
-        SPAWN_TOOL,
         ...[...mainThreadSet]
           .filter((n) => !DESTRUCTIVE_TOOLS.includes(n))
           .map((n) => `${MCP_TOOL_PREFIX}${n}`)
@@ -308,6 +312,26 @@ export class AgentSDKRunner {
         extra?: { agentID?: string }
       ): Promise<Record<string, unknown>> => {
         const bare = stripMcpPrefix(toolName)
+        // Duplicate-spawn guard (parity with the orchestrator's wave
+        // dedup): the same subagent type with the same task runs ONCE
+        // per turn — the second attempt is bounced with guidance.
+        if (toolName === SPAWN_TOOL) {
+          const task = String(input.prompt ?? input.description ?? '')
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .trim()
+          const key = `${String(input.subagent_type ?? '')}:${task}`
+          if (task && this._turnTaskKeys.has(key)) {
+            return {
+              behavior: 'deny',
+              message:
+                'An identical agent (same type, same task) already ran this turn — use its ' +
+                'result, or give this one a genuinely different scope.'
+            }
+          }
+          this._turnTaskKeys.add(key)
+          return { behavior: 'allow', updatedInput: input }
+        }
         if (DESTRUCTIVE_TOOLS.includes(bare)) {
           const approved = await this._callbacks.requestApproval({
             id: crypto.randomUUID(),
@@ -347,6 +371,7 @@ export class AgentSDKRunner {
     cfg?.signal?.addEventListener('abort', onAbort, { once: true })
 
     this._turnUsage = emptyTally()
+    this._turnTaskKeys.clear()
     let finalText = ''
     let sawError: string | null = null
     let sawBudget: Error | null = null

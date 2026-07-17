@@ -270,6 +270,10 @@
           "content": {
             "type": "string",
             "description": "The full prose of the new unit — REQUIRED whenever the writer asked for written text. Omitting it saves NO prose (empty shell only). Goes through user review."
+          },
+          "allowDuplicate": {
+            "type": "boolean",
+            "description": "Create even though a same-titled sibling exists (only for genuinely distinct scenes)."
           }
         },
         "required": [

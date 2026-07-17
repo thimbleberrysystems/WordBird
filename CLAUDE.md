@@ -328,8 +328,15 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   error_max_turns result OR the runtime's thrown "maximum number of
   turns" — both real shapes, live-pinned) maps to GraphRecursionError so
   the "say continue" reply and book-run budget pause apply unchanged.
-  DESTRUCTIVE_TOOLS are deliberately left OFF allowedTools so canUseTool
-  gates them (bare allowedTools entries shadow the callback). The manager
+  DESTRUCTIVE_TOOLS and Task are deliberately left OFF allowedTools so
+  canUseTool gates them (bare allowedTools entries shadow the callback):
+  destructive ops raise the writer card; duplicate Task spawns (same
+  subagent type + same normalized task, per turn) are bounced — the
+  orchestrator does the same dedup on wave spawns, and the knowledge
+  writes are duplicate-proof themselves (record_fact exact-triple,
+  record_decision same-decision, log_continuity_issue same-open-title,
+  propose_new_unit same-titled-sibling with allowDuplicate escape,
+  save_research same-title with allowDuplicate). The manager
   broadcasts IAgentRuntimeCapabilities with connection state (all-false
   for claude-code: perAgentControl/boundaryPause/manualCompact) — the
   renderer hides per-agent pause/kill, pause-all, and the compact click

@@ -448,6 +448,31 @@ const proposeNewUnit = async(
   const index = optInt(args, 'index')
 
   const structure = await structureService.loadReconciled(root)
+  // Duplicate-scene guard: two drafters creating "The Ambush" under the
+  // same parent would fork the binder. Same normalized title + same
+  // parent → point at the existing unit (allowDuplicate overrides for
+  // genuinely same-titled scenes).
+  if (args.allowDuplicate !== true) {
+    const normalizedTitle = title.toLowerCase().replace(/\s+/g, ' ').trim()
+    const siblings = parentId
+      ? findUnit(structure.units, parentId)?.unit.children ?? []
+      : structure.units
+    const existing = siblings.find(
+      (u) => u.title.toLowerCase().replace(/\s+/g, ' ').trim() === normalizedTitle
+    )
+    if (existing) {
+      return {
+        created: false,
+        duplicate: true,
+        unitId: existing.id,
+        path: existing.path,
+        note:
+          'A unit with this title already exists under the same parent — work with it ' +
+          '(read_unit / propose_text_edit), or pass allowDuplicate: true for a genuinely ' +
+          'distinct same-titled scene.'
+      }
+    }
+  }
   const unit = await structureService.createUnit(root, structure, {
     parentId,
     type,
@@ -606,6 +631,19 @@ const recordDecisionTool = async(
   const root = requireRoot(context)
   const decision = str(args, 'decision')
   const reason = optStr(args, 'reason')
+  // Two agents settling the same choice in parallel must not double-log it.
+  const normalized = decision.toLowerCase().replace(/\s+/g, ' ').trim()
+  const existing = listDecisions(root).find(
+    (d) => d.decision.toLowerCase().replace(/\s+/g, ' ').trim() === normalized
+  )
+  if (existing) {
+    return {
+      recorded: false,
+      duplicate: true,
+      existing,
+      note: 'This decision is already on record — it stands; nothing to add.'
+    }
+  }
   const entry = appendDecision(root, decision, reason)
   return {
     recorded: entry,
@@ -891,6 +929,24 @@ const logContinuityIssue = async(
   const relatedPaths = Array.isArray(relatedRaw)
     ? relatedRaw.filter((p): p is string => typeof p === 'string').slice(0, 20)
     : []
+
+  // Parallel auditors finding the same problem must not double-file it.
+  const normalizedTitle = title.toLowerCase().replace(/\s+/g, ' ').trim()
+  const existing = (await continuityService.list(root)).find(
+    (i) =>
+      i.status === 'open' &&
+      i.title.toLowerCase().replace(/\s+/g, ' ').trim() === normalizedTitle
+  )
+  if (existing) {
+    return {
+      logged: false,
+      duplicate: true,
+      issueId: existing.id,
+      note:
+        'An open issue with this title already exists — it is filed; add genuinely new ' +
+        'evidence under a more specific title if needed.'
+    }
+  }
 
   const issue: IContinuityIssue = {
     id: crypto.randomUUID(),
