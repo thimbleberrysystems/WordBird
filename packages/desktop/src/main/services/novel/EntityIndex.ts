@@ -44,7 +44,7 @@ const NON_ENTITY_PAGES = new Set(['structure.md', 'style.md', 'book.md'])
 const indexPath = (root: string): string =>
   path.join(root, '.wordbird', 'index', 'entities.json')
 
-const listBiblePages = (root: string): string[] => {
+export const listBiblePages = (root: string): string[] => {
   const pages: string[] = []
   const walk = (dir: string): void => {
     let entries: fs.Dirent[]
@@ -103,7 +103,7 @@ const countOccurrences = (haystack: string, term: string): number => {
  * Cheap change fingerprint over the inputs (bible pages + prose files):
  * count + total size + newest mtime. Any edit anywhere moves it.
  */
-const computeSignature = (root: string, files: string[]): string => {
+export const computeEntityInputsSignature = (root: string, files: string[]): string => {
   let count = 0
   let bytes = 0
   let newest = 0
@@ -124,7 +124,10 @@ export const buildEntityIndex = async(root: string): Promise<IEntityIndex> => {
   const structure = await structureService.loadReconciled(root)
   const leaves = collectLeaves(structure.units).filter((leaf) => !!leaf.path)
   const pages = listBiblePages(root)
-  const signature = computeSignature(root, [...pages, ...leaves.map((l) => l.path as string)])
+  const signature = computeEntityInputsSignature(root, [
+    ...pages,
+    ...leaves.map((l) => l.path as string)
+  ])
 
   // Read every prose unit once; scan it for every entity.
   const proseByLeaf = await Promise.all(
@@ -199,7 +202,7 @@ export const getEntityIndex = async(root: string): Promise<IEntityIndex> => {
   if (cached?.signature) {
     const structure = await structureService.loadReconciled(root)
     const leaves = collectLeaves(structure.units).filter((leaf) => !!leaf.path)
-    const current = computeSignature(root, [
+    const current = computeEntityInputsSignature(root, [
       ...listBiblePages(root),
       ...leaves.map((l) => l.path as string)
     ])

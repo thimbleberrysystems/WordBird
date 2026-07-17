@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
-import { AgentToolService } from '../../../src/main/services/ai/AgentToolService'
+import {
+  AgentToolService,
+  AgentToolPackLoader,
+  type ToolRunObservation
+} from '../../../src/main/services/ai/AgentToolService'
+import { registerBuiltInAgentToolHandlers } from '../../../src/main/services/ai/AgentToolHandlers'
 import { registerNovelAgentToolHandlers } from '../../../src/main/services/ai/NovelToolHandlers'
 import {
   assertSafeUrl,
@@ -189,6 +194,56 @@ describe('snapshot_project', () => {
     }
     expect(result.changed).toBe(true)
     expect(result.snapshot).toBeTruthy()
+  })
+})
+
+describe('tool-run observer (the coherence choke point)', () => {
+  const TOOL_PACK = path.join(__dirname, '../../../static/agentTools.json')
+
+  const makePackService = async(): Promise<AgentToolService> => {
+    const packService = new AgentToolService()
+    registerBuiltInAgentToolHandlers(packService)
+    const loader = new AgentToolPackLoader(packService.getKnownHandlerIds())
+    packService.loadToolPack(await loader.loadPack(TOOL_PACK))
+    packService.setProjectRoot(root)
+    return packService
+  }
+
+  it('fires with the tool name on runForModel success (both providers ride this)', async() => {
+    const packService = await makePackService()
+    const seen: ToolRunObservation[] = []
+    packService.setToolRunObserver((observation) => seen.push(observation))
+    await packService.runForModel('list_structure', {})
+    expect(seen.map((o) => o.toolName)).toEqual(['list_structure'])
+  })
+
+  it('fires on execute() too (renderer-initiated calls are not a bypass)', async() => {
+    const packService = await makePackService()
+    const seen: ToolRunObservation[] = []
+    packService.setToolRunObserver((observation) => seen.push(observation))
+    const result = await packService.execute(
+      { id: 'list_structure', args: {} },
+      { projectRoot: root }
+    )
+    expect(result.ok).toBe(true)
+    expect(seen.map((o) => o.toolName)).toEqual(['list_structure'])
+  })
+
+  it('never fires when the handler throws (a failed tool changed nothing)', async() => {
+    const packService = await makePackService()
+    const seen: ToolRunObservation[] = []
+    packService.setToolRunObserver((observation) => seen.push(observation))
+    await expect(packService.runForModel('read_unit', { unitId: 'nope' })).rejects.toThrow()
+    expect(seen).toEqual([])
+  })
+
+  it('an observer that throws never fails the tool', async() => {
+    const packService = await makePackService()
+    packService.setToolRunObserver(() => {
+      throw new Error('observer bug')
+    })
+    const result = await packService.runForModel('list_structure', {})
+    expect(JSON.stringify(result)).toContain('chapters-scenes')
   })
 })
 

@@ -41,6 +41,13 @@ interface EditProposalPayload {
 
 type EditProposalEmitter = (proposal: EditProposalPayload) => void | Promise<void>
 
+/** One successful tool execution, as seen at the provider-shared choke point. */
+export interface ToolRunObservation {
+  /** The tool NAME the model called (definition.name). */
+  toolName: string
+  args: Record<string, unknown>
+}
+
 interface PlanProposalPayload {
   planProposal: IPlanProposal
 }
@@ -198,9 +205,28 @@ export class AgentToolService {
   private _planSavedEmitter: PlanSavedEmitter | null = null
   private _writerQuestionEmitter: WriterQuestionEmitter | null = null
   private _projectChangedEmitter: ((root: string | null) => void) | null = null
+  private _toolRunObserver: ((observation: ToolRunObservation) => void) | null = null
 
   setEditProposalEmitter(emitter: EditProposalEmitter): void {
     this._editProposalEmitter = emitter
+  }
+
+  /**
+   * Fired after ANY tool handler succeeds, whichever provider called it —
+   * LangGraph workers, SDK Task subagents, renderer executeTool. This is
+   * the single choke point coherence enforcement counts writes at (parsing
+   * activity labels misses subagent calls on the SDK provider).
+   */
+  setToolRunObserver(observer: ((observation: ToolRunObservation) => void) | null): void {
+    this._toolRunObserver = observer
+  }
+
+  private _notifyToolRun(toolName: string, args: Record<string, unknown>): void {
+    try {
+      this._toolRunObserver?.({ toolName, args })
+    } catch {
+      // Observation is advisory — never fail the tool over it.
+    }
   }
 
   /** Fired after any tool that mutates project files/structure succeeds. */
@@ -271,6 +297,7 @@ export class AgentToolService {
 
     try {
       const data = await loaded.handler(call.args, context)
+      this._notifyToolRun(loaded.definition.name, call.args)
       return {
         id: call.id,
         ok: true,
@@ -312,6 +339,8 @@ export class AgentToolService {
       signal
     }
     const result = await loaded.handler(args, context)
+    // A proposal IS the write event — notify before the short-circuits.
+    this._notifyToolRun(loaded.definition.name, args)
 
     // Direct disk mutations must reflect in the UI immediately.
     if (this._projectChangedEmitter && PROJECT_MUTATING_TOOLS.has(loaded.definition.name)) {

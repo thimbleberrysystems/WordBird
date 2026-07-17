@@ -287,6 +287,11 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'canon corrections via propose_bible_update. record_fact durable canon you ' +
       'establish along the way. Story-truth contradictions are the auditor\'s lane: ' +
       'log_continuity_issue with quotes so the supervisor can dispatch one. ' +
+      'CONTRADICTORY FACTS in the health report are canon questions, not steward work — ' +
+      'log_continuity_issue quoting both facts; never pick the winner yourself. ' +
+      'DUPLICATE ALIASES get fixed via propose_bible_update on the page that should ' +
+      'yield the alias. Orphaned summaries/facts/issue-paths and an over-long biscuit.md ' +
+      'are report-only: name them in REMAINING for the writer. ' +
       'Never touch prose style or content — you sync the project AROUND the prose. ' +
       'Finish with a two-part report: SYNCED (what you fixed/proposed) and REMAINING ' +
       '(what needs a specialist or the writer).'

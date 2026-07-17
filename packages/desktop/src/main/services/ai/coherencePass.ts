@@ -3,10 +3,14 @@
  *
  * Doctrine (L1) asks the supervisor to end multi-write turns with a
  * steward pass; this module makes it a GUARANTEE the writer never has
- * to think about, provider-independently (it lives at the manager
- * layer, like driveBookRun):
- *  - AUTO mode: a turn that wrote 2+ things without a steward gets ONE
- *    bounded follow-up invoke telling the supervisor to run the pass.
+ * to think about, provider-independently:
+ *  - Writes are observed at the ONE choke point every provider's tools
+ *    share (AgentToolService.runForModel/execute via the manager's
+ *    observer) — LangGraph workers, SDK Task subagents, renderer calls.
+ *  - AUTO mode: a turn that wrote 2+ things SINCE THE LAST steward pass
+ *    gets ONE bounded follow-up invoke telling the supervisor to run it.
+ *    The mark is order-aware: an early steward in a long book run does
+ *    not excuse eight scenes written after it.
  *  - APPROVALS mode: prose only lands when the writer accepts, so the
  *    trigger is the acceptance report — 2+ accepted edits prepend the
  *    coherence instruction to the NEXT turn.
@@ -37,23 +41,63 @@ export const WRITE_TOOL_EVENT_NAMES = new Set([
 /** Activity that proves a steward-style pass already happened this turn. */
 export const STEWARD_SIGNAL_TOOLS = new Set(['project_health'])
 
+/**
+ * The steward's own repair actions. After a steward mark, these must not
+ * re-arm enforcement — a steward fixing five metadata gaps is the CURE,
+ * not five new changes.
+ */
+export const STEWARD_FIX_TOOLS = new Set([
+  'update_unit_meta',
+  'update_summary',
+  'propose_bible_update',
+  'propose_new_file',
+  'record_fact'
+])
+
 export interface TurnObservations {
-  /** Labels of write-ish work observed (tool names / touched items). */
-  writes: string[]
-  /** True when a steward spawned or steward-signal tools ran. */
-  stewardRan: boolean
+  /** Every write observed this turn, in order (tool + short label). */
+  writes: Array<{ tool: string; label: string }>
+  /**
+   * writes.length at the moment the last steward pass COMPLETED
+   * (null = no steward ran this turn).
+   */
+  stewardMark: number | null
 }
 
 export const emptyObservations = (): TurnObservations => ({
   writes: [],
-  stewardRan: false
+  stewardMark: null
 })
+
+export const observeWrite = (
+  observations: TurnObservations,
+  tool: string,
+  label: string
+): void => {
+  observations.writes.push({ tool, label })
+}
+
+export const markSteward = (observations: TurnObservations): void => {
+  observations.stewardMark = observations.writes.length
+}
+
+/**
+ * Writes still owing a coherence pass: everything after the last steward
+ * mark, minus the steward's own repair tools once a mark exists.
+ */
+export const writesSinceSteward = (
+  observations: TurnObservations
+): Array<{ tool: string; label: string }> => {
+  if (observations.stewardMark === null) return [...observations.writes]
+  return observations.writes
+    .slice(observations.stewardMark)
+    .filter((write) => !STEWARD_FIX_TOOLS.has(write.tool))
+}
 
 export const shouldEnforceCoherence = (
   observations: TurnObservations,
   mode: AgentPermissionMode
-): boolean =>
-  mode === 'auto' && observations.writes.length >= 2 && !observations.stewardRan
+): boolean => mode === 'auto' && writesSinceSteward(observations).length >= 2
 
 export const coherenceInstruction = (changed: string[]): string => {
   const scope =
@@ -109,9 +153,10 @@ export const driveCoherencePass = async(
   deps: CoherencePassDeps
 ): Promise<string> => {
   if (!shouldEnforceCoherence(observations, mode)) return ''
+  const pending = writesSinceSteward(observations)
   deps.emitStatus(
     'Coherence pass',
-    `${observations.writes.length} changes this turn — running the steward sweep`
+    `${pending.length} change${pending.length === 1 ? '' : 's'} since the last steward pass — running the sweep`
   )
-  return await deps.invokeNext(coherenceInstruction(observations.writes))
+  return await deps.invokeNext(coherenceInstruction(pending.map((write) => write.label)))
 }

@@ -19,7 +19,11 @@ import { continuityService } from '../novel/ContinuityService'
 import { revisionService, RevisionService } from '../novel/RevisionService'
 import { listSkills, readSkill, readPinnedSkills, MAX_SKILL_BODY_CHARS } from '../novel/Skills'
 import { listDecisions } from '../novel/Decisions'
-import { checkProjectHealth, healthBriefLine } from '../novel/ProjectHealth'
+import {
+  checkProjectHealth,
+  healthBriefLine,
+  MAX_INSTRUCTIONS_CHARS
+} from '../novel/ProjectHealth'
 import { readProjectMeta } from '../novel/ProjectMeta'
 import type { INovelUnit } from '../../../shared/types/novel'
 
@@ -263,8 +267,8 @@ export class ContextBuilder {
       )
 
       // Standing instructions (the CLAUDE.md of the novel): writer-editable
-      // rules that survive compaction because they ride every brief.
-      const MAX_INSTRUCTIONS_CHARS = 2000
+      // rules that survive compaction because they ride every brief. The
+      // cap is shared with ProjectHealth so overflow always gets flagged.
       try {
         const instructions = (
           await fsPromises.readFile(path.join(projectRoot, 'biscuit.md'), 'utf8')

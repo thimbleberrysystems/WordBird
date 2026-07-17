@@ -410,19 +410,40 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   `notes` (document notes in the Outline) — all agent-readable/writable
   via list_structure/update_unit_meta.
 - THE OVERSEEING LAYER: `main/services/novel/ProjectHealth.ts` —
-  deterministic sync report (missing scene metadata = what corkboard/
-  outline/timeline render, stale summaries, recurring names with no
-  bible page via conservative mining, binder-vs-disk drift, empty-final,
-  open plan items), content-hash cached; `project_health` read tool
-  (ask mode included); the STEWARD role starts from it, fixes metadata/
-  summaries directly and proposes bible pages via review. Enforcement is
-  three-layered: L1 COHERENCE PASS doctrine (multi-write turns end with
-  a steward; findings get DISPATCHED to specialists, not filed), L2
-  `main/services/ai/coherencePass.ts` — mechanical, provider-independent
-  (auto mode: one bounded follow-up invoke when a turn wrote 2+ things
-  without a steward; approvals mode: 2+ ACCEPTED edits prepend the pass
-  to the next turn), L3 the PROJECT HEALTH brief line (standing pressure
-  until clean). The writer never has to ask.
+  deterministic sync report covering every writer view: missing scene
+  metadata (= what corkboard/outline/timeline render) + invalid status
+  enums + duplicate unit ids/paths + empty containers; stale summaries +
+  orphan summaries (deleteUnit also removes them at source); recurring
+  names with no bible page via conservative mining (frequency-ranked
+  cap, honorific surnames, single-file projects at a raised bar);
+  CONTRADICTORY FACTS (same subject+relation, different object — forked
+  canon is a warn) + facts/issues referencing deleted units/paths;
+  duplicate aliases across bible pages + orphan/alias-less pages;
+  binder-vs-disk drift; biscuit.md past the 2000-char brief cap
+  (MAX_INSTRUCTIONS_CHARS is exported from here, imported by
+  ContextBuilder); stale active revisions; template↔beat-sheet drift;
+  project-wide banned-terms sweep (style.md); knowledge hygiene
+  (shadowed skill names, dead pins, unparseable decision lines);
+  transcripts growth. Signature covers everything the checks read
+  (.txt included, raw+reconciled manifests, entity-index inputs, a day
+  bucket for time-based checks); checks that error surface as a
+  `health-check-errors` finding, never silence. `project_health` read
+  tool (ask mode included); the STEWARD role starts from it, fixes
+  metadata/summaries directly, proposes bible pages via review, and
+  DISPATCHES fact contradictions (log_continuity_issue, never picks the
+  winner). Enforcement is three-layered: L1 COHERENCE PASS doctrine
+  (multi-write turns end with a steward; findings get DISPATCHED to
+  specialists, not filed), L2 `main/services/ai/coherencePass.ts` —
+  mechanical and provider-independent: writes are counted at
+  AgentToolService.runForModel/execute (the choke point BOTH providers'
+  tools share — SDK Task-subagent calls are invisible to activity
+  labels) via setToolRunObserver; ORDER-AWARE steward marks (a steward
+  marks on completion; writes AFTER the mark re-arm enforcement — the
+  book-run case — while the steward's own repair tools never do); auto
+  mode: one bounded follow-up invoke when 2+ writes are unswept;
+  approvals mode: 2+ ACCEPTED edits prepend the pass to the next turn.
+  L3 the PROJECT HEALTH brief line (standing pressure until clean). The
+  writer never has to ask.
 - `main/services/ai/FileCheckpointSaver.ts` — file-backed LangGraph
   checkpointer under `.wordbird/agent-state/` (excluded from snapshots);
   prunes to the newest 20 checkpoints per thread so novel-length threads

@@ -40,6 +40,8 @@ import {
   acceptancePrepend,
   driveCoherencePass,
   emptyObservations,
+  markSteward,
+  observeWrite,
   type TurnObservations
 } from './coherencePass'
 import { FileCheckpointSaver } from './FileCheckpointSaver'
@@ -548,6 +550,24 @@ export class LangGraphManager {
         log.debug('[LangGraphMain] ToolNode edit proposal emitter received:', proposal)
         this._emitEditProposal(proposal)
       })
+      // Coherence observation at the provider-shared choke point: every
+      // successful tool run lands here — LangGraph workers, SDK Task
+      // subagents (invisible to activity events), renderer executeTool.
+      this._agentToolService.setToolRunObserver(({ toolName, args }) => {
+        if (WRITE_TOOL_EVENT_NAMES.has(toolName)) {
+          const detail = ['path', 'unitId', 'title', 'name']
+            .map((key) => args[key])
+            .find((value) => typeof value === 'string' && value)
+          observeWrite(
+            this._turnObservations,
+            toolName,
+            `${toolName}${detail ? ` ${String(detail).slice(0, 80)}` : ''}`
+          )
+        }
+        if (STEWARD_SIGNAL_TOOLS.has(toolName)) {
+          markSteward(this._turnObservations)
+        }
+      })
 
       this._agent = null
 
@@ -560,18 +580,12 @@ export class LangGraphManager {
 
       const callbacks: OrchestratorCallbacks = {
         emitActivity: (event) => {
-          // Coherence observation: what changed, and did a steward run?
-          const toolName = event.label.replace(/^[^:]*:\s*/, '')
-          if (event.kind === 'tool' && WRITE_TOOL_EVENT_NAMES.has(toolName)) {
-            this._turnObservations.writes.push(
-              `${toolName}${event.detail ? ` ${event.detail.slice(0, 80)}` : ''}`
-            )
-          }
-          if (
-            (event.kind === 'spawn' && event.role === 'steward') ||
-            (event.kind === 'tool' && STEWARD_SIGNAL_TOOLS.has(toolName))
-          ) {
-            this._turnObservations.stewardRan = true
+          // Writes are counted at the tool-service observer (see connect),
+          // NOT here — activity labels never show SDK subagent tool calls.
+          // A steward FINISHING marks the pass: marking at start would let
+          // its own repair writes re-arm enforcement.
+          if (event.kind === 'agent-done' && event.role === 'steward') {
+            markSteward(this._turnObservations)
           }
           this._broadcast('mt::ai:activity', event)
         },
@@ -593,6 +607,10 @@ export class LangGraphManager {
           this._broadcast('mt::ai:token-usage', usage)
         },
         emitAgentStatus: (status) => {
+          // The SDK provider's steward-completion signal (Task tool_result).
+          if (status.status === 'done' && status.role === 'steward') {
+            markSteward(this._turnObservations)
+          }
           this._broadcast('mt::ai:agent-status', status)
         },
         drainSteering: () => this._steeringQueue.splice(0),

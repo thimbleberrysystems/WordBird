@@ -106,7 +106,11 @@ const probeModel = async(id: string): Promise<boolean> => {
  */
 export const resolveModel = async(): Promise<string> => {
   const requested = process.env.OPENROUTER_MODEL
-  if (requested && requested !== 'openrouter/free') return requested
+  if (requested && requested !== 'openrouter/free') {
+    // Pinned models must land in the cache too — activeModel() reads it.
+    cachedModel = requested
+    return requested
+  }
   if (cachedModel) return cachedModel
 
   const response = await fetch(`${OPENROUTER_BASE_URL}/models`, {

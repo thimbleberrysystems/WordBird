@@ -30,7 +30,7 @@ const HEADER =
   'Settled creative choices — Biscuit records them and never relitigates ' +
   'them. Edit or delete freely; this file is yours.\n\n'
 
-const ENTRY_RE = /^- \*\*(\d{4}-\d{2}-\d{2})\*\*\s+—\s+(.+?)(?:\s+_Why:\s*(.+?)_)?\s*$/
+export const ENTRY_RE = /^- \*\*(\d{4}-\d{2}-\d{2})\*\*\s+—\s+(.+?)(?:\s+_Why:\s*(.+?)_)?\s*$/
 
 export const formatDecision = (entry: DecisionEntry): string =>
   `- **${entry.date}** — ${entry.decision}${entry.reason ? ` _Why: ${entry.reason}_` : ''}`

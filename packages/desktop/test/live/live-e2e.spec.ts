@@ -488,6 +488,24 @@ live('21 · the steward: health check finds and fixes sync gaps', () => {
       path.join(harness.root, 'manuscript/chapter-one/the-letter.md'),
       'The letter was unsigned. Ilsabet Crane burned it before dawn.\n'
     )
+    // Forked canon in the ledger + an orphan summary: the health report
+    // must carry both, and contradictions get DISPATCHED (issue logged),
+    // never silently resolved.
+    fs.mkdirSync(path.join(harness.root, '.wordbird/continuity'), { recursive: true })
+    fs.writeFileSync(
+      path.join(harness.root, '.wordbird/continuity/facts.json'),
+      JSON.stringify({
+        facts: [
+          { id: 'f1', subject: 'Ilsabet Crane', relation: 'eye color', object: 'grey', at: 1 },
+          { id: 'f2', subject: 'Ilsabet Crane', relation: 'eye color', object: 'green', at: 2 }
+        ]
+      })
+    )
+    fs.mkdirSync(path.join(harness.root, '.wordbird/summaries'), { recursive: true })
+    fs.writeFileSync(
+      path.join(harness.root, '.wordbird/summaries/u_deleted.md'),
+      'Summary of a unit that no longer exists.'
+    )
     harness.setMode('approvals')
     const reply = await harness.send(
       't-steward',
@@ -498,13 +516,25 @@ live('21 · the steward: health check finds and fixes sync gaps', () => {
       /project_health/.test(`${event.label} ${event.detail ?? ''}`)
     )
     expect(usedHealth).toBe(true)
-    // Real fixing happened: metadata/summary writes or a proposed bible page
-    // for the unlisted character.
+    // Real fixing happened: metadata/summary writes, a proposed bible page
+    // for the unlisted character, or dispatching the planted contradiction
+    // (log_continuity_issue is the doctrine-correct action for forked canon).
     const fixed =
       harness.activity.some((event) =>
-        /update_unit_meta|update_summary/.test(`${event.label} ${event.detail ?? ''}`)
+        /update_unit_meta|update_summary|log_continuity_issue/.test(
+          `${event.label} ${event.detail ?? ''}`
+        )
       ) || harness.editProposals.some((p) => JSON.stringify(p).includes('Ilsabet'))
     expect(fixed).toBe(true)
+    // The planted fact contradiction was DISPATCHED, not swallowed: an
+    // issue got logged, or the report names the fork (behavior, not wording).
+    const dispatched =
+      harness.activity.some((event) =>
+        /log_continuity_issue/.test(`${event.label} ${event.detail ?? ''}`)
+      ) ||
+      fs.existsSync(path.join(harness.root, '.wordbird/continuity/issues.json')) ||
+      /grey|green|contradict|fork/i.test(reply)
+    expect(dispatched).toBe(true)
     expect(reply.length).toBeGreaterThan(40)
   })
 })

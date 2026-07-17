@@ -172,6 +172,21 @@ describe('StructureService.deleteUnit', () => {
     await service.deleteUnit(root, structure, scene.id, false)
     expect(fs.existsSync(path.join(root, 'manuscript/chapter-one/opening-scene.md'))).toBe(true)
   })
+
+  it('removes the unit summary regardless of deleteFiles (no orphans)', async() => {
+    for (const deleteFiles of [true, false]) {
+      write(`manuscript/chapter-one/scene-${deleteFiles}.md`, 'Words.')
+      const structure = await service.loadReconciled(root)
+      const scene = collectLeaves(structure.units).find(
+        (u) => u.path === `manuscript/chapter-one/scene-${deleteFiles}.md`
+      )!
+      const summary = path.join(root, '.wordbird', 'summaries', `${scene.id}.md`)
+      write(`.wordbird/summaries/${scene.id}.md`, 'A summary.')
+
+      await service.deleteUnit(root, structure, scene.id, deleteFiles)
+      expect(fs.existsSync(summary)).toBe(false)
+    }
+  })
 })
 
 describe('StructureService.compile', () => {

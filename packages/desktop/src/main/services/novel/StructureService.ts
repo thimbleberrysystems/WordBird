@@ -665,13 +665,24 @@ export class StructureService {
     const removed = removeUnit(structure.units, unitId)
     if (!removed) throw new Error(`Unit not found: ${unitId}`)
 
+    const removedLeaves = removed.path ? [removed] : collectLeaves(removed.children ?? [])
     if (deleteFiles) {
-      const leaves = removed.path ? [removed] : collectLeaves(removed.children ?? [])
-      for (const leaf of leaves) {
+      for (const leaf of removedLeaves) {
         const target = path.join(root, leaf.path as string)
         if (isSafeRelative(root, leaf.path as string) && fs.existsSync(target)) {
           await fsPromises.unlink(target)
         }
+      }
+    }
+    // A summary belongs to its unit, not to the prose file — remove it
+    // regardless of deleteFiles or it accumulates as an orphan forever.
+    for (const gone of [removed, ...removedLeaves]) {
+      try {
+        await fsPromises.rm(path.join(root, '.wordbird', 'summaries', `${gone.id}.md`), {
+          force: true
+        })
+      } catch {
+        // Best-effort cleanup; the orphan-summaries health check backstops.
       }
     }
     await this.save(root, structure)
