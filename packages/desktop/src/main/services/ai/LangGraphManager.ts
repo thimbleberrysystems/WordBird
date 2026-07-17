@@ -31,7 +31,11 @@ import {
 import axios from 'axios'
 import { AgentToolService, AgentToolPackLoader } from './AgentToolService'
 import { registerBuiltInAgentToolHandlers } from './AgentToolHandlers'
-import { registerUrlProvenance, clearUrlProvenance } from './WebToolHandlers'
+import {
+  registerUrlProvenance,
+  clearUrlProvenance,
+  resetWebReadCounts
+} from './WebToolHandlers'
 import { getActiveAgentProjectRoot, setAgentToolAccessor } from './AgentProjectRootResolver'
 import { EditResolutionTracker } from './EditResolutionTracker'
 import { driveBookRun, AUTO_CONTINUE_MESSAGE } from './bookRun'
@@ -905,6 +909,8 @@ export class LangGraphManager {
 
     // Fresh observation window for this writer turn.
     this._turnObservations = emptyObservations()
+    // Same-page re-read counters restart with the turn.
+    resetWebReadCounts()
 
     // Approvals-mode coherence trigger: a just-accepted batch means the
     // manuscript changed — the turn OPENS with the steward pass.

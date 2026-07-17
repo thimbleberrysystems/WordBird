@@ -103,6 +103,31 @@ const capCachedText = <T extends Record<string, unknown>>(entry: T): T => {
   return { ...entry, text: entry.text.slice(0, MAX_TEXT_CHARS), truncated: true }
 }
 
+// ---- Same-page re-read thrash guard -----------------------------------------
+// Weak models re-read the same page over and over inside one turn (the
+// cache makes it cheap, but every read still burns worker steps and
+// context). Repeat reads get an escalating nudge telling the model the
+// content has not changed. Reset per writer turn by LangGraphManager.
+const turnReadCounts = new Map<string, number>()
+
+export const resetWebReadCounts = (): void => {
+  turnReadCounts.clear()
+}
+
+const withRepeatReadNote = <T extends Record<string, unknown>>(key: string, result: T): T => {
+  const count = (turnReadCounts.get(key) ?? 0) + 1
+  turnReadCounts.set(key, count)
+  if (count <= 1) return result
+  return {
+    ...result,
+    repeatRead: count,
+    note:
+      `You have read this exact page ${count} times this turn — its content does not ` +
+      'change. Synthesize from what you already have (and save_research your findings) ' +
+      'instead of re-reading.'
+  }
+}
+
 // ---- In-flight coalescing ---------------------------------------------------
 // Parallel workers routinely research the same ground (two researchers,
 // one wiki page). Identical concurrent requests share ONE network call:
@@ -401,11 +426,16 @@ const webFetch = async(
   const cacheId = normalizeUrl(rawUrl)
   if (args.refresh !== true && cacheId) {
     const cached = readWebCache(context.projectRoot, 'fetch', cacheId)
-    if (cached) return { ...capCachedText(cached), cached: true }
+    if (cached) {
+      return withRepeatReadNote(`fetch:${cacheId}`, { ...capCachedText(cached), cached: true })
+    }
   }
 
   // Two parallel workers fetching the same page share one network call.
-  return coalesce(`fetch:${cacheId ?? rawUrl}`, () => webFetchLive(rawUrl, cacheId, context))
+  const result = await coalesce(`fetch:${cacheId ?? rawUrl}`, () =>
+    webFetchLive(rawUrl, cacheId, context)
+  )
+  return withRepeatReadNote(`fetch:${cacheId ?? rawUrl}`, result as Record<string, unknown>)
 }
 
 const webFetchLive = async(
@@ -595,11 +625,14 @@ const wikiRead = async(
     const cached = readWebCache(context.projectRoot, 'wiki', cacheId)
     if (cached) {
       if (typeof cached.url === 'string') rememberUrl(cached.url)
-      return { ...capCachedText(cached), cached: true }
+      return withRepeatReadNote(cacheId, { ...capCachedText(cached), cached: true })
     }
   }
 
-  return coalesce(`wiki:${cacheId}`, () => wikiReadLive(title, lang, cacheId, context))
+  const result = await coalesce(`wiki:${cacheId}`, () =>
+    wikiReadLive(title, lang, cacheId, context)
+  )
+  return withRepeatReadNote(cacheId, result as Record<string, unknown>)
 }
 
 const wikiReadLive = async(

@@ -18,6 +18,7 @@ import {
   makeSafeLookup,
   registerUrlProvenance,
   registerWebAgentToolHandlers,
+  resetWebReadCounts,
   MAX_KNOWN_URLS,
   WEB_CACHE_TTL_MS,
   WEB_RETRY_DELAYS_MS
@@ -51,6 +52,7 @@ const okHtml = (body: string, headers: Record<string, string> = {}) => ({
 beforeEach(() => {
   mockedGet.mockReset()
   clearUrlProvenance()
+  resetWebReadCounts()
 })
 
 // ---- isPrivateAddress ---------------------------------------------------------
@@ -462,6 +464,28 @@ describe('web content cache (research is never re-downloaded)', () => {
     const [entryName] = fs.readdirSync(cacheDir())
     const entry = JSON.parse(fs.readFileSync(path.join(cacheDir(), entryName), 'utf8'))
     expect(entry.text.length).toBeGreaterThan(20000)
+  })
+
+  it('re-reading the same page in one turn earns an escalating stop-thrashing note', async() => {
+    registerUrlProvenance('https://cache.example.com/thrash')
+    mockedGet.mockResolvedValue(okHtml('<title>Same</title>'))
+    const first = (await runRooted('web_fetch', { url: 'https://cache.example.com/thrash' })) as {
+      repeatRead?: number
+    }
+    expect(first.repeatRead).toBeUndefined()
+    await runRooted('web_fetch', { url: 'https://cache.example.com/thrash' })
+    const third = (await runRooted('web_fetch', { url: 'https://cache.example.com/thrash' })) as {
+      repeatRead?: number
+      note?: string
+    }
+    expect(third.repeatRead).toBe(3)
+    expect(third.note).toMatch(/3 times this turn/i)
+    // A new writer turn starts clean.
+    resetWebReadCounts()
+    const fresh = (await runRooted('web_fetch', { url: 'https://cache.example.com/thrash' })) as {
+      repeatRead?: number
+    }
+    expect(fresh.repeatRead).toBeUndefined()
   })
 
   it('parallel identical fetches share ONE network call (in-flight coalescing)', async() => {
