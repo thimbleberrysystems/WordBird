@@ -952,17 +952,18 @@ export class LangGraphManager {
 
       // Mechanical coherence pass (auto mode): if this turn changed 2+
       // things and no steward ran, ONE bounded follow-up runs the sweep.
-      const coherenceReply = await driveCoherencePass(
-        this._turnObservations,
-        this._permissionMode,
-        {
+      // STOP means stop: an aborted turn never gets a coherence follow-up
+      // (a fresh invoke after abort would resurrect the run — the L3
+      // health brief line carries the debt to the next turn instead).
+      const coherenceReply = signal?.aborted
+        ? ''
+        : await driveCoherencePass(this._turnObservations, this._permissionMode, {
           invokeNext: async(instruction) => {
             const followUp = await invokeOnce([new HumanMessage(instruction)])
             return this._extractResponseContent(followUp)
           },
           emitStatus: (label, detail) => this._emitBookRunStatus(label, detail)
-        }
-      )
+        })
       if (coherenceReply) {
         content = `${content}\n\n${coherenceReply}`
       }

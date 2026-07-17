@@ -27,6 +27,8 @@ export const useAgentsStore = defineStore('agents', () => {
   )
 
   let initialized = false
+  /** Set by stopAll so interrupted rows close out as cancelled, not done. */
+  let stopRequested = false
 
   /** Idempotent — safe to call from every consumer's onMounted. */
   const init = (): void => {
@@ -43,6 +45,25 @@ export const useAgentsStore = defineStore('agents', () => {
     })
     window.electron.ai.onRunState(({ state }) => {
       runState.value = state
+      // The run is over: any row still "running" is stale (SDK subagents
+      // interrupted mid-flight never get a completion event). Close them
+      // out so the tree never shows phantom running agents after Stop.
+      if (state === 'idle') {
+        const next = new Map(agentMap.value)
+        let changed = false
+        for (const [id, agent] of next) {
+          if (agent.status === 'running') {
+            next.set(id, {
+              ...agent,
+              status: stopRequested ? 'cancelled' : 'done',
+              endedAt: agent.endedAt ?? Date.now()
+            })
+            changed = true
+          }
+        }
+        if (changed) agentMap.value = next
+        stopRequested = false
+      }
     })
   }
 
@@ -73,6 +94,7 @@ export const useAgentsStore = defineStore('agents', () => {
   }
 
   const stopAll = async(): Promise<void> => {
+    stopRequested = true
     await window.electron.ai.abort()
   }
 

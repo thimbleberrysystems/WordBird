@@ -571,6 +571,23 @@ describe('provider parity', () => {
   })
 })
 
+describe('stop means stop', () => {
+  it('an already-aborted signal never starts an SDK query', async() => {
+    const harness = await makeHarness([initMessage('s'), successResult('never')])
+    cleanupRoots.push(harness.root)
+    harness.runner.setMode('auto')
+    const controller = new AbortController()
+    controller.abort()
+    const response = await harness.runner.buildGraph().invoke(
+      { messages: [{ content: 'keep going' }] },
+      { configurable: { thread_id: 't-stopped' }, signal: controller.signal } as never
+    )
+    expect(response.messages[0].content).toBe('')
+    // No query was created — a post-Stop invoke cannot resurrect the run.
+    expect(harness.sdk.calls).toHaveLength(0)
+  })
+})
+
 describe('duplicate-spawn guard (canUseTool on Task)', () => {
   it('an identical (type, task) spawn is bounced; distinct ones pass', async() => {
     const harness = await makeHarness([initMessage('s'), successResult('ok')])

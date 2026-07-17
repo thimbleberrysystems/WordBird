@@ -252,6 +252,10 @@ export class AgentSDKRunner {
     state: { messages: Array<{ content?: unknown }> },
     cfg?: { signal?: AbortSignal; configurable?: { thread_id?: string } }
   ): Promise<string> {
+    // An abort listener on an ALREADY-aborted signal never fires — without
+    // this check a post-Stop invoke (book-run segment, follow-up) would run
+    // a whole uninterruptible SDK query. Stop means stop.
+    if (cfg?.signal?.aborted) return ''
     const sdk = await this._loadSdk()
     // Mid-run steering notes queue while a turn works; every invoke
     // boundary (book-run segments, coherence follow-ups, next turns)

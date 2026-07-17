@@ -445,24 +445,35 @@
             {{ currentModelName }}
           </el-button>
 
-          <!-- Stop is the panic button: kills the supervisor and every
-               sub-agent. Pause and per-agent control live in the agents
-               tree (header). -->
+          <!-- While idle: [Send] primary, rightmost. While running the
+               roles swap (writer request): Steer becomes the quiet left
+               button, STOP takes the prominent rightmost slot — the
+               panic button is the one your hand finds first. -->
           <el-button
+            v-if="sending"
+            size="small"
+            plain
+            :disabled="!userInput.trim()"
+            @click="sendMessage"
+          >
+            {{ t('biscuit.steer') }}
+          </el-button>
+          <el-button
+            v-if="sending"
             type="danger"
             size="small"
-            :disabled="!sending"
             @click="stopGeneration"
           >
             {{ t('biscuit.stop') }}
           </el-button>
           <el-button
+            v-else
             type="primary"
             size="small"
             :disabled="!aiIsConnected || !userInput.trim()"
             @click="sendMessage"
           >
-            {{ sending ? t('biscuit.steer') : t('biscuit.send') }}
+            {{ t('biscuit.send') }}
           </el-button>
         </div>
       </div>
@@ -1167,7 +1178,8 @@ function openAiSettings (): void {
 // Stop generation
 async function stopGeneration (): Promise<void> {
   try {
-    await langGraphService.abort()
+    // Through the store so interrupted agent rows close out as CANCELLED.
+    await agentsStore.stopAll()
   } catch {
     // ignore abort errors
   }
