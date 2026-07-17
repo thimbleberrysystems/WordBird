@@ -6,9 +6,10 @@
  * and manual redirect following with every hop re-guarded.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import axios from 'axios'
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import {
   assertSafeUrl,
@@ -16,7 +17,9 @@ import {
   isPrivateAddress,
   makeSafeLookup,
   registerUrlProvenance,
-  registerWebAgentToolHandlers
+  registerWebAgentToolHandlers,
+  WEB_CACHE_MAX_ENTRIES,
+  WEB_CACHE_TTL_MS
 } from '../../../src/main/services/ai/WebToolHandlers'
 import { buildSupervisorPrompt } from '../../../src/main/services/ai/orchestrator/Orchestrator'
 import { AGENT_ROLES } from '../../../src/main/services/ai/orchestrator/roles'
@@ -327,6 +330,114 @@ describe('web_fetch handler', () => {
 })
 
 // ---- URL provenance (Anthropic web_fetch pattern) -----------------------------
+
+describe('web content cache (research is never re-downloaded)', () => {
+  let root: string
+  const cacheDir = (): string => path.join(root, '.wordbird', 'agent-state', 'web-cache')
+  const runRooted = (id: string, args: Record<string, unknown>): Promise<unknown> => {
+    const handler = (
+      service as unknown as { _handlers: Map<string, Handler> }
+    )._handlers.get(id)!
+    return handler(args, { projectRoot: root })
+  }
+
+  beforeEach(() => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), 'wordbird-webcache-'))
+  })
+  afterEach(() => {
+    fs.rmSync(root, { recursive: true, force: true })
+  })
+
+  it('the second fetch of the same URL is served from disk (one network call)', async() => {
+    registerUrlProvenance('https://cache.example.com/page')
+    mockedGet.mockResolvedValue(okHtml('<title>Cached</title><p>body text</p>'))
+    const first = (await runRooted('web_fetch', { url: 'https://cache.example.com/page' })) as {
+      cached?: boolean
+    }
+    expect(first.cached).toBeUndefined()
+    const second = (await runRooted('web_fetch', { url: 'https://cache.example.com/page' })) as {
+      cached?: boolean
+      title: string
+      fetchedAt: number
+    }
+    expect(second.cached).toBe(true)
+    expect(second.title).toBe('Cached')
+    expect(second.fetchedAt).toBeGreaterThan(0)
+    expect(mockedGet).toHaveBeenCalledTimes(1)
+  })
+
+  it('SECURITY ORDERING pin: a cache hit needs no provenance (no network); a miss still does', async() => {
+    registerUrlProvenance('https://cache.example.com/page')
+    mockedGet.mockResolvedValue(okHtml('<title>Cached</title>'))
+    await runRooted('web_fetch', { url: 'https://cache.example.com/page' })
+
+    // New conversation: provenance wiped, but the cached body is reachable
+    // WITHOUT any network request — the SSRF surface never opens.
+    clearUrlProvenance()
+    mockedGet.mockClear()
+    const cached = (await runRooted('web_fetch', { url: 'https://cache.example.com/page' })) as {
+      cached?: boolean
+    }
+    expect(cached.cached).toBe(true)
+    expect(mockedGet).not.toHaveBeenCalled()
+
+    // An UNcached URL without provenance is still refused before any request.
+    await expect(
+      runRooted('web_fetch', { url: 'https://never-seen.example.com/x' })
+    ).rejects.toThrow(/did not come from the writer|search result/i)
+    expect(mockedGet).not.toHaveBeenCalled()
+  })
+
+  it('TTL expiry re-fetches; refresh: true bypasses even a fresh entry', async() => {
+    registerUrlProvenance('https://cache.example.com/page')
+    mockedGet.mockResolvedValue(okHtml('<title>Cached</title>'))
+    await runRooted('web_fetch', { url: 'https://cache.example.com/page' })
+
+    // Age the entry past the TTL by rewriting its fetchedAt.
+    const [entryName] = fs.readdirSync(cacheDir())
+    const entryPath = path.join(cacheDir(), entryName)
+    const entry = JSON.parse(fs.readFileSync(entryPath, 'utf8'))
+    entry.fetchedAt = Date.now() - WEB_CACHE_TTL_MS - 1000
+    fs.writeFileSync(entryPath, JSON.stringify(entry))
+
+    await runRooted('web_fetch', { url: 'https://cache.example.com/page' })
+    expect(mockedGet).toHaveBeenCalledTimes(2)
+
+    await runRooted('web_fetch', { url: 'https://cache.example.com/page', refresh: true })
+    expect(mockedGet).toHaveBeenCalledTimes(3)
+  })
+
+  it('wiki_read articles are cached too', async() => {
+    const article = {
+      status: 200,
+      headers: {},
+      data: { query: { pages: { 1: { title: 'Lighthouse', extract: 'A tower with a light.' } } } }
+    }
+    mockedGet.mockResolvedValue(article)
+    await runRooted('wiki_read', { title: 'Lighthouse' })
+    const second = (await runRooted('wiki_read', { title: 'Lighthouse' })) as {
+      cached?: boolean
+      text: string
+    }
+    expect(second.cached).toBe(true)
+    expect(second.text).toContain('tower')
+    expect(mockedGet).toHaveBeenCalledTimes(1)
+  })
+
+  it('the cache prunes to its cap', async() => {
+    fs.mkdirSync(cacheDir(), { recursive: true })
+    for (let i = 0; i < WEB_CACHE_MAX_ENTRIES + 10; i++) {
+      fs.writeFileSync(
+        path.join(cacheDir(), `${String(i).padStart(4, '0')}.json`),
+        JSON.stringify({ fetchedAt: Date.now() })
+      )
+    }
+    registerUrlProvenance('https://cache.example.com/new')
+    mockedGet.mockResolvedValue(okHtml('<title>New</title>'))
+    await runRooted('web_fetch', { url: 'https://cache.example.com/new' })
+    expect(fs.readdirSync(cacheDir()).length).toBeLessThanOrEqual(WEB_CACHE_MAX_ENTRIES)
+  })
+})
 
 describe('web_fetch URL provenance', () => {
   it('refuses a URL the model invented — no request is made', async() => {

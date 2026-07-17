@@ -55,8 +55,13 @@ export const listBiblePages = (root: string): string[] => {
     }
     for (const entry of entries) {
       const full = path.join(dir, entry.name)
-      if (entry.isDirectory()) walk(full)
-      else if (entry.name.endsWith('.md') && !NON_ENTITY_PAGES.has(entry.name)) {
+      if (entry.isDirectory()) {
+        // bible/research/ holds research NOTES, not story entities —
+        // indexing them would pollute WHO'S WHERE and trip the
+        // orphan-page/missing-aliases health checks for every note.
+        if (entry.name === 'research') continue
+        walk(full)
+      } else if (entry.name.endsWith('.md') && !NON_ENTITY_PAGES.has(entry.name)) {
         pages.push(path.relative(root, full))
       }
     }

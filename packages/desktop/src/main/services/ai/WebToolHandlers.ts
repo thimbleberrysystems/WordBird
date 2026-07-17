@@ -12,14 +12,90 @@
 
 import axios from 'axios'
 import type { AddressFamily, LookupAddress } from 'axios'
+import crypto from 'crypto'
 import dns from 'dns'
+import fs from 'fs'
 import net from 'net'
+import path from 'path'
 import type { AgentToolContext, AgentToolService } from './AgentToolService'
 
 const MAX_RESPONSE_BYTES = 1_500_000
 const FETCH_TIMEOUT_MS = 15000
 const MAX_TEXT_CHARS = 20000
 const USER_AGENT = 'WordBird-Biscuit/1.0 (novel research assistant)'
+
+// ---- Web content cache ------------------------------------------------------
+// Fetched pages/articles are cached per project so the SAME material is
+// never re-downloaded turn after turn (research used to evaporate with the
+// conversation). Lives under agent-state: git-ignored, snapshot-excluded,
+// derived data — safe to delete any time.
+export const WEB_CACHE_TTL_MS = 7 * 86_400_000
+export const WEB_CACHE_MAX_ENTRIES = 150
+
+interface WebCacheEntry extends Record<string, unknown> {
+  fetchedAt: number
+}
+
+const webCacheDir = (root: string): string =>
+  path.join(root, '.wordbird', 'agent-state', 'web-cache')
+
+const webCacheFile = (root: string, kind: string, id: string): string =>
+  path.join(
+    webCacheDir(root),
+    `${crypto.createHash('sha1').update(`${kind}:${id}`).digest('hex')}.json`
+  )
+
+const readWebCache = (
+  root: string | null | undefined,
+  kind: string,
+  id: string
+): WebCacheEntry | null => {
+  if (!root) return null
+  try {
+    const entry = JSON.parse(
+      fs.readFileSync(webCacheFile(root, kind, id), 'utf8')
+    ) as WebCacheEntry
+    if (typeof entry.fetchedAt !== 'number') return null
+    if (Date.now() - entry.fetchedAt > WEB_CACHE_TTL_MS) return null
+    return entry
+  } catch {
+    return null
+  }
+}
+
+const writeWebCache = (
+  root: string | null | undefined,
+  kind: string,
+  id: string,
+  payload: Record<string, unknown>
+): void => {
+  if (!root) return
+  try {
+    const dir = webCacheDir(root)
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(
+      webCacheFile(root, kind, id),
+      JSON.stringify({ ...payload, fetchedAt: Date.now() })
+    )
+    const entries = fs.readdirSync(dir).filter((name) => name.endsWith('.json'))
+    if (entries.length > WEB_CACHE_MAX_ENTRIES) {
+      const byAge = entries
+        .map((name) => {
+          try {
+            return { name, mtime: fs.statSync(path.join(dir, name)).mtimeMs }
+          } catch {
+            return { name, mtime: 0 }
+          }
+        })
+        .sort((a, b) => b.mtime - a.mtime)
+      for (const { name } of byAge.slice(WEB_CACHE_MAX_ENTRIES)) {
+        fs.rmSync(path.join(dir, name), { force: true })
+      }
+    }
+  } catch {
+    // The cache is an optimization — never fail the fetch over it.
+  }
+}
 
 const str = (args: Record<string, unknown>, key: string): string => {
   const value = args[key]
@@ -241,9 +317,21 @@ const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308])
 
 const webFetch = async(
   args: Record<string, unknown>,
-  _context: AgentToolContext
+  context: AgentToolContext
 ): Promise<unknown> => {
-  let url = assertSafeUrl(str(args, 'url'))
+  const rawUrl = str(args, 'url')
+
+  // DELIBERATE ordering: a fresh cache hit returns BEFORE the provenance
+  // gate — no network happens, so the SSRF/exfiltration surface that
+  // provenance guards is unreachable, and the content was obtained under
+  // provenance when first fetched. Cache MISSES take the full pipeline.
+  const cacheId = normalizeUrl(rawUrl)
+  if (args.refresh !== true && cacheId) {
+    const cached = readWebCache(context.projectRoot, 'fetch', cacheId)
+    if (cached) return { ...cached, cached: true }
+  }
+
+  let url = assertSafeUrl(rawUrl)
 
   // Provenance gate: only URLs the writer supplied or a search returned.
   if (!isKnownUrl(url.toString())) {
@@ -293,13 +381,16 @@ const webFetch = async(
     const isHtml = contentType.includes('html') || /^\s*</.test(body)
     const text = isHtml ? htmlToText(body) : body
 
-    return {
+    const result = {
       url: url.toString(),
       status: response.status,
       title: isHtml ? extractTitle(body) : '',
       text: text.slice(0, MAX_TEXT_CHARS),
       truncated: text.length > MAX_TEXT_CHARS
     }
+    // Keyed by the REQUESTED url — that is what gets asked for again.
+    if (cacheId) writeWebCache(context.projectRoot, 'fetch', cacheId, result)
+    return result
   }
 
   return {
@@ -409,10 +500,19 @@ const wikiSearch = async(
 
 const wikiRead = async(
   args: Record<string, unknown>,
-  _context: AgentToolContext
+  context: AgentToolContext
 ): Promise<unknown> => {
   const title = str(args, 'title')
   const lang = sanitizeWikiLang(optStrLocal(args, 'lang'))
+
+  const cacheId = `wiki:${lang}:${title.toLowerCase()}`
+  if (args.refresh !== true) {
+    const cached = readWebCache(context.projectRoot, 'wiki', cacheId)
+    if (cached) {
+      if (typeof cached.url === 'string') rememberUrl(cached.url)
+      return { ...cached, cached: true }
+    }
+  }
 
   // Plain-text extract of the full article via the MediaWiki API.
   const response = await axios.get(`https://${lang}.wikipedia.org/w/api.php`, {
@@ -444,7 +544,7 @@ const wikiRead = async(
   const text = first.extract
   const articleUrl = `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(first.title ?? title)}`
   rememberUrl(articleUrl)
-  return {
+  const result = {
     title: first.title ?? title,
     lang,
     found: true,
@@ -452,6 +552,8 @@ const wikiRead = async(
     text: text.slice(0, MAX_TEXT_CHARS),
     truncated: text.length > MAX_TEXT_CHARS
   }
+  writeWebCache(context.projectRoot, 'wiki', cacheId, result)
+  return result
 }
 
 // ---- Dictionary / thesaurus (keyless, dictionaryapi.dev) ----

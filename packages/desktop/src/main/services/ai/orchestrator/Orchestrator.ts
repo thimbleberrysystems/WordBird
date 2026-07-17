@@ -381,6 +381,7 @@ export const SUPERVISOR_TOOL_NAMES = [
   'update_plan',
   'list_plans',
   'propose_plan',
+  'save_research',
   'ask_writer'
 ]
 
@@ -613,6 +614,9 @@ export const buildSupervisorPrompt = (
   '- Past conversations are mirrored under .wordbird/transcripts/ and search_manuscript finds ' +
   'them — when the writer references an earlier discussion or decision you do not remember, ' +
   'search there before asking them to repeat themselves.\n' +
+  '- RESEARCH IS AN ASSET: check RESEARCH ON FILE (bible/research/) before spawning a ' +
+  'researcher — the topic may already be covered. When research findings arrive without a ' +
+  'saved note, save_research them yourself; unsaved research evaporates with the conversation.\n' +
   '- Prefer summaries (read_summary) over full prose to orient; read full units only when the task ' +
   'demands the actual text. Have summaries refreshed (update_summary) after prose changes.\n' +
   '- NEXT-STEP NUDGE: when the project is young (EMPTY PROJECT / NO STORY BIBLE markers ' +

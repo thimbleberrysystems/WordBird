@@ -926,6 +926,10 @@
           "lang": {
             "type": "string",
             "description": "Wikipedia language code (default en)."
+          },
+          "refresh": {
+            "type": "boolean",
+            "description": "Bypass the 7-day content cache and fetch live (only when freshness matters)."
           }
         },
         "required": [
@@ -952,6 +956,40 @@
         },
         "required": [
           "word"
+        ]
+      }
+    },
+    {
+      "id": "save_research",
+      "name": "save_research",
+      "displayName": "Save research note",
+      "description": "Save durable research findings to bible/research/ so this topic is never re-researched. Cite source URLs. The note is visible to the writer and announced to every future turn under RESEARCH ON FILE.",
+      "handler": "save_research",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Topic title — becomes the note filename."
+          },
+          "content": {
+            "type": "string",
+            "description": "The findings, in markdown — conclusions first, then supporting detail."
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Source URLs the findings came from."
+          }
+        },
+        "required": [
+          "title",
+          "content"
         ]
       }
     },
@@ -1407,6 +1445,10 @@
           "url": {
             "type": "string",
             "description": "Absolute http(s) URL to fetch."
+          },
+          "refresh": {
+            "type": "boolean",
+            "description": "Bypass the 7-day content cache and fetch live (only when freshness matters)."
           }
         },
         "required": [

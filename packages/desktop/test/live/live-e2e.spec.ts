@@ -600,8 +600,19 @@ live('18 · web research flows through the provenance gate', () => {
       /web_search|wiki_search|wiki_read|web_fetch/.test(`${event.label} ${event.detail ?? ''}`)
     )
     expect(usedWeb).toBe(true)
-    // The answer is grounded and cited.
-    expect(reply).toMatch(/https?:\/\//)
+    // The answer is grounded and cited — either a raw source URL, or the
+    // saved research note (which carries the sources in its front matter;
+    // citing the note is the doctrine-preferred form).
+    expect(reply).toMatch(/https?:\/\/|bible\/research\//)
     expect(reply.toLowerCase()).toMatch(/oil|kerosene|paraffin|whale|lard|petroleum|gas/)
+    // Research PERSISTS: a note landed in bible/research/ (doctrine +
+    // save_research is ask-legal), or at minimum the save tool fired.
+    const researchDir = path.join(harness.root, 'bible', 'research')
+    const savedNote =
+      (fs.existsSync(researchDir) && fs.readdirSync(researchDir).some((f) => f.endsWith('.md'))) ||
+      harness.activity.some((event) =>
+        /save_research/.test(`${event.label} ${event.detail ?? ''}`)
+      )
+    expect(savedNote).toBe(true)
   })
 })

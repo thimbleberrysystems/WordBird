@@ -336,3 +336,15 @@ that "works in one mode but not others". Shipped in one arc:
   click-to-cycle status dots in binder/corkboard/timeline; corkboard
   inline POV; "Fix with Biscuit" on continuity issues; classified errors
   in AI settings; Ctrl+Shift+1..4 view switching; dead CSS removed.
+
+## 2026-07-18 — research persistence (writer: "research is not saved?")
+
+Confirmed and fixed: web tools had NO cache; the researcher had ZERO
+write tools; bible/research/ existed but was announced nowhere.
+- Mechanical: web_fetch/wiki_read disk cache (7-day TTL, LRU 150,
+  refresh bypass; cache hit before provenance — no network, pinned).
+- Durable: save_research (#55) writes findings notes to bible/research/
+  (direct, additive-only, ask-legal by writer decision); researcher can
+  now search the project first and MUST save at the end; supervisor
+  doctrine "RESEARCH IS AN ASSET"; brief carries RESEARCH ON FILE;
+  research notes excluded from the entity index.

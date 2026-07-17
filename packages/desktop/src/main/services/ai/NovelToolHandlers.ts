@@ -1324,6 +1324,43 @@ const savePlan = async(
   }
 }
 
+/**
+ * Durable research: findings land in bible/research/ (writer-visible,
+ * announced in every brief as RESEARCH ON FILE) so the same topic is
+ * never re-researched. Direct write by design (writer decision): notes
+ * are additive reference material — new files only, never overwrites.
+ */
+const saveResearch = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const title = str(args, 'title')
+  const content = str(args, 'content')
+  const sources = Array.isArray(args.sources)
+    ? (args.sources as unknown[]).filter((s): s is string => typeof s === 'string').slice(0, 20)
+    : []
+
+  const relative = uniqueSlugPath(root, path.join('bible', 'research'), slugifyPlanTitle(title))
+  const target = path.join(root, relative)
+  await fsPromises.mkdir(path.dirname(target), { recursive: true })
+  const frontMatter = [
+    '---',
+    `date: ${new Date().toISOString().slice(0, 10)}`,
+    ...(sources.length > 0 ? ['sources:', ...sources.map((source) => `  - ${source}`)] : []),
+    '---'
+  ].join('\n')
+  await fsPromises.writeFile(target, `${frontMatter}\n\n# ${title}\n\n${content}\n`, 'utf8')
+
+  return {
+    saved: true,
+    path: relative.split(path.sep).join('/'),
+    note:
+      'Research note saved — every future turn sees it under RESEARCH ON FILE. ' +
+      'Cite this note instead of restating or re-fetching the material.'
+  }
+}
+
 const updatePlan = async(
   args: Record<string, unknown>,
   context: AgentToolContext
@@ -1608,6 +1645,7 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('delete_file', deleteFile)
   service.registerHandler('delete_unit', deleteUnit)
   service.registerHandler('save_plan', savePlan)
+  service.registerHandler('save_research', saveResearch)
   service.registerHandler('update_plan', updatePlan)
   service.registerHandler('list_plans', listPlans)
   service.registerHandler('propose_plan', proposePlan)

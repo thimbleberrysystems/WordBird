@@ -373,7 +373,7 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   draft-next-scene with mandatory aftercare, extend, polish, health check)
   and spawn heuristics (do small things directly; spawn specialists for
   multi-unit work).
-- Tools (54): `main/services/ai/AgentToolHandlers.ts` (core file read/edit
+- Tools (55): `main/services/ai/AgentToolHandlers.ts` (core file read/edit
   + `propose_text_edit` — anchored exact-quote search/replace, the Aider
   SEARCH/REPLACE pattern, with occurrence disambiguation; the prompt-pinned
   path for surgical prose fixes, whole-file `propose_project_file_edit` is
@@ -399,7 +399,17 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   DNS-pinned lookups + per-hop redirect re-validation, and URL PROVENANCE
   à la Anthropic's web_fetch — only URLs the writer supplied or a search
   returned this session are fetchable; registry seeded by
-  LangGraphManager.sendMessage, cleared on resetThread).
+  LangGraphManager.sendMessage, cleared on resetThread. RESEARCH
+  PERSISTENCE: web_fetch/wiki_read content is disk-cached per project
+  (`.wordbird/agent-state/web-cache/`, 7-day TTL, 150-entry LRU,
+  `refresh: true` bypasses) — a FRESH cache hit deliberately returns
+  BEFORE the provenance gate (no network happens, so the SSRF/exfil
+  surface provenance guards never opens; pinned in web-tools.spec) —
+  and `save_research` writes durable findings notes to bible/research/
+  (direct, additive-only; ask-legal; researcher doctrine: check
+  RESEARCH ON FILE + transcripts before fetching, ALWAYS save at the
+  end; bible/research/ is excluded from the EntityIndex so notes never
+  pollute WHO'S WHERE or health checks).
   Definitions live in `static/agentTools.json`; handlers must be
   registered in code — JSON alone cannot add executable behavior. Tool
   outputs are context-capped (~24k chars) with announced truncation.
@@ -412,7 +422,8 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   project-root `biscuit.md` (CLAUDE.md pattern — writer-editable standing
   instructions) rides every brief verbatim, capped at 2000 chars; the
   onboarding playbook offers to create it. SKILLS AVAILABLE (catalog) +
-  PINNED SKILLS (full bodies) sections follow it.
+  PINNED SKILLS (full bodies) + RESEARCH ON FILE (bible/research/
+  catalog — read before any new web research) sections follow it.
 - `main/services/novel/EntityIndex.ts` — deterministic entity index (no
   LLM): bible pages (name + aliases) × prose units → appearance counts,
   persisted at `.wordbird/index/entities.json`, rebuilt lazily on an
@@ -475,9 +486,10 @@ Three modes (ctrl+shift cycles) — a PER-PROJECT preference persisted in
 `.wordbird/agent-state/session.json` (main is the source of truth; renderer
 mirrors via mt::ai:get-mode + the mt::ai:mode-changed broadcast; brand-new
 projects start in approvals):
-`ask` is mechanically read-only (no write tools bound; only researcher/
-explorer workers spawn, stripped to read+web tools; plans/ is the one
-writable surface). Prose/bible changes always flow through `propose_*`
+`ask` is mechanically read-only (no prose/canon write tools bound; only
+researcher/explorer workers spawn, stripped to read+web tools; its TWO
+writable surfaces are plans/ and — writer decision — `save_research`
+into bible/research/, additive-only, never overwrites). Prose/bible changes always flow through `propose_*`
 tools → edit proposal: in `approvals` (default) they wait in the renderer
 diff review queue (per-change + approve-all); in `auto` the renderer
 applies them automatically after taking a project snapshot (the whole

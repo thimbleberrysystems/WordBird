@@ -326,6 +326,36 @@ export class ContextBuilder {
         // Skills are additive — a bad skills/ dir never breaks the brief.
       }
 
+      // Durable research: announce what is already on file so the same
+      // topic is never re-researched (the notes live in bible/research/).
+      try {
+        const researchDir = path.join(projectRoot, 'bible', 'research')
+        const notes = fs
+          .readdirSync(researchDir)
+          .filter((name) => /\.(md|markdown)$/i.test(name))
+          .sort()
+        if (notes.length > 0) {
+          const MAX_NOTES = 12
+          const lines = notes.slice(0, MAX_NOTES).map((name) => {
+            try {
+              const content = fs.readFileSync(path.join(researchDir, name), 'utf8')
+              const heading = /^#\s+(.+)$/m.exec(content)?.[1]?.trim()
+              return `- bible/research/${name}${heading ? ` — ${heading}` : ''}`
+            } catch {
+              return `- bible/research/${name}`
+            }
+          })
+          const more =
+            notes.length > MAX_NOTES ? `\n…+${notes.length - MAX_NOTES} more (list_files)` : ''
+          sections.push(
+            'RESEARCH ON FILE (already researched — read/cite these before any new web ' +
+            `research; save new findings with save_research):\n${lines.join('\n')}${more}`
+          )
+        }
+      } catch {
+        // No research yet.
+      }
+
       // Settled creative choices: agents must never relitigate these.
       try {
         const decisions = listDecisions(projectRoot)
