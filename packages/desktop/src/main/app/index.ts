@@ -285,7 +285,7 @@ class App {
     }
 
     // Snapshot history bound follows the preference, at boot and on change.
-    snapshotService.setHistoryLimit(Number(preferences.getItem('snapshotHistoryLimit') ?? 1000))
+    snapshotService.setHistoryLimit(Number(preferences.getItem('snapshotHistoryLimit') ?? 0))
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ipcMain.on('broadcast-preferences-changed', (change: any) => {

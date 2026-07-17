@@ -401,8 +401,12 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   returned this session are fetchable; registry seeded by
   LangGraphManager.sendMessage, cleared on resetThread. RESEARCH
   PERSISTENCE: web_fetch/wiki_read content is disk-cached per project
-  (`.wordbird/agent-state/web-cache/`, 7-day TTL, 150-entry LRU,
-  `refresh: true` bypasses) — a FRESH cache hit deliberately returns
+  (`.wordbird/agent-state/web-cache/`, 7-day TTL, entry-count UNBOUNDED —
+  disk is never a constraint (writer decision, see also snapshot history
+  default 0 = unlimited); full text on disk, model-facing cap at return;
+  `refresh: true` bypasses; identical concurrent fetches COALESCE onto
+  one network call; all web tools retry 429/5xx/transient errors with
+  backoff honoring Retry-After — rate limits never need the writer) — a FRESH cache hit deliberately returns
   BEFORE the provenance gate (no network happens, so the SSRF/exfil
   surface provenance guards never opens; pinned in web-tools.spec) —
   and `save_research` writes durable findings notes to bible/research/

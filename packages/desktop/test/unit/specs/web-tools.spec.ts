@@ -18,8 +18,9 @@ import {
   makeSafeLookup,
   registerUrlProvenance,
   registerWebAgentToolHandlers,
-  WEB_CACHE_MAX_ENTRIES,
-  WEB_CACHE_TTL_MS
+  MAX_KNOWN_URLS,
+  WEB_CACHE_TTL_MS,
+  WEB_RETRY_DELAYS_MS
 } from '../../../src/main/services/ai/WebToolHandlers'
 import { buildSupervisorPrompt } from '../../../src/main/services/ai/orchestrator/Orchestrator'
 import { AGENT_ROLES } from '../../../src/main/services/ai/orchestrator/roles'
@@ -424,18 +425,111 @@ describe('web content cache (research is never re-downloaded)', () => {
     expect(mockedGet).toHaveBeenCalledTimes(1)
   })
 
-  it('the cache prunes to its cap', async() => {
+  it('NO entry cap (disk is not a constraint) — only TTL-expired entries are cleaned', async() => {
     fs.mkdirSync(cacheDir(), { recursive: true })
-    for (let i = 0; i < WEB_CACHE_MAX_ENTRIES + 10; i++) {
+    // 300 fresh entries + 5 expired ones.
+    for (let i = 0; i < 300; i++) {
       fs.writeFileSync(
-        path.join(cacheDir(), `${String(i).padStart(4, '0')}.json`),
+        path.join(cacheDir(), `fresh-${String(i).padStart(4, '0')}.json`),
         JSON.stringify({ fetchedAt: Date.now() })
+      )
+    }
+    for (let i = 0; i < 5; i++) {
+      fs.writeFileSync(
+        path.join(cacheDir(), `stale-${i}.json`),
+        JSON.stringify({ fetchedAt: Date.now() - WEB_CACHE_TTL_MS - 1000 })
       )
     }
     registerUrlProvenance('https://cache.example.com/new')
     mockedGet.mockResolvedValue(okHtml('<title>New</title>'))
     await runRooted('web_fetch', { url: 'https://cache.example.com/new' })
-    expect(fs.readdirSync(cacheDir()).length).toBeLessThanOrEqual(WEB_CACHE_MAX_ENTRIES)
+    const remaining = fs.readdirSync(cacheDir())
+    expect(remaining.length).toBe(301) // 300 fresh + the new one; ALL fresh kept
+    expect(remaining.some((name) => name.startsWith('stale-'))).toBe(false)
+  })
+
+  it('the cache stores FULL text; only the model-facing return is capped', async() => {
+    registerUrlProvenance('https://cache.example.com/long')
+    const longBody = `<title>Long</title><p>${'word '.repeat(9000)}</p>`
+    mockedGet.mockResolvedValue(okHtml(longBody))
+    const returned = (await runRooted('web_fetch', { url: 'https://cache.example.com/long' })) as {
+      text: string
+      truncated: boolean
+    }
+    expect(returned.truncated).toBe(true)
+    expect(returned.text.length).toBeLessThanOrEqual(20000)
+    // The disk entry keeps everything.
+    const [entryName] = fs.readdirSync(cacheDir())
+    const entry = JSON.parse(fs.readFileSync(path.join(cacheDir(), entryName), 'utf8'))
+    expect(entry.text.length).toBeGreaterThan(20000)
+  })
+
+  it('parallel identical fetches share ONE network call (in-flight coalescing)', async() => {
+    registerUrlProvenance('https://cache.example.com/parallel')
+    let resolveResponse: (value: unknown) => void = () => {}
+    mockedGet.mockImplementation(
+      () => new Promise((resolve) => {
+        resolveResponse = resolve
+      })
+    )
+    const first = runRooted('web_fetch', { url: 'https://cache.example.com/parallel' })
+    const second = runRooted('web_fetch', { url: 'https://cache.example.com/parallel' })
+    resolveResponse(okHtml('<title>Shared</title>'))
+    const [a, b] = (await Promise.all([first, second])) as Array<{ title: string }>
+    expect(a.title).toBe('Shared')
+    expect(b.title).toBe('Shared')
+    expect(mockedGet).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('rate-limit tolerance (no writer intervention)', () => {
+  const originalDelays = [...WEB_RETRY_DELAYS_MS]
+  beforeEach(() => {
+    // Instant retries in tests.
+    WEB_RETRY_DELAYS_MS.splice(0, WEB_RETRY_DELAYS_MS.length, 1, 1, 1)
+  })
+  afterEach(() => {
+    WEB_RETRY_DELAYS_MS.splice(0, WEB_RETRY_DELAYS_MS.length, ...originalDelays)
+  })
+
+  it('a 429 then success succeeds without surfacing an error (search path)', async() => {
+    mockedGet
+      .mockResolvedValueOnce({ status: 429, data: '', headers: {} })
+      .mockResolvedValueOnce(
+        okHtml('<a class="result__a" href="https://ok.example.com/a">Hit</a>')
+      )
+    const result = (await run('web_search', { query: 'storms' })) as {
+      results: Array<{ url: string }>
+    }
+    expect(result.results[0].url).toContain('ok.example.com')
+    expect(mockedGet).toHaveBeenCalledTimes(2)
+  })
+
+  it('thrown 429s (axios reject shape) retry too, honoring the attempt budget', async() => {
+    const rateLimited = Object.assign(new Error('Request failed with status code 429'), {
+      response: { status: 429 }
+    })
+    mockedGet
+      .mockRejectedValueOnce(rateLimited)
+      .mockRejectedValueOnce(rateLimited)
+      .mockResolvedValueOnce({
+        status: 200,
+        headers: {},
+        data: { query: { pages: { 1: { title: 'Tide', extract: 'Rise and fall.' } } } }
+      })
+    const result = (await run('wiki_read', { title: 'Tide' })) as { found: boolean }
+    expect(result.found).toBe(true)
+    expect(mockedGet).toHaveBeenCalledTimes(3)
+  })
+
+  it('non-retryable failures still fail fast (no infinite patience)', async() => {
+    mockedGet.mockRejectedValue(
+      Object.assign(new Error('Request failed with status code 404'), {
+        response: { status: 404 }
+      })
+    )
+    await expect(run('wiki_search', { query: 'x' })).rejects.toThrow()
+    expect(mockedGet).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -493,17 +587,17 @@ describe('web_fetch URL provenance', () => {
 
   it('the registry is capped FIFO — oldest URLs age out', async() => {
     registerUrlProvenance('https://first.example.com/0')
-    for (let i = 1; i <= 500; i++) {
+    for (let i = 1; i <= MAX_KNOWN_URLS; i++) {
       registerUrlProvenance(`https://filler.example.com/${i}`)
     }
-    // #0 was evicted by the 500-entry cap…
+    // #0 was evicted by the entry cap (memory bound, generous by design)…
     await expect(run('web_fetch', { url: 'https://first.example.com/0' })).rejects.toThrow(
       /did not come from/i
     )
     // …while a recent one still fetches.
     mockedGet.mockResolvedValueOnce(okHtml('<title>OK</title>'))
     await expect(
-      run('web_fetch', { url: 'https://filler.example.com/500' })
+      run('web_fetch', { url: `https://filler.example.com/${MAX_KNOWN_URLS}` })
     ).resolves.toBeTruthy()
   })
 

@@ -95,5 +95,5 @@
       "model": "openai/gpt-4o"
     }
   },
-  "snapshotHistoryLimit": 1000
+  "snapshotHistoryLimit": 0
 }

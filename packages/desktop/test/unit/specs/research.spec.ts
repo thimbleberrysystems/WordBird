@@ -73,11 +73,27 @@ describe('save_research handler', () => {
     expect(content).toContain('mercury baths')
   })
 
-  it('never overwrites — a colliding title gets a suffix', async() => {
+  it('a colliding title is reported as a duplicate, pointing at the existing note', async() => {
     await run('save_research', { title: 'Tides', content: 'First note.' })
     const second = (await run('save_research', { title: 'Tides', content: 'Second note.' })) as {
-      path: string
+      saved: boolean
+      duplicate: boolean
+      existingPath: string
     }
+    expect(second.saved).toBe(false)
+    expect(second.duplicate).toBe(true)
+    expect(second.existingPath).toBe('bible/research/tides.md')
+    expect(fs.readFileSync(path.join(root, 'bible/research/tides.md'), 'utf8')).toContain('First')
+  })
+
+  it('allowDuplicate writes a suffixed sibling, never overwriting', async() => {
+    await run('save_research', { title: 'Tides', content: 'First note.' })
+    const second = (await run('save_research', {
+      title: 'Tides',
+      content: 'Genuinely different.',
+      allowDuplicate: true
+    })) as { saved: boolean; path: string }
+    expect(second.saved).toBe(true)
     expect(second.path).toBe('bible/research/tides-2.md')
     expect(fs.readFileSync(path.join(root, 'bible/research/tides.md'), 'utf8')).toContain('First')
   })

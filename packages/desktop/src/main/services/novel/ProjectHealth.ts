@@ -71,9 +71,6 @@ const META_FIELDS = ['synopsis', 'status', 'pov', 'when', 'thread'] as const
  */
 export const MAX_INSTRUCTIONS_CHARS = 2000
 
-/** Soft cap before `.wordbird/transcripts/` growth earns an info finding. */
-export const TRANSCRIPTS_SOFT_CAP = 200
-
 /** An "active" revision untouched this long is presumed abandoned. */
 const STALE_REVISION_MS = 14 * 86_400_000
 
@@ -99,14 +96,6 @@ const MAX_PROSE_BYTES = 512 * 1024
 
 /** Pathological-tree bound for the signature walk (replaces a depth cap). */
 const MAX_SIGNATURE_PARTS = 8000
-
-const countDirFiles = (dir: string): number => {
-  try {
-    return fs.readdirSync(dir, { withFileTypes: true }).filter((e) => e.isFile()).length
-  } catch {
-    return 0
-  }
-}
 
 /** Signature over everything the checks read — cache invalidation key. */
 const computeSignature = (
@@ -150,9 +139,6 @@ const computeSignature = (
           statOne(path.join(full, 'continuity', 'facts.json'))
           statOne(path.join(full, 'project.json'))
           statOne(path.join(full, 'agent-state', 'session.json'))
-          // Appends to a transcript never matter to any check — only the
-          // FILE COUNT does, so the cache survives ordinary chatting.
-          parts.push(`transcripts:${countDirFiles(path.join(full, 'transcripts'))}`)
           continue
         }
         if (
@@ -609,7 +595,7 @@ export const checkProjectHealth = async(root: string): Promise<HealthReport> => 
     // whole promise is that this gets CAUGHT — deterministically.
     const groups = new Map<string, { label: string; objects: Map<string, string> }>()
     for (const fact of facts) {
-      const key = `${fact.subject.trim().toLowerCase()} ${fact.relation.trim().toLowerCase()}`
+      const key = `${fact.subject.trim().toLowerCase()}\u0000${fact.relation.trim().toLowerCase()}`
       const group =
         groups.get(key) ?? { label: `${fact.subject} — ${fact.relation}`, objects: new Map() }
       const objKey = fact.object.trim().toLowerCase()
@@ -835,19 +821,6 @@ export const checkProjectHealth = async(root: string): Promise<HealthReport> => 
         category: 'hygiene',
         message: `${issues.length} knowledge-store issue${issues.length === 1 ? '' : 's'} (skills/pins/decisions)`,
         items: issues.slice(0, 10)
-      })
-    }
-  })
-
-  // ---- transcripts growth ----
-  await guarded('transcripts', () => {
-    const count = countDirFiles(path.join(root, '.wordbird', 'transcripts'))
-    if (count > TRANSCRIPTS_SOFT_CAP) {
-      findings.push({
-        id: 'transcripts-growth',
-        severity: 'info',
-        category: 'hygiene',
-        message: `${count} conversation transcripts accumulated (housekeeping: the writer can clear old ones)`
       })
     }
   })

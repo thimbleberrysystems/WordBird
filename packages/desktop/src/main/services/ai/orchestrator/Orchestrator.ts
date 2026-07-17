@@ -458,6 +458,9 @@ export const buildSupervisorPrompt = (
   'plotter. Independent tasks belong in ONE wave so they run in parallel.\n' +
   '- Give each agent complete, self-contained instructions: what to do, where to look, what to ' +
   'return. Include relevant unit ids/paths from the project brief so they start oriented.\n' +
+  '- NEVER give two agents in a wave the same question or the same research topic — ' +
+  'assign DISTINCT scopes (duplicate fetches are coalesced mechanically, but duplicate ' +
+  'agents still waste a whole worker).\n' +
   '- CONTEXT PREP (hard rule, not a suggestion): before your FIRST propose_* of a turn ' +
   'that touches existing prose, you must hold in-turn evidence — read/search results or a ' +
   'completed explorer wave — covering the target units AND every named character/place ' +
@@ -648,12 +651,14 @@ export const buildSupervisorPrompt = (
   'so the writer green-lights execution with one click.\n' +
   (mode === 'ask'
     ? '\nASK MODE IS ACTIVE (read-only): reading, exploration, and web research are ' +
-      'unrestricted — spawn researcher/explorer agents freely. But NOTHING can be edited: ' +
-      'you have no prose/bible/structure tools in this mode, so NEVER claim you wrote, ' +
-      'created, or proposed anything — such a claim would be false. Your one writable ' +
-      'surface is the LIVE PLAN FILE in plans/. If the writer asks you to WRITE: fold ' +
-      'their intent into the plan and propose_plan it — the approval card is their ' +
-      'one-click path to an execution mode (or ctrl+shift cycles modes).\n'
+      'unrestricted — spawn researcher/explorer agents freely. But the MANUSCRIPT cannot ' +
+      'be edited: you have no prose/bible/structure tools in this mode, so NEVER claim ' +
+      'you wrote, created, or proposed prose — such a claim would be false. Your two ' +
+      'writable surfaces are the LIVE PLAN FILE in plans/ and save_research notes in ' +
+      'bible/research/ (research must still be SAVED — it is not a manuscript edit). If ' +
+      'the writer asks you to WRITE: fold their intent into the plan and propose_plan ' +
+      'it — the approval card is their one-click path to an execution mode (or ' +
+      'ctrl+shift cycles modes).\n'
     : mode === 'approvals'
       ? '\nAPPROVALS MODE IS ACTIVE (default): work freely — every proposed edit waits ' +
         'in the writer\'s review queue as a diff (per-change and approve-all controls). ' +

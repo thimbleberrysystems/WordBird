@@ -985,6 +985,10 @@
               "type": "string"
             },
             "description": "Source URLs the findings came from."
+          },
+          "allowDuplicate": {
+            "type": "boolean",
+            "description": "Write even though a note with this title exists (only for genuinely distinct material)."
           }
         },
         "required": [

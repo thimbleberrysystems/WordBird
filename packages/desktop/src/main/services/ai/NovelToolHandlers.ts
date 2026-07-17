@@ -1338,10 +1338,26 @@ const saveResearch = async(
   const title = str(args, 'title')
   const content = str(args, 'content')
   const sources = Array.isArray(args.sources)
-    ? (args.sources as unknown[]).filter((s): s is string => typeof s === 'string').slice(0, 20)
+    ? (args.sources as unknown[]).filter((s): s is string => typeof s === 'string')
     : []
 
-  const relative = uniqueSlugPath(root, path.join('bible', 'research'), slugifyPlanTitle(title))
+  // Parallel/duplicate research guard: if a note with this exact title
+  // already exists (a sibling worker may have just saved it), point at it
+  // instead of writing a near-copy. allowDuplicate overrides.
+  const baseSlug = slugifyPlanTitle(title)
+  const canonical = path.join('bible', 'research', `${baseSlug}.md`)
+  if (args.allowDuplicate !== true && fs.existsSync(path.join(root, canonical))) {
+    return {
+      saved: false,
+      duplicate: true,
+      existingPath: `bible/research/${baseSlug}.md`,
+      note:
+        'A research note with this title already exists — read it and cite it instead of ' +
+        'duplicating. Pass allowDuplicate: true only if this is genuinely distinct material.'
+    }
+  }
+
+  const relative = uniqueSlugPath(root, path.join('bible', 'research'), baseSlug)
   const target = path.join(root, relative)
   await fsPromises.mkdir(path.dirname(target), { recursive: true })
   const frontMatter = [
