@@ -46,11 +46,13 @@ onMounted(async () => {
   window.electron.ai.onConnectionState((state) => {
     langGraphService.applyMainState(state)
     preferencesStore.aiIsConnected = state.connected
+    if (state.capabilities) preferencesStore.aiCapabilities = state.capabilities
   })
   try {
     const state = await window.electron.ai.getConnectionState()
     langGraphService.applyMainState(state)
     preferencesStore.aiIsConnected = state.connected
+    if (state.capabilities) preferencesStore.aiCapabilities = state.capabilities
   } catch {
     // Main not ready — the next broadcast will catch us up.
   }

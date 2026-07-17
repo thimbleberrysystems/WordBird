@@ -302,7 +302,7 @@
       "biscuit": "Biscuit",
       "settings": "Settings",
       "binder": "Manuscript",
-      "history": "History",
+      "history": "Snapshots",
       "continuity": "Continuity",
       "agents": "Agents",
       "entities": "Entities"
@@ -601,7 +601,7 @@
       },
       "snapshotLimit": {
         "description": "Snapshot history limit",
-        "notes": "Every save and AI edit is versioned. Beyond this many snapshots, older ones are coalesced into a baseline to save space. 0 keeps everything forever."
+        "notes": "Every save and Biscuit edit is versioned. Beyond this many snapshots, older ones are coalesced into a baseline to save space. 0 keeps everything forever."
       }
     },
     "editor": {
@@ -663,7 +663,6 @@
     "image": {
       "title": "Image",
       "actions": {
-        "upload": "Upload to cloud",
         "folder": "Copy to folder",
         "path": "Use absolute path"
       },
@@ -679,14 +678,6 @@
         "relativeFolderName": "Relative folder name",
         "filenameNote": "The filename will be automatically generated."
       },
-      "imageInsertAction": {
-        "title": "Image insert action",
-        "folder": "Upload to folder",
-        "path": "Copy to path",
-        "upload": "Upload to cloud",
-        "copyToFolder": "Copy to folder",
-        "uploadToServer": "Upload to server"
-      },
       "imageFolderPath": {
         "title": "Image folder path",
         "description": "Image folder path",
@@ -694,71 +685,9 @@
         "relativePath": "Relative path",
         "absolutePath": "Absolute path"
       },
-      "cloudPictureBed": {
-        "title": "Cloud picture bed",
-        "github": "GitHub",
-        "smms": "SM.MS",
-        "qiniu": "Qiniu",
-        "upyun": "UpYun",
-        "tcyun": "Tencent Cloud",
-        "aliyun": "Alibaba Cloud",
-        "imgur": "Imgur",
-        "picgo": "PicGo"
-      },
       "preferRelativeDirectory": {
         "title": "Prefer relative directory",
         "description": "Prefer relative directory for images"
-      },
-      "uploader": {
-        "title": "Image Uploader",
-        "currentUploader": "Current Uploader: {name}",
-        "picgoNotInstalled": "PicGo is not installed",
-        "picgoDetectionStatus": "PicGo Detection Status",
-        "picgoInstalled": "PicGo is installed",
-        "picgoDetectionFailed": "PicGo detection failed",
-        "debugInfo": "Debug Info",
-        "installCommand": "Install Command",
-        "npmInstallCommand": "npm install picgo -g",
-        "yarnInstallCommand": "yarn global add picgo",
-        "pnpmInstallCommand": "pnpm add -g picgo",
-        "chooseInstallMethod": "Choose installation method:",
-        "retestPicgo": "Retest",
-        "detecting": "Detecting",
-        "lastDetectionTime": "Last Detection Time",
-        "detectionStatus": "Detection Status",
-        "picgoDetection": "PicGo Detection",
-        "usageGuide": {
-          "title": "PicGo Basic Usage Guide",
-          "step1": "Configure Uploader",
-          "step1Description": "Use the following command to configure PicGo uploader:",
-          "step2": "Upload Images",
-          "step2Description": "Use the following command to upload images:",
-          "step3": "View Configuration",
-          "step3Description": "Use the following command to view current configuration:",
-          "documentation": "View full documentation"
-        },
-        "autoDetection": "Auto detecting",
-        "lastSuccessTime": "Last success time",
-        "neverDetected": "Never detected",
-        "neverSuccessful": "Never successful",
-        "configureUploader": "Configure Uploader",
-        "configureDescription": "Use the following command to configure PicGo uploader:",
-        "uploadImage": "Upload Images",
-        "uploadDescription": "Use the following command to upload images:",
-        "viewConfig": "View Configuration",
-        "viewConfigDescription": "Use the following command to view current configuration:",
-        "viewDocumentation": "View full documentation",
-        "scriptDescription": "Script Description",
-        "scriptLocation": "Script Location",
-        "save": "Save",
-        "saveConfig": "Save Configuration",
-        "scriptConfigSaved": "Script configuration saved",
-        "services": {
-          "picgo": "PicGo",
-          "cliScript": "CLI Script"
-        },
-        "pleaseInstall": "Please install",
-        "scriptPath": "Script path"
       },
       "defaultBehavior": "The default behavior after pasting or dragging the image to WordBird"
     },
@@ -1184,8 +1113,6 @@
       "errorLoadingTabTitle": "Error loading tab",
       "errorLoadingTabMessage": "There was an error while loading the file change because the tab cannot be found.",
       "mixedLineEndingsNormalized": "\"{name}\" has mixed line endings which are automatically normalized to {lineEnding}.",
-      "imageDeletionUrlTitle": "Image deletion URL",
-      "imageDeletionUrlMessage": "Click to copy the deletion URL of the uploaded image to the clipboard {url}",
       "errorWhileSaving": "There was an error while saving: {msg}",
       "exportSuccessTitle": "Exported successfully",
       "exportSuccessMessage": "Exported \"{name}\" successfully!",
@@ -1494,9 +1421,9 @@
     "targetTip": "{percent}% of your word target",
     "todayTip": "Words written today",
     "save": "Save",
-    "saveTip": "Save every open file and record a snapshot in History",
+    "saveTip": "Save every open file and record a snapshot",
     "saveSnapshotMessage": "Manual save",
-    "saved": "Project saved — snapshot recorded in History.",
+    "saved": "Project saved — snapshot recorded.",
     "actionFailed": "That change didn't save: {error}",
     "compileMd": "Compile to Markdown",
     "compileEpub": "Compile to EPUB (e-book)",
@@ -1510,19 +1437,19 @@
     "open": "Open",
     "rename": "Rename",
     "newFolder": "New folder",
-    "deleteFileConfirm": "Delete {name}? The file is snapshotted in History."
+    "deleteFileConfirm": "Delete {name}? A snapshot keeps a copy."
   },
   "history": {
-    "title": "History",
+    "title": "Snapshots",
     "placeholder": "Name this moment…",
-    "take": "Save",
+    "take": "Snapshot",
     "auto": "auto",
     "defaultMessage": "Snapshot",
     "nothingToSave": "Nothing has changed since the last snapshot.",
-    "restore": "Rewind",
-    "restoreConfirm": "Rewind the whole project to \"{message}\"? Your current state is saved first, so you can always come back.",
-    "restored": "Rewound to \"{message}\"",
-    "empty": "No snapshots yet. Save one to make this moment easy to return to."
+    "restore": "Restore",
+    "restoreConfirm": "Restore the whole project to \"{message}\"? Your current state is saved first, so you can always come back.",
+    "restored": "Restored to \"{message}\"",
+    "empty": "No snapshots yet. Take one to make this moment easy to return to."
   },
   "views": {
     "page": "Page",
@@ -1550,7 +1477,9 @@
     "pageTip": "Write — the manuscript page",
     "corkboardTip": "Corkboard — every scene as a card",
     "outlineTip": "Outline — scenes as an editable table",
-    "timelineTip": "Timeline — scenes in story time"
+    "timelineTip": "Timeline — scenes in story time",
+    "statusCycleTip": "Status: {status} — click to cycle idea → draft → revised → final",
+    "povPlaceholder": "POV"
   },
   "continuity": {
     "title": "Continuity",
@@ -1559,7 +1488,9 @@
     "revisions": "Revisions",
     "analyzing": "Mapping impact…",
     "executing": "In progress",
-    "revisionProgress": "{done} of {total} scenes updated"
+    "revisionProgress": "{done} of {total} scenes updated",
+    "fixWithBiscuit": "Fix with Biscuit",
+    "fixPrompt": "Fix this continuity issue: {title} — {description}"
   },
   "biscuit": {
     "placeholder": "Your writing companion. Brainstorm, draft, revise — I keep the whole novel coherent while you create.",
@@ -1577,7 +1508,7 @@
     "send": "Send",
     "disconnected": "Disconnected",
     "connected": "Connected",
-    "configureTip": "Configure AI",
+    "configureTip": "Configure Biscuit",
     "collapseTip": "Collapse Biscuit",
     "expandTip": "Expand Biscuit",
     "modeCycleHint": "(ctrl+shift to cycle)",
@@ -1586,7 +1517,7 @@
     "modeAsk": "ask mode",
     "modeAskHint": "Read-only: Biscuit explores, searches, and researches — nothing can be edited.",
     "modeAuto": "auto mode",
-    "modeAutoHint": "Edits apply automatically — a snapshot guards every batch (rewind from History).",
+    "modeAutoHint": "Edits apply automatically — a snapshot guards every batch (restore from Snapshots).",
     "modeMax": "max mode",
     "modeMaxHint": "Long tasks, bigger budgets; changes still reviewed.",
     "errorTitleAuth": "The provider turned Biscuit away",
@@ -1598,7 +1529,7 @@
     "errorTitleGeneric": "Something went wrong",
     "errorExplainGeneric": "Biscuit couldn’t finish that request. Trying again often helps; the technical details are below.",
     "errorDetails": "Technical details",
-    "openSettings": "Open AI Settings",
+    "openSettings": "Open Biscuit Settings",
     "stopped": "Stopped.",
     "contextTip": "Conversation memory {percent}% full — Biscuit condenses older turns automatically when it fills up.",
     "contextTokens": "({used} of {budget} tokens.)",
@@ -1639,7 +1570,7 @@
     "idle": "idle",
     "agentsRunning": "{count} running",
     "welcomeTitle": "Hi, I’m Biscuit 🐦",
-    "welcomeConnect": "Connect an AI model to bring me to life — local (Ollama) or cloud, your choice.",
+    "welcomeConnect": "Connect a model to bring me to life — local (Ollama) or cloud, your choice.",
     "welcomeConfigure": "Connect a model…",
     "starterBrainstorm": "Brainstorm a premise for my next novel",
     "starterStatus": "Summarize where the story stands right now",
@@ -1649,7 +1580,7 @@
     "deleteConversationConfirm": "Delete the conversation “{title}”? This cannot be undone.",
     "approvalCountdown": "Auto-declines in {time}",
     "approvalTimedOut": "The approval request timed out and was declined.",
-    "autoApplied": "{count} edit(s) applied — snapshot saved, rewind from History anytime.",
+    "autoApplied": "{count} edit(s) applied — snapshot saved, restore from Snapshots anytime.",
     "detachTip": "Open Biscuit in its own window",
     "reattachTip": "Return Biscuit to the editor",
     "modeApprovals": "approvals mode",
@@ -1659,7 +1590,13 @@
     "stalledTitle": "No response from the model",
     "stalled": "Nothing has come back for a while. The run may be stalled — press Stop to cancel it (nothing is lost), or keep waiting if your model is just slow.",
     "mentionHint": "Reference a scene or bible page — ↑↓ to pick, Enter to insert",
-    "starterHealth": "Run a project health check and fix what’s out of sync"
+    "starterHealth": "Run a project health check and fix what’s out of sync",
+    "managedByRuntime": "Managed by the Claude runtime — Stop halts everything.",
+    "contextManagedByRuntime": "Context is managed automatically by the Claude runtime.",
+    "startersHint": "Starter prompts — click to fill the input",
+    "mentionButtonTip": "Reference a scene or bible page (@)",
+    "startersButtonTip": "Starter prompts (/)",
+    "historyHintTip": "Press ↑ in the empty input to recall previous prompts"
   },
   "review": {
     "pendingOne": "1 pending edit",
@@ -1667,11 +1604,12 @@
     "applyAll": "Apply All",
     "discardAll": "Discard All",
     "applyOne": "Apply this edit",
-    "discardOne": "Discard this edit"
+    "discardOne": "Discard this edit",
+    "keyHint": "Ctrl+↵ accept · Ctrl+⌫ reject · +Shift = all"
   },
   "titleBar": {
     "save": "Save",
-    "saveTip": "Save (Ctrl+S) — every save becomes a snapshot in History",
+    "saveTip": "Save (Ctrl+S) — every save becomes a snapshot",
     "saved": "All changes saved"
   },
   "entities": {

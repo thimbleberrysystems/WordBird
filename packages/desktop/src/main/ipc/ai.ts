@@ -84,7 +84,8 @@ export const registerAIHandlers = (): void => {
     return {
       connected: langGraphManager.isConnected,
       provider: langGraphManager.currentProvider,
-      model: langGraphManager.currentModel
+      model: langGraphManager.currentModel,
+      capabilities: langGraphManager.capabilities
     }
   })
 

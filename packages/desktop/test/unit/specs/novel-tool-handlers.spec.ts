@@ -81,6 +81,25 @@ describe('list_structure / read_unit', () => {
   })
 })
 
+describe('get_scene_handoff', () => {
+  it('returns the tail of the preceding scene in narrative order', async() => {
+    // Scan order puts 'inciting' before 'opening' in this fixture.
+    const structure = await structureService.loadReconciled(root)
+    const chapter = structure.units[0]
+    const second = chapter.children!.find((s) => s.title === 'opening')!
+    const result = (await run('get_scene_handoff', { unitId: second.id })) as { handoff: string }
+    expect(result.handoff).toContain('letter')
+    expect(result.handoff).toMatch(/do not retell/i)
+  })
+
+  it('says so honestly when there is no predecessor', async() => {
+    const structure = await structureService.loadReconciled(root)
+    const first = structure.units[0].children!.find((s) => s.title === 'inciting')!
+    const result = (await run('get_scene_handoff', { unitId: first.id })) as { handoff: string }
+    expect(result.handoff).toMatch(/no preceding scene/i)
+  })
+})
+
 describe('search_manuscript', () => {
   it('finds matches across prose and bible', async() => {
     const result = (await run('search_manuscript', { query: 'Elara' })) as {

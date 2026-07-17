@@ -14,6 +14,7 @@
         :agents="agentList"
         :activity="activity"
         :run-state="runState"
+        :capabilities="preferencesStore.aiCapabilities"
         @cancel="agentsStore.cancelAgent"
         @retry="agentsStore.retryTask"
         @pause-agent="agentsStore.pauseAgent"
@@ -30,10 +31,12 @@
 import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAgentsStore } from '@/store/agents'
+import { usePreferencesStore } from '@/store/preferences'
 import AgentTree from '../rightPrompt/AgentTree.vue'
 import { t } from '../../i18n'
 
 const agentsStore = useAgentsStore()
+const preferencesStore = usePreferencesStore()
 const { agentList, activity, runState, runningCount } = storeToRefs(agentsStore)
 
 onMounted(() => {

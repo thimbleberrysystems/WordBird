@@ -311,3 +311,28 @@ and mode gating are provider-independent. See docs/CLAUDE_SUBSCRIPTION.md.
   @-mentions, MCP marketplace) via frontman.sh / wetheflywheel.com 2026
   comparisons; OpenHands via opensourceaireview.com, ssojet.com;
   github.com/amperser/proselint, vale.sh
+
+## 2026-07-17 — whole-codebase audit fixes (parity · security · naming · UX)
+
+Writer-requested sweep after the coherence-observer bug: find everything
+that "works in one mode but not others". Shipped in one arc:
+- **Provider parity**: SDK subagents now carry the per-turn brief (they
+  ran blind before); drafters get `get_scene_handoff` (tool #54); mid-run
+  steering delivered at SDK invoke boundaries + honest retention; SDK
+  max-turns → the graceful "say continue" path (both runtime shapes,
+  live-pinned); SDK main thread narrowed to the LangGraph supervisor
+  surface with a canUseTool agentID deny; IAgentRuntimeCapabilities hides
+  per-agent pause/kill + manual compact on managed runtimes.
+- **Security**: the MarkText-era PicGo cloud uploader REMOVED end to end
+  (was a shell-injection vector; writer: "why do we even have an
+  uploader?"); shell IPC now allow-lists http/https/mailto and
+  directory-only open-path.
+- **Naming**: Biscuit everywhere (4 locale keys ×9 + 3 hardcoded);
+  History/Rewind consolidated on Snapshots/Restore; dual-"Save" collision
+  killed.
+- **UX**: decision cards docked above the input (can't scroll away);
+  command row (mode popover comparing all three modes · @ · / starters ·
+  ↑ hint); scene TITLES on review cards + keyboard accept/reject;
+  click-to-cycle status dots in binder/corkboard/timeline; corkboard
+  inline POV; "Fix with Biscuit" on continuity issues; classified errors
+  in AI settings; Ctrl+Shift+1..4 view switching; dead CSS removed.

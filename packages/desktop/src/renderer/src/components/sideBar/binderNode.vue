@@ -38,9 +38,10 @@
       </el-icon>
       <span
         v-else
-        class="status-dot"
+        class="status-dot status-dot--clickable"
         :class="unit.status || 'idea'"
-        :title="unit.status || 'idea'"
+        :title="t('views.statusCycleTip', { status: unit.status || 'idea' })"
+        @click.stop="novelStore.updateUnit(unit.id, { status: nextStatus(unit.status) })"
       />
 
       <input
@@ -113,6 +114,7 @@ import { useNovelStore } from '@/store/novel'
 import { useEditorStore } from '@/store/editor'
 import { useProjectStore } from '@/store/project'
 import { t } from '../../i18n'
+import { nextStatus } from '@/util/novelStatus'
 import type { INovelUnit } from '@shared/types/novel'
 
 defineOptions({ name: 'BinderNode' })
@@ -343,6 +345,14 @@ const siblingListIds = (): string[] => {
   &.open {
     transform: rotate(90deg);
   }
+}
+
+.status-dot--clickable {
+  cursor: pointer;
+}
+
+.status-dot--clickable:hover {
+  transform: scale(1.4);
 }
 
 .status-dot {

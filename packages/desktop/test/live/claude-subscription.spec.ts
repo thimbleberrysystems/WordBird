@@ -221,6 +221,56 @@ live('claude-code provider (Claude subscription via Agent SDK)', () => {
     expect(closed).toEqual([])
   }, 600000)
 
+  it('the real runtime reports max-turns as error_max_turns (budget-path pin)', async() => {
+    // AgentSDKRunner maps subtype 'error_max_turns' onto the graceful
+    // GraphRecursionError budget path (scripted pin in
+    // agent-sdk-runner.spec.ts). This proves the real runtime still emits
+    // that subtype. Subagent-brief injection is likewise pinned scripted
+    // (buildSdkAgents test) per the live-suite policy carve-out.
+    const sdk = (await import('@anthropic-ai/claude-agent-sdk')) as unknown as {
+      query: (args: { prompt: string; options: Record<string, unknown> }) => AsyncIterable<unknown>
+      tool: (name: string, description: string, schema: unknown, handler: unknown) => unknown
+      createSdkMcpServer: (options: { name: string; tools: unknown[] }) => unknown
+    }
+    const slowProbe = sdk.tool('probe_step', 'Returns one step of a chain.', {}, async() => ({
+      content: [{ type: 'text', text: 'step done — call probe_step again for the next step' }]
+    }))
+    const env: Record<string, string | undefined> = { ...process.env }
+    delete env.ANTHROPIC_API_KEY
+    delete env.ANTHROPIC_AUTH_TOKEN
+    if (TOKEN) env.CLAUDE_CODE_OAUTH_TOKEN = TOKEN
+
+    let resultSubtype = ''
+    let thrownMessage = ''
+    const stream = sdk.query({
+      prompt: 'Call probe_step four times in sequence, one at a time, then summarize.',
+      options: {
+        env,
+        model: 'haiku',
+        cwd: os.tmpdir(),
+        settingSources: [],
+        maxTurns: 1,
+        permissionMode: 'default',
+        mcpServers: { probe: sdk.createSdkMcpServer({ name: 'probe', tools: [slowProbe] }) },
+        allowedTools: ['mcp__probe__probe_step']
+      }
+    })
+    try {
+      for await (const raw of stream) {
+        const message = raw as { type?: string; subtype?: string }
+        if (message.type === 'result') resultSubtype = String(message.subtype ?? '')
+      }
+    } catch (error) {
+      thrownMessage = error instanceof Error ? error.message : String(error)
+    }
+    // The runtime reports max-turns in one of two shapes — a yielded result
+    // with subtype error_max_turns, or a throw naming the turn limit. The
+    // runner handles BOTH; this pin fails if the runtime invents a third.
+    const yielded = resultSubtype === 'error_max_turns'
+    const thrown = /maximum number of turns/i.test(thrownMessage)
+    expect(yielded || thrown, `subtype=${resultSubtype} thrown=${thrownMessage}`).toBe(true)
+  }, 300000)
+
   it('surgical edits arrive as review-queue proposals, never direct writes', async() => {
     const harness = await makeHarness()
     harness.runner.setMode('approvals')

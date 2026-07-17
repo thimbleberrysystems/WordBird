@@ -302,7 +302,7 @@
       "biscuit": "Biscuit",
       "settings": "Einstellungen",
       "binder": "Manuskript",
-      "history": "Verlauf",
+      "history": "Schnappschüsse",
       "continuity": "Kontinuität",
       "agents": "Agenten",
       "entities": "Figuren & Orte"
@@ -601,7 +601,7 @@
       },
       "snapshotLimit": {
         "description": "Limit des Schnappschuss-Verlaufs",
-        "notes": "Jede Speicherung und KI-Änderung wird versioniert. Über dieses Limit hinaus werden ältere Schnappschüsse zu einer Basis zusammengefasst. 0 behält alles für immer."
+        "notes": "Jede Speicherung und Biscuit-Änderung wird versioniert. Über dieses Limit hinaus werden ältere Schnappschüsse zu einer Basis zusammengefasst. 0 behält alles für immer."
       }
     },
     "editor": {
@@ -663,7 +663,6 @@
     "image": {
       "title": "Bild",
       "actions": {
-        "upload": "In die Cloud hochladen",
         "folder": "In Ordner kopieren",
         "path": "Absoluten Pfad verwenden"
       },
@@ -679,14 +678,6 @@
         "relativeFolderName": "Name des relativen Ordners",
         "filenameNote": "Der Dateiname wird automatisch generiert."
       },
-      "imageInsertAction": {
-        "title": "Bildeinfügungsaktion",
-        "folder": "In Ordner hochladen",
-        "path": "In Pfad kopieren",
-        "upload": "In die Cloud hochladen",
-        "copyToFolder": "In Ordner kopieren",
-        "uploadToServer": "Auf Server hochladen"
-      },
       "imageFolderPath": {
         "title": "Bilderordnerpfad",
         "description": "Bilderordnerpfad",
@@ -694,71 +685,9 @@
         "relativePath": "Relativer Pfad",
         "absolutePath": "Absoluter Pfad"
       },
-      "cloudPictureBed": {
-        "title": "Cloud-Bildspeicher",
-        "github": "GitHub",
-        "smms": "SM.MS",
-        "qiniu": "Qiniu",
-        "upyun": "UpYun",
-        "tcyun": "Tencent Cloud",
-        "aliyun": "Alibaba Cloud",
-        "imgur": "Imgur",
-        "picgo": "PicGo"
-      },
       "preferRelativeDirectory": {
         "title": "Relatives Verzeichnis bevorzugen",
         "description": "Bevorzugtes relatives Verzeichnis für Bilder"
-      },
-      "uploader": {
-        "title": "Bild-Uploader",
-        "currentUploader": "Aktueller Uploader: {name}",
-        "picgoNotInstalled": "PicGo nicht installiert",
-        "picgoDetectionStatus": "PicGo-Erkennungsstatus",
-        "picgoInstalled": "PicGo installiert",
-        "picgoDetectionFailed": "PicGo-Erkennung fehlgeschlagen",
-        "debugInfo": "Debug-Informationen",
-        "installCommand": "Installationsbefehl",
-        "npmInstallCommand": "npm install picgo -g",
-        "yarnInstallCommand": "yarn global add picgo",
-        "pnpmInstallCommand": "pnpm add -g picgo",
-        "chooseInstallMethod": "Installationsmethode wählen:",
-        "retestPicgo": "Erneut testen",
-        "detecting": "Erkennung läuft...",
-        "lastDetectionTime": "Letzte Erkennungszeit",
-        "detectionStatus": "Erkennungsstatus",
-        "usageGuide": {
-          "title": "PicGo Grundlegende Anleitung",
-          "step1": "Uploader konfigurieren",
-          "step1Description": "Verwenden Sie den folgenden Befehl, um den PicGo-Uploader zu konfigurieren:",
-          "step2": "Bilder hochladen",
-          "step2Description": "Verwenden Sie den folgenden Befehl, um Bilder hochzuladen:",
-          "step3": "Konfiguration anzeigen",
-          "step3Description": "Verwenden Sie den folgenden Befehl, um die aktuelle Konfiguration anzuzeigen:",
-          "documentation": "Vollständige Dokumentation anzeigen"
-        },
-        "configureUploader": "Uploader konfigurieren",
-        "configureDescription": "Verwenden Sie den folgenden Befehl, um den PicGo-Uploader zu konfigurieren:",
-        "uploadImage": "Bilder hochladen",
-        "uploadDescription": "Verwenden Sie den folgenden Befehl, um Bilder hochzuladen:",
-        "viewConfig": "Konfiguration anzeigen",
-        "viewConfigDescription": "Verwenden Sie den folgenden Befehl, um die aktuelle Konfiguration anzuzeigen:",
-        "viewDocumentation": "Vollständige Dokumentation anzeigen",
-        "scriptDescription": "Skriptbeschreibung",
-        "scriptLocation": "Skriptort",
-        "save": "Speichern",
-        "saveConfig": "Konfiguration speichern",
-        "scriptConfigSaved": "Skriptkonfiguration gespeichert",
-        "services": {
-          "picgo": "PicGo",
-          "cliScript": "CLI-Skript"
-        },
-        "pleaseInstall": "Bitte installieren",
-        "scriptPath": "Skriptpfad",
-        "picgoDetection": "PicGo-Erkennung",
-        "autoDetection": "Automatische Erkennung",
-        "lastSuccessTime": "Letzte erfolgreiche Zeit",
-        "neverDetected": "Nie erkannt",
-        "neverSuccessful": "Nie erfolgreich"
       },
       "defaultBehavior": "Standardverhalten nach dem Einfügen oder Ziehen eines Bildes in WordBird"
     },
@@ -1176,8 +1105,6 @@
       "errorLoadingTabTitle": "Fehler beim Laden des Tabs",
       "errorLoadingTabMessage": "Beim Laden der Dateiänderung ist ein Fehler aufgetreten, da der Tab nicht gefunden werden kann.",
       "mixedLineEndingsNormalized": "„{name}“ enthält gemischte Zeilenenden, die automatisch zu {lineEnding} normalisiert wurden.",
-      "imageDeletionUrlTitle": "Bild‑Lösch‑URL",
-      "imageDeletionUrlMessage": "Klicken, um die Lösch-URL des hochgeladenen Bildes in die Zwischenablage zu kopieren ({url}).",
       "errorWhileSaving": "Beim Speichern ist ein Fehler aufgetreten: {msg}",
       "exportSuccessTitle": "Erfolgreich exportiert",
       "exportSuccessMessage": "„{name}“ wurde erfolgreich exportiert!",
@@ -1493,9 +1420,9 @@
     "targetTip": "{percent}% deines Wortziels",
     "todayTip": "Heute geschriebene Wörter",
     "save": "Speichern",
-    "saveTip": "Alle offenen Dateien speichern und einen Schnappschuss im Verlauf aufzeichnen",
+    "saveTip": "Alle offenen Dateien speichern und einen Schnappschuss aufzeichnen",
     "saveSnapshotMessage": "Manuelle Speicherung",
-    "saved": "Projekt gespeichert — Schnappschuss im Verlauf aufgezeichnet.",
+    "saved": "Projekt gespeichert — Schnappschuss aufgezeichnet.",
     "actionFailed": "Diese Änderung wurde nicht gespeichert: {error}",
     "compileMd": "Als Markdown kompilieren",
     "compileEpub": "Als EPUB kompilieren (E-Book)",
@@ -1509,19 +1436,19 @@
     "open": "Öffnen",
     "rename": "Umbenennen",
     "newFolder": "Neuer Ordner",
-    "deleteFileConfirm": "{name} löschen? Die Datei ist in der History gesichert."
+    "deleteFileConfirm": "{name} löschen? Ein Schnappschuss bewahrt eine Kopie."
   },
   "history": {
-    "title": "Verlauf",
+    "title": "Schnappschüsse",
     "placeholder": "Diesen Moment benennen…",
-    "take": "Speichern",
+    "take": "Schnappschuss",
     "auto": "auto",
     "defaultMessage": "Schnappschuss",
     "nothingToSave": "Seit dem letzten Schnappschuss hat sich nichts geändert.",
-    "restore": "Zurückspulen",
-    "restoreConfirm": "Das gesamte Projekt auf „{message}“ zurücksetzen? Der aktuelle Stand wird zuerst gesichert.",
-    "restored": "Zurückgesetzt auf „{message}“",
-    "empty": "Noch keine Schnappschüsse. Speichere einen, um zu diesem Moment zurückkehren zu können."
+    "restore": "Wiederherstellen",
+    "restoreConfirm": "Das gesamte Projekt auf „{message}“ wiederherstellen? Der aktuelle Stand wird zuerst gesichert.",
+    "restored": "Wiederhergestellt auf „{message}“",
+    "empty": "Noch keine Schnappschüsse. Nimm einen auf, um leicht zu diesem Moment zurückzukehren."
   },
   "views": {
     "page": "Seite",
@@ -1549,7 +1476,9 @@
     "pageTip": "Schreiben — die Manuskriptseite",
     "corkboardTip": "Pinnwand — jede Szene als Karte",
     "outlineTip": "Gliederung — Szenen als editierbare Tabelle",
-    "timelineTip": "Zeitleiste — Szenen in Erzählzeit"
+    "timelineTip": "Zeitleiste — Szenen in Erzählzeit",
+    "statusCycleTip": "Status: {status} — Klick wechselt Idee → Entwurf → Überarbeitet → Final",
+    "povPlaceholder": "POV"
   },
   "continuity": {
     "title": "Kontinuität",
@@ -1558,7 +1487,9 @@
     "revisions": "Überarbeitungen",
     "analyzing": "Auswirkungen werden erfasst…",
     "executing": "In Arbeit",
-    "revisionProgress": "{done} von {total} Szenen aktualisiert"
+    "revisionProgress": "{done} von {total} Szenen aktualisiert",
+    "fixWithBiscuit": "Mit Biscuit beheben",
+    "fixPrompt": "Behebe dieses Kontinuitätsproblem: {title} — {description}"
   },
   "biscuit": {
     "placeholder": "Dein Schreibbegleiter. Brainstormen, entwerfen, überarbeiten — ich halte den ganzen Roman kohärent, während du erschaffst.",
@@ -1576,7 +1507,7 @@
     "send": "Senden",
     "disconnected": "Nicht verbunden",
     "connected": "Verbunden",
-    "configureTip": "KI konfigurieren",
+    "configureTip": "Biscuit konfigurieren",
     "collapseTip": "Biscuit einklappen",
     "expandTip": "Biscuit ausklappen",
     "modeCycleHint": "(Strg+Umschalt zum Wechseln)",
@@ -1585,7 +1516,7 @@
     "modeAsk": "Frage-Modus",
     "modeAskHint": "Nur lesen: Biscuit erkundet, sucht und recherchiert — nichts kann bearbeitet werden.",
     "modeAuto": "Auto-Modus",
-    "modeAutoHint": "Änderungen werden automatisch übernommen — ein Schnappschuss sichert jede Charge.",
+    "modeAutoHint": "Änderungen werden automatisch übernommen — ein Schnappschuss sichert jede Charge (unter Schnappschüsse wiederherstellbar).",
     "modeMax": "Max-Modus",
     "modeMaxHint": "Lange Aufgaben, größere Budgets; Änderungen werden geprüft.",
     "errorTitleAuth": "Der Anbieter hat Biscuit abgewiesen",
@@ -1597,7 +1528,7 @@
     "errorTitleGeneric": "Etwas ist schiefgelaufen",
     "errorExplainGeneric": "Biscuit konnte die Anfrage nicht abschließen. Ein neuer Versuch hilft oft; die technischen Details stehen unten.",
     "errorDetails": "Technische Details",
-    "openSettings": "KI-Einstellungen öffnen",
+    "openSettings": "Biscuit-Einstellungen öffnen",
     "stopped": "Gestoppt.",
     "contextTip": "Gesprächsspeicher zu {percent} % voll — Biscuit verdichtet ältere Beiträge automatisch, wenn er sich füllt.",
     "contextTokens": "({used} von {budget} Tokens.)",
@@ -1638,7 +1569,7 @@
     "idle": "inaktiv",
     "agentsRunning": "{count} aktiv",
     "welcomeTitle": "Hallo, ich bin Biscuit 🐦",
-    "welcomeConnect": "Verbinde ein KI-Modell, um mich zum Leben zu erwecken — lokal (Ollama) oder Cloud, deine Wahl.",
+    "welcomeConnect": "Verbinde ein Modell, um mich zum Leben zu erwecken — lokal (Ollama) oder Cloud, deine Wahl.",
     "welcomeConfigure": "Modell verbinden…",
     "starterBrainstorm": "Brainstorme eine Prämisse für meinen nächsten Roman",
     "starterStatus": "Fasse zusammen, wo die Geschichte gerade steht",
@@ -1648,7 +1579,7 @@
     "deleteConversationConfirm": "Unterhaltung „{title}“ löschen? Das kann nicht rückgängig gemacht werden.",
     "approvalCountdown": "Wird in {time} automatisch abgelehnt",
     "approvalTimedOut": "Die Freigabeanfrage ist abgelaufen und wurde abgelehnt.",
-    "autoApplied": "{count} Änderung(en) übernommen — Schnappschuss gespeichert, jederzeit im Verlauf zurückspulbar.",
+    "autoApplied": "{count} Änderung(en) übernommen — Schnappschuss gespeichert, jederzeit unter Schnappschüsse wiederherstellbar.",
     "detachTip": "Biscuit in eigenem Fenster öffnen",
     "reattachTip": "Biscuit in den Editor zurückholen",
     "modeApprovals": "Freigabe-Modus",
@@ -1658,7 +1589,13 @@
     "stalledTitle": "Keine Antwort vom Modell",
     "stalled": "Seit einiger Zeit kommt nichts zurück. Der Lauf hängt womöglich — drücke Stopp, um abzubrechen (nichts geht verloren), oder warte weiter, falls dein Modell nur langsam ist.",
     "mentionHint": "Szene oder Bibel-Seite referenzieren — ↑↓ wählen, Enter einfügen",
-    "starterHealth": "Führe einen Projekt-Gesundheitscheck durch und behebe, was nicht synchron ist"
+    "starterHealth": "Führe einen Projekt-Gesundheitscheck durch und behebe, was nicht synchron ist",
+    "managedByRuntime": "Von der Claude-Laufzeit verwaltet — Stopp beendet alles.",
+    "contextManagedByRuntime": "Der Kontext wird automatisch von der Claude-Laufzeit verwaltet.",
+    "startersHint": "Startvorschläge — Klick füllt die Eingabe",
+    "mentionButtonTip": "Szene oder Bibel-Seite referenzieren (@)",
+    "startersButtonTip": "Startvorschläge (/)",
+    "historyHintTip": "↑ im leeren Eingabefeld ruft frühere Eingaben ab"
   },
   "review": {
     "pendingOne": "1 ausstehende Änderung",
@@ -1666,11 +1603,12 @@
     "applyAll": "Alle übernehmen",
     "discardAll": "Alle verwerfen",
     "applyOne": "Diese Änderung übernehmen",
-    "discardOne": "Diese Änderung verwerfen"
+    "discardOne": "Diese Änderung verwerfen",
+    "keyHint": "Strg+↵ annehmen · Strg+⌫ ablehnen · +Umschalt = alle"
   },
   "titleBar": {
     "save": "Speichern",
-    "saveTip": "Speichern (Strg+S) — jede Speicherung wird ein Schnappschuss im Verlauf",
+    "saveTip": "Speichern (Strg+S) — jede Speicherung wird ein Schnappschuss",
     "saved": "Alle Änderungen gespeichert"
   },
   "entities": {

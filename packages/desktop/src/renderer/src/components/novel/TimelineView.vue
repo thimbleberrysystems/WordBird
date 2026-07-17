@@ -51,8 +51,10 @@
         </div>
         <div class="entry-node">
           <span
-            class="entry-dot"
+            class="entry-dot entry-dot--clickable"
             :class="scene.status || 'idea'"
+            :title="t('views.statusCycleTip', { status: scene.status || 'idea' })"
+            @click.stop="novelStore.updateUnit(scene.id, { status: nextStatus(scene.status) })"
           />
           <span class="entry-line" />
         </div>
@@ -97,6 +99,7 @@ import EmptyState from '../common/EmptyState.vue'
 import { popupContextMenu } from '../../contextMenu/popupMenu'
 import { useNovelStore } from '@/store/novel'
 import { t } from '../../i18n'
+import { nextStatus } from '@/util/novelStatus'
 import type { INovelUnit } from '@shared/types/novel'
 
 const novelStore = useNovelStore()
@@ -243,6 +246,14 @@ const showCardMenu = (event: MouseEvent, unit: INovelUnit): void => {
   padding-top: 12px;
 }
 
+.entry-dot--clickable {
+  cursor: pointer;
+}
+
+.entry-dot--clickable:hover {
+  transform: scale(1.35);
+}
+
 .entry-dot {
   width: 10px;
   height: 10px;
@@ -333,10 +344,4 @@ const showCardMenu = (event: MouseEvent, unit: INovelUnit): void => {
   line-height: 1.45;
 }
 
-.timeline-empty {
-  color: var(--iconColor);
-  font-size: 13px;
-  text-align: center;
-  margin-top: 80px;
-}
 </style>

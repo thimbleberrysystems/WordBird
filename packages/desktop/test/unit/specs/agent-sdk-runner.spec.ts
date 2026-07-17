@@ -120,6 +120,8 @@ interface Harness {
   approvals: IAgentApprovalRequest[]
   usage: ITokenUsageUpdate[]
   approveNext: { value: boolean }
+  /** Queued mid-run steering notes; drained by the runner per invoke. */
+  steering: string[]
   stateDir: string
   root: string
   service: AgentToolService
@@ -148,6 +150,7 @@ const makeHarness = async(script: SdkMessage[], apiKey = ''): Promise<Harness> =
   const approvals: IAgentApprovalRequest[] = []
   const usage: ITokenUsageUpdate[] = []
   const approveNext = { value: true }
+  const steering: string[] = []
   const callbacks: OrchestratorCallbacks = {
     emitActivity: (event) => activity.push(event),
     requestApproval: async(request) => {
@@ -156,7 +159,8 @@ const makeHarness = async(script: SdkMessage[], apiKey = ''): Promise<Harness> =
     },
     buildBrief: async() => 'PROJECT BRIEF (test): one chapter, one scene.',
     emitAgentStatus: (status) => statuses.push(status),
-    emitTokenUsage: (update) => usage.push(update)
+    emitTokenUsage: (update) => usage.push(update),
+    drainSteering: () => steering.splice(0)
   }
 
   const sdk = makeSdk(script)
@@ -169,7 +173,19 @@ const makeHarness = async(script: SdkMessage[], apiKey = ''): Promise<Harness> =
     projectRoot: () => root,
     sdkModule: sdk as never
   })
-  return { runner, sdk, activity, statuses, approvals, usage, approveNext, stateDir, root, service }
+  return {
+    runner,
+    sdk,
+    activity,
+    statuses,
+    approvals,
+    usage,
+    approveNext,
+    steering,
+    stateDir,
+    root,
+    service
+  }
 }
 
 const cleanupRoots: string[] = []
@@ -365,8 +381,10 @@ describe('a scripted SDK turn', () => {
     const denied = await canUseTool(`${MCP_TOOL_PREFIX}restore_snapshot`, { id: 'abc' })
     expect(denied.behavior).toBe('deny')
 
-    // Ordinary reads never raise a card.
-    const read = await canUseTool(`${MCP_TOOL_PREFIX}read_unit`, { unitId: 'u1' })
+    // Ordinary supervisor reads never raise a card. (read_unit is now a
+    // worker-lane tool on the main thread — parity with LangGraph — so the
+    // representative read here is a supervisor tool.)
+    const read = await canUseTool(`${MCP_TOOL_PREFIX}search_manuscript`, { query: 'x' })
     expect(read.behavior).toBe('allow')
     expect(harness.approvals).toHaveLength(2)
   })
@@ -412,6 +430,143 @@ describe('a scripted SDK turn', () => {
 })
 
 // ---- Probe classification --------------------------------------------------------
+
+// ---- Provider parity (the LangGraph experience, on the SDK) --------------------
+
+describe('provider parity', () => {
+  it('subagents carry the per-turn brief; drafters get the handoff doctrine', async() => {
+    const harness = await makeHarness([initMessage('s'), successResult('ok')])
+    cleanupRoots.push(harness.root)
+    harness.runner.setMode('approvals')
+    await harness.runner.buildGraph().invoke(
+      { messages: [{ content: 'hi' }] },
+      { configurable: { thread_id: 't-brief' } }
+    )
+    const agents = harness.sdk.calls[0].options.agents as Record<string, { prompt: string }>
+    expect(agents.drafter.prompt).toContain('PROJECT BRIEF (test)')
+    expect(agents.drafter.prompt).toContain('SCENE HANDOFF')
+    expect(agents.drafter.prompt).toContain('get_scene_handoff')
+    // Every role gets the brief; only drafters get the addendum.
+    expect(agents.auditor.prompt).toContain('PROJECT BRIEF (test)')
+    expect(agents.auditor.prompt).not.toContain('SCENE HANDOFF')
+  })
+
+  it('queued steering notes ride the next invoke and drain exactly once', async() => {
+    const harness = await makeHarness([initMessage('s'), successResult('ok')])
+    cleanupRoots.push(harness.root)
+    harness.runner.setMode('auto')
+    harness.steering.push('make it rain', 'shorter sentences')
+    const graph = harness.runner.buildGraph()
+    await graph.invoke(
+      { messages: [{ content: 'draft on' }] },
+      { configurable: { thread_id: 't-steer' } }
+    )
+    expect(harness.sdk.calls[0].prompt).toContain('[Writer, mid-run]: make it rain')
+    expect(harness.sdk.calls[0].prompt).toContain('[Writer, mid-run]: shorter sentences')
+    await graph.invoke(
+      { messages: [{ content: 'continue' }] },
+      { configurable: { thread_id: 't-steer' } }
+    )
+    expect(harness.sdk.calls[1].prompt).not.toContain('[Writer, mid-run]')
+  })
+
+  it('max-turns exhaustion surfaces as the graceful budget error, not a failure', async() => {
+    const harness = await makeHarness([
+      initMessage('s'),
+      { type: 'result', subtype: 'error_max_turns', is_error: true, errors: [] }
+    ])
+    cleanupRoots.push(harness.root)
+    harness.runner.setMode('auto')
+    await expect(
+      harness.runner.buildGraph().invoke(
+        { messages: [{ content: 'write the whole book' }] },
+        { configurable: { thread_id: 't-budget' } }
+      )
+    ).rejects.toMatchObject({ name: 'GraphRecursionError' })
+  })
+
+  it('the THROWN max-turns shape maps to the same budget error', async() => {
+    // The real runtime often throws instead of yielding the error result
+    // (live pin in claude-subscription.spec.ts) — same graceful path.
+    const harness = await makeHarness([initMessage('s')])
+    cleanupRoots.push(harness.root)
+    const originalQuery = harness.sdk.query.bind(harness.sdk)
+    harness.sdk.query = (params) => {
+      harness.sdk.calls.push({ prompt: params.prompt, options: params.options ?? {} })
+      async function * gen(): AsyncGenerator<SdkMessage, void> {
+        yield initMessage('s')
+        throw new Error('Claude Code returned an error result: Reached maximum number of turns (1)')
+      }
+      const stream = gen() as ReturnType<ScriptedSdk['query']>
+      stream.interrupt = async() => undefined
+      return stream
+    }
+    harness.runner.setMode('auto')
+    await expect(
+      harness.runner.buildGraph().invoke(
+        { messages: [{ content: 'hi' }] },
+        { configurable: { thread_id: 't-thrown' } }
+      )
+    ).rejects.toMatchObject({ name: 'GraphRecursionError' })
+    harness.sdk.query = originalQuery
+  })
+
+  it('other error subtypes still fail with their real message', async() => {
+    const harness = await makeHarness([
+      initMessage('s'),
+      { type: 'result', subtype: 'error_during_execution', is_error: true, errors: ['boom'] }
+    ])
+    cleanupRoots.push(harness.root)
+    harness.runner.setMode('auto')
+    await expect(
+      harness.runner.buildGraph().invoke(
+        { messages: [{ content: 'hi' }] },
+        { configurable: { thread_id: 't-err' } }
+      )
+    ).rejects.toSatisfy((error: Error) => error.name !== 'GraphRecursionError')
+  })
+
+  it('main thread carries the SUPERVISOR surface; worker tools stay registered but gated', async() => {
+    const harness = await makeHarness([initMessage('s'), successResult('ok')])
+    cleanupRoots.push(harness.root)
+    harness.runner.setMode('auto')
+    await harness.runner.buildGraph().invoke(
+      { messages: [{ content: 'hi' }] },
+      { configurable: { thread_id: 't-surface' } }
+    )
+    const options = harness.sdk.calls[0].options
+    const allowed = options.allowedTools as string[]
+    // Worker-only tools are not on the main-thread allowlist…
+    expect(allowed).not.toContain(`${MCP_TOOL_PREFIX}log_continuity_issue`)
+    expect(allowed).not.toContain(`${MCP_TOOL_PREFIX}read_unit`)
+    // …but supervisor tools are, and the server still registers worker tools
+    // (subagents execute them through the same in-process server).
+    expect(allowed).toContain(`${MCP_TOOL_PREFIX}propose_text_edit`)
+    const registered = harness.sdk.registeredTools.map((tool) => tool.name)
+    expect(registered).toContain('log_continuity_issue')
+    expect(registered).toContain('read_unit')
+    expect(registered).toContain('get_scene_handoff')
+
+    // The deny layer: main-thread calls to worker tools bounce with
+    // delegation guidance; the SAME call from inside a subagent is allowed.
+    const canUseTool = options.canUseTool as (
+      name: string,
+      input: Record<string, unknown>,
+      extra?: { agentID?: string }
+    ) => Promise<{ behavior: string; message?: string }>
+    const denied = await canUseTool(`${MCP_TOOL_PREFIX}log_continuity_issue`, {}, {})
+    expect(denied.behavior).toBe('deny')
+    expect(denied.message).toContain('Task')
+    const fromSubagent = await canUseTool(
+      `${MCP_TOOL_PREFIX}log_continuity_issue`,
+      {},
+      { agentID: 'sub-1' }
+    )
+    expect(fromSubagent.behavior).toBe('allow')
+    const supervisorTool = await canUseTool(`${MCP_TOOL_PREFIX}search_manuscript`, {}, {})
+    expect(supervisorTool.behavior).toBe('allow')
+  })
+})
 
 describe('connect-time probe', () => {
   it('passes on a clean result and coaches on auth failures', async() => {

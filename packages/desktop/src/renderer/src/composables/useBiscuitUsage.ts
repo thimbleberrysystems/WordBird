@@ -29,7 +29,7 @@ export interface BiscuitUsage {
 
 export const useBiscuitUsage = (options: { sending: Ref<boolean> }): BiscuitUsage => {
   const { sending } = options
-  const { aiProvider, aiConfigs } = storeToRefs(usePreferencesStore())
+  const { aiProvider, aiConfigs, aiCapabilities } = storeToRefs(usePreferencesStore())
 
   // ---- Token usage counter ----
   const tokenUsage = ref<ITokenUsageUpdate | null>(null)
@@ -100,18 +100,29 @@ export const useBiscuitUsage = (options: { sending: Ref<boolean> }): BiscuitUsag
           budget: budgetTokens.toLocaleString()
         })}`
         : ''
+    // Managed runtimes (claude-code) compact themselves — the ring stays
+    // honest and the click explains instead of silently doing nothing.
+    const hint = !aiCapabilities.value.manualCompact
+      ? ` ${t('biscuit.contextManagedByRuntime')}`
+      : sending.value
+        ? ''
+        : ` ${t('biscuit.condenseHint')}`
     return (
       t('biscuit.contextTip', {
         percent: Math.round(contextUsage.value.ratio * 100)
       }) +
       tokens +
-      (sending.value ? '' : ` ${t('biscuit.condenseHint')}`)
+      hint
     )
   })
 
   // Manual compaction (click the ring while idle).
   const condenseNow = async(): Promise<void> => {
     if (sending.value || manualCompacting.value) return
+    if (!aiCapabilities.value.manualCompact) {
+      ElMessage.info(t('biscuit.contextManagedByRuntime'))
+      return
+    }
     manualCompacting.value = true
     try {
       const result = await window.electron.ai.compactNow()

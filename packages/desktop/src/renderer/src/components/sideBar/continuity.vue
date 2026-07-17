@@ -66,6 +66,15 @@
             class="issue-resolve"
             size="small"
             text
+            :title="t('continuity.fixWithBiscuit')"
+            @click="fixWithBiscuit(issue)"
+          >
+            🍪
+          </el-button>
+          <el-button
+            class="issue-resolve"
+            size="small"
+            text
             :title="t('continuity.resolve')"
             @click="resolve(issue)"
           >
@@ -98,6 +107,7 @@ import { ElMessage } from 'element-plus'
 import { Check } from '@element-plus/icons-vue'
 import { useProjectStore } from '@/store/project'
 import { useLayoutStore } from '@/store/layout'
+import bus from '../../bus'
 import { t } from '../../i18n'
 import type { IContinuityIssue, IRevision } from '@shared/types/novel'
 
@@ -161,6 +171,16 @@ const resolve = async (issue: IContinuityIssue): Promise<void> => {
   } else {
     ElMessage.error(result.error ?? 'Could not resolve issue')
   }
+}
+
+// Insight → action: hand the issue straight to Biscuit (same bus the
+// corkboard and ProjectHome use), quoting it so the fix is grounded.
+const fixWithBiscuit = (issue: IContinuityIssue): void => {
+  const files = issue.relatedPaths.length > 0 ? ` (${issue.relatedPaths.join(', ')})` : ''
+  bus.emit(
+    'biscuit-ask',
+    t('continuity.fixPrompt', { title: issue.title, description: issue.description }) + files
+  )
 }
 </script>
 

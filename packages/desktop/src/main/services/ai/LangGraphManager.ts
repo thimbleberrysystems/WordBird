@@ -18,6 +18,7 @@ import type {
   IAgentApprovalRequest,
   IAgentEditProposalPayload,
   IAgentEditResolution,
+  IAgentRuntimeCapabilities,
   AgentPermissionMode
 } from '../../../shared/types/langgraph'
 import type { AIProvider } from '../../../shared/constants/ai'
@@ -215,6 +216,8 @@ export class LangGraphManager {
     this._orchestrator?.resetSessionUsage()
     // New conversation, clean fetchable-URL slate.
     clearUrlProvenance()
+    // Retained mid-run notes belong to the OLD conversation.
+    this._steeringQueue = []
     // Proposals from the previous conversation must not leak into this one —
     // drop them everywhere (main-side queue + every renderer's review queue).
     this._editTracker.clearPending()
@@ -663,11 +666,22 @@ export class LangGraphManager {
     }
   }
 
+  /** What the active provider's runtime supports (renderer gates UI on it). */
+  get capabilities(): IAgentRuntimeCapabilities {
+    const managedRuntime = this._currentProvider === 'claude-code'
+    return {
+      perAgentControl: !managedRuntime,
+      boundaryPause: !managedRuntime,
+      manualCompact: !managedRuntime
+    }
+  }
+
   private _broadcastConnectionState(): void {
     this._broadcast('mt::ai:connection-state', {
       connected: this.isConnected,
       provider: this._currentProvider,
-      model: this._currentModel
+      model: this._currentModel,
+      capabilities: this.capabilities
     })
   }
 
@@ -680,6 +694,7 @@ export class LangGraphManager {
     this._systemPromptAdded = false
     this._checkpointer = null
     this._threadId = null
+    this._steeringQueue = []
     for (const [id] of this._pendingApprovals) {
       this.resolveApproval(id, false)
     }
@@ -969,7 +984,16 @@ export class LangGraphManager {
       if (turnRoot) contextBuilder.endTurn(turnRoot)
       // A pause must never outlive its turn — the next turn starts unfrozen.
       this._orchestrator?.resumeFromPause()
-      this._steeringQueue = []
+      // A note typed in the turn's final moments missed every drain
+      // boundary — keep it (bounded) for the next turn and say so,
+      // instead of silently dropping it.
+      if (this._steeringQueue.length > 0) {
+        this._steeringQueue = this._steeringQueue.slice(-5)
+        this._emitBookRunStatus(
+          'Mid-run note arrived after the last step',
+          'It will be delivered at the start of your next message.'
+        )
+      }
       this._emitRunState()
     }
 

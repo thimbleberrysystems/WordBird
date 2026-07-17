@@ -17,7 +17,7 @@ export type OrderListDelimiter = '.' | ')'
 export type PreferHeadingStyle = 'atx' | 'setext'
 export type FrontmatterType = '-' | ';' | '{' | '+'
 export type SequenceTheme = 'hand' | 'simple'
-export type ImageInsertAction = 'folder' | 'path' | 'upload'
+export type ImageInsertAction = 'folder' | 'path'
 export type ImageRelativeDirectoryBase = 'file' | 'root'
 export type FileSortBy = 'created' | 'modified' | 'title'
 export type FileSortOrder = 'asc' | 'desc'
@@ -119,6 +119,12 @@ export interface PreferencesState {
     { apiKey: string; baseUrl?: string; model?: string; temperature?: number; maxTokens?: number }
   >
   aiIsConnected: boolean
+  /** Active provider runtime capabilities (all-true = LangGraph default). */
+  aiCapabilities: {
+    perAgentControl: boolean
+    boundaryPause: boolean
+    manualCompact: boolean
+  }
 
   // ----- Edit modes (per-window, not persisted) -----
   typewriter: boolean
@@ -128,9 +134,6 @@ export interface PreferencesState {
   // ----- User config -----
   imageFolderPath: string
   webImages: unknown[]
-  cloudImages: unknown[]
-  currentUploader: string
-  cliScript: string
 }
 
 interface SingleSetPreferencePayload {
@@ -237,6 +240,7 @@ export const usePreferencesStore = defineStore('preferences', {
     aiProvider: AI_DEFAULTS.provider,
     aiConfigs: { ...AI_DEFAULTS.configs },
     aiIsConnected: false,
+    aiCapabilities: { perAgentControl: true, boundaryPause: true, manualCompact: true },
 
     // --------------------------------------------------------------------------
 
@@ -247,10 +251,7 @@ export const usePreferencesStore = defineStore('preferences', {
 
     // user configration
     imageFolderPath: '',
-    webImages: [],
-    cloudImages: [],
-    currentUploader: 'picgo',
-    cliScript: ''
+    webImages: []
   }),
 
   getters: {
@@ -265,6 +266,8 @@ export const usePreferencesStore = defineStore('preferences', {
         let incoming = (preference as Record<string, unknown>)[key]
         // Saved prefs may carry the retired 'ollama_bundled' provider.
         if (key === 'aiProvider') incoming = normalizeProvider(incoming)
+        // The cloud image uploader was removed — migrate its action.
+        if (key === 'imageInsertAction' && incoming === 'upload') incoming = 'folder'
         if (
           typeof incoming !== 'undefined' &&
           typeof (this as unknown as Record<string, unknown>)[key] !== 'undefined'

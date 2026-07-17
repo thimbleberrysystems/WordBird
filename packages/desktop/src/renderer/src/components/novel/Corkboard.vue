@@ -69,8 +69,10 @@
         >
           <div class="card-header">
             <span
-              class="status-dot"
+              class="status-dot status-dot--clickable"
               :class="scene.status || 'idea'"
+              :title="t('views.statusCycleTip', { status: scene.status || 'idea' })"
+              @click.stop="cycleStatus(scene)"
             />
             <span class="card-title">{{ scene.title }}</span>
             <span
@@ -86,12 +88,13 @@
             @click.stop
             @change="saveSynopsis(scene, $event)"
           />
-          <div
-            v-if="scene.pov"
-            class="card-meta"
+          <input
+            class="card-meta card-pov"
+            :value="scene.pov ?? ''"
+            :placeholder="t('views.povPlaceholder')"
+            @click.stop
+            @change="savePov(scene, $event)"
           >
-            {{ scene.pov }}
-          </div>
         </div>
       </div>
     </div>
@@ -115,6 +118,7 @@ import { popupContextMenu } from '../../contextMenu/popupMenu'
 import { ElMessageBox } from 'element-plus'
 import bus from '../../bus'
 import { t } from '../../i18n'
+import { nextStatus } from '@/util/novelStatus'
 import type { INovelUnit } from '@shared/types/novel'
 
 const novelStore = useNovelStore()
@@ -228,6 +232,15 @@ const dropOnSection = async (section: CorkSection, event: DragEvent): Promise<vo
 const saveSynopsis = (scene: INovelUnit, event: Event): void => {
   const synopsis = (event.target as HTMLTextAreaElement).value
   novelStore.updateUnit(scene.id, { synopsis })
+}
+
+const savePov = (scene: INovelUnit, event: Event): void => {
+  const pov = (event.target as HTMLInputElement).value.trim()
+  novelStore.updateUnit(scene.id, { pov })
+}
+
+const cycleStatus = (scene: INovelUnit): void => {
+  novelStore.updateUnit(scene.id, { status: nextStatus(scene.status) })
 }
 
 const askBiscuitToDraft = (): void => {
@@ -392,10 +405,20 @@ const showCardMenu = (event: MouseEvent, scene: INovelUnit): void => {
   color: var(--iconColor);
 }
 
-.cork-empty {
+.status-dot--clickable {
+  cursor: pointer;
+}
+
+.status-dot--clickable:hover {
+  transform: scale(1.4);
+}
+
+.card-pov {
+  border: none;
+  background: transparent;
   color: var(--iconColor);
-  font-size: 13px;
-  text-align: center;
-  margin-top: 80px;
+  font-size: 10px;
+  padding: 0;
+  outline: none;
 }
 </style>

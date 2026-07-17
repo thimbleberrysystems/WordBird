@@ -39,6 +39,28 @@
       }
     },
     {
+      "id": "get_scene_handoff",
+      "name": "get_scene_handoff",
+      "displayName": "Scene handoff",
+      "description": "Tail of the scene that PRECEDES the given unit in narrative order — call before drafting so consecutive scenes join without a seam (voice, time of day, open threads).",
+      "handler": "get_scene_handoff",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "unitId": {
+            "type": "string",
+            "description": "Unit id of the scene ABOUT to be drafted (from list_structure)."
+          }
+        },
+        "required": [
+          "unitId"
+        ]
+      }
+    },
+    {
       "id": "search_manuscript",
       "name": "search_manuscript",
       "displayName": "Search manuscript",

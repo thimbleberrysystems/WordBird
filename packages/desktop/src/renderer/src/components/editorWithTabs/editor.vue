@@ -114,7 +114,7 @@ import Printer from '@/services/printService'
 import { SpellcheckerLanguageCommand } from '@/commands'
 import { SpellChecker } from '@/spellchecker'
 import { isOsx, animatedScrollTo } from '@/util'
-import { moveImageToFolder, uploadImage } from '@/util/fileSystem'
+import { moveImageToFolder } from '@/util/fileSystem'
 import { guessClipboardFilePath } from '@/util/clipboard'
 import { getCssForOptions, getHtmlToc, type PdfCssOptions, type HtmlTocOptions } from '@/util/pdf'
 import { addCommonStyle, setEditorWidth, setWrapCodeBlocks } from '@/util/theme'
@@ -840,28 +840,6 @@ const imageAction = async (
     : null // /root/dir/assets
   let destImagePath = ''
   switch (imageInsertAction.value) {
-    case 'upload': {
-      try {
-        // Pass the full preferences state object to avoid dereferencing non-existent .value
-        destImagePath = (await uploadImage(
-          currentPathname,
-          image,
-          preferencesStore.$state as unknown as import('@/util/fileSystem').UploadImagePreferences
-        )) as string
-      } catch (err) {
-        notice.notify({
-          title: 'Upload Image',
-          type: 'warning',
-          message: err as string
-        })
-        destImagePath = (await moveImageToFolder(
-          currentPathname,
-          image,
-          resolvedGlobalImageFolderPath
-        )) as string
-      }
-      break
-    }
     case 'folder': {
       if (isTabSavedOnDisk && imagePreferRelativeDirectory.value) {
         // `image` may be a path string (paste/drag/image-selector) — pass
@@ -1051,11 +1029,6 @@ const handReplace = (payload: unknown) => {
   const { value, opt } = payload as { value: string; opt: unknown }
   const searchMatches = editor.value.replace(value, opt)
   editorStore.SEARCH(searchMatches)
-}
-
-const handleUploadedImage = (url: unknown, deletionUrl?: unknown) => {
-  insertImage(url)
-  editorStore.SHOW_IMAGE_DELETION_URL(deletionUrl as string)
 }
 
 const scrollToCursor = (duration = 300) => {
@@ -1465,7 +1438,6 @@ onMounted(() => {
   bus.on('replaceValue', handReplace)
   bus.on('find-action', handleFindAction)
   bus.on('insert-image', insertImage)
-  bus.on('image-uploaded', handleUploadedImage)
   bus.on('file-changed', handleFileChange)
   bus.on('editor-blur', blurEditor)
   bus.on('editor-focus', focusEditor)
@@ -1641,7 +1613,6 @@ onBeforeUnmount(() => {
   bus.off('replaceValue', handReplace)
   bus.off('find-action', handleFindAction)
   bus.off('insert-image', insertImage)
-  bus.off('image-uploaded', handleUploadedImage)
   bus.off('file-changed', handleFileChange)
   bus.off('editor-blur', blurEditor)
   bus.off('editor-focus', focusEditor)

@@ -2,12 +2,13 @@
   <div
     v-if="pendingCount > 0"
     class="global-agent-review"
-    aria-label="Pending AI edits"
+    aria-label="Pending Biscuit edits"
   >
     <div class="review-header">
       <span class="review-label">
         {{ pendingCount > 1 ? t('review.pendingMany', { count: pendingCount }) : t('review.pendingOne') }}
       </span>
+      <span class="review-keys">{{ t('review.keyHint') }}</span>
       <div class="review-actions">
         <button
           class="review-btn review-btn--accept"
@@ -42,7 +43,7 @@
           <span
             class="item-file"
             :title="edit.filePath"
-          >{{ basename(edit.filePath) }}</span>
+          >{{ displayName(edit.filePath) }}</span>
           <span
             v-if="edit.reason"
             class="item-reason"
@@ -74,14 +75,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAgentStore } from '@/store/agent'
+import { useNovelStore } from '@/store/novel'
 import AgentDiffView from './AgentDiffView.vue'
 import bus from '@/bus'
 import { t } from '../../i18n'
 
 const agentStore = useAgentStore()
+const novelStore = useNovelStore()
 const { pendingCount, pendingEdits } = storeToRefs(agentStore)
 
 const expandedId = ref<string | null>(null)
@@ -91,6 +94,28 @@ const pendingList = computed(() =>
 )
 
 const basename = (p: string): string => p.split(/[\\/]/).pop() || p
+
+// A writer thinks in scene titles, not filenames: map the edit's path to
+// the binder unit that owns it (the filename stays in the tooltip).
+const titleByPath = computed(() => {
+  const map = new Map<string, string>()
+  const walk = (units: Array<{ path?: string; title: string; children?: unknown[] }>): void => {
+    for (const unit of units) {
+      if (unit.path) map.set(unit.path.split(/[\\/]/).join('/'), unit.title)
+      if (unit.children) walk(unit.children as never)
+    }
+  }
+  if (novelStore.structure?.units) walk(novelStore.structure.units as never)
+  return map
+})
+
+const displayName = (filePath: string): string => {
+  const normalized = filePath.split(/[\\/]/).join('/')
+  for (const [unitPath, title] of titleByPath.value) {
+    if (normalized === unitPath || normalized.endsWith(`/${unitPath}`)) return title
+  }
+  return basename(filePath)
+}
 
 function toggleExpand (id: string): void {
   expandedId.value = expandedId.value === id ? null : id
@@ -111,6 +136,47 @@ function applyOne (editId: string): void {
 function discardOne (editId: string): void {
   bus.emit('agent-discard-one', editId)
 }
+
+// Keyboard review: the focused (expanded) edit, else the first pending.
+const targetEdit = (): string | null => {
+  if (expandedId.value && pendingList.value.some((e) => e.id === expandedId.value)) {
+    return expandedId.value
+  }
+  return pendingList.value[0]?.id ?? null
+}
+
+const onKeydown = (event: KeyboardEvent): void => {
+  if (pendingList.value.length === 0) return
+  const mod = event.ctrlKey || event.metaKey
+  if (!mod) return
+  if (event.key === 'Enter' && event.shiftKey) {
+    event.preventDefault()
+    applyAll()
+  } else if (event.key === 'Enter') {
+    const id = targetEdit()
+    if (id) {
+      event.preventDefault()
+      applyOne(id)
+    }
+  } else if (event.key === 'Backspace') {
+    const id = targetEdit()
+    if (id) {
+      event.preventDefault()
+      discardOne(id)
+    }
+  }
+}
+
+// Listen only while the bar is visible — no global key tax otherwise.
+watch(
+  pendingCount,
+  (count) => {
+    if (count > 0) window.addEventListener('keydown', onKeydown)
+    else window.removeEventListener('keydown', onKeydown)
+  },
+  { immediate: true }
+)
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <style scoped>
@@ -138,6 +204,12 @@ function discardOne (editId: string): void {
   font-weight: 600;
   color: var(--editorColor, #444);
   flex: 1;
+}
+
+.review-keys {
+  font-size: 10px;
+  color: var(--iconColor, #999);
+  white-space: nowrap;
 }
 
 .review-actions {

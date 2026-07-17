@@ -456,19 +456,6 @@ export const useEditorStore = defineStore('editor', {
       this.currentFile.searchMatches = deepClone(value) // deep clone to trigger state changes
     },
 
-    SHOW_IMAGE_DELETION_URL(deletionUrl: string): void {
-      notice
-        .notify({
-          title: t('store.editor.imageDeletionUrlTitle'),
-          message: t('store.editor.imageDeletionUrlMessage', { url: deletionUrl }),
-          showConfirm: true,
-          time: 20000
-        })
-        .then(() => {
-          window.electron.clipboard.writeText(deletionUrl)
-        })
-    },
-
     // We need to update line endings menu when changing tabs.
     UPDATE_LINE_ENDING_MENU(): void {
       if (!this.currentFile) return

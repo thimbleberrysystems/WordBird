@@ -81,20 +81,16 @@ class DataCenter extends TypedEmitter<DataCenterEvents> {
     const defaultData = {
       imageFolderPath: path.join(this.userDataPath, 'images'),
       screenshotFolderPath: path.join(this.userDataPath, 'screenshot'),
-      webImages: [],
-      cloudImages: [],
-      currentUploader: 'picgo'
+      webImages: []
     }
 
     if (!this.hasDataCenterFile) {
       this.store.set(defaultData)
       ensureDirSync(this.store.get('screenshotFolderPath') as string)
     } else {
-      // Migrate legacy uploader values that no longer exist
-      const stored = this.store.get('currentUploader') as string | undefined
-      if (stored === 'none' || stored === 'github') {
-        this.store.set('currentUploader', 'picgo')
-      }
+      // The cloud image uploader was removed — drop its stored state.
+      this.store.delete('cloudImages')
+      this.store.delete('currentUploader')
     }
     this._listenForIpcMain()
   }

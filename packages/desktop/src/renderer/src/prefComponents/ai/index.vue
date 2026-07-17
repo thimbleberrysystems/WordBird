@@ -151,6 +151,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { usePreferencesStore } from '@/store/preferences'
+import { classifyError } from '@/util/aiErrors'
 import Compound from '../common/compound/index.vue'
 import textBox from '../common/textBox/index.vue'
 import curSelect from '../common/select/index.vue'
@@ -267,7 +268,9 @@ const testConnection = async () => {
     // Fetch models immediately after connection success
     await fetchDynamicModels()
   } catch (err) {
-    connectionStatus.value = { type: 'error', message: getErrorMessage(err) }
+    // Same classifier the chat ErrorCard uses — friendly, not raw stack.
+    const info = classifyError(getErrorMessage(err))
+    connectionStatus.value = { type: 'error', message: `${info.title} — ${info.explanation}` }
     preferencesStore.aiIsConnected = false
   } finally {
     connecting.value = false
@@ -332,9 +335,12 @@ const testModelConnection = async () => {
     }
     preferencesStore.aiIsConnected = true
   } catch (err) {
+    const info = classifyError(getErrorMessage(err))
     modelConnectionStatus.value = {
       type: 'error',
-      message: t('preferences.ai.modelConnectionFailed', { error: getErrorMessage(err) })
+      message: t('preferences.ai.modelConnectionFailed', {
+        error: `${info.title} — ${info.explanation}`
+      })
     }
     preferencesStore.aiIsConnected = false
   } finally {

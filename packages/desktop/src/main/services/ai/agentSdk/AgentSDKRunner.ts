@@ -41,6 +41,7 @@ import { MODE_BUDGETS, isAgentRole } from '../orchestrator/roles'
 import {
   buildWordbirdMcpServer,
   buildSdkAgents,
+  mainThreadToolNames,
   stripMcpPrefix,
   MCP_SERVER_NAME,
   MCP_TOOL_PREFIX,
@@ -250,15 +251,26 @@ export class AgentSDKRunner {
     cfg?: { signal?: AbortSignal; configurable?: { thread_id?: string } }
   ): Promise<string> {
     const sdk = await this._loadSdk()
-    const prompt = this._promptFromMessages(state.messages)
+    // Mid-run steering notes queue while a turn works; every invoke
+    // boundary (book-run segments, coherence follow-ups, next turns)
+    // drains them — the same delivery points the LangGraph supervisor has.
+    const steering = this._callbacks.drainSteering?.() ?? []
+    const prompt = [
+      this._promptFromMessages(state.messages),
+      ...steering.map((note) => `[Writer, mid-run]: ${note}`)
+    ]
+      .filter(Boolean)
+      .join('\n\n')
     const threadId = cfg?.configurable?.thread_id ?? 'default'
     const sessions = this._loadSessions()
     const resume = sessions[threadId]
 
     const brief = (await this._callbacks.buildBrief?.()) ?? ''
     const budget = MODE_BUDGETS[this._mode]
-    const { server, toolNames } = buildWordbirdMcpServer(sdk, this._toolService, this._mode)
-    const agents = buildSdkAgents(this._mode)
+    const { server } = buildWordbirdMcpServer(sdk, this._toolService, this._mode)
+    // Subagents carry the same per-turn brief LangGraph workers get.
+    const agents = buildSdkAgents(this._mode, brief)
+    const mainThreadSet = new Set(mainThreadToolNames(this._toolService, this._mode))
 
     const systemPrompt =
       buildSupervisorPrompt(this._mode, budget.maxWorkersPerWave, SPAWN_TOOL) +
@@ -283,7 +295,7 @@ export class AgentSDKRunner {
       // writer-approval gate below while every other tool runs freely.
       allowedTools: [
         SPAWN_TOOL,
-        ...toolNames
+        ...[...mainThreadSet]
           .filter((n) => !DESTRUCTIVE_TOOLS.includes(n))
           .map((n) => `${MCP_TOOL_PREFIX}${n}`)
       ],
@@ -292,7 +304,8 @@ export class AgentSDKRunner {
       permissionMode: 'default',
       canUseTool: async(
         toolName: string,
-        input: Record<string, unknown>
+        input: Record<string, unknown>,
+        extra?: { agentID?: string }
       ): Promise<Record<string, unknown>> => {
         const bare = stripMcpPrefix(toolName)
         if (DESTRUCTIVE_TOOLS.includes(bare)) {
@@ -306,6 +319,20 @@ export class AgentSDKRunner {
               behavior: 'deny',
               message: 'The writer declined this operation. Do not retry it.'
             }
+          }
+        }
+        // Worker-only tools are registered on the server (subagents need
+        // them) but the MAIN thread must delegate, exactly like the
+        // LangGraph supervisor. agentID is present only inside subagents.
+        if (
+          !extra?.agentID &&
+          toolName.startsWith(MCP_TOOL_PREFIX) &&
+          !mainThreadSet.has(bare) &&
+          !DESTRUCTIVE_TOOLS.includes(bare)
+        ) {
+          return {
+            behavior: 'deny',
+            message: 'This tool belongs to a specialist — spawn one with Task.'
           }
         }
         return { behavior: 'allow', updatedInput: input }
@@ -322,6 +349,7 @@ export class AgentSDKRunner {
     this._turnUsage = emptyTally()
     let finalText = ''
     let sawError: string | null = null
+    let sawBudget: Error | null = null
 
     try {
       for await (const raw of stream) {
@@ -332,22 +360,47 @@ export class AgentSDKRunner {
             subtype?: string
             is_error?: boolean
             result?: string
+            errors?: string[]
             usage?: Record<string, number>
           }
           if (result.is_error) {
-            sawError = String(result.result ?? result.subtype ?? 'unknown error')
+            if (result.subtype === 'error_max_turns') {
+              // Same budget semantics as LangGraph's GraphRecursionError:
+              // the manager answers "say continue" and book runs pause
+              // gracefully instead of reporting a failure. The session
+              // persists, so continue genuinely resumes.
+              sawBudget = new Error('SDK run hit its max-turns step budget')
+              sawBudget.name = 'GraphRecursionError'
+            } else {
+              sawError = String(
+                result.errors?.filter(Boolean).join('; ') || result.subtype || 'unknown error'
+              )
+            }
           } else {
             finalText = String(result.result ?? '')
           }
           this._recordResultUsage(result.usage)
         }
       }
+    } catch (error) {
+      // The SDK also surfaces error results by THROWING when the stream
+      // ends ("Claude Code returned an error result: Reached maximum
+      // number of turns (N)") — pinned live in claude-subscription.spec.
+      if (cfg?.signal?.aborted) return finalText || ''
+      if (sawBudget) throw sawBudget
+      if (error instanceof Error && /maximum number of turns/i.test(error.message)) {
+        const budgetError = new Error('SDK run hit its max-turns step budget')
+        budgetError.name = 'GraphRecursionError'
+        throw budgetError
+      }
+      throw error
     } finally {
       cfg?.signal?.removeEventListener('abort', onAbort)
       this._activeQuery = null
     }
 
     if (cfg?.signal?.aborted) return finalText || ''
+    if (sawBudget) throw sawBudget
     if (sawError) throw this._classifyAuthError(sawError)
     return finalText
   }

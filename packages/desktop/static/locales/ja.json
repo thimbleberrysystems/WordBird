@@ -302,7 +302,7 @@
       "biscuit": "Biscuit",
       "settings": "設定",
       "binder": "原稿",
-      "history": "履歴",
+      "history": "スナップショット",
       "continuity": "整合性",
       "agents": "エージェント",
       "entities": "エンティティ"
@@ -601,7 +601,7 @@
       },
       "snapshotLimit": {
         "description": "スナップショット履歴の上限",
-        "notes": "保存と AI 編集はすべてバージョン管理されます。この数を超えると、古いスナップショットはベースラインに統合されます。0 ですべて永久保持。"
+        "notes": "保存と Biscuit の編集はすべてバージョン管理されます。この数を超えると、古いスナップショットはベースラインに統合されます。0 ですべて永久保持。"
       }
     },
     "editor": {
@@ -663,7 +663,6 @@
     "image": {
       "title": "画像",
       "actions": {
-        "upload": "クラウドにアップロード",
         "folder": "フォルダにコピー",
         "path": "絶対パスを使用"
       },
@@ -679,14 +678,6 @@
         "relativeFolderName": "相対フォルダ名",
         "filenameNote": "ファイル名は自動生成されます。"
       },
-      "imageInsertAction": {
-        "title": "画像挿入アクション",
-        "folder": "フォルダにアップロード",
-        "path": "パスにコピー",
-        "upload": "クラウドにアップロード",
-        "copyToFolder": "フォルダにコピー",
-        "uploadToServer": "サーバーにアップロード"
-      },
       "imageFolderPath": {
         "title": "画像フォルダパス",
         "description": "画像フォルダパス",
@@ -694,71 +685,9 @@
         "relativePath": "相対パス",
         "absolutePath": "絶対パス"
       },
-      "cloudPictureBed": {
-        "title": "クラウド画像ベッド",
-        "github": "GitHub",
-        "smms": "SM.MS",
-        "qiniu": "Qiniu",
-        "upyun": "UpYun",
-        "tcyun": "Tencent Cloud",
-        "aliyun": "Alibaba Cloud",
-        "imgur": "Imgur",
-        "picgo": "PicGo"
-      },
       "preferRelativeDirectory": {
         "title": "相対ディレクトリを優先",
         "description": "画像の優先相対ディレクトリ"
-      },
-      "uploader": {
-        "title": "画像アップローダー",
-        "currentUploader": "現在のアップローダー：{name}",
-        "picgoNotInstalled": "PicGoがインストールされていません",
-        "picgoDetectionStatus": "PicGo検出ステータス",
-        "picgoInstalled": "PicGoがインストールされています",
-        "picgoDetectionFailed": "PicGo検出に失敗しました",
-        "debugInfo": "デバッグ情報",
-        "installCommand": "インストールコマンド",
-        "npmInstallCommand": "npm install picgo -g",
-        "yarnInstallCommand": "yarn global add picgo",
-        "pnpmInstallCommand": "pnpm add -g picgo",
-        "chooseInstallMethod": "インストール方法を選択:",
-        "retestPicgo": "再テスト",
-        "detecting": "検出中...",
-        "lastDetectionTime": "最後の検出時間",
-        "detectionStatus": "検出ステータス",
-        "usageGuide": {
-          "title": "PicGo基本使用ガイド",
-          "step1": "アップローダーを設定",
-          "step1Description": "以下のコマンドを使用してPicGoアップローダーを設定してください：",
-          "step2": "画像をアップロード",
-          "step2Description": "以下のコマンドを使用して画像をアップロードしてください：",
-          "step3": "設定を表示",
-          "step3Description": "以下のコマンドを使用して現在の設定を表示してください：",
-          "documentation": "完全なドキュメントを表示"
-        },
-        "configureUploader": "アップローダーを設定",
-        "configureDescription": "以下のコマンドを使用してPicGoアップローダーを設定してください：",
-        "uploadImage": "画像をアップロード",
-        "uploadDescription": "以下のコマンドを使用して画像をアップロードしてください：",
-        "viewConfig": "設定を表示",
-        "viewConfigDescription": "以下のコマンドを使用して現在の設定を表示してください：",
-        "viewDocumentation": "完全なドキュメントを表示",
-        "scriptDescription": "スクリプトの説明",
-        "scriptLocation": "スクリプトの場所",
-        "save": "保存",
-        "saveConfig": "設定を保存",
-        "scriptConfigSaved": "スクリプト設定が保存されました",
-        "services": {
-          "picgo": "PicGo",
-          "cliScript": "CLIスクリプト"
-        },
-        "pleaseInstall": "インストールしてください",
-        "scriptPath": "スクリプトパス",
-        "picgoDetection": "PicGo検出",
-        "autoDetection": "自動検出中",
-        "lastSuccessTime": "最後の成功時刻",
-        "neverDetected": "検出されたことがない",
-        "neverSuccessful": "成功したことがない"
       },
       "defaultBehavior": "WordBirdに画像を貼り付けまたはドラッグした後のデフォルト動作"
     },
@@ -1176,8 +1105,6 @@
       "errorLoadingTabTitle": "タブの読み込みエラー",
       "errorLoadingTabMessage": "ファイル変更の読み込み中にエラーが発生しました。タブが見つかりません。",
       "mixedLineEndingsNormalized": "「{name}」には混在した改行コードが含まれており、{lineEnding} に自動正規化されました。",
-      "imageDeletionUrlTitle": "画像削除 URL",
-      "imageDeletionUrlMessage": "アップロード済み画像の削除 URL をクリップボードにコピーします ({url})。",
       "errorWhileSaving": "保存中にエラーが発生しました: {msg}",
       "exportSuccessTitle": "エクスポートに成功",
       "exportSuccessMessage": "「{name}」を正常にエクスポートしました！",
@@ -1493,9 +1420,9 @@
     "targetTip": "目標語数の {percent}%",
     "todayTip": "今日書いた語数",
     "save": "保存",
-    "saveTip": "開いているすべてのファイルを保存し、履歴にスナップショットを記録",
+    "saveTip": "開いているすべてのファイルを保存し、スナップショットを記録",
     "saveSnapshotMessage": "手動保存",
-    "saved": "プロジェクトを保存 — 履歴にスナップショットを記録しました。",
+    "saved": "プロジェクトを保存 — スナップショットを記録しました。",
     "actionFailed": "この変更は保存されませんでした：{error}",
     "compileMd": "Markdownに書き出し",
     "compileEpub": "EPUBに書き出し（電子書籍）",
@@ -1509,19 +1436,19 @@
     "open": "開く",
     "rename": "名前を変更",
     "newFolder": "新しいフォルダ",
-    "deleteFileConfirm": "{name} を削除しますか？ファイルは履歴にスナップショットされています。"
+    "deleteFileConfirm": "{name} を削除しますか？スナップショットにコピーが残ります。"
   },
   "history": {
-    "title": "履歴",
+    "title": "スナップショット",
     "placeholder": "この瞬間に名前を付ける…",
-    "take": "保存",
+    "take": "スナップショット",
     "auto": "自動",
     "defaultMessage": "スナップショット",
     "nothingToSave": "前回のスナップショット以降、変更はありません。",
-    "restore": "巻き戻す",
-    "restoreConfirm": "プロジェクト全体を「{message}」に巻き戻しますか？現在の状態は先に保存されます。",
-    "restored": "「{message}」に巻き戻しました",
-    "empty": "まだスナップショットはありません。保存すればいつでもこの瞬間に戻れます。"
+    "restore": "復元",
+    "restoreConfirm": "プロジェクト全体を「{message}」に復元しますか？現在の状態は先に保存されます。",
+    "restored": "「{message}」に復元しました",
+    "empty": "まだスナップショットがありません。撮っておくと、この瞬間に簡単に戻れます。"
   },
   "views": {
     "page": "ページ",
@@ -1549,7 +1476,9 @@
     "pageTip": "執筆 — 原稿ページ",
     "corkboardTip": "コルクボード — 各シーンをカードで",
     "outlineTip": "アウトライン — 編集可能な表でシーンを",
-    "timelineTip": "タイムライン — 物語時間順のシーン"
+    "timelineTip": "タイムライン — 物語時間順のシーン",
+    "statusCycleTip": "ステータス: {status} — クリックでアイデア → 草稿 → 改訂 → 完成 と切替",
+    "povPlaceholder": "視点"
   },
   "continuity": {
     "title": "整合性",
@@ -1558,7 +1487,9 @@
     "revisions": "改稿",
     "analyzing": "影響を分析中…",
     "executing": "進行中",
-    "revisionProgress": "{total} シーン中 {done} 件更新済み"
+    "revisionProgress": "{total} シーン中 {done} 件更新済み",
+    "fixWithBiscuit": "Biscuit に修正してもらう",
+    "fixPrompt": "この整合性の問題を修正して: {title} — {description}"
   },
   "biscuit": {
     "placeholder": "あなたの執筆パートナー。構想・執筆・推敲 — あなたが創作する間、小説全体の一貫性を保ちます。",
@@ -1576,7 +1507,7 @@
     "send": "送信",
     "disconnected": "未接続",
     "connected": "接続済み",
-    "configureTip": "AIを設定",
+    "configureTip": "Biscuit を設定",
     "collapseTip": "Biscuitを折りたたむ",
     "expandTip": "Biscuitを展開",
     "modeCycleHint": "（ctrl+shift で切替）",
@@ -1585,7 +1516,7 @@
     "modeAsk": "調査モード",
     "modeAskHint": "読み取り専用：Biscuit は探索・検索・調査のみ行い、何も編集できません。",
     "modeAuto": "自動モード",
-    "modeAutoHint": "編集は自動適用 — 各バッチはスナップショットで保護（履歴から巻き戻し可）。",
+    "modeAutoHint": "編集は自動適用 — 各バッチはスナップショットで保護（スナップショットから復元可）。",
     "modeMax": "最大モード",
     "modeMaxHint": "長いタスクと大きな予算。変更は引き続き確認されます。",
     "errorTitleAuth": "プロバイダーがBiscuitを拒否しました",
@@ -1597,7 +1528,7 @@
     "errorTitleGeneric": "問題が発生しました",
     "errorExplainGeneric": "Biscuitはリクエストを完了できませんでした。再試行で解決することが多いです。技術的な詳細は下にあります。",
     "errorDetails": "技術的な詳細",
-    "openSettings": "AI設定を開く",
+    "openSettings": "Biscuit 設定を開く",
     "stopped": "停止しました。",
     "contextTip": "会話メモリ使用率 {percent}% — いっぱいになると、Biscuitが古いやり取りを自動で要約します。",
     "contextTokens": "（{used} / {budget} トークン。）",
@@ -1638,7 +1569,7 @@
     "idle": "待機中",
     "agentsRunning": "{count} 件実行中",
     "welcomeTitle": "こんにちは、Biscuit です 🐦",
-    "welcomeConnect": "AI モデルを接続してください — ローカル（Ollama）でもクラウドでも選べます。",
+    "welcomeConnect": "モデルを接続してください — ローカル（Ollama）でもクラウドでも選べます。",
     "welcomeConfigure": "モデルを接続…",
     "starterBrainstorm": "次の小説の構想をブレインストーミングして",
     "starterStatus": "物語の現状をまとめて",
@@ -1648,7 +1579,7 @@
     "deleteConversationConfirm": "会話「{title}」を削除しますか？この操作は取り消せません。",
     "approvalCountdown": "{time} 後に自動的に拒否されます",
     "approvalTimedOut": "承認リクエストは期限切れになり、拒否されました。",
-    "autoApplied": "{count} 件の編集を適用 — スナップショット保存済み。いつでも履歴から巻き戻せます。",
+    "autoApplied": "{count} 件の編集を適用 — スナップショット保存済み。いつでもスナップショットから復元できます。",
     "detachTip": "Biscuit を別ウィンドウで開く",
     "reattachTip": "Biscuit をエディタに戻す",
     "modeApprovals": "承認モード",
@@ -1658,7 +1589,13 @@
     "stalledTitle": "モデルから応答がありません",
     "stalled": "しばらく何も返ってきていません。処理が停止している可能性があります。停止を押してキャンセルするか（何も失われません）、モデルが遅いだけならこのままお待ちください。",
     "mentionHint": "シーンやバイブルページを参照 — ↑↓で選択、Enterで挿入",
-    "starterHealth": "プロジェクトのヘルスチェックを実行して、ずれているところを直して"
+    "starterHealth": "プロジェクトのヘルスチェックを実行して、ずれているところを直して",
+    "managedByRuntime": "Claude ランタイムが管理しています — 停止で全体が止まります。",
+    "contextManagedByRuntime": "コンテキストは Claude ランタイムが自動管理します。",
+    "startersHint": "スタータープロンプト — クリックで入力欄に反映",
+    "mentionButtonTip": "シーンや設定資料ページを参照 (@)",
+    "startersButtonTip": "スタータープロンプト (/)",
+    "historyHintTip": "空の入力欄で ↑ を押すと過去の入力を呼び出せます"
   },
   "review": {
     "pendingOne": "保留中の編集 1件",
@@ -1666,11 +1603,12 @@
     "applyAll": "すべて適用",
     "discardAll": "すべて破棄",
     "applyOne": "この編集を適用",
-    "discardOne": "この編集を破棄"
+    "discardOne": "この編集を破棄",
+    "keyHint": "Ctrl+↵ 承認 · Ctrl+⌫ 却下 · +Shift で全部"
   },
   "titleBar": {
     "save": "保存",
-    "saveTip": "保存 (Ctrl+S) — 保存のたびに履歴のスナップショットになります",
+    "saveTip": "保存 (Ctrl+S) — 保存のたびにスナップショットになります",
     "saved": "すべての変更を保存済み"
   },
   "entities": {

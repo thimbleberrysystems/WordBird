@@ -53,8 +53,11 @@ export const stripMcpPrefix = (toolName: string): string =>
 
 /**
  * Tool names the main-thread agent may call in a given mode. Mirrors the
- * LangGraph supervisor: reads + plans + ask_writer always; write tools
- * only outside ask mode (ask is mechanically read-only).
+ * LangGraph supervisor EXACTLY: reads + plans + ask_writer always; the
+ * supervisor's write set outside ask mode. Worker-only tools (continuity
+ * logging, revision bookkeeping, restructuring) require spawning the
+ * matching specialist — same delegation discipline as LangGraph, enforced
+ * by the runner's canUseTool deny for main-thread calls.
  */
 export const mainThreadToolNames = (
   service: AgentToolService,
@@ -64,7 +67,26 @@ export const mainThreadToolNames = (
   const wanted =
     mode === 'ask'
       ? new Set([...SUPERVISOR_TOOL_NAMES, ...READONLY_WORKER_TOOLS])
-      : new Set(service.getDefinitions().map((d) => d.name))
+      : new Set([...SUPERVISOR_TOOL_NAMES, ...SUPERVISOR_WRITE_TOOL_NAMES])
+  return [...wanted].filter((name) => available.has(name))
+}
+
+/**
+ * Everything that must be REGISTERED on the MCP server: the main thread's
+ * surface plus every tool any mode-appropriate subagent may use (subagent
+ * tools live on the same server).
+ */
+export const registeredToolNames = (
+  service: AgentToolService,
+  mode: AgentPermissionMode
+): string[] => {
+  const wanted = new Set(mainThreadToolNames(service, mode))
+  for (const role of Object.values(AGENT_ROLES)) {
+    if (mode === 'ask' && !READONLY_ROLES.includes(role.role)) continue
+    const roleTools = mode === 'ask' ? READONLY_WORKER_TOOLS : role.allowedTools
+    for (const name of roleTools) wanted.add(name)
+  }
+  const available = new Set(service.getDefinitions().map((d) => d.name))
   return [...wanted].filter((name) => available.has(name))
 }
 
@@ -77,7 +99,7 @@ export const buildWordbirdMcpServer = (
   service: AgentToolService,
   mode: AgentPermissionMode
 ): { server: unknown; toolNames: string[] } => {
-  const allowed = new Set(mainThreadToolNames(service, mode))
+  const allowed = new Set(registeredToolNames(service, mode))
   const tools: unknown[] = []
   const toolNames: string[] = []
 
@@ -115,12 +137,26 @@ export const buildWordbirdMcpServer = (
 }
 
 /**
+ * SDK drafters cannot receive the pushed scene handoff LangGraph workers
+ * get (their prompt is fixed before the model picks a scene) — the
+ * get_scene_handoff tool is the dynamic half; this doctrine line makes
+ * calling it non-optional.
+ */
+export const DRAFTER_SDK_ADDENDUM =
+  '\n\nSCENE HANDOFF: before drafting any scene that has a predecessor, call ' +
+  'get_scene_handoff with the target unit id and match its voice, time of day, ' +
+  'and open threads. Never retell the previous scene.'
+
+/**
  * WordBird's role catalog as SDK subagent definitions. In ask mode only
  * the read-only roles exist and they carry the stripped read+web pack —
- * the same policy the LangGraph orchestrator enforces.
+ * the same policy the LangGraph orchestrator enforces. The per-turn
+ * project brief rides every subagent prompt exactly as it does for
+ * LangGraph workers (Orchestrator appends it to worker system prompts).
  */
 export const buildSdkAgents = (
-  mode: AgentPermissionMode
+  mode: AgentPermissionMode,
+  brief = ''
 ): Record<string, { description: string; prompt: string; tools: string[] }> => {
   const agents: Record<string, { description: string; prompt: string; tools: string[] }> = {}
   for (const role of Object.values(AGENT_ROLES)) {
@@ -134,7 +170,10 @@ export const buildSdkAgents = (
     const toolNames = baseTools.filter((name) => !DESTRUCTIVE_TOOLS.includes(name))
     agents[role.role] = {
       description: `${role.displayName} — ${role.activityLabel.toLowerCase()}`,
-      prompt: role.systemPrompt,
+      prompt:
+        role.systemPrompt +
+        (brief ? `\n\n${brief}` : '') +
+        (role.role === 'drafter' ? DRAFTER_SDK_ADDENDUM : ''),
       tools: toolNames.map((name) => `${MCP_TOOL_PREFIX}${name}`)
     }
   }

@@ -209,10 +209,12 @@ onMounted(async () => {
   window.electron.ai.onConnectionState((state) => {
     langGraphService.applyMainState(state)
     preferencesStore.aiIsConnected = state.connected
+    if (state.capabilities) preferencesStore.aiCapabilities = state.capabilities
   })
   window.electron.ai.getConnectionState?.().then((state) => {
     langGraphService.applyMainState(state)
     preferencesStore.aiIsConnected = state.connected
+    if (state.capabilities) preferencesStore.aiCapabilities = state.capabilities
   }).catch(() => { /* main not ready — the broadcast will catch us up */ })
   if (window.wordbird?.initialState) {
     preferencesStore.SET_USER_PREFERENCE(window.wordbird.initialState)

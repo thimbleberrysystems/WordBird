@@ -19,6 +19,7 @@ export interface AgentRoleDefinition {
 const READ_TOOLS = [
   'list_structure',
   'read_unit',
+  'get_scene_handoff',
   'read_summary',
   'search_manuscript',
   'where_appears',

@@ -118,6 +118,21 @@ export interface IBlockDiffState {
  */
 export type AgentPermissionMode = 'ask' | 'approvals' | 'auto'
 
+/**
+ * What the ACTIVE provider's runtime supports. The claude-code provider
+ * delegates the agent loop to the Claude runtime, which owns subagent
+ * lifecycles and context management — so per-agent controls and manual
+ * compaction are honest no-ops there and the UI hides them.
+ */
+export interface IAgentRuntimeCapabilities {
+  /** Per-row pause/resume/kill in the agents tree. */
+  perAgentControl: boolean
+  /** Whole-run pause at the next step boundary. */
+  boundaryPause: boolean
+  /** Writer-triggered context compaction (the context-ring click). */
+  manualCompact: boolean
+}
+
 export type AgentRole =
   | 'explorer'
   | 'researcher'

@@ -9,22 +9,24 @@
       <span class="agent-name">Biscuit</span>
       <span class="agent-meta">{{ rootMeta }}</span>
       <template v-if="runState !== 'idle'">
-        <button
-          v-if="runState === 'running'"
-          class="row-btn"
-          :title="t('biscuit.pause')"
-          @click="$emit('pause-all')"
-        >
-          ⏸
-        </button>
-        <button
-          v-else
-          class="row-btn row-btn--accent"
-          :title="t('biscuit.resume')"
-          @click="$emit('resume-all')"
-        >
-          ▶
-        </button>
+        <template v-if="capabilities?.boundaryPause !== false">
+          <button
+            v-if="runState === 'running'"
+            class="row-btn"
+            :title="t('biscuit.pause')"
+            @click="$emit('pause-all')"
+          >
+            ⏸
+          </button>
+          <button
+            v-else
+            class="row-btn row-btn--accent"
+            :title="t('biscuit.resume')"
+            @click="$emit('resume-all')"
+          >
+            ▶
+          </button>
+        </template>
         <button
           class="row-btn row-btn--danger"
           :title="t('biscuit.stopAll')"
@@ -79,7 +81,10 @@
         <span class="agent-meta">
           <template v-if="agent.toolCalls > 0">{{ agent.toolCalls }}🔧 · </template>{{ elapsed(agent) }}
         </span>
-        <template v-if="agent.status === 'running'">
+        <!-- The claude-code runtime owns subagent lifecycles: per-agent
+             controls would be silent no-ops there, so they hide and the
+             row explains itself; whole-run Stop still works from the root. -->
+        <template v-if="agent.status === 'running' && capabilities?.perAgentControl !== false">
           <button
             v-if="!agent.paused"
             class="row-btn"
@@ -104,6 +109,11 @@
             ✕
           </button>
         </template>
+        <span
+          v-else-if="agent.status === 'running'"
+          class="agent-managed"
+          :title="t('biscuit.managedByRuntime')"
+        >⋯</span>
         <button
           v-else-if="agent.status === 'failed' || agent.status === 'cancelled'"
           class="row-btn"
@@ -169,6 +179,7 @@ const props = defineProps<{
   agents: IAgentStatus[]
   activity: IAgentActivityEvent[]
   runState: 'idle' | 'running' | 'paused'
+  capabilities?: { perAgentControl: boolean; boundaryPause: boolean; manualCompact: boolean }
 }>()
 
 defineEmits<{

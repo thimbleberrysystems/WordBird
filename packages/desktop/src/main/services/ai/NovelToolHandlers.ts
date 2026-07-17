@@ -23,6 +23,7 @@ import {
   findUnit,
   uniqueSlugPath
 } from '../novel/StructureService'
+import { contextBuilder } from './ContextBuilder'
 import { snapshotService } from '../novel/SnapshotService'
 import { updateProjectMeta, isPlanningStyle, isStructureTemplate } from '../novel/ProjectMeta'
 import { STRUCTURE_TEMPLATES } from '../novel/structureTemplates'
@@ -178,6 +179,24 @@ const listStructure = async(
   return {
     flavor: structure.flavor,
     units: structure.units.map(toSummaryNode)
+  }
+}
+
+/**
+ * The deterministic scene N→N+1 join. LangGraph drafters get this pushed
+ * into their task; SDK drafters (whose prompts are fixed before the model
+ * picks a scene) call it — same ContextBuilder output either way.
+ */
+const getSceneHandoff = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const unitId = str(args, 'unitId')
+  const handoff = await contextBuilder.buildSceneHandoff(root, `<id:${unitId}>`)
+  return {
+    handoff:
+      handoff ?? 'No preceding scene (first in narrative order, or no prose yet) — open fresh.'
   }
 }
 
@@ -1556,6 +1575,7 @@ const setWritingMethod = async(
 export const registerNovelAgentToolHandlers = (service: AgentToolService): void => {
   service.registerHandler('list_structure', listStructure)
   service.registerHandler('read_unit', readUnit)
+  service.registerHandler('get_scene_handoff', getSceneHandoff)
   service.registerHandler('search_manuscript', searchManuscript)
   service.registerHandler('where_appears', whereAppears)
   service.registerHandler('propose_new_unit', proposeNewUnit)

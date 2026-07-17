@@ -203,10 +203,6 @@ const fileUtilsAPI = {
   MARKDOWN_INCLUSIONS: bootInfo?.MARKDOWN_INCLUSIONS || []
 }
 
-const commandAPI = {
-  exists: (name: string) => invoke('mt::cmd::exists', name)
-}
-
 const i18nAPI = {
   loadTranslations: (language: string) => invoke('mt::i18n::load', language)
 }
@@ -240,10 +236,6 @@ const ripgrepAPI = {
     ipcRenderer.on('mt::rg::cancelled', sub)
     return () => ipcRenderer.removeListener('mt::rg::cancelled', sub)
   }
-}
-
-const uploaderAPI = {
-  uploadImage: (req: unknown) => invoke('mt::uploader::upload', req)
 }
 
 const projectAPI = {
@@ -425,6 +417,11 @@ const aiAPI = {
     connected: boolean
     provider: string | null
     model: string | null
+    capabilities: {
+      perAgentControl: boolean
+      boundaryPause: boolean
+      manualCompact: boolean
+    }
   }> => invoke('mt::ai:get-connection-state'),
   onProjectChanged: (handler: (event: { root: string | null }) => void) => {
     const subscription = (_e: unknown, event: { root: string | null }) => handler(event)
@@ -517,10 +514,8 @@ try {
   contextBridge.exposeInMainWorld('rgPath', bootInfo?.paths?.ripgrepBinary || '')
   contextBridge.exposeInMainWorld('fileUtils', fileUtilsAPI)
   contextBridge.exposeInMainWorld('path', pathAPI)
-  contextBridge.exposeInMainWorld('commandExists', commandAPI)
   contextBridge.exposeInMainWorld('i18nUtils', i18nAPI)
   contextBridge.exposeInMainWorld('ripgrep', ripgrepAPI)
-  contextBridge.exposeInMainWorld('uploader', uploaderAPI)
   contextBridge.exposeInMainWorld('fonts', fontsAPI)
 } catch (error) {
   console.error(error)

@@ -293,6 +293,18 @@ describe('supervisor tool lists', () => {
     }
   })
 
+  it('the SDK main thread carries exactly the LangGraph supervisor surface', () => {
+    // Parity pin: worker-only tools (continuity logging, restructuring,
+    // metadata writes) require spawning a specialist on BOTH providers.
+    const union = new Set([...SUPERVISOR_TOOL_NAMES, ...SUPERVISOR_WRITE_TOOL_NAMES])
+    for (const name of mainThreadToolNames(service, 'auto')) {
+      expect(union.has(name), `${name} exceeds the supervisor surface`).toBe(true)
+    }
+    for (const name of ['log_continuity_issue', 'restructure_unit', 'update_unit_meta']) {
+      expect(mainThreadToolNames(service, 'auto')).not.toContain(name)
+    }
+  })
+
   it('the snapshot doctrine is now something the supervisor can actually do', () => {
     expect(buildSupervisorPrompt('approvals', 6)).toContain('take snapshot_project yourself')
   })

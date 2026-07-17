@@ -324,10 +324,4 @@ const showRowMenu = (event: MouseEvent, unit: INovelUnit): void => {
   appearance: auto;
 }
 
-.outline-empty {
-  color: var(--iconColor);
-  font-size: 13px;
-  text-align: center;
-  margin-top: 80px;
-}
 </style>

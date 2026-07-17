@@ -3,7 +3,7 @@
     class="right-prompt"
     :class="{ 'right-prompt--detached': detached }"
     role="complementary"
-    aria-label="Biscuit chat panel"
+    aria-label="Biscuit panel"
     :style="detached ? undefined : rightPromptStyle"
   >
     <div
@@ -185,86 +185,6 @@
         </div>
       </template>
 
-      <!-- Plan approval card (Claude-Code-style plan mode) -->
-      <plan-card
-        v-if="pendingPlan"
-        :plan="pendingPlan"
-        @approve="approvePlan"
-        @dismiss="dismissPlan"
-      />
-
-      <!-- Writer question card: selectable options + free-form answer -->
-      <div
-        v-if="pendingQuestion"
-        class="question-card"
-      >
-        <div class="question-card__text">
-          {{ pendingQuestion.question }}
-        </div>
-        <button
-          v-for="(option, i) in pendingQuestion.options"
-          :key="i"
-          class="question-option"
-          :title="option.description"
-          @click="answerQuestion(option.label)"
-        >
-          <span class="question-option__label">{{ option.label }}</span>
-          <span
-            v-if="option.description"
-            class="question-option__desc"
-          >{{ option.description }}</span>
-        </button>
-        <div class="question-freeform">
-          <input
-            v-model="questionFreeform"
-            :placeholder="t('biscuit.questionFreeform')"
-            @keydown.enter.prevent="answerQuestion(questionFreeform)"
-          >
-          <el-button
-            size="small"
-            type="primary"
-            :disabled="!questionFreeform.trim()"
-            @click="answerQuestion(questionFreeform)"
-          >
-            {{ t('biscuit.send') }}
-          </el-button>
-        </div>
-      </div>
-
-      <!-- Approval request card (ask mode) -->
-      <div
-        v-if="pendingApproval"
-        class="approval-card"
-      >
-        <div class="approval-title">
-          {{ t('biscuit.approvalTitle') }}
-        </div>
-        <div class="approval-summary">
-          {{ pendingApproval.summary }}
-        </div>
-        <div
-          v-if="approvalTimeLeft"
-          class="approval-countdown"
-        >
-          {{ t('biscuit.approvalCountdown', { time: approvalTimeLeft }) }}
-        </div>
-        <div class="approval-actions">
-          <el-button
-            size="small"
-            @click="respondApproval(false)"
-          >
-            {{ t('biscuit.decline') }}
-          </el-button>
-          <el-button
-            size="small"
-            type="primary"
-            @click="respondApproval(true)"
-          >
-            {{ t('biscuit.approve') }}
-          </el-button>
-        </div>
-      </div>
-
       <!-- Thinking Indicator -->
       <div
         v-if="sending"
@@ -277,6 +197,93 @@
     </section>
 
     <footer class="prompt-footer">
+      <!-- Decision dock: pending plan/question/approval cards live HERE,
+           outside the scrolling transcript, so streaming activity can
+           never push a waiting decision out of view. -->
+      <div
+        v-if="pendingPlan || pendingQuestion || pendingApproval"
+        class="decision-dock"
+      >
+        <!-- Plan approval card (Claude-Code-style plan mode) -->
+        <plan-card
+          v-if="pendingPlan"
+          :plan="pendingPlan"
+          @approve="approvePlan"
+          @dismiss="dismissPlan"
+        />
+
+        <!-- Writer question card: selectable options + free-form answer -->
+        <div
+          v-if="pendingQuestion"
+          class="question-card"
+        >
+          <div class="question-card__text">
+            {{ pendingQuestion.question }}
+          </div>
+          <button
+            v-for="(option, i) in pendingQuestion.options"
+            :key="i"
+            class="question-option"
+            :title="option.description"
+            @click="answerQuestion(option.label)"
+          >
+            <span class="question-option__label">{{ option.label }}</span>
+            <span
+              v-if="option.description"
+              class="question-option__desc"
+            >{{ option.description }}</span>
+          </button>
+          <div class="question-freeform">
+            <input
+              v-model="questionFreeform"
+              :placeholder="t('biscuit.questionFreeform')"
+              @keydown.enter.prevent="answerQuestion(questionFreeform)"
+            >
+            <el-button
+              size="small"
+              type="primary"
+              :disabled="!questionFreeform.trim()"
+              @click="answerQuestion(questionFreeform)"
+            >
+              {{ t('biscuit.send') }}
+            </el-button>
+          </div>
+        </div>
+
+        <!-- Approval request card (ask mode) -->
+        <div
+          v-if="pendingApproval"
+          class="approval-card"
+        >
+          <div class="approval-title">
+            {{ t('biscuit.approvalTitle') }}
+          </div>
+          <div class="approval-summary">
+            {{ pendingApproval.summary }}
+          </div>
+          <div
+            v-if="approvalTimeLeft"
+            class="approval-countdown"
+          >
+            {{ t('biscuit.approvalCountdown', { time: approvalTimeLeft }) }}
+          </div>
+          <div class="approval-actions">
+            <el-button
+              size="small"
+              @click="respondApproval(false)"
+            >
+              {{ t('biscuit.decline') }}
+            </el-button>
+            <el-button
+              size="small"
+              type="primary"
+              @click="respondApproval(true)"
+            >
+              {{ t('biscuit.approve') }}
+            </el-button>
+          </div>
+        </div>
+      </div>
       <GlobalAgentReview />
       <div class="prompt-input-outer">
         <div class="prompt-input-wrapper">
@@ -299,31 +306,88 @@
               <span class="mention-path">{{ candidate.path }}</span>
             </div>
           </div>
+          <!-- Starter prompts, reachable any time via the / button. -->
+          <div
+            v-if="startersOpen"
+            class="mention-popover starters-popover"
+          >
+            <div class="mention-hint">
+              {{ t('biscuit.startersHint') }}
+            </div>
+            <div
+              v-for="(starter, i) in starterPrompts"
+              :key="i"
+              class="mention-item"
+              @mousedown.prevent="pickStarter(starter())"
+            >
+              <span class="mention-title">{{ starter() }}</span>
+            </div>
+          </div>
           <textarea
             ref="promptInput"
             v-model="userInput"
             rows="4"
-            aria-label="Chat input"
+            aria-label="Message Biscuit"
             :placeholder="t('biscuit.placeholder')"
             @keydown="handleInputKeydown"
-            @keyup="fireModeChord"
             @input="updateMentionState"
             @click="updateMentionState"
             @blur="closeMention"
           />
         </div>
-        <!-- Autonomy mode line (Claude-CLI style): shift+tab cycles -->
+        <!-- Command row: every hidden power feature, one glance.
+             Mode chip (click = compare all three) · @ scenes · / starters. -->
         <div class="mode-line-row">
-          <div
-            class="mode-line"
-            :class="`mode-line--${mode}`"
-            :title="currentModeInfo.hint()"
-            @click="cycleMode"
-          >
-            <span class="mode-symbol">{{ currentModeInfo.symbol }}</span>
-            <span class="mode-name">{{ currentModeInfo.label() }}</span>
-            <span class="mode-cycle-hint">{{ t('biscuit.modeCycleHint') }}</span>
+          <div class="mode-chip-wrap">
+            <div
+              class="mode-line"
+              :class="`mode-line--${mode}`"
+              :title="currentModeInfo.hint()"
+              @click.stop="modePopoverOpen = !modePopoverOpen"
+            >
+              <span class="mode-symbol">{{ currentModeInfo.symbol }}</span>
+              <span class="mode-name">{{ currentModeInfo.label() }}</span>
+              <span class="mode-cycle-hint">{{ t('biscuit.modeCycleHint') }}</span>
+            </div>
+            <!-- All three modes side by side — no more hover-and-cycle
+                 archaeology to learn what they do. -->
+            <div
+              v-if="modePopoverOpen"
+              class="mode-popover"
+            >
+              <button
+                v-for="info in MODES"
+                :key="info.id"
+                class="mode-option"
+                :class="{ active: info.id === mode }"
+                @click="chooseMode(info.id)"
+              >
+                <span class="mode-option__head">
+                  <span class="mode-symbol">{{ info.symbol }}</span>
+                  <span class="mode-option__label">{{ info.label() }}</span>
+                </span>
+                <span class="mode-option__hint">{{ info.hint() }}</span>
+              </button>
+            </div>
           </div>
+          <button
+            class="cmd-btn"
+            :title="t('biscuit.mentionButtonTip')"
+            @click.stop="openMentionPicker"
+          >
+            @
+          </button>
+          <button
+            class="cmd-btn"
+            :title="t('biscuit.startersButtonTip')"
+            @click.stop="startersOpen = !startersOpen"
+          >
+            /
+          </button>
+          <span
+            class="cmd-hint"
+            :title="t('biscuit.historyHintTip')"
+          >↑</span>
 
           <!-- Session token counter -->
           <div
@@ -419,12 +483,12 @@ import { useAgentsStore } from '../../store/agents'
 import { langGraphService } from '../../services/langgraph'
 import bus from '../../bus'
 import { t } from '../../i18n'
+import { classifyError } from '../../util/aiErrors'
 import { renderChatMarkdown } from '../../util/chatMarkdown'
 import { useBiscuitUsage } from '../../composables/useBiscuitUsage'
 import {
   useConversationHistory,
-  type ChatEntry,
-  type ErrorInfo
+  type ChatEntry
 } from '../../composables/useConversationHistory'
 import { DArrowRight, Plus, ChatLineSquare, Delete, CopyDocument, Back } from '@element-plus/icons-vue'
 import GlobalAgentReview from '../agent/GlobalAgentReview.vue'
@@ -500,6 +564,7 @@ const togglePanel = () => {
 
 onBeforeUnmount(() => {
   stopResizing()
+  document.removeEventListener('click', closePopovers)
   unsubApproval?.()
   unsubApprovalResolved?.()
   unsubUsage?.()
@@ -519,34 +584,6 @@ const promptBody = ref<HTMLElement | null>(null)
 const userInput = ref('')
 const sending = ref(false)
 const aiMessages = ref<ChatEntry[]>([])
-
-/** Map a raw failure onto a human explanation for the error card. */
-const classifyError = (raw: string): ErrorInfo => {
-  if (/\b401\b|\b403\b|rejected|User not found|MODEL_AUTHENTICATION|api[_ ]?key/i.test(raw)) {
-    return {
-      title: t('biscuit.errorTitleAuth'),
-      explanation: t('biscuit.errorExplainAuth'),
-      showSettings: true
-    }
-  }
-  if (/\b429\b|rate.?limit|quota|overloaded|insufficient/i.test(raw)) {
-    return {
-      title: t('biscuit.errorTitleRate'),
-      explanation: t('biscuit.errorExplainRate')
-    }
-  }
-  if (/ECONNREFUSED|ENOTFOUND|ETIMEDOUT|Could not reach|fetch failed|network|timeout/i.test(raw)) {
-    return {
-      title: t('biscuit.errorTitleNetwork'),
-      explanation: t('biscuit.errorExplainNetwork'),
-      showSettings: true
-    }
-  }
-  return {
-    title: t('biscuit.errorTitleGeneric'),
-    explanation: t('biscuit.errorExplainGeneric')
-  }
-}
 
 // ---- Autonomy mode (Claude-CLI style: line under the prompt, shift+tab cycles) ----
 // Labels/hints are functions so they re-resolve when the app language changes.
@@ -609,10 +646,34 @@ const cycleMode = (): void => {
   setMode(next.id)
 }
 
-// One keydown handler: Enter sends, Shift+Tab cycles, and a bare
-// Ctrl+Shift chord (no third key) arms the mode cycle — disarmed the moment
-// any other key joins so Ctrl+Shift+O etc. never mis-fire; fires on release.
-let modeChordArmed = false
+// Command-row state: the mode comparison popover and the starter list.
+const modePopoverOpen = ref(false)
+const startersOpen = ref(false)
+
+const chooseMode = (id: AgentPermissionMode): void => {
+  modePopoverOpen.value = false
+  setMode(id)
+}
+
+const pickStarter = (text: string): void => {
+  startersOpen.value = false
+  userInput.value = text
+  promptInput.value?.focus()
+}
+
+/** The @ button does what typing @ does — no tribal knowledge required. */
+const openMentionPicker = (): void => {
+  const el = promptInput.value
+  if (!el) return
+  el.focus()
+  const caret = el.selectionStart ?? userInput.value.length
+  userInput.value = `${userInput.value.slice(0, caret)}@${userInput.value.slice(caret)}`
+  nextTick(() => {
+    el.selectionStart = el.selectionEnd = caret + 1
+    updateMentionState()
+  })
+}
+
 // ---- @-mention picker: reference scenes/bible pages precisely instead
 // of hoping the model guesses the right file from a title.
 const novelStore = useNovelStore()
@@ -808,20 +869,7 @@ const handleInputKeydown = (event: KeyboardEvent): void => {
     ) {
       event.preventDefault()
       recallHistory(event.key === 'ArrowUp' ? -1 : 1, textarea)
-      return
     }
-  }
-  if ((event.key === 'Shift' && event.ctrlKey) || (event.key === 'Control' && event.shiftKey)) {
-    modeChordArmed = true
-  } else if (event.key !== 'Shift' && event.key !== 'Control') {
-    modeChordArmed = false
-  }
-}
-const fireModeChord = (event: KeyboardEvent): void => {
-  if (!modeChordArmed) return
-  if (event.key === 'Shift' || event.key === 'Control') {
-    modeChordArmed = false
-    cycleMode()
   }
 }
 
@@ -1021,11 +1069,17 @@ let unsubPlanSaved: (() => void) | null = null
 let unsubQuestion: (() => void) | null = null
 let unsubTokens: (() => void) | null = null
 
+const closePopovers = (): void => {
+  modePopoverOpen.value = false
+  startersOpen.value = false
+}
+
 onMounted(() => {
   // Main owns the per-project mode — adopt it (never push the local mirror).
   refreshModeFromMain()
   agentsStore.init()
   initializeHistory()
+  document.addEventListener('click', closePopovers)
   unsubApproval = window.electron.ai.onApprovalRequest((request) => {
     pendingApproval.value = request
   })
@@ -1221,7 +1275,7 @@ async function sendMessage (): Promise<void> {
         content: response.content
       })
     } else {
-      throw new Error('AI returned an empty response')
+      throw new Error('Biscuit returned an empty response')
     }
     // Auto-scroll to bottom after response
     await nextTick()
@@ -1477,6 +1531,101 @@ async function sendMessage (): Promise<void> {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+/* Decision dock: waiting cards pinned above the input, never scrolled away. */
+.decision-dock {
+  max-height: 45vh;
+  overflow-y: auto;
+  padding: 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mode-chip-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.mode-popover {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 280px;
+  padding: 6px;
+  border: 1px solid var(--floatBorderColor, #ddd);
+  border-radius: 8px;
+  background: var(--floatBgColor, #fff);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.mode-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.mode-option:hover,
+.mode-option.active {
+  background: var(--floatHoverColor, rgba(120, 120, 120, 0.12));
+}
+
+.mode-option__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--editorColor, #444);
+}
+
+.mode-option__hint {
+  font-size: 11px;
+  color: var(--iconColor, #888);
+  line-height: 1.35;
+}
+
+.cmd-btn {
+  flex-shrink: 0;
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--floatBorderColor, #ddd);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--iconColor, #888);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.cmd-btn:hover {
+  color: var(--themeColor, #4a9bd9);
+  border-color: var(--themeColor, #4a9bd9);
+}
+
+.cmd-hint {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--iconColor, #aaa);
+  cursor: help;
+}
+
+.starters-popover {
+  z-index: 25;
 }
 
 .mode-line {

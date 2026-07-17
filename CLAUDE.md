@@ -313,10 +313,29 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   through AgentToolService.runForModel — the SAME proposal pipeline, so
   review queue/snapshots/mode gating are provider-independent. Claude
   Code built-ins (Bash/Read/Write/Edit/Web*) are disallowed; WordBird
-  roles map to SDK subagents (Task); DESTRUCTIVE_TOOLS are deliberately
-  left OFF allowedTools so canUseTool gates them (bare allowedTools
-  entries shadow the callback). Env hygiene: ANTHROPIC_API_KEY/AUTH_TOKEN
-  stripped, pasted setup-token rides CLAUDE_CODE_OAUTH_TOKEN. Docs:
+  roles map to SDK subagents (Task) whose prompts carry the SAME per-turn
+  project brief LangGraph workers get (buildSdkAgents(mode, brief));
+  drafters additionally carry the SCENE HANDOFF doctrine driving the
+  get_scene_handoff tool (deterministic ContextBuilder tail — the SDK
+  analogue of the pushed LangGraph handoff). PARITY CONTRACT (pinned in
+  agent-sdk-runner.spec + tool-safety.spec): the SDK MAIN thread carries
+  exactly SUPERVISOR_TOOL_NAMES ∪ SUPERVISOR_WRITE_TOOL_NAMES (worker
+  tools stay registered for subagents; canUseTool DENIES them main-thread
+  via the SDK's agentID arg — absent = main thread); mid-run steering
+  drains at every invoke boundary as `[Writer, mid-run]:` lines (notes
+  missing the last boundary are RETAINED for the next turn with an
+  honest status, never silently dropped); max-turns exhaustion (yielded
+  error_max_turns result OR the runtime's thrown "maximum number of
+  turns" — both real shapes, live-pinned) maps to GraphRecursionError so
+  the "say continue" reply and book-run budget pause apply unchanged.
+  DESTRUCTIVE_TOOLS are deliberately left OFF allowedTools so canUseTool
+  gates them (bare allowedTools entries shadow the callback). The manager
+  broadcasts IAgentRuntimeCapabilities with connection state (all-false
+  for claude-code: perAgentControl/boundaryPause/manualCompact) — the
+  renderer hides per-agent pause/kill, pause-all, and the compact click
+  on managed runtimes instead of offering silent no-ops. Env hygiene:
+  ANTHROPIC_API_KEY/AUTH_TOKEN stripped, pasted setup-token rides
+  CLAUDE_CODE_OAUTH_TOKEN. Docs:
   docs/CLAUDE_SUBSCRIPTION.md; live spec
   test/live/claude-subscription.spec.ts (runs off a token OR a local
   Claude Code login).
@@ -354,12 +373,14 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   draft-next-scene with mandatory aftercare, extend, polish, health check)
   and spawn heuristics (do small things directly; spawn specialists for
   multi-unit work).
-- Tools (53): `main/services/ai/AgentToolHandlers.ts` (core file read/edit
+- Tools (54): `main/services/ai/AgentToolHandlers.ts` (core file read/edit
   + `propose_text_edit` — anchored exact-quote search/replace, the Aider
   SEARCH/REPLACE pattern, with occurrence disambiguation; the prompt-pinned
   path for surgical prose fixes, whole-file `propose_project_file_edit` is
   full-rewrites only), `NovelToolHandlers.ts` (structure/bible/summaries/
-  continuity/facts/history/revisions/plans/file management + `lint_prose` —
+  continuity/facts/history/revisions/plans/file management +
+  `get_scene_handoff` — the deterministic tail of the preceding scene via
+  ContextBuilder, in every role's READ_TOOLS + `lint_prose` —
   deterministic prose lint over a unit or file backed by
   `novel/ProseLint.ts`: doubled words/near-repeats/filler/filter-phrases/
   passive+adverb density/monotony/hygiene + banned terms parsed from

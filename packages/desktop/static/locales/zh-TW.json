@@ -302,7 +302,7 @@
       "biscuit": "Biscuit",
       "settings": "設定",
       "binder": "書稿",
-      "history": "歷史",
+      "history": "快照",
       "continuity": "連貫性",
       "agents": "代理",
       "entities": "實體"
@@ -601,7 +601,7 @@
       },
       "snapshotLimit": {
         "description": "快照歷史上限",
-        "notes": "每次儲存和 AI 編輯都會留版本。超過該數量後，較舊的快照會合併為基線以節省空間。0 表示永久保留全部。"
+        "notes": "每次儲存和 Biscuit 編輯都會留版本。超過該數量後，較舊的快照會合併為基線以節省空間。0 表示永久保留全部。"
       }
     },
     "editor": {
@@ -663,7 +663,6 @@
     "image": {
       "title": "圖片",
       "actions": {
-        "upload": "上傳到雲端",
         "folder": "複製到資料夾",
         "path": "使用絕對路徑"
       },
@@ -679,14 +678,6 @@
         "relativeFolderName": "相對資料夾名稱",
         "filenameNote": "檔案名稱將自動產生。"
       },
-      "imageInsertAction": {
-        "title": "圖片插入動作",
-        "folder": "上傳到資料夾",
-        "path": "複製到路徑",
-        "upload": "上傳到雲端",
-        "copyToFolder": "複製到資料夾",
-        "uploadToServer": "上傳到伺服器"
-      },
       "imageFolderPath": {
         "title": "圖片資料夾路徑",
         "description": "圖片資料夾路徑",
@@ -694,71 +685,9 @@
         "relativePath": "相對路徑",
         "absolutePath": "絕對路徑"
       },
-      "cloudPictureBed": {
-        "title": "雲端圖床",
-        "github": "GitHub",
-        "smms": "SM.MS",
-        "qiniu": "七牛",
-        "upyun": "又拍雲",
-        "tcyun": "騰訊雲",
-        "aliyun": "阿里雲",
-        "imgur": "Imgur",
-        "picgo": "PicGo"
-      },
       "preferRelativeDirectory": {
         "title": "偏好相對目錄",
         "description": "圖片偏好相對目錄"
-      },
-      "uploader": {
-        "title": "圖片上傳器",
-        "currentUploader": "目前上傳器:{name}",
-        "picgoNotInstalled": "PicGo 未安裝",
-        "picgoDetectionStatus": "PicGo 偵測狀態",
-        "picgoInstalled": "PicGo 已安裝",
-        "picgoDetectionFailed": "PicGo 偵測失敗",
-        "debugInfo": "除錯資訊",
-        "installCommand": "安裝命令",
-        "npmInstallCommand": "npm install picgo",
-        "yarnInstallCommand": "yarn add picgo",
-        "pnpmInstallCommand": "pnpm add picgo",
-        "chooseInstallMethod": "選擇安裝方法：",
-        "retestPicgo": "重新檢測",
-        "detecting": "檢測中…",
-        "lastDetectionTime": "上次檢測時間",
-        "detectionStatus": "檢測狀態",
-        "usageGuide": {
-          "title": "PicGo 基本使用說明",
-          "step1": "設定上傳器",
-          "step1Description": "使用以下命令設定 PicGo 上傳器：",
-          "step2": "上傳圖片",
-          "step2Description": "使用以下命令上傳圖片：",
-          "step3": "檢視設定",
-          "step3Description": "使用以下命令檢視目前設定：",
-          "documentation": "檢視完整文件"
-        },
-        "configureUploader": "設定上傳器",
-        "configureDescription": "使用以下命令設定 PicGo 上傳器：",
-        "uploadImage": "上傳圖片",
-        "uploadDescription": "使用以下命令上傳圖片：",
-        "viewConfig": "檢視設定",
-        "viewConfigDescription": "使用以下命令檢視目前設定：",
-        "viewDocumentation": "檢視完整文件",
-        "scriptDescription": "腳本描述",
-        "scriptLocation": "腳本位置",
-        "save": "儲存",
-        "saveConfig": "儲存設定",
-        "scriptConfigSaved": "腳本設定已儲存",
-        "services": {
-          "picgo": "PicGo",
-          "cliScript": "CLI 腳本"
-        },
-        "pleaseInstall": "請安裝",
-        "scriptPath": "腳本路徑",
-        "picgoDetection": "PicGo 偵測",
-        "autoDetection": "自動偵測中",
-        "lastSuccessTime": "上次成功時間",
-        "neverDetected": "從未偵測",
-        "neverSuccessful": "從未成功"
       },
       "defaultBehavior": "貼上或拖曳圖片到 WordBird 後的預設行為"
     },
@@ -1176,8 +1105,6 @@
       "errorLoadingTabTitle": "載入標籤頁發生錯誤",
       "errorLoadingTabMessage": "載入檔案變更時發生錯誤，因為找不到該標籤頁。",
       "mixedLineEndingsNormalized": "「{name}」含有混合換行字元，已自動正規化為 {lineEnding}。",
-      "imageDeletionUrlTitle": "圖片刪除連結",
-      "imageDeletionUrlMessage": "點擊將已上傳圖片的刪除連結複製到剪貼簿（{url}）。",
       "errorWhileSaving": "儲存時發生錯誤：{msg}",
       "exportSuccessTitle": "匯出成功",
       "exportSuccessMessage": "已成功匯出「{name}」！",
@@ -1495,9 +1422,9 @@
     "targetTip": "已完成目標字數的 {percent}%",
     "todayTip": "今日寫作字數",
     "save": "儲存",
-    "saveTip": "儲存所有開啟的檔案，並在歷史中記錄快照",
+    "saveTip": "儲存所有開啟的檔案，並記錄快照",
     "saveSnapshotMessage": "手動儲存",
-    "saved": "專案已儲存 — 快照已記錄到歷史。",
+    "saved": "專案已儲存 — 快照已記錄。",
     "actionFailed": "該變更未能儲存：{error}",
     "compileMd": "編譯為 Markdown",
     "compileEpub": "編譯為 EPUB（電子書）",
@@ -1511,19 +1438,19 @@
     "open": "開啟",
     "rename": "重新命名",
     "newFolder": "新增資料夾",
-    "deleteFileConfirm": "刪除 {name}？該檔案已在歷史快照中保存。"
+    "deleteFileConfirm": "刪除 {name}？快照中保留副本。"
   },
   "history": {
-    "title": "歷史",
+    "title": "快照",
     "placeholder": "為這一刻命名…",
-    "take": "儲存",
+    "take": "快照",
     "auto": "自動",
     "defaultMessage": "快照",
     "nothingToSave": "自上次快照以來沒有任何變更。",
-    "restore": "回溯",
-    "restoreConfirm": "將整個專案回溯到「{message}」？目前狀態會先儲存，隨時可以回來。",
-    "restored": "已回溯到「{message}」",
-    "empty": "還沒有快照。儲存一個，之後就能隨時回到此刻。"
+    "restore": "還原",
+    "restoreConfirm": "將整個專案還原到「{message}」？目前狀態會先儲存，隨時可以回來。",
+    "restored": "已還原到「{message}」",
+    "empty": "還沒有快照。拍一張，隨時輕鬆回到此刻。"
   },
   "views": {
     "page": "頁面",
@@ -1551,7 +1478,9 @@
     "pageTip": "寫作 — 書稿頁面",
     "corkboardTip": "軟木板 — 每個場景一張卡片",
     "outlineTip": "大綱 — 可編輯的場景表格",
-    "timelineTip": "時間軸 — 按故事時間排列的場景"
+    "timelineTip": "時間軸 — 按故事時間排列的場景",
+    "statusCycleTip": "狀態：{status} — 點擊循環 想法 → 草稿 → 修訂 → 完成",
+    "povPlaceholder": "視角"
   },
   "continuity": {
     "title": "連貫性",
@@ -1560,7 +1489,9 @@
     "revisions": "修訂",
     "analyzing": "正在分析影響…",
     "executing": "進行中",
-    "revisionProgress": "已更新 {done}/{total} 個場景"
+    "revisionProgress": "已更新 {done}/{total} 個場景",
+    "fixWithBiscuit": "讓 Biscuit 修復",
+    "fixPrompt": "修復這個連續性問題：{title} — {description}"
   },
   "biscuit": {
     "placeholder": "你的寫作夥伴。構思、起草、修改 — 你盡情創作，我來保持整部小說的連貫。",
@@ -1578,7 +1509,7 @@
     "send": "傳送",
     "disconnected": "未連線",
     "connected": "已連線",
-    "configureTip": "設定 AI",
+    "configureTip": "設定 Biscuit",
     "collapseTip": "收合 Biscuit",
     "expandTip": "展開 Biscuit",
     "modeCycleHint": "（ctrl+shift 切換）",
@@ -1587,7 +1518,7 @@
     "modeAsk": "詢問模式",
     "modeAskHint": "唯讀：Biscuit 只探索、搜尋和調查 — 無法編輯任何內容。",
     "modeAuto": "自動模式",
-    "modeAutoHint": "編輯自動套用 — 每批都有快照保護（可從歷史倒回）。",
+    "modeAutoHint": "編輯自動套用 — 每批都有快照保護（可從快照還原）。",
     "modeMax": "最大模式",
     "modeMaxHint": "長任務、更大預算；變更仍需審核。",
     "errorTitleAuth": "供應商拒絕了 Biscuit",
@@ -1599,7 +1530,7 @@
     "errorTitleGeneric": "發生了一些問題",
     "errorExplainGeneric": "Biscuit 未能完成該請求。重試通常有效；技術細節見下方。",
     "errorDetails": "技術細節",
-    "openSettings": "開啟 AI 設定",
+    "openSettings": "開啟 Biscuit 設定",
     "stopped": "已停止。",
     "contextTip": "對話記憶已用 {percent}% —— 快滿時 Biscuit 會自動壓縮較早的對話。",
     "contextTokens": "（{used} / {budget} 個 token。）",
@@ -1640,7 +1571,7 @@
     "idle": "閒置",
     "agentsRunning": "{count} 個執行中",
     "welcomeTitle": "你好，我是 Biscuit 🐦",
-    "welcomeConnect": "連接一個 AI 模型來喚醒我 — 本機（Ollama）或雲端，由你選擇。",
+    "welcomeConnect": "連接一個模型來喚醒我 — 本機（Ollama）或雲端，由你選擇。",
     "welcomeConfigure": "連接模型…",
     "starterBrainstorm": "為我的下一部小說腦力激盪一個前提",
     "starterStatus": "總結一下故事現在的進展",
@@ -1650,7 +1581,7 @@
     "deleteConversationConfirm": "刪除對話「{title}」？此操作無法復原。",
     "approvalCountdown": "{time} 後自動拒絕",
     "approvalTimedOut": "核准請求已逾時並被拒絕。",
-    "autoApplied": "已套用 {count} 處編輯 — 快照已儲存，可隨時從歷史倒回。",
+    "autoApplied": "已套用 {count} 處編輯 — 快照已儲存，可隨時從快照還原。",
     "detachTip": "在獨立視窗中開啟 Biscuit",
     "reattachTip": "將 Biscuit 放回編輯器",
     "modeApprovals": "核准模式",
@@ -1660,7 +1591,13 @@
     "stalledTitle": "模型沒有回應",
     "stalled": "已經有一段時間沒有任何回傳。執行可能已卡住——按「停止」取消（不會遺失任何內容），如果只是模型較慢也可以繼續等待。",
     "mentionHint": "引用場景或聖典頁面——↑↓選擇，Enter 插入",
-    "starterHealth": "執行專案健康檢查並修復不同步的地方"
+    "starterHealth": "執行專案健康檢查並修復不同步的地方",
+    "managedByRuntime": "由 Claude 執行環境管理 — 停止將中止全部執行。",
+    "contextManagedByRuntime": "上下文由 Claude 執行環境自動管理。",
+    "startersHint": "起步提示 — 點擊填入輸入框",
+    "mentionButtonTip": "引用場景或設定頁 (@)",
+    "startersButtonTip": "起步提示 (/)",
+    "historyHintTip": "在空輸入框按 ↑ 可叫出歷史輸入"
   },
   "review": {
     "pendingOne": "1 處待處理編輯",
@@ -1668,11 +1605,12 @@
     "applyAll": "全部套用",
     "discardAll": "全部捨棄",
     "applyOne": "套用此編輯",
-    "discardOne": "捨棄此編輯"
+    "discardOne": "捨棄此編輯",
+    "keyHint": "Ctrl+↵ 接受 · Ctrl+⌫ 拒絕 · +Shift = 全部"
   },
   "titleBar": {
     "save": "儲存",
-    "saveTip": "儲存 (Ctrl+S) — 每次儲存都會成為歷史中的快照",
+    "saveTip": "儲存 (Ctrl+S) — 每次儲存都會成為快照",
     "saved": "所有變更已儲存"
   },
   "entities": {

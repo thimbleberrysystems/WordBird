@@ -34,6 +34,7 @@ import type {
   IPlanProposal,
   ITokenUsageUpdate,
   IAgentStatus,
+  IAgentRuntimeCapabilities,
   AgentPermissionMode
 } from './langgraph'
 import type {
@@ -98,7 +99,6 @@ export interface IpcInvokeChannels {
   'mt::boot-info-async': { args: []; ret: BootInfo }
   'mt::clipboard::guess-file-path': { args: []; ret: string | null }
   'mt::clipboard::read-text': { args: []; ret: string }
-  'mt::cmd::exists': { args: [name: string]; ret: boolean }
   'mt::fonts::list': { args: []; ret: string[] }
   'mt::fs-trash-item': { args: [pathname: string]; ret: void }
   'mt::fs::copy': { args: [src: string, dest: string]; ret: void }
@@ -145,7 +145,12 @@ export interface IpcInvokeChannels {
   'mt::ai:get-mode': { args: []; ret: { mode: AgentPermissionMode } }
   'mt::ai:get-connection-state': {
     args: []
-    ret: { connected: boolean; provider: AIProvider | null; model: string | null }
+    ret: {
+      connected: boolean
+      provider: AIProvider | null
+      model: string | null
+      capabilities: IAgentRuntimeCapabilities
+    }
   }
   'mt::ai:approve': { args: [approvalId: string, approved: boolean]; ret: { handled: boolean } }
   'mt::ai:cancel-agent': { args: [agentId: string]; ret: { cancelled: boolean } }
@@ -227,7 +232,6 @@ export interface IpcInvokeChannels {
     args: [root: string, snapshotId: string]
     ret: ISnapshotActionResult
   }
-  'mt::uploader::upload': { args: [req: unknown]; ret: unknown }
   'mt::win::is-fullscreen': { args: []; ret: boolean }
   'mt::win::is-maximized': { args: []; ret: boolean }
   // Main derives the BrowserWindow via BrowserWindow.fromWebContents(e.sender);
@@ -407,7 +411,12 @@ export interface IpcMainEventChannels {
   'mt::ai:approval-resolved': [event: { id: string }]
   'mt::ai:biscuit-reattach': [event: Record<string, never>]
   'mt::ai:connection-state': [
-    state: { connected: boolean; provider: string | null; model: string | null }
+    state: {
+      connected: boolean
+      provider: string | null
+      model: string | null
+      capabilities: IAgentRuntimeCapabilities
+    }
   ]
   'mt::about-dialog': []
   'mt::ask-for-close': []

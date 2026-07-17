@@ -302,7 +302,7 @@
       "biscuit": "Biscuit",
       "settings": "Paramètres",
       "binder": "Manuscrit",
-      "history": "Historique",
+      "history": "Instantanés",
       "continuity": "Continuité",
       "agents": "Agents",
       "entities": "Entités"
@@ -601,7 +601,7 @@
       },
       "snapshotLimit": {
         "description": "Limite de l’historique des instantanés",
-        "notes": "Chaque enregistrement et modification de l’IA est versionné. Au-delà de cette limite, les anciens instantanés sont fusionnés en une base pour économiser l’espace. 0 conserve tout pour toujours."
+        "notes": "Chaque enregistrement et modification de Biscuit est versionné. Au-delà de cette limite, les anciens instantanés sont fusionnés en une base. 0 conserve tout pour toujours."
       }
     },
     "editor": {
@@ -663,7 +663,6 @@
     "image": {
       "title": "Image",
       "actions": {
-        "upload": "Télécharger vers le cloud",
         "folder": "Copier vers le dossier",
         "path": "Utiliser le chemin absolu"
       },
@@ -679,14 +678,6 @@
         "relativeFolderName": "Nom du dossier relatif",
         "filenameNote": "Le nom de fichier sera généré automatiquement."
       },
-      "imageInsertAction": {
-        "title": "Action d'insertion d'image",
-        "folder": "Télécharger vers le dossier",
-        "path": "Copier vers le chemin",
-        "upload": "Télécharger vers le cloud",
-        "copyToFolder": "Copier vers le dossier",
-        "uploadToServer": "Télécharger vers le serveur"
-      },
       "imageFolderPath": {
         "title": "Chemin du dossier d'images",
         "description": "Chemin du dossier d'images",
@@ -694,71 +685,9 @@
         "relativePath": "Chemin relatif",
         "absolutePath": "Chemin absolu"
       },
-      "cloudPictureBed": {
-        "title": "Hébergement d'images cloud",
-        "github": "GitHub",
-        "smms": "SM.MS",
-        "qiniu": "Qiniu",
-        "upyun": "UpYun",
-        "tcyun": "Tencent Cloud",
-        "aliyun": "Alibaba Cloud",
-        "imgur": "Imgur",
-        "picgo": "PicGo"
-      },
       "preferRelativeDirectory": {
         "title": "Préférer le répertoire relatif",
         "description": "Répertoire relatif préféré pour les images"
-      },
-      "uploader": {
-        "title": "Téléchargeur d'images",
-        "currentUploader": "Téléchargeur actuel : {name}",
-        "picgoNotInstalled": "PicGo non installé",
-        "picgoDetectionStatus": "Statut de détection PicGo",
-        "picgoInstalled": "PicGo installé",
-        "picgoDetectionFailed": "Échec de la détection PicGo",
-        "debugInfo": "Informations de débogage",
-        "installCommand": "Commande d'installation",
-        "npmInstallCommand": "npm install picgo -g",
-        "yarnInstallCommand": "yarn global add picgo",
-        "pnpmInstallCommand": "pnpm add -g picgo",
-        "chooseInstallMethod": "Choisir la méthode d'installation :",
-        "retestPicgo": "Retester",
-        "detecting": "Détection en cours...",
-        "lastDetectionTime": "Dernière détection",
-        "detectionStatus": "Statut de détection",
-        "usageGuide": {
-          "title": "Guide d'utilisation de base PicGo",
-          "step1": "Configurer l'uploader",
-          "step1Description": "Utilisez la commande suivante pour configurer l'uploader PicGo :",
-          "step2": "Télécharger des images",
-          "step2Description": "Utilisez la commande suivante pour télécharger des images :",
-          "step3": "Voir la configuration",
-          "step3Description": "Utilisez la commande suivante pour voir la configuration actuelle :",
-          "documentation": "Voir la documentation complète"
-        },
-        "configureUploader": "Configurer l'uploader",
-        "configureDescription": "Utilisez la commande suivante pour configurer l'uploader PicGo :",
-        "uploadImage": "Télécharger des images",
-        "uploadDescription": "Utilisez la commande suivante pour télécharger des images :",
-        "viewConfig": "Voir la configuration",
-        "viewConfigDescription": "Utilisez la commande suivante pour voir la configuration actuelle :",
-        "viewDocumentation": "Voir la documentation complète",
-        "scriptDescription": "Description du script",
-        "scriptLocation": "Emplacement du script",
-        "save": "Enregistrer",
-        "saveConfig": "Enregistrer la configuration",
-        "scriptConfigSaved": "Configuration du script enregistrée",
-        "services": {
-          "picgo": "PicGo",
-          "cliScript": "Script CLI"
-        },
-        "pleaseInstall": "Veuillez installer",
-        "scriptPath": "Chemin du script",
-        "picgoDetection": "Détection PicGo",
-        "autoDetection": "Détection automatique",
-        "lastSuccessTime": "Dernière heure de succès",
-        "neverDetected": "Jamais détecté",
-        "neverSuccessful": "Jamais réussi"
       },
       "defaultBehavior": "Comportement par défaut après avoir collé ou glissé une image dans WordBird"
     },
@@ -1176,8 +1105,6 @@
       "errorLoadingTabTitle": "Erreur lors du chargement de l’onglet",
       "errorLoadingTabMessage": "Une erreur s’est produite lors du chargement de la modification du fichier car l’onglet est introuvable.",
       "mixedLineEndingsNormalized": "« {name} » contient des fins de ligne mixtes qui ont été automatiquement normalisées en {lineEnding}.",
-      "imageDeletionUrlTitle": "URL de suppression de l’image",
-      "imageDeletionUrlMessage": "Cliquez pour copier dans le presse‑papiers l’URL de suppression de l’image téléversée ({url}).",
       "errorWhileSaving": "Une erreur s'est produite lors de l'enregistrement : {msg}",
       "exportSuccessTitle": "Exportation réussie",
       "exportSuccessMessage": "« {name} » a été exporté avec succès !",
@@ -1493,9 +1420,9 @@
     "targetTip": "{percent}% de votre objectif de mots",
     "todayTip": "Mots écrits aujourd’hui",
     "save": "Enregistrer",
-    "saveTip": "Enregistrer tous les fichiers ouverts et consigner un instantané dans l’Historique",
+    "saveTip": "Enregistrer tous les fichiers ouverts et consigner un instantané",
     "saveSnapshotMessage": "Enregistrement manuel",
-    "saved": "Projet enregistré — instantané consigné dans l’Historique.",
+    "saved": "Projet enregistré — instantané consigné.",
     "actionFailed": "Cette modification n'a pas été enregistrée : {error}",
     "compileMd": "Compiler en Markdown",
     "compileEpub": "Compiler en EPUB (livre numérique)",
@@ -1509,19 +1436,19 @@
     "open": "Ouvrir",
     "rename": "Renommer",
     "newFolder": "Nouveau dossier",
-    "deleteFileConfirm": "Supprimer {name} ? Le fichier est conservé dans l’historique."
+    "deleteFileConfirm": "Supprimer {name} ? Un instantané en conserve une copie."
   },
   "history": {
-    "title": "Historique",
+    "title": "Instantanés",
     "placeholder": "Nommez ce moment…",
-    "take": "Enregistrer",
+    "take": "Instantané",
     "auto": "auto",
     "defaultMessage": "Instantané",
     "nothingToSave": "Rien n’a changé depuis le dernier instantané.",
-    "restore": "Rembobiner",
-    "restoreConfirm": "Rembobiner tout le projet vers « {message} » ? Votre état actuel est d’abord sauvegardé.",
-    "restored": "Rembobiné vers « {message} »",
-    "empty": "Aucun instantané pour l’instant. Enregistrez-en un pour pouvoir revenir à ce moment."
+    "restore": "Restaurer",
+    "restoreConfirm": "Restaurer tout le projet vers « {message} » ? Votre état actuel est d’abord sauvegardé.",
+    "restored": "Restauré vers « {message} »",
+    "empty": "Aucun instantané pour l’instant. Prenez-en un pour revenir facilement à ce moment."
   },
   "views": {
     "page": "Page",
@@ -1549,7 +1476,9 @@
     "pageTip": "Écrire — la page du manuscrit",
     "corkboardTip": "Tableau de liège — chaque scène en carte",
     "outlineTip": "Plan — les scènes en tableau éditable",
-    "timelineTip": "Chronologie — les scènes dans le temps du récit"
+    "timelineTip": "Chronologie — les scènes dans le temps du récit",
+    "statusCycleTip": "Statut : {status} — cliquez pour passer idée → brouillon → révisé → final",
+    "povPlaceholder": "PDV"
   },
   "continuity": {
     "title": "Continuité",
@@ -1558,7 +1487,9 @@
     "revisions": "Révisions",
     "analyzing": "Cartographie de l’impact…",
     "executing": "En cours",
-    "revisionProgress": "{done} scènes sur {total} mises à jour"
+    "revisionProgress": "{done} scènes sur {total} mises à jour",
+    "fixWithBiscuit": "Corriger avec Biscuit",
+    "fixPrompt": "Corrige ce problème de continuité : {title} — {description}"
   },
   "biscuit": {
     "placeholder": "Votre compagnon d’écriture. Idéation, rédaction, révision — je garde tout le roman cohérent pendant que vous créez.",
@@ -1576,7 +1507,7 @@
     "send": "Envoyer",
     "disconnected": "Déconnecté",
     "connected": "Connecté",
-    "configureTip": "Configurer l’IA",
+    "configureTip": "Configurer Biscuit",
     "collapseTip": "Replier Biscuit",
     "expandTip": "Déplier Biscuit",
     "modeCycleHint": "(ctrl+maj pour changer)",
@@ -1585,7 +1516,7 @@
     "modeAsk": "mode question",
     "modeAskHint": "Lecture seule : Biscuit explore, cherche et se documente — rien ne peut être modifié.",
     "modeAuto": "mode auto",
-    "modeAutoHint": "Les modifications s’appliquent automatiquement — un instantané protège chaque lot.",
+    "modeAutoHint": "Les modifications s’appliquent automatiquement — un instantané protège chaque lot (restaurez depuis Instantanés).",
     "modeMax": "mode max",
     "modeMaxHint": "Tâches longues, budgets plus larges ; changements toujours relus.",
     "errorTitleAuth": "Le fournisseur a refusé Biscuit",
@@ -1597,7 +1528,7 @@
     "errorTitleGeneric": "Un problème est survenu",
     "errorExplainGeneric": "Biscuit n’a pas pu terminer la requête. Réessayer aide souvent ; les détails techniques sont ci-dessous.",
     "errorDetails": "Détails techniques",
-    "openSettings": "Ouvrir les réglages IA",
+    "openSettings": "Ouvrir les réglages de Biscuit",
     "stopped": "Arrêté.",
     "contextTip": "Mémoire de conversation remplie à {percent} % — Biscuit condense automatiquement les anciens échanges quand elle se remplit.",
     "contextTokens": "({used} sur {budget} jetons.)",
@@ -1638,7 +1569,7 @@
     "idle": "inactif",
     "agentsRunning": "{count} en cours",
     "welcomeTitle": "Bonjour, je suis Biscuit 🐦",
-    "welcomeConnect": "Connectez un modèle d’IA pour me donner vie — local (Ollama) ou cloud, à vous de choisir.",
+    "welcomeConnect": "Connectez un modèle pour me donner vie — local (Ollama) ou cloud, à vous de choisir.",
     "welcomeConfigure": "Connecter un modèle…",
     "starterBrainstorm": "Imaginer une prémisse pour mon prochain roman",
     "starterStatus": "Résumer où en est l’histoire actuellement",
@@ -1648,7 +1579,7 @@
     "deleteConversationConfirm": "Supprimer la conversation « {title} » ? Cette action est irréversible.",
     "approvalCountdown": "Refus automatique dans {time}",
     "approvalTimedOut": "La demande d’approbation a expiré et a été refusée.",
-    "autoApplied": "{count} modification(s) appliquée(s) — instantané enregistré, rembobinez depuis l’Historique à tout moment.",
+    "autoApplied": "{count} modification(s) appliquée(s) — instantané enregistré, restaurez depuis Instantanés à tout moment.",
     "detachTip": "Ouvrir Biscuit dans sa propre fenêtre",
     "reattachTip": "Ramener Biscuit dans l’éditeur",
     "modeApprovals": "mode approbations",
@@ -1658,7 +1589,13 @@
     "stalledTitle": "Aucune réponse du modèle",
     "stalled": "Rien ne revient depuis un moment. L'exécution est peut-être bloquée — appuyez sur Arrêter pour l'annuler (rien n'est perdu), ou continuez d'attendre si votre modèle est simplement lent.",
     "mentionHint": "Référencer une scène ou une page de la bible — ↑↓ pour choisir, Entrée pour insérer",
-    "starterHealth": "Fais un bilan de santé du projet et corrige ce qui n’est plus synchronisé"
+    "starterHealth": "Fais un bilan de santé du projet et corrige ce qui n’est plus synchronisé",
+    "managedByRuntime": "Géré par le runtime Claude — Arrêter interrompt tout.",
+    "contextManagedByRuntime": "Le contexte est géré automatiquement par le runtime Claude.",
+    "startersHint": "Suggestions de départ — cliquez pour remplir",
+    "mentionButtonTip": "Référencer une scène ou une page de la bible (@)",
+    "startersButtonTip": "Suggestions de départ (/)",
+    "historyHintTip": "↑ dans le champ vide rappelle vos messages précédents"
   },
   "review": {
     "pendingOne": "1 modification en attente",
@@ -1666,11 +1603,12 @@
     "applyAll": "Tout appliquer",
     "discardAll": "Tout rejeter",
     "applyOne": "Appliquer cette modification",
-    "discardOne": "Rejeter cette modification"
+    "discardOne": "Rejeter cette modification",
+    "keyHint": "Ctrl+↵ accepter · Ctrl+⌫ rejeter · +Maj = tout"
   },
   "titleBar": {
     "save": "Enregistrer",
-    "saveTip": "Enregistrer (Ctrl+S) — chaque enregistrement devient un instantané dans l’Historique",
+    "saveTip": "Enregistrer (Ctrl+S) — chaque enregistrement devient un instantané",
     "saved": "Toutes les modifications enregistrées"
   },
   "entities": {

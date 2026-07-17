@@ -302,7 +302,7 @@
       "biscuit": "Biscuit",
       "settings": "설정",
       "binder": "원고",
-      "history": "기록",
+      "history": "스냅샷",
       "continuity": "연속성",
       "agents": "에이전트",
       "entities": "엔티티"
@@ -601,7 +601,7 @@
       },
       "snapshotLimit": {
         "description": "스냅샷 히스토리 한도",
-        "notes": "모든 저장과 AI 편집이 버전 관리됩니다. 이 수를 초과하면 오래된 스냅샷이 기준선으로 합쳐집니다. 0은 모두 영구 보관."
+        "notes": "모든 저장과 Biscuit 편집이 버전 관리됩니다. 이 수를 초과하면 오래된 스냅샷이 기준선으로 합쳐집니다. 0은 모두 영구 보관."
       }
     },
     "editor": {
@@ -663,7 +663,6 @@
     "image": {
       "title": "이미지",
       "actions": {
-        "upload": "클라우드에 업로드",
         "folder": "폴더에 복사",
         "path": "절대 경로 사용"
       },
@@ -679,14 +678,6 @@
         "relativeFolderName": "상대 폴더 이름",
         "filenameNote": "파일 이름은 자동으로 생성됩니다."
       },
-      "imageInsertAction": {
-        "title": "이미지 삽입 동작",
-        "folder": "폴더에 업로드",
-        "path": "경로에 복사",
-        "upload": "클라우드에 업로드",
-        "copyToFolder": "폴더에 복사",
-        "uploadToServer": "서버에 업로드"
-      },
       "imageFolderPath": {
         "title": "이미지 폴더 경로",
         "description": "이미지 폴더 경로",
@@ -694,71 +685,9 @@
         "relativePath": "상대 경로",
         "absolutePath": "절대 경로"
       },
-      "cloudPictureBed": {
-        "title": "클라우드 이미지 저장소",
-        "github": "GitHub",
-        "smms": "SM.MS",
-        "qiniu": "Qiniu",
-        "upyun": "UpYun",
-        "tcyun": "Tencent Cloud",
-        "aliyun": "Alibaba Cloud",
-        "imgur": "Imgur",
-        "picgo": "PicGo"
-      },
       "preferRelativeDirectory": {
         "title": "상대 디렉터리 선호",
         "description": "이미지에 대해 상대 디렉터리 선호"
-      },
-      "uploader": {
-        "title": "이미지 업로더",
-        "currentUploader": "현재 업로더: {name}",
-        "picgoNotInstalled": "PicGo가 설치되지 않음",
-        "picgoDetectionStatus": "PicGo 감지 상태",
-        "picgoInstalled": "PicGo가 설치됨",
-        "picgoDetectionFailed": "PicGo 감지 실패",
-        "debugInfo": "디버그 정보",
-        "installCommand": "설치 명령",
-        "npmInstallCommand": "npm install picgo -g",
-        "yarnInstallCommand": "yarn global add picgo",
-        "pnpmInstallCommand": "pnpm add -g picgo",
-        "chooseInstallMethod": "설치 방법 선택:",
-        "retestPicgo": "다시 테스트",
-        "detecting": "감지 중...",
-        "lastDetectionTime": "마지막 감지 시간",
-        "detectionStatus": "감지 상태",
-        "usageGuide": {
-          "title": "PicGo 기본 사용 가이드",
-          "step1": "업로더 구성",
-          "step1Description": "다음 명령을 사용하여 PicGo 업로더를 구성하세요:",
-          "step2": "이미지 업로드",
-          "step2Description": "다음 명령을 사용하여 이미지를 업로드하세요:",
-          "step3": "구성 보기",
-          "step3Description": "다음 명령을 사용하여 현재 구성을 보세요:",
-          "documentation": "전체 문서 보기"
-        },
-        "configureUploader": "업로더 구성",
-        "configureDescription": "다음 명령을 사용하여 PicGo 업로더를 구성하세요:",
-        "uploadImage": "이미지 업로드",
-        "uploadDescription": "다음 명령을 사용하여 이미지를 업로드하세요:",
-        "viewConfig": "구성 보기",
-        "viewConfigDescription": "다음 명령을 사용하여 현재 구성을 보세요:",
-        "viewDocumentation": "전체 문서 보기",
-        "scriptDescription": "스크립트 설명",
-        "scriptLocation": "스크립트 위치",
-        "save": "저장",
-        "saveConfig": "구성 저장",
-        "scriptConfigSaved": "스크립트 구성 저장됨",
-        "services": {
-          "picgo": "PicGo",
-          "cliScript": "CLI 스크립트"
-        },
-        "pleaseInstall": "설치하세요",
-        "scriptPath": "스크립트 경로",
-        "picgoDetection": "PicGo 감지",
-        "autoDetection": "자동 감지 중",
-        "lastSuccessTime": "마지막 성공 시간",
-        "neverDetected": "감지된 적 없음",
-        "neverSuccessful": "성공한 적 없음"
       },
       "defaultBehavior": "이미지를 WordBird에 붙여넣거나 드래그한 후의 기본 동작"
     },
@@ -1176,8 +1105,6 @@
       "errorLoadingTabTitle": "탭 로드 오류",
       "errorLoadingTabMessage": "파일 변경을 로드하는 동안 오류가 발생했습니다. 탭을 찾을 수 없습니다.",
       "mixedLineEndingsNormalized": "“{name}”에 혼합 줄 끝이 포함되어 있으며 {lineEnding}(으)로 자동 정규화되었습니다.",
-      "imageDeletionUrlTitle": "이미지 삭제 URL",
-      "imageDeletionUrlMessage": "업로드된 이미지의 삭제 URL을 클립보드에 복사합니다 ({url}).",
       "errorWhileSaving": "저장 중 오류가 발생했습니다: {msg}",
       "exportSuccessTitle": "내보내기 성공",
       "exportSuccessMessage": "“{name}”을(를) 성공적으로 내보냈습니다!",
@@ -1493,9 +1420,9 @@
     "targetTip": "목표 단어 수의 {percent}%",
     "todayTip": "오늘 쓴 단어 수",
     "save": "저장",
-    "saveTip": "열려 있는 모든 파일을 저장하고 히스토리에 스냅샷을 기록",
+    "saveTip": "열려 있는 모든 파일을 저장하고 스냅샷을 기록",
     "saveSnapshotMessage": "수동 저장",
-    "saved": "프로젝트 저장됨 — 히스토리에 스냅샷이 기록되었습니다.",
+    "saved": "프로젝트 저장됨 — 스냅샷이 기록되었습니다.",
     "actionFailed": "변경 사항이 저장되지 않았습니다: {error}",
     "compileMd": "Markdown으로 컴파일",
     "compileEpub": "EPUB으로 컴파일 (전자책)",
@@ -1509,19 +1436,19 @@
     "open": "열기",
     "rename": "이름 바꾸기",
     "newFolder": "새 폴더",
-    "deleteFileConfirm": "{name}을(를) 삭제할까요? 파일은 히스토리에 스냅샷되어 있습니다."
+    "deleteFileConfirm": "{name}을(를) 삭제할까요? 스냅샷에 사본이 남습니다."
   },
   "history": {
-    "title": "기록",
+    "title": "스냅샷",
     "placeholder": "이 순간에 이름 붙이기…",
-    "take": "저장",
+    "take": "스냅샷",
     "auto": "자동",
     "defaultMessage": "스냅숏",
     "nothingToSave": "마지막 스냅숏 이후 변경 사항이 없습니다.",
-    "restore": "되감기",
-    "restoreConfirm": "프로젝트 전체를 \"{message}\"(으)로 되감을까요? 현재 상태가 먼저 저장됩니다.",
-    "restored": "\"{message}\"(으)로 되감았습니다",
-    "empty": "아직 스냅숏이 없습니다. 저장해 두면 언제든 이 순간으로 돌아올 수 있습니다."
+    "restore": "복원",
+    "restoreConfirm": "프로젝트 전체를 \"{message}\"(으)로 복원할까요? 현재 상태가 먼저 저장됩니다.",
+    "restored": "\"{message}\"(으)로 복원했습니다",
+    "empty": "아직 스냅샷이 없습니다. 하나 찍어 두면 이 순간으로 쉽게 돌아올 수 있습니다."
   },
   "views": {
     "page": "페이지",
@@ -1549,7 +1476,9 @@
     "pageTip": "집필 — 원고 페이지",
     "corkboardTip": "코르크보드 — 장면을 카드로",
     "outlineTip": "아웃라인 — 편집 가능한 표",
-    "timelineTip": "타임라인 — 이야기 시간 순 장면"
+    "timelineTip": "타임라인 — 이야기 시간 순 장면",
+    "statusCycleTip": "상태: {status} — 클릭하면 아이디어 → 초고 → 수정 → 완성 순환",
+    "povPlaceholder": "시점"
   },
   "continuity": {
     "title": "연속성",
@@ -1558,7 +1487,9 @@
     "revisions": "수정 작업",
     "analyzing": "영향 분석 중…",
     "executing": "진행 중",
-    "revisionProgress": "{total}개 장면 중 {done}개 업데이트됨"
+    "revisionProgress": "{total}개 장면 중 {done}개 업데이트됨",
+    "fixWithBiscuit": "Biscuit으로 고치기",
+    "fixPrompt": "이 연속성 문제를 고쳐 줘: {title} — {description}"
   },
   "biscuit": {
     "placeholder": "당신의 집필 동반자. 구상, 집필, 퇴고 — 당신이 창작하는 동안 소설 전체의 일관성을 지킵니다.",
@@ -1576,7 +1507,7 @@
     "send": "보내기",
     "disconnected": "연결 안 됨",
     "connected": "연결됨",
-    "configureTip": "AI 설정",
+    "configureTip": "Biscuit 설정",
     "collapseTip": "Biscuit 접기",
     "expandTip": "Biscuit 펼치기",
     "modeCycleHint": "(ctrl+shift로 전환)",
@@ -1585,7 +1516,7 @@
     "modeAsk": "질문 모드",
     "modeAskHint": "읽기 전용: Biscuit이 탐색·검색·조사만 하며 아무것도 편집할 수 없습니다.",
     "modeAuto": "자동 모드",
-    "modeAutoHint": "편집이 자동 적용됩니다 — 스냅샷이 각 배치를 보호합니다.",
+    "modeAutoHint": "편집이 자동 적용됩니다 — 스냅샷이 각 배치를 보호합니다(스냅샷에서 복원 가능).",
     "modeMax": "최대 모드",
     "modeMaxHint": "긴 작업, 더 큰 예산. 변경 사항은 여전히 검토됩니다.",
     "errorTitleAuth": "프로바이더가 Biscuit을 거부했습니다",
@@ -1597,7 +1528,7 @@
     "errorTitleGeneric": "문제가 발생했습니다",
     "errorExplainGeneric": "Biscuit이 요청을 완료하지 못했습니다. 다시 시도하면 해결되는 경우가 많습니다. 기술적 세부 정보는 아래에 있습니다.",
     "errorDetails": "기술적 세부 정보",
-    "openSettings": "AI 설정 열기",
+    "openSettings": "Biscuit 설정 열기",
     "stopped": "중지됨.",
     "contextTip": "대화 메모리 {percent}% 사용 중 — 가득 차면 Biscuit이 오래된 대화를 자동으로 요약합니다.",
     "contextTokens": "({used} / {budget} 토큰.)",
@@ -1638,7 +1569,7 @@
     "idle": "대기",
     "agentsRunning": "{count}개 실행 중",
     "welcomeTitle": "안녕하세요, Biscuit입니다 🐦",
-    "welcomeConnect": "AI 모델을 연결해 주세요 — 로컬(Ollama)이든 클라우드든 자유롭게 선택하세요.",
+    "welcomeConnect": "모델을 연결해 주세요 — 로컬(Ollama)이든 클라우드든 자유롭게 선택하세요.",
     "welcomeConfigure": "모델 연결…",
     "starterBrainstorm": "다음 소설의 전제를 브레인스토밍해 줘",
     "starterStatus": "지금 이야기가 어디까지 왔는지 요약해 줘",
@@ -1648,7 +1579,7 @@
     "deleteConversationConfirm": "대화 “{title}”을(를) 삭제할까요? 되돌릴 수 없습니다.",
     "approvalCountdown": "{time} 후 자동 거절됩니다",
     "approvalTimedOut": "승인 요청이 시간 초과되어 거절되었습니다.",
-    "autoApplied": "{count}개 편집 적용됨 — 스냅샷 저장됨, 언제든 히스토리에서 되돌릴 수 있습니다.",
+    "autoApplied": "{count}개 편집 적용됨 — 스냅샷 저장됨, 언제든 스냅샷에서 복원할 수 있습니다.",
     "detachTip": "Biscuit을 별도 창으로 열기",
     "reattachTip": "Biscuit을 편집기로 되돌리기",
     "modeApprovals": "승인 모드",
@@ -1658,7 +1589,13 @@
     "stalledTitle": "모델에서 응답이 없습니다",
     "stalled": "한동안 아무 응답이 없습니다. 실행이 멈췄을 수 있습니다. 중지를 눌러 취소하거나(손실 없음), 모델이 느린 것뿐이라면 계속 기다리세요.",
     "mentionHint": "장면 또는 바이블 페이지 참조 — ↑↓ 선택, Enter 삽입",
-    "starterHealth": "프로젝트 상태 점검을 실행하고 어긋난 부분을 고쳐줘"
+    "starterHealth": "프로젝트 상태 점검을 실행하고 어긋난 부분을 고쳐줘",
+    "managedByRuntime": "Claude 런타임이 관리합니다 — 중지하면 전체가 멈춥니다.",
+    "contextManagedByRuntime": "컨텍스트는 Claude 런타임이 자동으로 관리합니다.",
+    "startersHint": "시작 프롬프트 — 클릭하면 입력창에 채워집니다",
+    "mentionButtonTip": "장면이나 설정집 페이지 참조 (@)",
+    "startersButtonTip": "시작 프롬프트 (/)",
+    "historyHintTip": "빈 입력창에서 ↑ 를 누르면 이전 입력을 불러옵니다"
   },
   "review": {
     "pendingOne": "대기 중인 편집 1개",
@@ -1666,11 +1603,12 @@
     "applyAll": "모두 적용",
     "discardAll": "모두 취소",
     "applyOne": "이 편집 적용",
-    "discardOne": "이 편집 취소"
+    "discardOne": "이 편집 취소",
+    "keyHint": "Ctrl+↵ 수락 · Ctrl+⌫ 거절 · +Shift = 전체"
   },
   "titleBar": {
     "save": "저장",
-    "saveTip": "저장 (Ctrl+S) — 저장할 때마다 히스토리의 스냅샷이 됩니다",
+    "saveTip": "저장 (Ctrl+S) — 저장할 때마다 스냅샷이 됩니다",
     "saved": "모든 변경 사항 저장됨"
   },
   "entities": {
