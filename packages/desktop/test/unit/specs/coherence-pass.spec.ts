@@ -13,10 +13,13 @@ import {
   acceptancePrepend,
   coherenceInstruction,
   driveCoherencePass,
+  driveResearchBackstop,
   emptyObservations,
   markSteward,
+  observeResearchTool,
   observeWrite,
   shouldEnforceCoherence,
+  shouldEnforceResearchSave,
   writesSinceSteward,
   type TurnObservations
 } from '../../../src/main/services/ai/coherencePass'
@@ -131,6 +134,49 @@ describe('acceptancePrepend (approvals-mode trigger)', () => {
       acceptancePrepend(note('REJECTED (NOT applied — do not assume this content exists): a.md'))
     ).toBeNull()
     expect(acceptancePrepend(null)).toBeNull()
+  })
+})
+
+describe('research-persistence backstop', () => {
+  const withResearch = (reads: number, saved: boolean): TurnObservations => {
+    const observations = emptyObservations()
+    for (let i = 0; i < reads; i++) observeResearchTool(observations, 'wiki_read')
+    if (saved) observeResearchTool(observations, 'save_research')
+    return observations
+  }
+
+  it('fires after real research with no save; stays quiet otherwise', () => {
+    expect(shouldEnforceResearchSave(withResearch(3, false))).toBe(true)
+    expect(shouldEnforceResearchSave(withResearch(2, false))).toBe(false)
+    expect(shouldEnforceResearchSave(withResearch(5, true))).toBe(false)
+    expect(shouldEnforceResearchSave(emptyObservations())).toBe(false)
+  })
+
+  it('counts every research tool; non-research tools never count', () => {
+    const observations = emptyObservations()
+    for (const tool of ['web_search', 'web_fetch', 'wiki_search', 'wiki_read']) {
+      observeResearchTool(observations, tool)
+    }
+    observeResearchTool(observations, 'read_unit')
+    observeResearchTool(observations, 'list_structure')
+    expect(observations.webReads).toBe(4)
+  })
+
+  it('runs exactly one follow-up demanding save_research', async() => {
+    const invokeNext = vi.fn().mockResolvedValue('Saved: elam-political-history.md')
+    const emitStatus = vi.fn()
+    const reply = await driveResearchBackstop(withResearch(4, false), { invokeNext, emitStatus })
+    expect(reply).toContain('Saved')
+    expect(invokeNext).toHaveBeenCalledTimes(1)
+    const instruction = String(invokeNext.mock.calls[0][0])
+    expect(instruction).toContain('save_research')
+    expect(instruction).toContain('automated harness enforcement')
+    expect(instruction).toContain('4 web lookups')
+
+    // Already-saved turns get nothing.
+    invokeNext.mockClear()
+    expect(await driveResearchBackstop(withResearch(4, true), { invokeNext, emitStatus })).toBe('')
+    expect(invokeNext).not.toHaveBeenCalled()
   })
 })
 

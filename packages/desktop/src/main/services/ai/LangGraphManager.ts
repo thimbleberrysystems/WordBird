@@ -44,8 +44,10 @@ import {
   STEWARD_SIGNAL_TOOLS,
   acceptancePrepend,
   driveCoherencePass,
+  driveResearchBackstop,
   emptyObservations,
   markSteward,
+  observeResearchTool,
   observeWrite,
   type TurnObservations
 } from './coherencePass'
@@ -561,6 +563,7 @@ export class LangGraphManager {
       // successful tool run lands here — LangGraph workers, SDK Task
       // subagents (invisible to activity events), renderer executeTool.
       this._agentToolService.setToolRunObserver(({ toolName, args }) => {
+        observeResearchTool(this._turnObservations, toolName)
         if (WRITE_TOOL_EVENT_NAMES.has(toolName)) {
           const detail = ['path', 'unitId', 'title', 'name']
             .map((key) => args[key])
@@ -952,6 +955,23 @@ export class LangGraphManager {
 
       // Mechanical coherence pass (auto mode): if this turn changed 2+
       // things and no steward ran, ONE bounded follow-up runs the sweep.
+      // Research done this turn must not evaporate: if web lookups
+      // happened and nothing was saved, ONE bounded follow-up demands the
+      // save_research (doctrine made mechanical, all modes). Never after
+      // Stop.
+      const researchReply = signal?.aborted
+        ? ''
+        : await driveResearchBackstop(this._turnObservations, {
+          invokeNext: async(instruction) => {
+            const followUp = await invokeOnce([new HumanMessage(instruction)])
+            return this._extractResponseContent(followUp)
+          },
+          emitStatus: (label, detail) => this._emitBookRunStatus(label, detail)
+        })
+      if (researchReply) {
+        content = `${content}\n\n${researchReply}`
+      }
+
       // STOP means stop: an aborted turn never gets a coherence follow-up
       // (a fresh invoke after abort would resurrect the run — the L3
       // health brief line carries the debt to the next turn instead).

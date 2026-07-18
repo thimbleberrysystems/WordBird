@@ -488,6 +488,24 @@ describe('web content cache (research is never re-downloaded)', () => {
     expect(fresh.repeatRead).toBeUndefined()
   })
 
+  it('identical searches within a turn are memoized (one network call + nudge)', async() => {
+    mockedGet.mockResolvedValue(
+      okHtml('<a class="result__a" href="https://memo.example.com/hit">Hit</a>')
+    )
+    await runRooted('web_search', { query: 'Elam ancient civilization' })
+    const second = (await runRooted('web_search', {
+      query: '  elam ANCIENT civilization '
+    })) as { cached?: boolean; note?: string; results: Array<{ url: string }> }
+    expect(second.cached).toBe(true)
+    expect(second.note).toMatch(/2 times this turn/i)
+    expect(second.results[0].url).toContain('memo.example.com')
+    expect(mockedGet).toHaveBeenCalledTimes(1)
+    // A new turn searches live again.
+    resetWebReadCounts()
+    await runRooted('web_search', { query: 'Elam ancient civilization' })
+    expect(mockedGet).toHaveBeenCalledTimes(2)
+  })
+
   it('parallel identical fetches share ONE network call (in-flight coalescing)', async() => {
     registerUrlProvenance('https://cache.example.com/parallel')
     let resolveResponse: (value: unknown) => void = () => {}

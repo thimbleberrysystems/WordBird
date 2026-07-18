@@ -110,8 +110,15 @@ const capCachedText = <T extends Record<string, unknown>>(entry: T): T => {
 // content has not changed. Reset per writer turn by LangGraphManager.
 const turnReadCounts = new Map<string, number>()
 
+// Identical SEARCH queries repeat constantly inside one turn (weak models
+// re-search instead of re-reading their own results). Search results are
+// too volatile for the disk cache, but within a single writer turn the
+// first answer is the answer — memoized here, cleared with the counters.
+const turnSearchCache = new Map<string, Record<string, unknown>>()
+
 export const resetWebReadCounts = (): void => {
   turnReadCounts.clear()
+  turnSearchCache.clear()
 }
 
 const withRepeatReadNote = <T extends Record<string, unknown>>(key: string, result: T): T => {
@@ -548,6 +555,17 @@ const webSearch = async(
   const query = str(args, 'query')
   const maxResults = Math.min(optInt(args, 'maxResults') ?? 5, 10)
 
+  const memoKey = `search:${query.toLowerCase().replace(/\s+/g, ' ').trim()}`
+  const memoized = turnSearchCache.get(memoKey)
+  if (memoized) {
+    const memoResults = ((memoized.results as Array<{ url: string }> | undefined) ?? []).slice(
+      0,
+      maxResults
+    )
+    for (const result of memoResults) rememberUrl(result.url)
+    return withRepeatReadNote(memoKey, { ...memoized, results: memoResults, cached: true })
+  }
+
   const response = await getWithRetry('https://html.duckduckgo.com/html/', {
     params: { q: query },
     timeout: FETCH_TIMEOUT_MS,
@@ -558,7 +576,7 @@ const webSearch = async(
 
   const results = parseDuckDuckGoHtml(String(response.data ?? '')).slice(0, maxResults)
   for (const result of results) rememberUrl(result.url)
-  return {
+  const payload = {
     query,
     results,
     note:
@@ -566,6 +584,8 @@ const webSearch = async(
         ? 'No results parsed. Try a simpler query, or use web_fetch on a known URL.'
         : undefined
   }
+  turnSearchCache.set(memoKey, payload)
+  return withRepeatReadNote(memoKey, payload)
 }
 
 // ---- Wikipedia (structured research, keyless REST API) ----
@@ -588,6 +608,15 @@ const wikiSearch = async(
   const lang = sanitizeWikiLang(optStrLocal(args, 'lang'))
   const limit = Math.min(optInt(args, 'maxResults') ?? 5, 10)
 
+  const memoKey = `wikisearch:${lang}:${query.toLowerCase().replace(/\s+/g, ' ').trim()}`
+  const memoized = turnSearchCache.get(memoKey)
+  if (memoized) {
+    for (const result of (memoized.results as Array<{ url: string }> | undefined) ?? []) {
+      rememberUrl(result.url)
+    }
+    return withRepeatReadNote(memoKey, { ...memoized, cached: true })
+  }
+
   const response = await getWithRetry(
     `https://${lang}.wikipedia.org/w/rest.php/v1/search/page`,
     {
@@ -606,11 +635,9 @@ const wikiSearch = async(
     url: `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(String(p.key ?? p.title ?? ''))}`
   }))
   for (const result of results) rememberUrl(result.url)
-  return {
-    query,
-    lang,
-    results
-  }
+  const payload = { query, lang, results }
+  turnSearchCache.set(memoKey, payload)
+  return withRepeatReadNote(memoKey, payload)
 }
 
 const wikiRead = async(

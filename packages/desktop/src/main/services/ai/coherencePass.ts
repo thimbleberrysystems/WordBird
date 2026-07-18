@@ -54,6 +54,17 @@ export const STEWARD_FIX_TOOLS = new Set([
   'record_fact'
 ])
 
+/** Web research reads — the inputs the save-backstop counts. */
+export const RESEARCH_TOOL_NAMES = new Set([
+  'web_search',
+  'web_fetch',
+  'wiki_search',
+  'wiki_read'
+])
+
+/** This many web lookups without a save = research about to evaporate. */
+export const RESEARCH_BACKSTOP_MIN_READS = 3
+
 export interface TurnObservations {
   /** Every write observed this turn, in order (tool + short label). */
   writes: Array<{ tool: string; label: string }>
@@ -62,12 +73,24 @@ export interface TurnObservations {
    * (null = no steward ran this turn).
    */
   stewardMark: number | null
+  /** Web lookups this turn (search/fetch/wiki). */
+  webReads: number
+  /** Did anything durable land in bible/research/ this turn? */
+  researchSaved: boolean
 }
 
 export const emptyObservations = (): TurnObservations => ({
   writes: [],
-  stewardMark: null
+  stewardMark: null,
+  webReads: 0,
+  researchSaved: false
 })
+
+/** Feed every successful tool run through this for the save-backstop. */
+export const observeResearchTool = (observations: TurnObservations, tool: string): void => {
+  if (RESEARCH_TOOL_NAMES.has(tool)) observations.webReads += 1
+  if (tool === 'save_research') observations.researchSaved = true
+}
 
 export const observeWrite = (
   observations: TurnObservations,
@@ -141,6 +164,33 @@ export interface CoherencePassDeps {
   /** One bounded follow-up turn; returns the model's reply text. */
   invokeNext: (instruction: string) => Promise<string>
   emitStatus: (label: string, detail?: string) => void
+}
+
+/**
+ * Research-persistence backstop: doctrine says researchers ALWAYS save;
+ * this makes it a guarantee. A turn with real web research and no
+ * save_research gets ONE bounded follow-up demanding the save (works in
+ * every mode — save_research is ask-legal by design).
+ */
+export const shouldEnforceResearchSave = (observations: TurnObservations): boolean =>
+  observations.webReads >= RESEARCH_BACKSTOP_MIN_READS && !observations.researchSaved
+
+export const researchSaveInstruction = (webReads: number): string =>
+  '[RESEARCH PERSISTENCE — automated harness enforcement, not the writer] This turn made ' +
+  `${webReads} web lookups but saved NOTHING — unsaved research evaporates with the ` +
+  'conversation. Call save_research NOW (title, synthesized findings, source URLs). One ' +
+  'note per distinct topic. Then STOP — no new work.'
+
+export const driveResearchBackstop = async(
+  observations: TurnObservations,
+  deps: CoherencePassDeps
+): Promise<string> => {
+  if (!shouldEnforceResearchSave(observations)) return ''
+  deps.emitStatus(
+    'Saving research',
+    `${observations.webReads} web lookups this turn — making the findings durable`
+  )
+  return await deps.invokeNext(researchSaveInstruction(observations.webReads))
 }
 
 /**
