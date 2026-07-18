@@ -259,6 +259,10 @@ export class AgentToolService {
       // Tools with their own repeat handling (web cache/memo/budget)
       // already speak for themselves — detected by RESULT SHAPE, never a
       // tool-name list, so future bespoke tools are exempt automatically.
+      // This exemption is safe because the web layer HARD-stops on its
+      // own: past MAX_SAME_TARGET_READS the content is withheld
+      // entirely (repeatBlocked), so deferring here cannot leave a
+      // loop with no teeth.
       if ('repeatRead' in shaped || 'budgetExhausted' in shaped || 'cached' in shaped) {
         return result
       }

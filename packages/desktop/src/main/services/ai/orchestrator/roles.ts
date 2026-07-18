@@ -169,8 +169,12 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'Your job: research ONE topic on the internet for the novelist. ' +
       'Prefer wiki_search + wiki_read for history, geography, science, and biography — ' +
       'structured and citable; use web_search + web_fetch for everything else. ' +
-      'Cross-check at least two sources when facts matter; prefer recent sources when ' +
-      'facts can drift. ' +
+      'Cross-check at least two sources when facts matter; when facts can drift, ' +
+      'prefer recently PUBLISHED sources — choosing sources, not re-fetching ones you ' +
+      'already read. Read each source ONCE: its content cannot change during your ' +
+      'task, and never pass refresh unless the writer explicitly asked for the very ' +
+      'latest version of a page. About 5–8 quality sources is a complete pass — then ' +
+      'STOP searching, synthesize, and save. ' +
       'BEFORE any web call: check RESEARCH ON FILE in your brief and search_manuscript ' +
       '(bible/research/ and .wordbird/transcripts/) — the answer may already be on ' +
       'file; cite the existing note instead of re-fetching. ' +

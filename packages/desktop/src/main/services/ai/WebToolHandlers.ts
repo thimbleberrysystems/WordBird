@@ -104,11 +104,44 @@ const capCachedText = <T extends Record<string, unknown>>(entry: T): T => {
 }
 
 // ---- Same-page re-read thrash guard -----------------------------------------
-// Weak models re-read the same page over and over inside one turn (the
+// Models re-read the same page over and over inside one turn (the
 // cache makes it cheap, but every read still burns worker steps and
-// context). Repeat reads get an escalating nudge telling the model the
-// content has not changed. Reset per writer turn by LangGraphManager.
+// context). Repeat reads get a nudge first, then a HARD stop — notes
+// alone are demonstrably ignored (live: one page read 6× in a single
+// turn, several with refresh:true). Reset per writer turn by
+// LangGraphManager.
 const turnReadCounts = new Map<string, number>()
+
+// The cap is 4, not lower: the counter is shared by ALL parallel
+// subagents (per-subagent attribution is impossible on the SDK path,
+// where tool calls carry no agent identity), so a couple of legitimate
+// cross-agent reads of one page must survive before the teeth bite.
+export const MAX_SAME_TARGET_READS = 4
+
+// refresh:true is honored once per target per turn — reference content
+// cannot change mid-session, and live runs showed models spamming
+// refresh to bypass the cache. Later refreshes serve the cache.
+const turnRefreshUsed = new Set<string>()
+
+/** Count a read of `key`, returning the new count. Called ONCE per
+ * handler invocation, at entry — before cache, coalesce, or network. */
+const trackRead = (key: string): number => {
+  const count = (turnReadCounts.get(key) ?? 0) + 1
+  turnReadCounts.set(key, count)
+  return count
+}
+
+/** Past the cap the content is WITHHELD: no network, no budget, no
+ * payload — only the instruction to synthesize or move on. */
+const repeatBlocked = (target: string, reads: number): Record<string, unknown> => ({
+  repeatBlocked: true,
+  target,
+  reads,
+  note:
+    `"${target}" has been read ${reads} times this turn (all agents share this ` +
+    'counter) — its content has not changed and is withheld. Synthesize from ' +
+    'earlier results and save_research your findings, or consult a DIFFERENT source.'
+})
 
 // Identical SEARCH queries repeat constantly inside one turn (weak models
 // re-search instead of re-reading their own results). Search results are
@@ -138,20 +171,22 @@ const consumeLookupBudget = (): Record<string, unknown> | null => {
 export const resetWebReadCounts = (): void => {
   turnReadCounts.clear()
   turnSearchCache.clear()
+  turnRefreshUsed.clear()
   turnLiveLookups = 0
 }
 
+/** Advisory note for repeats 2..MAX (note-only — trackRead at handler
+ * entry did the counting; the hard stop lives there too). */
 const withRepeatReadNote = <T extends Record<string, unknown>>(key: string, result: T): T => {
-  const count = (turnReadCounts.get(key) ?? 0) + 1
-  turnReadCounts.set(key, count)
+  const count = turnReadCounts.get(key) ?? 1
   if (count <= 1) return result
   return {
     ...result,
     repeatRead: count,
     note:
-      `You have read this exact page ${count} times this turn — its content does not ` +
-      'change. Synthesize from what you already have (and save_research your findings) ' +
-      'instead of re-reading.'
+      `This exact page has been read ${count} times this turn (all agents share the ` +
+      'counter) — its content does not change. Synthesize from what you already have ' +
+      '(and save_research your findings) instead of re-reading.'
   }
 }
 
@@ -451,10 +486,24 @@ const webFetch = async(
   // provenance guards is unreachable, and the content was obtained under
   // provenance when first fetched. Cache MISSES take the full pipeline.
   const cacheId = normalizeUrl(rawUrl)
-  if (args.refresh !== true && cacheId) {
+  const reads = trackRead(`fetch:${cacheId ?? rawUrl}`)
+  if (reads > MAX_SAME_TARGET_READS) return repeatBlocked(rawUrl, reads)
+
+  const refreshRequested = args.refresh === true
+  const refreshHonored =
+    refreshRequested && cacheId !== null && !turnRefreshUsed.has(`fetch:${cacheId}`)
+  if (refreshHonored && cacheId) turnRefreshUsed.add(`fetch:${cacheId}`)
+  if (!refreshHonored && cacheId) {
     const cached = readWebCache(context.projectRoot, 'fetch', cacheId)
     if (cached) {
-      return withRepeatReadNote(`fetch:${cacheId}`, { ...capCachedText(cached), cached: true })
+      const hit: Record<string, unknown> = { ...capCachedText(cached), cached: true }
+      if (refreshRequested) {
+        hit.refreshIgnored = true
+        hit.note =
+          'refresh was already used for this page this turn — the content cannot ' +
+          'have changed; served from cache.'
+      }
+      return withRepeatReadNote(`fetch:${cacheId}`, hit)
     }
   }
 
@@ -578,6 +627,8 @@ const webSearch = async(
   const maxResults = Math.min(optInt(args, 'maxResults') ?? 5, 10)
 
   const memoKey = `search:${query.toLowerCase().replace(/\s+/g, ' ').trim()}`
+  const reads = trackRead(memoKey)
+  if (reads > MAX_SAME_TARGET_READS) return repeatBlocked(query, reads)
   const memoized = turnSearchCache.get(memoKey)
   if (memoized) {
     const memoResults = ((memoized.results as Array<{ url: string }> | undefined) ?? []).slice(
@@ -634,6 +685,8 @@ const wikiSearch = async(
   const limit = Math.min(optInt(args, 'maxResults') ?? 5, 10)
 
   const memoKey = `wikisearch:${lang}:${query.toLowerCase().replace(/\s+/g, ' ').trim()}`
+  const reads = trackRead(memoKey)
+  if (reads > MAX_SAME_TARGET_READS) return repeatBlocked(query, reads)
   const memoized = turnSearchCache.get(memoKey)
   if (memoized) {
     for (const result of (memoized.results as Array<{ url: string }> | undefined) ?? []) {
@@ -676,11 +729,24 @@ const wikiRead = async(
   const lang = sanitizeWikiLang(optStrLocal(args, 'lang'))
 
   const cacheId = `wiki:${lang}:${title.toLowerCase()}`
-  if (args.refresh !== true) {
+  const reads = trackRead(cacheId)
+  if (reads > MAX_SAME_TARGET_READS) return repeatBlocked(title, reads)
+
+  const refreshRequested = args.refresh === true
+  const refreshHonored = refreshRequested && !turnRefreshUsed.has(cacheId)
+  if (refreshHonored) turnRefreshUsed.add(cacheId)
+  if (!refreshHonored) {
     const cached = readWebCache(context.projectRoot, 'wiki', cacheId)
     if (cached) {
       if (typeof cached.url === 'string') rememberUrl(cached.url)
-      return withRepeatReadNote(cacheId, { ...capCachedText(cached), cached: true })
+      const hit: Record<string, unknown> = { ...capCachedText(cached), cached: true }
+      if (refreshRequested) {
+        hit.refreshIgnored = true
+        hit.note =
+          'refresh was already used for this page this turn — the content cannot ' +
+          'have changed; served from cache.'
+      }
+      return withRepeatReadNote(cacheId, hit)
     }
   }
 

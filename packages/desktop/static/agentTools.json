@@ -960,7 +960,7 @@
           },
           "refresh": {
             "type": "boolean",
-            "description": "Bypass the 7-day content cache and fetch live (only when freshness matters)."
+            "description": "Bypass the 7-day cache and fetch live. Almost never needed — reference content does not change mid-session; use ONLY when the writer explicitly asks for the newest version of a page. Honored once per page per turn."
           }
         },
         "required": [
@@ -1491,7 +1491,7 @@
           },
           "refresh": {
             "type": "boolean",
-            "description": "Bypass the 7-day content cache and fetch live (only when freshness matters)."
+            "description": "Bypass the 7-day cache and fetch live. Almost never needed — reference content does not change mid-session; use ONLY when the writer explicitly asks for the newest version of a page. Honored once per page per turn."
           }
         },
         "required": [

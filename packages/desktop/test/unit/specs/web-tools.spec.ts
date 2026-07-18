@@ -20,6 +20,7 @@ import {
   registerWebAgentToolHandlers,
   resetWebReadCounts,
   MAX_KNOWN_URLS,
+  MAX_SAME_TARGET_READS,
   WEB_CACHE_TTL_MS,
   WEB_RETRY_DELAYS_MS,
   WEB_TURN_LOOKUP_BUDGET
@@ -507,6 +508,127 @@ describe('web content cache (research is never re-downloaded)', () => {
     expect(mockedGet).toHaveBeenCalledTimes(2)
   })
 
+  it('HARD STOP: past the cap the content is withheld — no payload, no network', async() => {
+    // Notes alone are demonstrably ignored (live: one page read 6× in a
+    // turn). Reads 2..MAX get the advisory note WITH content; past MAX
+    // the text is withheld entirely and nothing touches the network.
+    const article = {
+      status: 200,
+      headers: {},
+      data: { query: { pages: { 1: { title: 'Inshushinak', extract: 'Elamite god.' } } } }
+    }
+    mockedGet.mockResolvedValue(article)
+    for (let i = 1; i <= MAX_SAME_TARGET_READS; i++) {
+      const result = (await runRooted('wiki_read', { title: 'Inshushinak' })) as {
+        text?: string
+        repeatRead?: number
+        repeatBlocked?: boolean
+      }
+      expect(result.repeatBlocked, `read ${i}`).toBeUndefined()
+      expect(result.text, `read ${i}`).toContain('Elamite god')
+      if (i >= 2) expect(result.repeatRead, `read ${i}`).toBe(i)
+    }
+    expect(mockedGet).toHaveBeenCalledTimes(1) // reads 2..MAX were cache hits
+
+    const blocked = (await runRooted('wiki_read', { title: 'Inshushinak' })) as {
+      repeatBlocked?: boolean
+      reads?: number
+      text?: string
+      note?: string
+    }
+    expect(blocked.repeatBlocked).toBe(true)
+    expect(blocked.reads).toBe(MAX_SAME_TARGET_READS + 1)
+    expect(blocked.text).toBeUndefined() // the teeth: content withheld
+    expect(blocked.note).toMatch(/withheld/i)
+    expect(mockedGet).toHaveBeenCalledTimes(1) // no network on the block
+
+    // The block does not consume live-lookup budget: a different page
+    // still fetches live afterwards.
+    await runRooted('wiki_read', { title: 'Napirisha' })
+    expect(mockedGet).toHaveBeenCalledTimes(2)
+
+    // A new writer turn starts clean.
+    resetWebReadCounts()
+    const fresh = (await runRooted('wiki_read', { title: 'Inshushinak' })) as {
+      repeatBlocked?: boolean
+      text?: string
+    }
+    expect(fresh.repeatBlocked).toBeUndefined()
+    expect(fresh.text).toContain('Elamite god')
+  })
+
+  it('refresh:true is honored once per page per turn; repeats serve the cache', async() => {
+    const article = {
+      status: 200,
+      headers: {},
+      data: { query: { pages: { 1: { title: 'Elam', extract: 'Ancient kingdom.' } } } }
+    }
+    mockedGet.mockResolvedValue(article)
+    await runRooted('wiki_read', { title: 'Elam' }) // live #1, populates cache
+    await runRooted('wiki_read', { title: 'Elam', refresh: true }) // honored: live #2
+    expect(mockedGet).toHaveBeenCalledTimes(2)
+
+    const ignored = (await runRooted('wiki_read', { title: 'Elam', refresh: true })) as {
+      cached?: boolean
+      refreshIgnored?: boolean
+      text?: string
+    }
+    expect(ignored.refreshIgnored).toBe(true)
+    expect(ignored.cached).toBe(true)
+    expect(ignored.text).toContain('Ancient kingdom')
+    expect(mockedGet).toHaveBeenCalledTimes(2) // no third network call
+
+    // refresh and plain reads share ONE counter: those were reads 1-3,
+    // so two more reads cross the cap and get blocked.
+    await runRooted('wiki_read', { title: 'Elam' })
+    const blocked = (await runRooted('wiki_read', { title: 'Elam', refresh: true })) as {
+      repeatBlocked?: boolean
+    }
+    expect(blocked.repeatBlocked).toBe(true)
+
+    // A new turn clears the refresh gate too.
+    resetWebReadCounts()
+    await runRooted('wiki_read', { title: 'Elam', refresh: true })
+    expect(mockedGet).toHaveBeenCalledTimes(3)
+  })
+
+  it('web_fetch and searches hard-stop past the cap too', async() => {
+    registerUrlProvenance('https://cache.example.com/capped')
+    mockedGet.mockResolvedValue(okHtml('<title>Capped</title>'))
+    for (let i = 1; i <= MAX_SAME_TARGET_READS; i++) {
+      await runRooted('web_fetch', { url: 'https://cache.example.com/capped' })
+    }
+    const blockedFetch = (await runRooted('web_fetch', {
+      url: 'https://cache.example.com/capped'
+    })) as { repeatBlocked?: boolean; text?: string }
+    expect(blockedFetch.repeatBlocked).toBe(true)
+    expect(blockedFetch.text).toBeUndefined()
+
+    mockedGet.mockResolvedValue(
+      okHtml('<a class="result__a" href="https://cap.example.com/hit">Hit</a>')
+    )
+    for (let i = 1; i <= MAX_SAME_TARGET_READS; i++) {
+      await runRooted('web_search', { query: 'elamite archers' })
+    }
+    const blockedSearch = (await runRooted('web_search', { query: 'Elamite  ARCHERS' })) as {
+      repeatBlocked?: boolean
+      results?: unknown[]
+    }
+    expect(blockedSearch.repeatBlocked).toBe(true)
+    expect(blockedSearch.results).toBeUndefined()
+
+    mockedGet.mockResolvedValue({ status: 200, headers: {}, data: { pages: [] } })
+    for (let i = 1; i <= MAX_SAME_TARGET_READS; i++) {
+      await runRooted('wiki_search', { query: 'susa' })
+    }
+    const blockedWiki = (await runRooted('wiki_search', { query: 'susa' })) as {
+      repeatBlocked?: boolean
+      results?: unknown[]
+    }
+    expect(blockedWiki.repeatBlocked).toBe(true)
+    expect(blockedWiki.results).toBeUndefined()
+  })
+
   it('parallel identical fetches share ONE network call (in-flight coalescing)', async() => {
     registerUrlProvenance('https://cache.example.com/parallel')
     let resolveResponse: (value: unknown) => void = () => {}
@@ -700,8 +822,22 @@ describe('research prompt contracts', () => {
   it('researcher prompt carries the injection guard and recency nudge', () => {
     const prompt = AGENT_ROLES.researcher.systemPrompt
     expect(prompt).toMatch(/never instructions/i)
-    expect(prompt).toMatch(/recent sources/i)
+    expect(prompt).toMatch(/recently PUBLISHED sources/)
     expect(prompt).toMatch(/Never invent sources/)
+  })
+
+  it('researcher prompt: read-once doctrine and a stop condition', () => {
+    const prompt = AGENT_ROLES.researcher.systemPrompt
+    expect(prompt).toMatch(/Read each source ONCE/)
+    expect(prompt).toMatch(/never pass refresh unless the writer explicitly asked/)
+    expect(prompt).toMatch(/STOP searching, synthesize, and save/)
+  })
+
+  it('refresh tool docs no longer invite cache-bypassing', () => {
+    const raw = fs.readFileSync(path.join(__dirname, '../../../static/agentTools.json'), 'utf8')
+    // Both refresh params (wiki_read + web_fetch) carry the writer-only rule.
+    expect(raw.match(/writer explicitly asks for the newest version/g)?.length).toBe(2)
+    expect(raw).not.toContain('only when freshness matters')
   })
 
   it('supervisor prompt carries the guard and the provider-consistency clause', () => {

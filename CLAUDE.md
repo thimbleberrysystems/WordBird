@@ -429,9 +429,19 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   (`.wordbird/agent-state/web-cache/`, 7-day TTL, entry-count UNBOUNDED —
   disk is never a constraint (writer decision, see also snapshot history
   default 0 = unlimited); full text on disk, model-facing cap at return;
-  `refresh: true` bypasses; identical concurrent fetches COALESCE onto
+  `refresh: true` bypasses but is honored only ONCE per target per turn
+  (later refreshes serve the cache; tool doc says writer-request-only);
+  identical concurrent fetches COALESCE onto
   one network call; all web tools retry 429/5xx/transient errors with
-  backoff honoring Retry-After — rate limits never need the writer) — a FRESH cache hit deliberately returns
+  backoff honoring Retry-After — rate limits never need the writer.
+  REPEAT-READ TEETH: reads/searches of one target are counted per turn
+  at handler entry (counter shared across ALL subagents — SDK calls
+  carry no per-agent identity); repeats 2..MAX get an advisory note,
+  and past MAX_SAME_TARGET_READS=4 the content is WITHHELD
+  (repeatBlocked — no payload, no network, no budget consumed), because
+  notes alone were demonstrably ignored in live runs. The generic
+  3rd-identical-call note in AgentToolService defers to this layer by
+  result shape) — a FRESH cache hit deliberately returns
   BEFORE the provenance gate (no network happens, so the SSRF/exfil
   surface provenance guards never opens; pinned in web-tools.spec) —
   and `save_research` writes durable findings notes to bible/research/
