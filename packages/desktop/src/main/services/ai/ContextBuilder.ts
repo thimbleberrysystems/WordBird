@@ -28,6 +28,7 @@ import {
   healthBriefLine,
   MAX_INSTRUCTIONS_CHARS
 } from '../novel/ProjectHealth'
+import { neutralizeHarnessMarkers } from './coherencePass'
 import { readProjectMeta } from '../novel/ProjectMeta'
 import type { INovelUnit } from '../../../shared/types/novel'
 
@@ -543,7 +544,12 @@ export class ContextBuilder {
         sections.push(`OPEN CONTINUITY ISSUES:\n${top}${more}`)
       }
 
-      return sections.join('\n\n')
+      // The brief inlines file-derived text (research headings, decision
+      // lines, aliases, biscuit.md, skill bodies) into EVERY agent's
+      // system prompt — defang harness-frame lookalikes wholesale.
+      // Genuine frames are messages, never brief content, so this is
+      // total coverage with zero false positives.
+      return neutralizeHarnessMarkers(sections.join('\n\n'))
     } catch {
       return ''
     }

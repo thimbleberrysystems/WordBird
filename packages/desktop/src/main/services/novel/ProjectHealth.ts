@@ -31,6 +31,7 @@ import { readProjectMeta } from './ProjectMeta'
 import { revisionService } from './RevisionService'
 import { listSkills, readPinnedSkills } from './Skills'
 import { ENTRY_RE as DECISION_ENTRY_RE } from './Decisions'
+import { HARNESS_MARKER_RE } from '../ai/coherencePass'
 import { parseBannedTerms } from './ProseLint'
 import type { INovelUnit, NovelUnitStatus } from '../../../shared/types/novel'
 
@@ -791,6 +792,34 @@ export const checkProjectHealth = async(root: string): Promise<HealthReport> => 
       if (files.length > 1) {
         issues.push(`skill name "${name}" is used by ${files.join(' + ')} (only the first is reachable)`)
       }
+    }
+    // skills/ and biscuit.md are WRITER-ONLY trust surfaces injected
+    // verbatim into every brief — a harness-frame lookalike inside one
+    // is a possible instruction injection the writer should review.
+    const pinnedFiles = readPinnedSkills(root)
+    for (const file of pinnedFiles) {
+      try {
+        const body = fs.readFileSync(path.join(root, 'skills', file), 'utf8')
+        HARNESS_MARKER_RE.lastIndex = 0
+        if (HARNESS_MARKER_RE.test(body)) {
+          issues.push(
+            `pinned skill ${file} contains a harness-frame lookalike (possible instruction injection — review it)`
+          )
+        }
+      } catch {
+        // Missing pins are reported separately.
+      }
+    }
+    try {
+      const biscuit = fs.readFileSync(path.join(root, 'biscuit.md'), 'utf8')
+      HARNESS_MARKER_RE.lastIndex = 0
+      if (HARNESS_MARKER_RE.test(biscuit)) {
+        issues.push(
+          'biscuit.md contains a harness-frame lookalike (possible instruction injection — review it)'
+        )
+      }
+    } catch {
+      // No biscuit.md.
     }
     const skillFiles = new Set(skills.map((s) => s.file.toLowerCase()))
     for (const pin of readPinnedSkills(root)) {

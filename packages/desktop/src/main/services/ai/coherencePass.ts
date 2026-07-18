@@ -21,6 +21,28 @@
 
 import type { AgentPermissionMode } from '../../../shared/types/langgraph'
 
+/**
+ * Harness-frame signatures — the FULL distinctive forms only (colon /
+ * em-dash included). Deliberately narrow: broad prefixes like
+ * "[EDIT REVIEW" could collide with legitimate prose, and a defanged
+ * span breaks propose_text_edit anchors that quote it. The full
+ * signatures make prose collisions effectively zero while forged
+ * frames (which must reproduce the signature to spoof) are caught.
+ */
+export const HARNESS_MARKER_RE =
+  /\[(Writer, mid-run\]:|COHERENCE PASS —|RESEARCH PERSISTENCE —|EDIT REVIEW —|CONVERSATION SO FAR —)/g
+
+/**
+ * Defang harness-marker lookalikes in UNTRUSTED text (tool results,
+ * file-derived brief inputs): the opening bracket becomes ⟦ — visibly
+ * similar, semantically inert. Genuine frames are generated AFTER this
+ * point in the pipeline and are never touched. No nonce/HMAC by design:
+ * with markers defanged at every untrusted ingress and the trust rule
+ * in every prompt, a forged frame cannot reach a model intact.
+ */
+export const neutralizeHarnessMarkers = (text: string): string =>
+  text.replace(HARNESS_MARKER_RE, '⟦$1')
+
 /** Tool events that count as "the project changed". */
 export const WRITE_TOOL_EVENT_NAMES = new Set([
   'propose_project_file_edit',

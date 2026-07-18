@@ -167,7 +167,13 @@ export const buildSdkAgents = (
     // canUseTool — the SDK's own warning), which would skip the writer's
     // deletion approval card. Left unlisted, the call falls through to
     // canUseTool and gets gated like everywhere else.
-    const baseTools = mode === 'ask' ? READONLY_WORKER_TOOLS : role.allowedTools
+    // Ask mode INTERSECTS the role's own tools with the read-only set
+    // (LangGraph parity): an explorer never gains web tools just because
+    // the mode is ask — only roles that already carry them keep them.
+    const baseTools =
+      mode === 'ask'
+        ? role.allowedTools.filter((name) => READONLY_WORKER_TOOLS.includes(name))
+        : role.allowedTools
     const toolNames = baseTools.filter((name) => !DESTRUCTIVE_TOOLS.includes(name))
     agents[role.role] = {
       description: `${role.displayName} — ${role.activityLabel.toLowerCase()}`,

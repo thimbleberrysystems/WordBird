@@ -87,7 +87,9 @@ describe('renderer mount smoke', () => {
     expect(wrapper.find('.right-prompt').exists()).toBe(true)
     expect(wrapper.find('.prompt-title').text()).toContain('Biscuit')
     wrapper.unmount()
-  })
+    // 15s: the component import is heavy and this test is load-sensitive
+    // under the full parallel suite (recurring flake at the 5s default).
+  }, 15000)
 
   it('AgentTree mounts without a setup-time crash', async() => {
     const { default: AgentTree } = await import(

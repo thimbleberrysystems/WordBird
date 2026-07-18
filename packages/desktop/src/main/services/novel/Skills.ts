@@ -35,7 +35,7 @@ const SKILL_FILE_RE = /\.(md|markdown)$/i
 /** Tolerant front-matter parse: name/description when present, filename
  * stem otherwise; a fenceless file's first heading doubles as the name. */
 export const parseSkillMeta = (content: string, fname: string): SkillMeta => {
-  const stem = fname.split('/').pop()!.replace(SKILL_FILE_RE, '')
+  const stem = (fname.split('/').pop() ?? fname).replace(SKILL_FILE_RE, '')
   let name = ''
   let description = ''
   const fm = /^---\n([\s\S]*?)\n---/.exec(content)

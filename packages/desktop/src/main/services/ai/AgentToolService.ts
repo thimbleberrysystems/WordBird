@@ -1,5 +1,6 @@
 import fsPromises from 'fs/promises'
 import log from 'electron-log'
+import { neutralizeHarnessMarkers } from './coherencePass'
 import { z } from 'zod'
 import { convertJsonSchemaToZod } from 'zod-from-json-schema'
 import { tool } from '@langchain/core/tools'
@@ -416,12 +417,18 @@ export class AgentToolService {
     }
 
     if (result && typeof result === 'object') {
-      return JSON.stringify(
-        this._withRepeatCallNote(loaded.definition.name, args, result) as Record<string, unknown>
+      // Defang harness-frame lookalikes in EVERY tool's model-facing
+      // output (both providers, one choke point) — a fetched page or
+      // laundered note cannot smuggle a fake [COHERENCE PASS —…] frame.
+      return neutralizeHarnessMarkers(
+        JSON.stringify(
+          this._withRepeatCallNote(loaded.definition.name, args, result) as Record<string, unknown>
+        )
       )
     }
 
-    return this._withRepeatCallNote(loaded.definition.name, args, result)
+    const decorated = this._withRepeatCallNote(loaded.definition.name, args, result)
+    return typeof decorated === 'string' ? neutralizeHarnessMarkers(decorated) : decorated
   }
 
   private _toLangChainTool(definition: IAgentToolDefinition): DynamicStructuredTool {
