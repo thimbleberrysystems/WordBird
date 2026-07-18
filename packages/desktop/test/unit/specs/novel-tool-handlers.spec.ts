@@ -307,6 +307,22 @@ describe('tool-run observer (the coherence choke point)', () => {
     expect(seen).toEqual([])
   })
 
+  it('the 3rd identical call carries a repeat note; distinct calls never do', async() => {
+    const packService = await makePackService()
+    const first = String(await packService.runForModel('list_structure', {}))
+    expect(first).not.toContain('Identical')
+    await packService.runForModel('list_structure', {})
+    const third = String(await packService.runForModel('list_structure', {}))
+    expect(third).toContain('Identical list_structure call #3')
+    // Different args are a different call.
+    const other = String(await packService.runForModel('search_manuscript', { query: 'x' }))
+    expect(other).not.toContain('Identical')
+    // A new turn resets.
+    packService.resetTurnCallCounts()
+    const fresh = String(await packService.runForModel('list_structure', {}))
+    expect(fresh).not.toContain('Identical')
+  })
+
   it('an observer that throws never fails the tool', async() => {
     const packService = await makePackService()
     packService.setToolRunObserver(() => {

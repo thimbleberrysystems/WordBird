@@ -18,7 +18,7 @@
 
 import fs from 'fs'
 import path from 'path'
-import { structureService, collectLeaves } from './StructureService'
+import { structureService, collectLeaves, listFilesRecursive } from './StructureService'
 import { continuityService } from './ContinuityService'
 import { factService } from './FactService'
 import {
@@ -661,13 +661,12 @@ export const checkProjectHealth = async(root: string): Promise<HealthReport> => 
     }
   })
 
-  // ---- plans with open items ----
+  // ---- plans with open items (recursive — plans/done/… count too) ----
   try {
     const plansDir = path.join(root, 'plans')
     let unchecked = 0
     let planCount = 0
-    for (const entry of fs.readdirSync(plansDir)) {
-      if (!/\.(md|markdown|txt)$/i.test(entry)) continue
+    for (const entry of listFilesRecursive(plansDir, /\.(md|markdown|txt)$/i)) {
       planCount += 1
       const text = fs.readFileSync(path.join(plansDir, entry), 'utf8')
       unchecked += (text.match(/^\s*[-*] \[ \]/gm) ?? []).length

@@ -66,6 +66,35 @@ export const generateUnitId = (): string => crypto.randomUUID()
  * `opening-3.md`, … — never UUID fragments or timestamps in filenames.
  * `dir` is project-relative ('.' for the root); returns the relative path.
  */
+/**
+ * Relative (posix) paths of matching files under dir, recursively —
+ * folders are first-class everywhere (research/plans/skills), so every
+ * lister must see nested files.
+ */
+export const listFilesRecursive = (
+  dir: string,
+  extRe: RegExp,
+  maxDepth = 4
+): string[] => {
+  const results: string[] = []
+  const walk = (current: string, prefix: string, depth: number): void => {
+    if (depth > maxDepth) return
+    let entries: fs.Dirent[]
+    try {
+      entries = fs.readdirSync(current, { withFileTypes: true })
+    } catch {
+      return
+    }
+    for (const entry of entries) {
+      const relative = prefix ? `${prefix}/${entry.name}` : entry.name
+      if (entry.isDirectory()) walk(path.join(current, entry.name), relative, depth + 1)
+      else if (extRe.test(entry.name)) results.push(relative)
+    }
+  }
+  walk(dir, '', 0)
+  return results.sort()
+}
+
 export const uniqueSlugPath = (root: string, dir: string, slug: string): string => {
   const candidate = (suffix: string): string => {
     const filename = `${slug}${suffix}.md`

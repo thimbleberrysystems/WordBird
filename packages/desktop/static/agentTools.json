@@ -795,7 +795,7 @@
       "id": "move_file",
       "name": "move_file",
       "displayName": "Move / rename file",
-      "description": "Move or rename a file inside the project. A project snapshot is taken first, and if the file backs a binder scene/chapter the manifest is updated automatically so the binder stays intact.",
+      "description": "Move or rename a file OR FOLDER inside the project (snapshot-guarded). Moving a folder keeps every binder unit underneath intact. Use for reorganizing research/plans/skills into subfolders too.",
       "handler": "move_file",
       "enabled": true,
       "scope": "project",
@@ -842,6 +842,33 @@
           "reason": {
             "type": "string",
             "description": "Why this file is being removed."
+          }
+        },
+        "required": [
+          "path",
+          "reason"
+        ]
+      }
+    },
+    {
+      "id": "delete_folder",
+      "name": "delete_folder",
+      "displayName": "Delete folder",
+      "description": "Delete a folder and everything inside it. DESTRUCTIVE — the writer must approve; a snapshot is taken first and binder units underneath are pruned.",
+      "handler": "delete_folder",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Project-relative folder path."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this folder should go (shown to the writer)."
           }
         },
         "required": [
@@ -993,6 +1020,10 @@
           "allowDuplicate": {
             "type": "boolean",
             "description": "Write even though a note with this title exists (only for genuinely distinct material)."
+          },
+          "folder": {
+            "type": "string",
+            "description": "Optional topic subfolder under bible/research/ (e.g. \"elam\" or \"elam/politics\", max 3 levels). Group notes once 3+ share a topic."
           }
         },
         "required": [
@@ -1020,6 +1051,10 @@
           "plan": {
             "type": "string",
             "description": "The plan so far, in markdown — numbered steps."
+          },
+          "folder": {
+            "type": "string",
+            "description": "Optional subfolder under plans/ (e.g. \"done\" for completed plans)."
           }
         },
         "required": [

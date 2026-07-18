@@ -35,6 +35,7 @@ interface SubHarness {
   runner: AgentSDKRunner
   root: string
   activity: IAgentActivityEvent[]
+  statuses: Array<{ role: string; status: string }>
   editProposals: Array<{ edit: { filePath: string; newContent: string } }>
   send: (threadId: string, text: string) => Promise<string>
 }
@@ -68,12 +69,14 @@ const makeHarness = async(): Promise<SubHarness> => {
   service.setProjectRoot(root)
 
   const activity: IAgentActivityEvent[] = []
+  const statuses: SubHarness['statuses'] = []
   const editProposals: SubHarness['editProposals'] = []
   service.setEditProposalEmitter((proposal) => {
     editProposals.push(proposal as never)
   })
   const callbacks: OrchestratorCallbacks = {
     emitActivity: (event) => activity.push(event),
+    emitAgentStatus: (status) => statuses.push({ role: status.role, status: status.status }),
     requestApproval: async() => true,
     buildBrief: async() =>
       'PROJECT BRIEF: gothic novella. Manuscript: chapter-one/opening.md. ' +
@@ -92,6 +95,7 @@ const makeHarness = async(): Promise<SubHarness> => {
     runner,
     root,
     activity,
+    statuses,
     editProposals,
     send: async(threadId, text) => {
       const graph = runner.buildGraph()
@@ -270,6 +274,32 @@ live('claude-code provider (Claude subscription via Agent SDK)', () => {
     const thrown = /maximum number of turns/i.test(thrownMessage)
     expect(yielded || thrown, `subtype=${resultSubtype} thrown=${thrownMessage}`).toBe(true)
   }, 300000)
+
+  it('REAL-RUNNER parallel wave: no permission-stream failures, spawns detected', async() => {
+    // THE LESSON of the prj7 incident (2026-07-18, 46/64 calls failed
+    // 'Tool permission request failed: AbortError: Stream closed'): tests
+    // that hand-roll SDK options can't catch configuration bugs. This one
+    // drives the PRODUCTION AgentSDKRunner — its real allowedTools,
+    // buildSdkAgents, canUseTool — through a parallel researcher wave
+    // hammering in-process mcp tools.
+    const harness = await makeHarness()
+    harness.runner.setMode('ask')
+    const reply = await harness.send(
+      't-wave',
+      'Spawn TWO researcher agents IN PARALLEL (one message, two spawn invocations): ' +
+        'one researches "history of lighthouse keeping", the other "history of sea ' +
+        'shanties". Each should do a few wiki lookups. Then summarize both reports in ' +
+        'two sentences.'
+    )
+    expect(reply.length).toBeGreaterThan(20)
+    // Spawns were detected under the runtime's CURRENT spawn-tool name.
+    expect(harness.statuses.some((s) => s.role === 'researcher')).toBe(true)
+    // ZERO permission-stream failures anywhere in the activity feed.
+    const failures = harness.activity.filter((event) =>
+      /permission request failed|stream closed/i.test(`${event.label} ${event.detail ?? ''}`)
+    )
+    expect(failures).toEqual([])
+  }, 600000)
 
   it('surgical edits arrive as review-queue proposals, never direct writes', async() => {
     const harness = await makeHarness()

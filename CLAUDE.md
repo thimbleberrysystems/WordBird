@@ -313,25 +313,30 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   through AgentToolService.runForModel — the SAME proposal pipeline, so
   review queue/snapshots/mode gating are provider-independent. Claude
   Code built-ins (Bash/Read/Write/Edit/Web*) are disallowed; WordBird
-  roles map to SDK subagents (Task) whose prompts carry the SAME per-turn
-  project brief LangGraph workers get (buildSdkAgents(mode, brief));
-  drafters additionally carry the SCENE HANDOFF doctrine driving the
-  get_scene_handoff tool (deterministic ContextBuilder tail — the SDK
-  analogue of the pushed LangGraph handoff). PARITY CONTRACT (pinned in
-  agent-sdk-runner.spec + tool-safety.spec): the SDK MAIN thread carries
-  exactly SUPERVISOR_TOOL_NAMES ∪ SUPERVISOR_WRITE_TOOL_NAMES (worker
-  tools stay registered for subagents; canUseTool DENIES them main-thread
-  via the SDK's agentID arg — absent = main thread); mid-run steering
-  drains at every invoke boundary as `[Writer, mid-run]:` lines (notes
-  missing the last boundary are RETAINED for the next turn with an
-  honest status, never silently dropped); max-turns exhaustion (yielded
-  error_max_turns result OR the runtime's thrown "maximum number of
-  turns" — both real shapes, live-pinned) maps to GraphRecursionError so
-  the "say continue" reply and book-run budget pause apply unchanged.
-  DESTRUCTIVE_TOOLS and Task are deliberately left OFF allowedTools so
-  canUseTool gates them (bare allowedTools entries shadow the callback):
-  destructive ops raise the writer card; duplicate Task spawns (same
-  subagent type + same normalized task, per turn) are bounced — the
+  roles map to SDK subagents (spawned via the runtime's Agent tool —
+  older runtimes name it Task; detection is STRUCTURAL via
+  isSpawnToolCall's subagent_type check, so renames can't kill spawn
+  machinery again) whose prompts carry the SAME per-turn project brief
+  LangGraph workers get (buildSdkAgents(mode, brief)); drafters
+  additionally carry the SCENE HANDOFF doctrine driving the
+  get_scene_handoff tool. ARCHITECTURAL INVARIANT (per-mode pinned in
+  agent-sdk-runner.spec after the prj7 incident 2026-07-18, when 46/64
+  calls failed "Tool permission request failed: AbortError: Stream
+  closed"): the SDK permission stream is reserved for LOW-FREQUENCY
+  writer-meaningful decisions — EVERY registered non-destructive tool is
+  allowlisted (subagent traffic must never ride the stream, which
+  collapses under parallel load); main-thread delegation to specialists
+  is DOCTRINE (supervisor prompt), deliberately NOT mechanics. Mid-run
+  steering drains at every invoke boundary as `[Writer, mid-run]:`
+  lines (late notes RETAINED for the next turn with an honest status);
+  max-turns exhaustion (yielded error_max_turns OR the runtime's thrown
+  "maximum number of turns" — both live-pinned) maps to
+  GraphRecursionError so the "say continue" reply and book-run pause
+  apply unchanged. Errored tool_results surface as "tool failed — X"
+  activity lines (failures are never invisible again). DESTRUCTIVE_TOOLS
+  and spawn tools are deliberately OFF allowedTools so canUseTool gates
+  them: destructive ops raise the writer card; duplicate spawns (same
+  subagent type + normalized task, per turn) are bounced — the
   orchestrator does the same dedup on wave spawns, and the knowledge
   writes are duplicate-proof themselves (record_fact exact-triple,
   record_decision same-decision, log_continuity_issue same-open-title,
@@ -380,7 +385,7 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   draft-next-scene with mandatory aftercare, extend, polish, health check)
   and spawn heuristics (do small things directly; spawn specialists for
   multi-unit work).
-- Tools (55): `main/services/ai/AgentToolHandlers.ts` (core file read/edit
+- Tools (56): `main/services/ai/AgentToolHandlers.ts` (core file read/edit
   + `propose_text_edit` — anchored exact-quote search/replace, the Aider
   SEARCH/REPLACE pattern, with occurrence disambiguation; the prompt-pinned
   path for surgical prose fixes, whole-file `propose_project_file_edit` is

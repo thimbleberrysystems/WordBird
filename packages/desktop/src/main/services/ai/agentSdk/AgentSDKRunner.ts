@@ -41,10 +41,12 @@ import { MODE_BUDGETS, isAgentRole } from '../orchestrator/roles'
 import {
   buildWordbirdMcpServer,
   buildSdkAgents,
+  isSpawnToolCall,
   mainThreadToolNames,
   stripMcpPrefix,
   MCP_SERVER_NAME,
   MCP_TOOL_PREFIX,
+  SPAWN_TOOL_NAMES,
   type AgentSdkModule
 } from './toolBridge'
 
@@ -67,7 +69,6 @@ const DISALLOWED_BUILTIN_TOOLS = [
 ]
 
 /** The one built-in we keep: Task spawns our role subagents. */
-const SPAWN_TOOL = 'Task'
 
 type SdkMessage = Record<string, unknown>
 
@@ -99,8 +100,10 @@ export class AgentSDKRunner {
   private _sdkModule: AgentSdkModule | null
   private _contextWindow = 200000
   private _turnUsage: ITokenTally = emptyTally()
-  /** Spawned (type, task) pairs this turn — duplicate Task calls bounce. */
+  /** Spawned (type, task) pairs this turn — duplicate spawn calls bounce. */
   private readonly _turnTaskKeys = new Set<string>()
+  /** tool_use id → bare tool name, so errored results can name the tool. */
+  private readonly _toolUseNames = new Map<string, string>()
   private _sessionUsage: ITokenTally = emptyTally()
   private _activeQuery: { interrupt?: () => Promise<unknown> } | null = null
 
@@ -279,7 +282,7 @@ export class AgentSDKRunner {
     const mainThreadSet = new Set(mainThreadToolNames(this._toolService, this._mode))
 
     const systemPrompt =
-      buildSupervisorPrompt(this._mode, budget.maxWorkersPerWave, SPAWN_TOOL) +
+      buildSupervisorPrompt(this._mode, budget.maxWorkersPerWave, SPAWN_TOOL_NAMES[0]) +
       `\nTOOL NAMING: project tools come from the "${MCP_SERVER_NAME}" MCP server — a ` +
       `reference like list_structure means the tool named ${MCP_TOOL_PREFIX}list_structure. ` +
       'You have NO file tools besides these; never claim to have used Bash/Read/Write.\n' +
@@ -294,14 +297,15 @@ export class AgentSDKRunner {
       settingSources: [],
       mcpServers: { [MCP_SERVER_NAME]: server },
       agents,
-      // Destructive tools stay OFF the allowlist deliberately: a bare
-      // allowedTools entry auto-approves before canUseTool is consulted
-      // (the SDK warns about exactly this shadowing) — leaving them out
-      // routes delete_unit/delete_file/restore_snapshot through the
-      // writer-approval gate below while every other tool runs freely.
-      // SPAWN_TOOL (Task) is deliberately NOT allow-listed: a bare entry
-      // would shadow canUseTool, and canUseTool is where duplicate spawns
-      // (same subagent type + same task, twice in one turn) get bounced.
+      // ARCHITECTURAL INVARIANT: the SDK permission stream is reserved
+      // for LOW-FREQUENCY, WRITER-MEANINGFUL decisions (destructive ops,
+      // spawns). High-frequency tool traffic MUST be allowlist-approved —
+      // the stream collapses under parallel-subagent load (prj7 incident,
+      // 2026-07-18: 46/64 calls failed "Tool permission request failed:
+      // AbortError: Stream closed"). Destructive tools and spawns stay
+      // OFF the allowlist deliberately: a bare entry shadows canUseTool,
+      // and canUseTool is where the writer-approval card and the
+      // duplicate-spawn guard live. Everything else is pre-approved.
       allowedTools: [
         ...[...mainThreadSet]
           .filter((n) => !DESTRUCTIVE_TOOLS.includes(n))
@@ -312,14 +316,14 @@ export class AgentSDKRunner {
       permissionMode: 'default',
       canUseTool: async(
         toolName: string,
-        input: Record<string, unknown>,
-        extra?: { agentID?: string }
+        input: Record<string, unknown>
       ): Promise<Record<string, unknown>> => {
         const bare = stripMcpPrefix(toolName)
         // Duplicate-spawn guard (parity with the orchestrator's wave
         // dedup): the same subagent type with the same task runs ONCE
-        // per turn — the second attempt is bounced with guidance.
-        if (toolName === SPAWN_TOOL) {
+        // per turn. Detected by BEHAVIOR (subagent_type input) so a
+        // runtime rename (Task → Agent → …) can never kill it again.
+        if (isSpawnToolCall(toolName, input)) {
           const task = String(input.prompt ?? input.description ?? '')
             .toLowerCase()
             .replace(/\s+/g, ' ')
@@ -349,20 +353,6 @@ export class AgentSDKRunner {
             }
           }
         }
-        // Worker-only tools are registered on the server (subagents need
-        // them) but the MAIN thread must delegate, exactly like the
-        // LangGraph supervisor. agentID is present only inside subagents.
-        if (
-          !extra?.agentID &&
-          toolName.startsWith(MCP_TOOL_PREFIX) &&
-          !mainThreadSet.has(bare) &&
-          !DESTRUCTIVE_TOOLS.includes(bare)
-        ) {
-          return {
-            behavior: 'deny',
-            message: 'This tool belongs to a specialist — spawn one with Task.'
-          }
-        }
         return { behavior: 'allow', updatedInput: input }
       }
     }
@@ -376,6 +366,7 @@ export class AgentSDKRunner {
 
     this._turnUsage = emptyTally()
     this._turnTaskKeys.clear()
+    this._toolUseNames.clear()
     let finalText = ''
     let sawError: string | null = null
     let sawBudget: Error | null = null
@@ -456,7 +447,7 @@ export class AgentSDKRunner {
       for (const block of blocks) {
         if (block.type !== 'tool_use') continue
         const name = String(block.name ?? '')
-        if (name === SPAWN_TOOL) {
+        if (isSpawnToolCall(name, block.input)) {
           const input = (block.input ?? {}) as { subagent_type?: string; description?: string; prompt?: string }
           const roleName = String(input.subagent_type ?? 'explorer')
           const role = isAgentRole(roleName) ? roleName : 'explorer'
@@ -479,6 +470,7 @@ export class AgentSDKRunner {
             toolCalls: 0
           })
         } else {
+          this._toolUseNames.set(String(block.id ?? ''), stripMcpPrefix(name))
           this._emitActivity({
             kind: 'tool',
             label: stripMcpPrefix(name),
@@ -495,7 +487,19 @@ export class AgentSDKRunner {
       const inner = (message as { message?: { content?: unknown } }).message
       const blocks = Array.isArray(inner?.content) ? (inner?.content as Array<Record<string, unknown>>) : []
       for (const block of blocks) {
-        if (block.type !== 'tool_result' || !this._spawnedTaskIds.has(String(block.tool_use_id))) {
+        if (block.type !== 'tool_result') continue
+        // FAILURES MUST BE VISIBLE: 46 silent tool errors looked like a
+        // healthy-but-endless run to the writer (prj7 incident). Every
+        // errored result becomes an activity line.
+        if (block.is_error) {
+          const failedTool = this._toolUseNames.get(String(block.tool_use_id)) ?? 'tool'
+          this._emitActivity({
+            kind: 'status',
+            label: `tool failed — ${failedTool}`,
+            detail: JSON.stringify(block.content ?? '').slice(0, 120)
+          })
+        }
+        if (!this._spawnedTaskIds.has(String(block.tool_use_id))) {
           continue
         }
         const info = this._spawnedTaskIds.get(String(block.tool_use_id))

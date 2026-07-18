@@ -21,7 +21,8 @@ import {
   structureService,
   collectLeaves,
   findUnit,
-  uniqueSlugPath
+  uniqueSlugPath,
+  listFilesRecursive as walkFilesUnder
 } from '../novel/StructureService'
 import { contextBuilder } from './ContextBuilder'
 import { snapshotService } from '../novel/SnapshotService'
@@ -1053,9 +1054,49 @@ const moveFile = async(
   const srcRel = assertNotInternal(root, srcPath)
   const destRel = assertNotInternal(root, destPath)
 
-  if (!fs.existsSync(srcPath)) throw new Error(`No such file: ${srcRel}`)
-  if (!fs.statSync(srcPath).isFile()) throw new Error(`${srcRel} is not a file.`)
+  if (!fs.existsSync(srcPath)) throw new Error(`No such file or folder: ${srcRel}`)
   if (fs.existsSync(destPath)) throw new Error(`${destRel} already exists.`)
+
+  const isDirectory = fs.statSync(srcPath).isDirectory()
+
+  // FOLDER move/rename: every binder unit underneath keeps its identity —
+  // the manifest paths get a prefix rewrite instead of prune+rediscover.
+  if (isDirectory) {
+    await snapshotService.snapshot(
+      root,
+      `Before moving folder ${srcRel} → ${destRel} — ${reason}`,
+      true
+    )
+    await fsPromises.mkdir(path.dirname(destPath), { recursive: true })
+    await fsPromises.rename(srcPath, destPath)
+
+    let unitsUpdated = 0
+    // Raw load — reconciling here would prune every unit under the old
+    // prefix before we fix it.
+    const structure = await structureService.load(root)
+    if (structure) {
+      const prefix = `${srcRel}/`
+      const rewrite = (units: INovelUnit[]): void => {
+        for (const unit of units) {
+          if (unit.path && (unit.path === srcRel || unit.path.startsWith(prefix))) {
+            unit.path = `${destRel}${unit.path.slice(srcRel.length)}`
+            unitsUpdated += 1
+          }
+          if (unit.children) rewrite(unit.children)
+        }
+      }
+      rewrite(structure.units)
+      if (unitsUpdated > 0) await structureService.save(root, structure)
+    }
+    return {
+      moved: true,
+      folder: true,
+      from: srcRel,
+      to: destRel,
+      unitsUpdated,
+      snapshotTaken: true
+    }
+  }
 
   // Identify the binder unit BEFORE moving — after the rename a reconcile
   // would prune it (file gone) and re-discover the destination as a stranger.
@@ -1078,6 +1119,34 @@ const moveFile = async(
     }
   }
   return { moved: true, from: srcRel, to: destRel, manifestUpdated, snapshotTaken: true }
+}
+
+/**
+ * Recursive folder deletion — DESTRUCTIVE (writer approval card on every
+ * provider), snapshot-guarded; binder units underneath are pruned by the
+ * next reconcile.
+ */
+const deleteFolder = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const target = str(args, 'path')
+  const reason = str(args, 'reason')
+
+  const dirPath = resolveInside(root, target)
+  const rel = assertNotInternal(root, dirPath)
+  if (!fs.existsSync(dirPath)) throw new Error(`No such folder: ${rel}`)
+  if (!fs.statSync(dirPath).isDirectory()) {
+    throw new Error(`${rel} is a file — use delete_file.`)
+  }
+  if (rel === '' || rel === '.') throw new Error('Refusing to delete the project root.')
+
+  await snapshotService.snapshot(root, `Before deleting folder ${rel} — ${reason}`, true)
+  await fsPromises.rm(dirPath, { recursive: true, force: true })
+  // Reconcile prunes any binder units whose files just vanished.
+  await structureService.loadReconciled(root)
+  return { deleted: true, path: rel, snapshotTaken: true }
 }
 
 const deleteFile = async(
@@ -1352,8 +1421,12 @@ const slugifyPlanTitle = (title: string): string => {
   return slug || 'plan'
 }
 
-const planPathFor = (root: string, title: string): string =>
-  uniqueSlugPath(root, 'plans', slugifyPlanTitle(title))
+const planPathFor = (root: string, title: string, folder?: string): string =>
+  uniqueSlugPath(
+    root,
+    path.join('plans', ...slugFolderSegments(folder)),
+    slugifyPlanTitle(title)
+  )
 
 const savePlan = async(
   args: Record<string, unknown>,
@@ -1363,7 +1436,7 @@ const savePlan = async(
   const title = str(args, 'title')
   const plan = str(args, 'plan')
 
-  const relative = planPathFor(root, title)
+  const relative = planPathFor(root, title, optStr(args, 'folder'))
   const target = path.join(root, relative)
   await fsPromises.mkdir(path.dirname(target), { recursive: true })
   await fsPromises.writeFile(target, `# ${title}\n\n${plan}\n`, 'utf8')
@@ -1386,6 +1459,22 @@ const savePlan = async(
  * never re-researched. Direct write by design (writer decision): notes
  * are additive reference material — new files only, never overwrites.
  */
+/** Optional subfolder for saves: slug per segment, depth ≤ 3, no escapes. */
+const slugFolderSegments = (raw: string | undefined): string[] => {
+  if (!raw) return []
+  return raw
+    .split('/')
+    .map((segment) =>
+      segment
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 60)
+    )
+    .filter(Boolean)
+    .slice(0, 3)
+}
+
 const saveResearch = async(
   args: Record<string, unknown>,
   context: AgentToolContext
@@ -1396,24 +1485,27 @@ const saveResearch = async(
   const sources = Array.isArray(args.sources)
     ? (args.sources as unknown[]).filter((s): s is string => typeof s === 'string')
     : []
+  const folder = slugFolderSegments(optStr(args, 'folder'))
+  const dir = path.join('bible', 'research', ...folder)
+  const dirPosix = ['bible/research', ...folder].join('/')
 
   // Parallel/duplicate research guard: if a note with this exact title
   // already exists (a sibling worker may have just saved it), point at it
   // instead of writing a near-copy. allowDuplicate overrides.
   const baseSlug = slugifyPlanTitle(title)
-  const canonical = path.join('bible', 'research', `${baseSlug}.md`)
+  const canonical = path.join(dir, `${baseSlug}.md`)
   if (args.allowDuplicate !== true && fs.existsSync(path.join(root, canonical))) {
     return {
       saved: false,
       duplicate: true,
-      existingPath: `bible/research/${baseSlug}.md`,
+      existingPath: `${dirPosix}/${baseSlug}.md`,
       note:
         'A research note with this title already exists — read it and cite it instead of ' +
         'duplicating. Pass allowDuplicate: true only if this is genuinely distinct material.'
     }
   }
 
-  const relative = uniqueSlugPath(root, path.join('bible', 'research'), baseSlug)
+  const relative = uniqueSlugPath(root, dir, baseSlug)
   const target = path.join(root, relative)
   await fsPromises.mkdir(path.dirname(target), { recursive: true })
   const frontMatter = [
@@ -1458,23 +1550,17 @@ const listPlans = async(
 ): Promise<unknown> => {
   const root = requireRoot(context)
   const dir = path.join(root, 'plans')
-  let entries: fs.Dirent[] = []
-  try {
-    entries = (await fsPromises.readdir(dir, { withFileTypes: true })).filter(
-      (e) => e.isFile() && /\.(md|markdown|txt)$/i.test(e.name)
-    )
-  } catch {
-    return { plans: [] }
-  }
+  // Recursive — plans may be organized into subfolders (plans/done/…).
+  const files = walkFilesUnder(dir, /\.(md|markdown|txt)$/i)
   const plans = []
-  for (const entry of entries) {
-    const relative = path.join('plans', entry.name)
+  for (const name of files) {
+    const relative = `plans/${name}`
     try {
-      const content = await readTextSafe(path.join(dir, entry.name))
-      const stat = await fsPromises.stat(path.join(dir, entry.name))
+      const content = await readTextSafe(path.join(dir, name))
+      const stat = await fsPromises.stat(path.join(dir, name))
       plans.push({
         planId: relative,
-        title: /^#\s+(.+)$/m.exec(content)?.[1]?.trim() ?? entry.name,
+        title: /^#\s+(.+)$/m.exec(content)?.[1]?.trim() ?? name,
         updatedAt: new Date(stat.mtimeMs).toISOString()
       })
     } catch {
@@ -1715,6 +1801,7 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('create_folder', createFolder)
   service.registerHandler('move_file', moveFile)
   service.registerHandler('delete_file', deleteFile)
+  service.registerHandler('delete_folder', deleteFolder)
   service.registerHandler('delete_unit', deleteUnit)
   service.registerHandler('save_plan', savePlan)
   service.registerHandler('save_research', saveResearch)

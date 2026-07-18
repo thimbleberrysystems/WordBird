@@ -914,6 +914,7 @@ export class LangGraphManager {
     this._turnObservations = emptyObservations()
     // Same-page re-read counters restart with the turn.
     resetWebReadCounts()
+    this._agentToolService.resetTurnCallCounts()
 
     // Approvals-mode coherence trigger: a just-accepted batch means the
     // manuscript changed — the turn OPENS with the steward pass.

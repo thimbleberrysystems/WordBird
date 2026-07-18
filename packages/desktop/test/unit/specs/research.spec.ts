@@ -98,6 +98,31 @@ describe('save_research handler', () => {
     expect(fs.readFileSync(path.join(root, 'bible/research/tides.md'), 'utf8')).toContain('First')
   })
 
+  it('notes file into topic subfolders; nested notes ride the brief', async() => {
+    const saved = (await run('save_research', {
+      title: 'Sukkalmah Dynasty',
+      content: 'Elamite ruling house.',
+      folder: 'Elam/Politics'
+    })) as { path: string }
+    expect(saved.path).toBe('bible/research/elam/politics/sukkalmah-dynasty.md')
+
+    const brief = await new ContextBuilder().buildProjectBrief(root)
+    expect(brief).toContain('bible/research/elam/politics/sukkalmah-dynasty.md')
+  })
+
+  it('hostile folder args cannot escape or nest absurdly', async() => {
+    const saved = (await run('save_research', {
+      title: 'Escape Test',
+      content: 'x',
+      folder: '../../etc/a/b/c/d/e'
+    })) as { path: string }
+    expect(saved.path.startsWith('bible/research/')).toBe(true)
+    expect(saved.path).not.toContain('..')
+    // Depth capped at 3 folder segments.
+    const segments = saved.path.replace('bible/research/', '').split('/')
+    expect(segments.length).toBeLessThanOrEqual(4)
+  })
+
   it('hostile titles cannot escape bible/research/', async() => {
     const result = (await run('save_research', {
       title: '../../outside/../evil',
@@ -169,5 +194,12 @@ describe('role and mode contract', () => {
     const prompt = buildSupervisorPrompt('approvals', 6)
     expect(prompt).toContain('RESEARCH IS AN ASSET')
     expect(prompt).toContain('save_research')
+  })
+
+  it('the ORGANIZE doctrine reaches supervisor AND workers from one source', () => {
+    const supervisor = buildSupervisorPrompt('approvals', 6)
+    expect(supervisor).toContain('ORGANIZE LIKE A LIBRARIAN')
+    expect(AGENT_ROLES.researcher.systemPrompt).toContain('ORGANIZE LIKE A LIBRARIAN')
+    expect(AGENT_ROLES.drafter.systemPrompt).toContain('ORGANIZE LIKE A LIBRARIAN')
   })
 })

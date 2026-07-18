@@ -229,6 +229,43 @@ export class AgentToolService {
     }
   }
 
+  // ---- Generic anti-thrash (every tool, every provider) --------------------
+  // Weak models repeat identical calls; the web tools have rich bespoke
+  // handling (cache/memo/budget), this is the floor for the other ~50.
+  private readonly _turnCallCounts = new Map<string, number>()
+
+  resetTurnCallCounts(): void {
+    this._turnCallCounts.clear()
+  }
+
+  /** From the 3rd IDENTICAL (name+args) call in a turn, annotate the result. */
+  private _withRepeatCallNote(toolName: string, args: Record<string, unknown>, result: unknown): unknown {
+    let key: string
+    try {
+      key = `${toolName}:${JSON.stringify(args)}`
+    } catch {
+      return result
+    }
+    const count = (this._turnCallCounts.get(key) ?? 0) + 1
+    this._turnCallCounts.set(key, count)
+    if (count < 3) return result
+    const note =
+      `Identical ${toolName} call #${count} this turn — the result has not changed. ` +
+      'Act on what you already have.'
+    if (typeof result === 'string') return `${result}\n\n[${note}]`
+    if (result && typeof result === 'object' && !Array.isArray(result)) {
+      const shaped = result as Record<string, unknown>
+      // Tools with their own repeat handling (web cache/memo/budget)
+      // already speak for themselves — detected by RESULT SHAPE, never a
+      // tool-name list, so future bespoke tools are exempt automatically.
+      if ('repeatRead' in shaped || 'budgetExhausted' in shaped || 'cached' in shaped) {
+        return result
+      }
+      return { ...shaped, repeatCall: count, repeatNote: note }
+    }
+    return result
+  }
+
   /** Fired after any tool that mutates project files/structure succeeds. */
   setProjectChangedEmitter(emitter: (root: string | null) => void): void {
     this._projectChangedEmitter = emitter
@@ -379,10 +416,12 @@ export class AgentToolService {
     }
 
     if (result && typeof result === 'object') {
-      return JSON.stringify(result)
+      return JSON.stringify(
+        this._withRepeatCallNote(loaded.definition.name, args, result) as Record<string, unknown>
+      )
     }
 
-    return result
+    return this._withRepeatCallNote(loaded.definition.name, args, result)
   }
 
   private _toLangChainTool(definition: IAgentToolDefinition): DynamicStructuredTool {

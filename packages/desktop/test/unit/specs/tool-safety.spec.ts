@@ -293,15 +293,19 @@ describe('supervisor tool lists', () => {
     }
   })
 
-  it('the SDK main thread carries exactly the LangGraph supervisor surface', () => {
-    // Parity pin: worker-only tools (continuity logging, restructuring,
-    // metadata writes) require spawning a specialist on BOTH providers.
-    const union = new Set([...SUPERVISOR_TOOL_NAMES, ...SUPERVISOR_WRITE_TOOL_NAMES])
-    for (const name of mainThreadToolNames(service, 'auto')) {
-      expect(union.has(name), `${name} exceeds the supervisor surface`).toBe(true)
-    }
-    for (const name of ['log_continuity_issue', 'restructure_unit', 'update_unit_meta']) {
-      expect(mainThreadToolNames(service, 'auto')).not.toContain(name)
+  it('non-ask modes allowlist EVERY tool (the permission-stream invariant)', () => {
+    // Deliberately the opposite of the old supervisor-surface pin, which
+    // was DELETED after the prj7 incident (2026-07-18): narrowing
+    // allowedTools below what subagents use routes their traffic through
+    // the SDK permission stream, which collapses under parallel load
+    // (46/64 calls failed 'Tool permission request failed: Stream
+    // closed'). Main-thread delegation is doctrine, not mechanics.
+    const everything = service.getDefinitions().map((d) => d.name)
+    for (const mode of ['approvals', 'auto'] as const) {
+      const surface = new Set(mainThreadToolNames(service, mode))
+      for (const name of everything) {
+        expect(surface.has(name), `${name} missing from ${mode} surface`).toBe(true)
+      }
     }
   })
 

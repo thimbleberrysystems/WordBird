@@ -32,6 +32,7 @@ import { registerBuiltInAgentToolHandlers } from '../../../src/main/services/ai/
 import { registerNovelAgentToolHandlers } from '../../../src/main/services/ai/NovelToolHandlers'
 import { registerWebAgentToolHandlers } from '../../../src/main/services/ai/WebToolHandlers'
 import type { OrchestratorCallbacks } from '../../../src/main/services/ai/orchestrator/Orchestrator'
+import { DESTRUCTIVE_TOOLS } from '../../../src/main/services/ai/orchestrator/Orchestrator'
 import type {
   IAgentActivityEvent,
   IAgentApprovalRequest,
@@ -327,7 +328,7 @@ describe('a scripted SDK turn', () => {
     expect(harness.sdk.calls[1].options.resume).toBe('sess-1')
   })
 
-  it('binds only WordBird MCP tools + Task, never the file built-ins', async() => {
+  it('binds only WordBird MCP tools, never the file built-ins', async() => {
     const harness = await makeHarness([initMessage('s'), successResult('ok')])
     cleanupRoots.push(harness.root)
     harness.runner.setMode('auto')
@@ -338,11 +339,17 @@ describe('a scripted SDK turn', () => {
 
     const options = harness.sdk.calls[0].options
     const allowed = options.allowedTools as string[]
-    // Task is deliberately OFF the allowlist: a bare entry would shadow
-    // canUseTool, where duplicate spawns are bounced. It stays callable —
-    // canUseTool allows non-duplicate spawns (pinned below).
+    // Spawn tools (Agent/Task) are deliberately OFF the allowlist: a bare
+    // entry would shadow canUseTool, where duplicate spawns are bounced.
+    // They stay callable — canUseTool allows non-duplicate spawns.
     expect(allowed).not.toContain('Task')
+    expect(allowed).not.toContain('Agent')
     expect(allowed).toContain(`${MCP_TOOL_PREFIX}propose_text_edit`)
+    // The permission-stream invariant (prj7 incident): every registered
+    // non-destructive tool is allowlisted — subagent traffic must never
+    // ride the fragile permission stream.
+    expect(allowed).toContain(`${MCP_TOOL_PREFIX}read_unit`)
+    expect(allowed).toContain(`${MCP_TOOL_PREFIX}log_continuity_issue`)
     expect(allowed.every((t) => t.startsWith(MCP_TOOL_PREFIX))).toBe(true)
     // Destructive tools must NOT be pre-approved: a bare allowedTools entry
     // shadows canUseTool, which would skip the writer-approval gate.
@@ -357,7 +364,7 @@ describe('a scripted SDK turn', () => {
     expect(options.settingSources).toEqual([])
     // The brief and the Task-spawn doctrine ride the system prompt.
     expect(String(options.systemPrompt)).toContain('PROJECT BRIEF (test)')
-    expect(String(options.systemPrompt)).toContain('Task')
+    expect(String(options.systemPrompt)).toContain('Agent')
   })
 
   it('destructive tools require writer approval through canUseTool', async() => {
@@ -529,45 +536,74 @@ describe('provider parity', () => {
     ).rejects.toSatisfy((error: Error) => error.name !== 'GraphRecursionError')
   })
 
-  it('main thread carries the SUPERVISOR surface; worker tools stay registered but gated', async() => {
-    const harness = await makeHarness([initMessage('s'), successResult('ok')])
+  it('MODE MATRIX: the permission-stream invariant holds in every mode', async() => {
+    // For each mode: (a) every subagent tool is registered, (b) everything
+    // registered minus destructive is ALLOWLISTED (subagent traffic must
+    // never ride the permission stream — prj7 incident, 2026-07-18),
+    // (c) propose_* exist outside ask and not in it, (d) destructive tools
+    // never appear in a subagent definition.
+    for (const mode of ['ask', 'approvals', 'auto'] as const) {
+      const harness = await makeHarness([initMessage('s'), successResult('ok')])
+      cleanupRoots.push(harness.root)
+      harness.runner.setMode(mode)
+      await harness.runner.buildGraph().invoke(
+        { messages: [{ content: 'hi' }] },
+        { configurable: { thread_id: `t-matrix-${mode}` } }
+      )
+      const options = harness.sdk.calls[0].options
+      const allowed = new Set(options.allowedTools as string[])
+      const registered = new Set(harness.sdk.registeredTools.map((tool) => tool.name))
+      const agents = options.agents as Record<string, { tools: string[] }>
+
+      for (const [roleName, def] of Object.entries(agents)) {
+        for (const prefixed of def.tools) {
+          const bare = prefixed.replace(MCP_TOOL_PREFIX, '')
+          expect(registered.has(bare), `${mode}/${roleName}: ${bare} unregistered`).toBe(true)
+          expect(
+            DESTRUCTIVE_TOOLS.includes(bare),
+            `${mode}/${roleName}: destructive ${bare} in subagent def`
+          ).toBe(false)
+        }
+      }
+      for (const bare of registered) {
+        const ok = allowed.has(`${MCP_TOOL_PREFIX}${bare}`) || DESTRUCTIVE_TOOLS.includes(bare)
+        expect(ok, `${mode}: ${bare} registered but not allowlisted`).toBe(true)
+      }
+      const hasPropose = allowed.has(`${MCP_TOOL_PREFIX}propose_text_edit`)
+      expect(hasPropose, mode).toBe(mode !== 'ask')
+    }
+  })
+})
+
+describe('tool failures are VISIBLE', () => {
+  it('an errored tool_result becomes an activity line naming the tool', async() => {
+    const harness = await makeHarness([
+      initMessage('s'),
+      assistantToolUse(`${MCP_TOOL_PREFIX}wiki_read`, { title: 'Elam' }, 'tu-fail'),
+      {
+        type: 'user',
+        message: {
+          content: [
+            {
+              type: 'tool_result',
+              tool_use_id: 'tu-fail',
+              is_error: true,
+              content: 'Tool permission request failed: AbortError: Stream closed'
+            }
+          ]
+        }
+      },
+      successResult('done')
+    ])
     cleanupRoots.push(harness.root)
     harness.runner.setMode('auto')
     await harness.runner.buildGraph().invoke(
       { messages: [{ content: 'hi' }] },
-      { configurable: { thread_id: 't-surface' } }
+      { configurable: { thread_id: 't-fail' } }
     )
-    const options = harness.sdk.calls[0].options
-    const allowed = options.allowedTools as string[]
-    // Worker-only tools are not on the main-thread allowlist…
-    expect(allowed).not.toContain(`${MCP_TOOL_PREFIX}log_continuity_issue`)
-    expect(allowed).not.toContain(`${MCP_TOOL_PREFIX}read_unit`)
-    // …but supervisor tools are, and the server still registers worker tools
-    // (subagents execute them through the same in-process server).
-    expect(allowed).toContain(`${MCP_TOOL_PREFIX}propose_text_edit`)
-    const registered = harness.sdk.registeredTools.map((tool) => tool.name)
-    expect(registered).toContain('log_continuity_issue')
-    expect(registered).toContain('read_unit')
-    expect(registered).toContain('get_scene_handoff')
-
-    // The deny layer: main-thread calls to worker tools bounce with
-    // delegation guidance; the SAME call from inside a subagent is allowed.
-    const canUseTool = options.canUseTool as (
-      name: string,
-      input: Record<string, unknown>,
-      extra?: { agentID?: string }
-    ) => Promise<{ behavior: string; message?: string }>
-    const denied = await canUseTool(`${MCP_TOOL_PREFIX}log_continuity_issue`, {}, {})
-    expect(denied.behavior).toBe('deny')
-    expect(denied.message).toContain('Task')
-    const fromSubagent = await canUseTool(
-      `${MCP_TOOL_PREFIX}log_continuity_issue`,
-      {},
-      { agentID: 'sub-1' }
-    )
-    expect(fromSubagent.behavior).toBe('allow')
-    const supervisorTool = await canUseTool(`${MCP_TOOL_PREFIX}search_manuscript`, {}, {})
-    expect(supervisorTool.behavior).toBe('allow')
+    const failure = harness.activity.find((event) => /tool failed — wiki_read/.test(event.label))
+    expect(failure).toBeDefined()
+    expect(failure?.detail).toContain('Stream closed')
   })
 })
 
@@ -604,22 +640,29 @@ describe('duplicate-spawn guard (canUseTool on Task)', () => {
     ) => Promise<{ behavior: string; message?: string }>
 
     const spawn = { subagent_type: 'researcher', prompt: 'Research 1890s lighthouse fuel.' }
-    expect((await canUseTool('Task', spawn)).behavior).toBe('allow')
-    // Same task again (whitespace/case noise included) → bounced.
-    const dup = await canUseTool('Task', {
+    // Current runtime name ('Agent'), legacy name ('Task'), and even a
+    // HYPOTHETICAL future rename ('Delegate') — detection is structural
+    // (subagent_type input), so renames can't kill the guard again.
+    expect((await canUseTool('Agent', spawn)).behavior).toBe('allow')
+    const dupLegacyName = await canUseTool('Task', {
       subagent_type: 'researcher',
       prompt: '  research 1890s LIGHTHOUSE fuel.  '
     })
-    expect(dup.behavior).toBe('deny')
-    expect(dup.message).toMatch(/identical agent/i)
+    expect(dupLegacyName.behavior).toBe('deny')
+    expect(dupLegacyName.message).toMatch(/identical agent/i)
+    const dupFutureName = await canUseTool('Delegate', {
+      subagent_type: 'researcher',
+      prompt: 'Research 1890s lighthouse fuel.'
+    })
+    expect(dupFutureName.behavior).toBe('deny')
     // A different task or a different role passes.
     expect(
-      (await canUseTool('Task', { subagent_type: 'researcher', prompt: 'Research tides.' }))
+      (await canUseTool('Agent', { subagent_type: 'researcher', prompt: 'Research tides.' }))
         .behavior
     ).toBe('allow')
     expect(
       (
-        await canUseTool('Task', {
+        await canUseTool('Agent', {
           subagent_type: 'auditor',
           prompt: 'Research 1890s lighthouse fuel.'
         })

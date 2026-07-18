@@ -173,6 +173,37 @@ describe('StructureService.deleteUnit', () => {
     expect(fs.existsSync(path.join(root, 'manuscript/chapter-one/opening-scene.md'))).toBe(true)
   })
 
+  it('folders are first-class: moving one keeps every unit underneath', async() => {
+    write('manuscript/chapter-one/a.md', 'Scene A.')
+    write('manuscript/chapter-one/b.md', 'Scene B.')
+    await service.loadReconciled(root)
+
+    type Handler = (a: Record<string, unknown>, c: unknown) => Promise<unknown>
+    const toolService = new (await import('../../../src/main/services/ai/AgentToolService')).AgentToolService()
+    const { registerNovelAgentToolHandlers } = await import(
+      '../../../src/main/services/ai/NovelToolHandlers'
+    )
+    registerNovelAgentToolHandlers(toolService)
+    const moveFile = (
+      toolService as unknown as { _handlers: Map<string, Handler> }
+    )._handlers.get('move_file')!
+
+    const result = (await moveFile(
+      { from: 'manuscript/chapter-one', to: 'manuscript/part-one', reason: 'reorg' },
+      { projectRoot: root }
+    )) as { moved: boolean; folder: boolean; unitsUpdated: number }
+    expect(result.moved).toBe(true)
+    expect(result.folder).toBe(true)
+    expect(result.unitsUpdated).toBeGreaterThanOrEqual(2)
+    expect(fs.existsSync(path.join(root, 'manuscript/part-one/a.md'))).toBe(true)
+
+    // The binder followed the move — same units, new paths, nothing pruned.
+    const after = await service.loadReconciled(root)
+    const paths = collectLeaves(after.units).map((u) => u.path)
+    expect(paths).toContain('manuscript/part-one/a.md')
+    expect(paths).toContain('manuscript/part-one/b.md')
+  })
+
   it('removes the unit summary regardless of deleteFiles (no orphans)', async() => {
     for (const deleteFiles of [true, false]) {
       write(`manuscript/chapter-one/scene-${deleteFiles}.md`, 'Words.')

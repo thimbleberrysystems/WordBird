@@ -21,7 +21,8 @@ import {
   resetWebReadCounts,
   MAX_KNOWN_URLS,
   WEB_CACHE_TTL_MS,
-  WEB_RETRY_DELAYS_MS
+  WEB_RETRY_DELAYS_MS,
+  WEB_TURN_LOOKUP_BUDGET
 } from '../../../src/main/services/ai/WebToolHandlers'
 import { buildSupervisorPrompt } from '../../../src/main/services/ai/orchestrator/Orchestrator'
 import { AGENT_ROLES } from '../../../src/main/services/ai/orchestrator/roles'
@@ -521,6 +522,40 @@ describe('web content cache (research is never re-downloaded)', () => {
     expect(a.title).toBe('Shared')
     expect(b.title).toBe('Shared')
     expect(mockedGet).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('per-turn lookup budget (research must END)', () => {
+  it('past the budget, live lookups stop and demand a save; cache hits stay free', async() => {
+    mockedGet.mockResolvedValue(okHtml('<title>Page</title>'))
+    for (let i = 0; i < WEB_TURN_LOOKUP_BUDGET; i++) {
+      registerUrlProvenance(`https://budget.example.com/${i}`)
+      await run('web_fetch', { url: `https://budget.example.com/${i}` })
+    }
+    expect(mockedGet).toHaveBeenCalledTimes(WEB_TURN_LOOKUP_BUDGET)
+    // The next LIVE lookup is refused without network…
+    registerUrlProvenance('https://budget.example.com/over')
+    const over = (await run('web_fetch', { url: 'https://budget.example.com/over' })) as {
+      budgetExhausted?: boolean
+      note?: string
+    }
+    expect(over.budgetExhausted).toBe(true)
+    expect(over.note).toMatch(/save_research/i)
+    expect(mockedGet).toHaveBeenCalledTimes(WEB_TURN_LOOKUP_BUDGET)
+    // …and searches are refused too…
+    const search = (await run('web_search', { query: 'anything else' })) as {
+      budgetExhausted?: boolean
+    }
+    expect(search.budgetExhausted).toBe(true)
+    // …but a new turn starts fresh.
+    resetWebReadCounts()
+    mockedGet.mockClear()
+    mockedGet.mockResolvedValue(okHtml('<title>Fresh</title>'))
+    registerUrlProvenance('https://budget.example.com/fresh')
+    const fresh = (await run('web_fetch', { url: 'https://budget.example.com/fresh' })) as {
+      budgetExhausted?: boolean
+    }
+    expect(fresh.budgetExhausted).toBeUndefined()
   })
 })
 

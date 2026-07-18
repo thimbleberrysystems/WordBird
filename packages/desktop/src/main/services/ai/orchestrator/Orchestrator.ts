@@ -405,15 +405,18 @@ export const SUPERVISOR_WRITE_TOOL_NAMES = [
   'set_writing_method',
   'record_fact',
   'record_decision',
+  'move_file',
+  'create_folder',
   'delete_unit',
   'delete_file',
+  'delete_folder',
   'restore_snapshot'
 ]
 
 // Deletion is irreversible-feeling even with snapshots — and a whole-
 // project rewind rewrites everything at once: EVERY one of these asks the
 // writer first, in every mode, auto included.
-export const DESTRUCTIVE_TOOLS = ['delete_unit', 'delete_file', 'restore_snapshot']
+export const DESTRUCTIVE_TOOLS = ['delete_unit', 'delete_file', 'delete_folder', 'restore_snapshot']
 
 const SPAWN_TOOL_NAME = 'spawn_agents'
 
@@ -619,7 +622,8 @@ export const buildSupervisorPrompt = (
   'search there before asking them to repeat themselves.\n' +
   '- RESEARCH IS AN ASSET: check RESEARCH ON FILE (bible/research/) before spawning a ' +
   'researcher — the topic may already be covered. When research findings arrive without a ' +
-  'saved note, save_research them yourself; unsaved research evaporates with the conversation.\n' +
+  'saved note, save_research them yourself; unsaved research evaporates with the ' +
+  'conversation. Keep the library tidy: topical subfolders (bible/research/<topic>/).\n' +
   '- Prefer summaries (read_summary) over full prose to orient; read full units only when the task ' +
   'demands the actual text. Have summaries refreshed (update_summary) after prose changes.\n' +
   '- NEXT-STEP NUDGE: when the project is young (EMPTY PROJECT / NO STORY BIBLE markers ' +

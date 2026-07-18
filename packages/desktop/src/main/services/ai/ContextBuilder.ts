@@ -13,7 +13,11 @@
 import path from 'path'
 import fs from 'fs'
 import fsPromises from 'fs/promises'
-import { structureService, collectLeaves } from '../novel/StructureService'
+import {
+  structureService,
+  collectLeaves,
+  listFilesRecursive
+} from '../novel/StructureService'
 import { getEntityIndex } from '../novel/EntityIndex'
 import { continuityService } from '../novel/ContinuityService'
 import { revisionService, RevisionService } from '../novel/RevisionService'
@@ -330,10 +334,8 @@ export class ContextBuilder {
       // topic is never re-researched (the notes live in bible/research/).
       try {
         const researchDir = path.join(projectRoot, 'bible', 'research')
-        const notes = fs
-          .readdirSync(researchDir)
-          .filter((name) => /\.(md|markdown)$/i.test(name))
-          .sort()
+        // Recursive: notes may live in topic subfolders (elam/politics.md).
+        const notes = listFilesRecursive(researchDir, /\.(md|markdown)$/i)
         if (notes.length > 0) {
           const MAX_NOTES = 12
           const lines = notes.slice(0, MAX_NOTES).map((name) => {

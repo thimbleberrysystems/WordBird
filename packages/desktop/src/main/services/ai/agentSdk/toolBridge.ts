@@ -52,12 +52,32 @@ export const stripMcpPrefix = (toolName: string): string =>
   toolName.startsWith(MCP_TOOL_PREFIX) ? toolName.slice(MCP_TOOL_PREFIX.length) : toolName
 
 /**
- * Tool names the main-thread agent may call in a given mode. Mirrors the
- * LangGraph supervisor EXACTLY: reads + plans + ask_writer always; the
- * supervisor's write set outside ask mode. Worker-only tools (continuity
- * logging, revision bookkeeping, restructuring) require spawning the
- * matching specialist — same delegation discipline as LangGraph, enforced
- * by the runner's canUseTool deny for main-thread calls.
+ * The runtime's subagent-spawn tool has been renamed before (Task →
+ * Agent in CLI 2.1.211, which silently killed every Task-keyed
+ * mechanism). Known names are the fast path; the STRUCTURAL contract —
+ * an input carrying `subagent_type` — survives any future rename.
+ */
+export const SPAWN_TOOL_NAMES = ['Agent', 'Task'] as const
+
+export const isSpawnToolCall = (name: string, input: unknown): boolean => {
+  if ((SPAWN_TOOL_NAMES as readonly string[]).includes(name)) return true
+  return (
+    !!input &&
+    typeof input === 'object' &&
+    typeof (input as { subagent_type?: unknown }).subagent_type === 'string' &&
+    !name.startsWith(MCP_TOOL_PREFIX)
+  )
+}
+
+/**
+ * Tool names registered AND allowlisted for a mode. Ask mode narrows to
+ * the read-only surface (registration ≡ allowlist there, so nothing
+ * reachable ever needs the permission stream — the mechanical read-only
+ * guarantee). Outside ask, this is ALL tools: main-thread delegation to
+ * specialists is DOCTRINE (supervisor prompt), deliberately NOT
+ * mechanics — narrowing allowedTools below what subagents use routes
+ * their traffic through the SDK permission stream, which collapses
+ * under parallel-subagent load (prj7 incident, 2026-07-18).
  */
 export const mainThreadToolNames = (
   service: AgentToolService,
@@ -67,26 +87,7 @@ export const mainThreadToolNames = (
   const wanted =
     mode === 'ask'
       ? new Set([...SUPERVISOR_TOOL_NAMES, ...READONLY_WORKER_TOOLS])
-      : new Set([...SUPERVISOR_TOOL_NAMES, ...SUPERVISOR_WRITE_TOOL_NAMES])
-  return [...wanted].filter((name) => available.has(name))
-}
-
-/**
- * Everything that must be REGISTERED on the MCP server: the main thread's
- * surface plus every tool any mode-appropriate subagent may use (subagent
- * tools live on the same server).
- */
-export const registeredToolNames = (
-  service: AgentToolService,
-  mode: AgentPermissionMode
-): string[] => {
-  const wanted = new Set(mainThreadToolNames(service, mode))
-  for (const role of Object.values(AGENT_ROLES)) {
-    if (mode === 'ask' && !READONLY_ROLES.includes(role.role)) continue
-    const roleTools = mode === 'ask' ? READONLY_WORKER_TOOLS : role.allowedTools
-    for (const name of roleTools) wanted.add(name)
-  }
-  const available = new Set(service.getDefinitions().map((d) => d.name))
+      : new Set(service.getDefinitions().map((d) => d.name))
   return [...wanted].filter((name) => available.has(name))
 }
 
@@ -99,7 +100,7 @@ export const buildWordbirdMcpServer = (
   service: AgentToolService,
   mode: AgentPermissionMode
 ): { server: unknown; toolNames: string[] } => {
-  const allowed = new Set(registeredToolNames(service, mode))
+  const allowed = new Set(mainThreadToolNames(service, mode))
   const tools: unknown[] = []
   const toolNames: string[] = []
 

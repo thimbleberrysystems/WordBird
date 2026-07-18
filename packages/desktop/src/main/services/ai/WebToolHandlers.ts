@@ -116,9 +116,29 @@ const turnReadCounts = new Map<string, number>()
 // first answer is the answer — memoized here, cleared with the counters.
 const turnSearchCache = new Map<string, Record<string, unknown>>()
 
+// Hard per-turn budget on LIVE lookups (cache/memo hits are free): even a
+// model that ignores every nudge cannot read the internet forever — past
+// the budget, web tools stop fetching and demand synthesis + save.
+export const WEB_TURN_LOOKUP_BUDGET = 40
+let turnLiveLookups = 0
+
+const consumeLookupBudget = (): Record<string, unknown> | null => {
+  if (turnLiveLookups >= WEB_TURN_LOOKUP_BUDGET) {
+    return {
+      budgetExhausted: true,
+      note:
+        `This turn already made ${WEB_TURN_LOOKUP_BUDGET} live web lookups — no more ` +
+        'fetching. Synthesize what you have and save_research it NOW.'
+    }
+  }
+  turnLiveLookups += 1
+  return null
+}
+
 export const resetWebReadCounts = (): void => {
   turnReadCounts.clear()
   turnSearchCache.clear()
+  turnLiveLookups = 0
 }
 
 const withRepeatReadNote = <T extends Record<string, unknown>>(key: string, result: T): T => {
@@ -450,6 +470,8 @@ const webFetchLive = async(
   cacheId: string | null,
   context: AgentToolContext
 ): Promise<unknown> => {
+  const exhausted = consumeLookupBudget()
+  if (exhausted) return { url: rawUrl, ...exhausted }
   let url = assertSafeUrl(rawUrl)
 
   // Provenance gate: only URLs the writer supplied or a search returned.
@@ -566,6 +588,9 @@ const webSearch = async(
     return withRepeatReadNote(memoKey, { ...memoized, results: memoResults, cached: true })
   }
 
+  const exhausted = consumeLookupBudget()
+  if (exhausted) return { query, results: [], ...exhausted }
+
   const response = await getWithRetry('https://html.duckduckgo.com/html/', {
     params: { q: query },
     timeout: FETCH_TIMEOUT_MS,
@@ -616,6 +641,9 @@ const wikiSearch = async(
     }
     return withRepeatReadNote(memoKey, { ...memoized, cached: true })
   }
+
+  const exhausted = consumeLookupBudget()
+  if (exhausted) return { query, lang, results: [], ...exhausted }
 
   const response = await getWithRetry(
     `https://${lang}.wikipedia.org/w/rest.php/v1/search/page`,
@@ -668,6 +696,8 @@ const wikiReadLive = async(
   cacheId: string,
   context: AgentToolContext
 ): Promise<unknown> => {
+  const exhausted = consumeLookupBudget()
+  if (exhausted) return { title, lang, found: false, ...exhausted }
   // Plain-text extract of the full article via the MediaWiki API.
   const response = await getWithRetry(`https://${lang}.wikipedia.org/w/api.php`, {
     params: {
