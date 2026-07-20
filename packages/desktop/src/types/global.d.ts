@@ -11,6 +11,8 @@ import type {
   BootInfo,
   ProjectCreateArgs,
   ProjectCreateResult,
+  ProjectImportArgs,
+  ProjectImportResult,
   ProjectLoadArgs,
   ProjectLoadResult
 } from '@shared/types/ipc'
@@ -126,6 +128,7 @@ declare global {
     isUpdatable: boolean
     project: {
       create: (args?: ProjectCreateArgs) => Promise<ProjectCreateResult>
+      import: (args?: ProjectImportArgs) => Promise<ProjectImportResult>
       load: (args?: ProjectLoadArgs) => Promise<ProjectLoadResult>
       validate: (path: string) => Promise<boolean>
       saveAs: (currentPath: string) => Promise<ProjectCreateResult>

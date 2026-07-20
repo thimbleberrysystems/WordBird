@@ -429,7 +429,8 @@
     "structureHerosJourney": "Heldenreise",
     "structureSevenPoint": "Sieben Punkte",
     "structureRomancing": "Romancing the Beat (Romance)",
-    "methodHint": "Optional — Biscuit passt seine Hilfe an deine Methode an. Jederzeit änderbar, sag es einfach Biscuit."
+    "methodHint": "Optional — Biscuit passt seine Hilfe an deine Methode an. Jederzeit änderbar, sag es einfach Biscuit.",
+    "importManuscript": "Import Manuscript"
   },
   "import": {
     "title": "Importieren oder öffnen",
@@ -1436,7 +1437,10 @@
     "open": "Öffnen",
     "rename": "Umbenennen",
     "newFolder": "Neuer Ordner",
-    "deleteFileConfirm": "{name} löschen? Ein Schnappschuss bewahrt eine Kopie."
+    "deleteFileConfirm": "{name} löschen? Ein Schnappschuss bewahrt eine Kopie.",
+    "streakTip": "{days}-day writing streak",
+    "sessionTip": "Words written this session",
+    "dailyQuota": "{words} words/day to finish in {days} days"
   },
   "history": {
     "title": "Schnappschüsse",
@@ -1478,7 +1482,12 @@
     "outlineTip": "Gliederung — Szenen als editierbare Tabelle",
     "timelineTip": "Zeitleiste — Szenen in Erzählzeit",
     "statusCycleTip": "Status: {status} — Klick wechselt Idee → Entwurf → Überarbeitet → Final",
-    "povPlaceholder": "POV"
+    "povPlaceholder": "POV",
+    "craftColumns": "Craft columns",
+    "colGoal": "Goal",
+    "colConflict": "Conflict",
+    "colOutcome": "Outcome",
+    "colValueShift": "Value shift"
   },
   "continuity": {
     "title": "Kontinuität",
@@ -1595,7 +1604,9 @@
     "startersHint": "Startvorschläge — Klick füllt die Eingabe",
     "mentionButtonTip": "Szene oder Bibel-Seite referenzieren (@)",
     "startersButtonTip": "Startvorschläge (/)",
-    "historyHintTip": "↑ im leeren Eingabefeld ruft frühere Eingaben ab"
+    "historyHintTip": "↑ im leeren Eingabefeld ruft frühere Eingaben ab",
+    "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
+    "selDraft": "Draft"
   },
   "review": {
     "pendingOne": "1 ausstehende Änderung",

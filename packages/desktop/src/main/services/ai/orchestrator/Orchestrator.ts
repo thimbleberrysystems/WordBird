@@ -78,6 +78,14 @@ export interface OrchestratorCallbacks {
    * preceding scene's prose (or null) so consecutive scenes join seamlessly.
    */
   buildHandoff?: (task: string) => Promise<string | null>
+  /**
+   * GATHERED THIS TURN — the live research-ledger section ('' when
+   * empty). Called at every worker spawn and supervisor iteration, NOT
+   * cached with the brief: the ledger grows during the turn and later
+   * waves must see what earlier waves gathered. Roles with coldStart
+   * (auditor) never receive it — critics judge fresh from source.
+   */
+  buildGathered?: () => string
 }
 
 // ---- Token accounting -------------------------------------------------
@@ -463,12 +471,20 @@ export const buildSupervisorPrompt = (
   'return. Include relevant unit ids/paths from the project brief so they start oriented.\n' +
   '- NEVER give two agents in a wave the same question or the same research topic — ' +
   'assign DISTINCT scopes (duplicate fetches are coalesced mechanically, but duplicate ' +
-  'agents still waste a whole worker).\n' +
+  'agents still waste a whole worker). ONE SUBJECT = ONE RESEARCHER: sub-topics of a ' +
+  'single subject (a place\'s history AND geography AND religion; a person\'s life AND ' +
+  'work) read the SAME core sources, so hand the whole subject to one researcher with a ' +
+  'multi-part brief — do NOT split it across parallel researchers (they converge on the ' +
+  'same pages and thrash). Reserve parallel researchers for genuinely SEPARATE subjects. ' +
+  'Workers in later waves automatically see the ' +
+  'GATHERED THIS TURN section — what earlier waves already read — so assign them ' +
+  'SYNTHESIS and next steps, never re-gathering of listed sources.\n' +
   '- CONTEXT PREP (hard rule, not a suggestion): before your FIRST propose_* of a turn ' +
   'that touches existing prose, you must hold in-turn evidence — read/search results or a ' +
   'completed explorer wave — covering the target units AND every named character/place ' +
   'involved (WHO\'S WHERE + where_appears make this one glance; read_summary/read_bible ' +
-  'fill the rest). Editing text you have not read this turn is how continuity dies. ' +
+  'fill the rest; entries in GATHERED THIS TURN count as in-turn evidence for their ' +
+  'targets). Editing text you have not read this turn is how continuity dies. ' +
   'Brainstorming or starting a new project? Default the FIRST wave to an explorer (plus a ' +
   'researcher when real-world facts are in play) instead of answering cold.\n' +
   '- RESEARCH is a spawn trigger, not a nice-to-have. Any real-world fact the prose leans ' +
@@ -532,7 +548,8 @@ export const buildSupervisorPrompt = (
   '- QUESTIONS WITH CHOICES go through ask_writer (a card with buttons + a free-form ' +
   'field): use it whenever the answers are enumerable — genre, tone, POV, picking between ' +
   'premises, yes/no forks. One question per card, your recommendation FIRST, then end ' +
-  'your turn. Never write a markdown table or bullet-wall of questions.\n' +
+  'your turn. Never write a markdown table or bullet-wall of questions. ask_writer is the ' +
+  'ONLY way to ask the writer anything — you have no other question tool.\n' +
   '- Messages marked "[Writer, mid-run]" arrived while you were working — they take precedence ' +
   'over earlier instructions when they conflict; adjust course immediately.\n' +
   '- Tool results reading "[interrupted…]" mean a previous run was stopped mid-action: nothing ' +
@@ -601,6 +618,33 @@ export const buildSupervisorPrompt = (
   'status (offer synopsis fills for blank cards); outline → metadata sweeps (POV/location/' +
   'status completeness); timeline → `when` fields, chronology, flashback ordering. The ' +
   'writer\'s words always outrank the view.\n' +
+  '10) RETRO-OUTLINE (pantser rescue): when the writer asks to "outline what I\'ve ' +
+  'written" / "reverse-outline" / catch the map up to the prose, do NOT invent structure — ' +
+  'DERIVE it. For each existing scene: read it, then update_unit_meta with a one-line ' +
+  'synopsis AND the scene craft you can infer from the prose (goal / conflict / outcome, ' +
+  'and the value shift if clear). Where a beat sheet exists (bible/structure.md), map each ' +
+  'scene to the beat it serves. Nothing is proposed as prose — this is metadata only, and ' +
+  'it populates the writer\'s corkboard/outline/timeline retroactively. Spawn a plotter or ' +
+  'steward for a multi-scene sweep; report what the shape reveals (gaps, a saggy middle) as ' +
+  'observation, never as a demand to restructure.\n' +
+  '11) POST-IMPORT (a manuscript was just imported — the brief flags it): the prose ' +
+  'exists but has NO canon yet. OFFER a two-part onboarding, never auto-run it: (a) a ' +
+  'RETRO-OUTLINE pass (playbook 10) to fill synopses/craft so the corkboard/outline ' +
+  'populate; and (b) BIBLE EXTRACTION — spawn a steward from project_health to mine the ' +
+  'recurring character/place names it already detects and PROPOSE a bible page (with ' +
+  'aliases) for each, review-gated. Extraction NEVER fabricates traits: pages carry only ' +
+  'what the prose states, with a note where the writer should fill the rest. Small ' +
+  'batches; let the writer accept/reject each page. This turns an imported draft into a ' +
+  'project the steward can keep coherent.\n' +
+  '9) INTERVIEW A CHARACTER (persona chat): when the writer asks to "talk to", ' +
+  '"interview", or hear from a character in their OWN voice, become that character. FIRST ' +
+  'ground yourself — read_bible for their page and list_facts about=<name> for established ' +
+  'canon — then answer IN-CHARACTER: their voice, knowledge, and biases, never revealing ' +
+  'anything the character could not know. This is a READ-ONLY conversation: propose NO ' +
+  'edits and record NO canon while in persona (it is exploration, not authorship). Stay in ' +
+  'character until the writer steps back out; if asked something the bible does not ' +
+  'establish, improvise in-voice and flag (as yourself, briefly) that it is not yet canon ' +
+  'so the writer can choose to record it later.\n' +
   '\nSWEEPING REVISIONS (removing a character, changing a timeline, renaming across the book):\n' +
   '- Never wing a book-wide change. Run the revision workflow:\n' +
   '  1) INTERVIEW the writer first: exactly what changes; every name/alias involved; who ' +
@@ -687,7 +731,10 @@ export const buildSupervisorPrompt = (
         'with an auditor sweep of exactly the scenes just drafted — continuity against ' +
         'the bible and facts, where_appears/entity spot-checks, story-time order, beat ' +
         'coverage when a beat sheet exists, AND lint_prose on each drafted scene ' +
-        '(repetitions, filler, banned terms — deterministic signals, fix the real ones). ' +
+        '(repetitions, filler, banned terms — deterministic signals, fix the real ones), ' +
+        'AND — once several scenes exist — lint_prose corpus:true to catch AI-SLOP ' +
+        'across scenes (a phrase or scene-opening the draft keeps reusing, machine-flat ' +
+        'rhythm); vary the echoes the writer did not choose. ' +
         'FIX what the auditor finds (or log it with ' +
         'log_continuity_issue) BEFORE the CONTINUE marker — never stack new scenes on ' +
         'unreviewed ones. Research on long-form generation shows this single habit ' +
@@ -1137,7 +1184,16 @@ export class Orchestrator {
       // they share the same compact project grounding as the supervisor so
       // they start oriented instead of re-discovering the novel via tools.
       const brief = await this._getBrief()
-      const systemText = definition.systemPrompt + (brief ? `\n\n${brief}` : '')
+      // GATHERED THIS TURN: warm workers also start from what the turn
+      // already read (fetched live — the ledger grows between waves).
+      // coldStart roles (auditor) are skipped: critics verify from
+      // source, and pre-chewed digests would bias exactly what they
+      // exist to independently check.
+      const gathered = definition.coldStart ? '' : (this._callbacks.buildGathered?.() ?? '')
+      const systemText =
+        definition.systemPrompt +
+        (brief ? `\n\n${brief}` : '') +
+        (gathered ? `\n\n${gathered}` : '')
       // Scene handoff: drafters get the tail of the preceding scene so
       // consecutive scenes join without a seam (voice, time, open threads).
       let task = spawn.task
@@ -1302,6 +1358,9 @@ export class Orchestrator {
         // the system prompt carries the project brief, and the accumulated
         // thread is windowed to the character budget.
         const brief = await this._getBrief()
+        // Live ledger section — grows between iterations, so a later wave
+        // is planned around what earlier waves already gathered.
+        const gathered = this._callbacks.buildGathered?.() ?? ''
         const { messages: history, trimmed } = trimHistory(
           state.messages,
           this._historyCharBudget,
@@ -1310,6 +1369,7 @@ export class Orchestrator {
         const systemText =
           buildSupervisorPrompt(mode, budget.maxWorkersPerWave) +
           (brief ? `\n\n${brief}` : '') +
+          (gathered ? `\n\n${gathered}` : '') +
           (trimmed
             ? '\n\n[Note: earlier parts of this long conversation were trimmed for space. ' +
               'Rely on the project brief and tools rather than memory of old turns.]'

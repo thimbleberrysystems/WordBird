@@ -19,14 +19,27 @@ import {
   PROVIDER_LABELS,
   normalizeProvider
 } from '../../../src/shared/constants/ai'
-import { AgentSDKRunner } from '../../../src/main/services/ai/agentSdk/AgentSDKRunner'
+import {
+  AgentSDKRunner,
+  DISALLOWED_BUILTIN_TOOLS,
+  SDK_SILENCE_TIMEOUT_MS,
+  SPAWN_SLOT_STALE_MS
+} from '../../../src/main/services/ai/agentSdk/AgentSDKRunner'
 import {
   MCP_TOOL_PREFIX,
+  SPAWN_TOOL_NAMES,
+  TOOL_OUTPUT_CHAR_CAP,
   WRITE_TOOL_NAMES,
   buildSdkAgents,
   mainThreadToolNames,
   stripMcpPrefix
 } from '../../../src/main/services/ai/agentSdk/toolBridge'
+import { executeHttpTool } from '../../../src/main/services/ai/agentSdk/httpMcpServer'
+import {
+  MODE_BUDGETS,
+  HEAVY_ROLES,
+  HEAVY_ROLE_RECURSION_MULTIPLIER
+} from '../../../src/main/services/ai/orchestrator/roles'
 import { AgentToolService, AgentToolPackLoader } from '../../../src/main/services/ai/AgentToolService'
 import { registerBuiltInAgentToolHandlers } from '../../../src/main/services/ai/AgentToolHandlers'
 import { registerNovelAgentToolHandlers } from '../../../src/main/services/ai/NovelToolHandlers'
@@ -41,6 +54,33 @@ import type {
 } from '../../../src/shared/types/langgraph'
 
 const TOOL_PACK = path.join(__dirname, '../../../static/agentTools.json')
+
+// Adapter: drive the new PreToolUse gate the way the old canUseTool tests
+// did, mapping the hook's result shape back to {behavior, message,
+// updatedInput}. gating moved off canUseTool onto the hook (prj13 fix).
+const gateAdapter =
+  (runner: { preToolUseGate: (i: unknown) => Promise<Record<string, unknown>> }) =>
+    async(
+      name: string,
+      input: Record<string, unknown>,
+      toolUseId?: string
+    ): Promise<{ behavior?: string; message?: string; updatedInput?: Record<string, unknown> }> => {
+      const out = await runner.preToolUseGate({
+        tool_name: name,
+        tool_input: input,
+        tool_use_id: toolUseId
+      })
+      const hso = (out.hookSpecificOutput ?? {}) as {
+        permissionDecision?: string
+        permissionDecisionReason?: string
+        updatedInput?: Record<string, unknown>
+      }
+      return {
+        behavior: hso.permissionDecision,
+        message: hso.permissionDecisionReason,
+        updatedInput: hso.updatedInput
+      }
+    }
 
 // ---- Scripted SDK -----------------------------------------------------------
 
@@ -123,12 +163,18 @@ interface Harness {
   approveNext: { value: boolean }
   /** Queued mid-run steering notes; drained by the runner per invoke. */
   steering: string[]
+  /** Live GATHERED THIS TURN section (mutable mid-test to prove liveness). */
+  gathered: { value: string }
   stateDir: string
   root: string
   service: AgentToolService
 }
 
-const makeHarness = async(script: SdkMessage[], apiKey = ''): Promise<Harness> => {
+const makeHarness = async(
+  script: SdkMessage[],
+  apiKey = '',
+  options: { silenceMs?: number } = {}
+): Promise<Harness> => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'wordbird-sdk-'))
   fs.mkdirSync(path.join(root, '.wordbird'), { recursive: true })
   fs.writeFileSync(
@@ -152,6 +198,7 @@ const makeHarness = async(script: SdkMessage[], apiKey = ''): Promise<Harness> =
   const usage: ITokenUsageUpdate[] = []
   const approveNext = { value: true }
   const steering: string[] = []
+  const gathered = { value: '' }
   const callbacks: OrchestratorCallbacks = {
     emitActivity: (event) => activity.push(event),
     requestApproval: async(request) => {
@@ -161,7 +208,8 @@ const makeHarness = async(script: SdkMessage[], apiKey = ''): Promise<Harness> =
     buildBrief: async() => 'PROJECT BRIEF (test): one chapter, one scene.',
     emitAgentStatus: (status) => statuses.push(status),
     emitTokenUsage: (update) => usage.push(update),
-    drainSteering: () => steering.splice(0)
+    drainSteering: () => steering.splice(0),
+    buildGathered: () => gathered.value
   }
 
   const sdk = makeSdk(script)
@@ -172,7 +220,8 @@ const makeHarness = async(script: SdkMessage[], apiKey = ''): Promise<Harness> =
     toolService: service,
     stateDir,
     projectRoot: () => root,
-    sdkModule: sdk as never
+    sdkModule: sdk as never,
+    ...(options.silenceMs === undefined ? {} : { silenceMs: options.silenceMs })
   })
   return {
     runner,
@@ -183,6 +232,7 @@ const makeHarness = async(script: SdkMessage[], apiKey = ''): Promise<Harness> =
     usage,
     approveNext,
     steering,
+    gathered,
     stateDir,
     root,
     service
@@ -235,6 +285,21 @@ describe('subscription env hygiene', () => {
     const envNoToken = harness.runner.buildEnv({ PATH: '/usr/bin' } as NodeJS.ProcessEnv)
     expect(envNoToken.CLAUDE_CODE_OAUTH_TOKEN).toBeUndefined()
   })
+
+  it('sets a generous MCP_TOOL_TIMEOUT so slow in-process tools do not kill the stream', async() => {
+    // prj13 wedge: the in-process MCP server has no per-server timeout
+    // field, so a slow web_fetch hitting the short default closed the tool
+    // stream and every later call (local reads too) returned "no output".
+    const harness = await makeHarness([])
+    cleanupRoots.push(harness.root)
+    const env = harness.runner.buildEnv({ PATH: '/usr/bin' } as NodeJS.ProcessEnv)
+    expect(Number(env.MCP_TOOL_TIMEOUT)).toBeGreaterThanOrEqual(30000)
+    // Respect an operator override rather than clobbering it.
+    const overridden = harness.runner.buildEnv({
+      MCP_TOOL_TIMEOUT: '99999'
+    } as unknown as NodeJS.ProcessEnv)
+    expect(overridden.MCP_TOOL_TIMEOUT).toBe('99999')
+  })
 })
 
 // ---- Mode gating -----------------------------------------------------------------
@@ -269,6 +334,46 @@ describe('mode gating over the real tool pack', () => {
     const autoAgents = buildSdkAgents('auto')
     expect(Object.keys(autoAgents)).toHaveLength(7) // six specialists + the steward
     expect(autoAgents.drafter.tools).toContain(`${MCP_TOOL_PREFIX}propose_text_edit`)
+  })
+
+  it('denies every SDK built-in except the spawn tool — AskUserQuestion included', () => {
+    // 2026-07-19 live repro: the model reached the built-in AskUserQuestion
+    // (not on the allowlist → rides the canUseTool PERMISSION STREAM), which
+    // collapsed under parallel-subagent load ("AbortError: Stream closed").
+    // Every non-spawn built-in must be denied so the model uses
+    // mcp__wordbird__ask_writer instead. Agent/Task must survive (spawns).
+    expect(DISALLOWED_BUILTIN_TOOLS).toContain('AskUserQuestion')
+    for (const spawn of SPAWN_TOOL_NAMES) {
+      expect(DISALLOWED_BUILTIN_TOOLS, spawn).not.toContain(spawn)
+    }
+    // A representative sample of the newer built-ins the stale list missed.
+    for (const builtin of ['ExitPlanMode', 'TodoWrite', 'Artifact', 'WebSearch']) {
+      expect(DISALLOWED_BUILTIN_TOOLS, builtin).toContain(builtin)
+    }
+  })
+
+  it('every SDK subagent carries a per-role maxTurns cap (the endless-spin bound)', () => {
+    // prj12 (2026-07-19): a researcher subagent issued 38 tool calls,
+    // re-reading the same page a dozen times, because nothing capped it.
+    // Each subagent must carry the SAME step budget LangGraph passes its
+    // workers (workerRecursionLimit) so both providers bound work alike.
+    for (const mode of ['ask', 'approvals', 'auto'] as const) {
+      const base = MODE_BUDGETS[mode].workerRecursionLimit
+      const agents = buildSdkAgents(mode)
+      for (const [role, def] of Object.entries(agents)) {
+        expect(def.maxTurns, `${mode}/${role}`).toBeGreaterThan(0)
+        const expected = HEAVY_ROLES.includes(role as never)
+          ? base * HEAVY_ROLE_RECURSION_MULTIPLIER
+          : base
+        expect(def.maxTurns, `${mode}/${role}`).toBe(expected)
+      }
+      // A non-heavy role (researcher) is bounded to the base; a heavy one
+      // (drafter) gets the multiplier for multi-unit sweeps.
+      expect(agents.researcher.maxTurns).toBe(base)
+      if (agents.drafter) {
+        expect(agents.drafter.maxTurns).toBe(base * HEAVY_ROLE_RECURSION_MULTIPLIER)
+      }
+    }
   })
 })
 
@@ -339,23 +444,25 @@ describe('a scripted SDK turn', () => {
 
     const options = harness.sdk.calls[0].options
     const allowed = options.allowedTools as string[]
-    // Spawn tools (Agent/Task) are deliberately OFF the allowlist: a bare
-    // entry would shadow canUseTool, where duplicate spawns are bounced.
-    // They stay callable — canUseTool allows non-duplicate spawns.
-    expect(allowed).not.toContain('Task')
-    expect(allowed).not.toContain('Agent')
+    // REVISED INVARIANT (prj13 empty-tools fix): NOTHING rides canUseTool —
+    // it is removed entirely and gating moves to a PreToolUse hook. So
+    // EVERYTHING is allowlisted, spawns and destructive included, and the
+    // hook (matcher-scoped) does the dedup + writer-approval.
+    expect(options.canUseTool).toBeUndefined()
+    expect(allowed).toContain('Task')
+    expect(allowed).toContain('Agent')
     expect(allowed).toContain(`${MCP_TOOL_PREFIX}propose_text_edit`)
-    // The permission-stream invariant (prj7 incident): every registered
-    // non-destructive tool is allowlisted — subagent traffic must never
-    // ride the fragile permission stream.
     expect(allowed).toContain(`${MCP_TOOL_PREFIX}read_unit`)
     expect(allowed).toContain(`${MCP_TOOL_PREFIX}log_continuity_issue`)
-    expect(allowed.every((t) => t.startsWith(MCP_TOOL_PREFIX))).toBe(true)
-    // Destructive tools must NOT be pre-approved: a bare allowedTools entry
-    // shadows canUseTool, which would skip the writer-approval gate.
+    // Destructive tools are allowlisted too now — the PreToolUse hook, not
+    // an allowlist gap, raises the writer-approval card.
     for (const destructive of ['delete_unit', 'delete_file', 'restore_snapshot']) {
-      expect(allowed).not.toContain(`${MCP_TOOL_PREFIX}${destructive}`)
+      expect(allowed).toContain(`${MCP_TOOL_PREFIX}${destructive}`)
     }
+    // The gate is wired as a matcher-scoped PreToolUse hook.
+    const hooks = options.hooks as { PreToolUse?: Array<{ matcher?: string; hooks: unknown[] }> }
+    expect(hooks.PreToolUse?.[0]?.matcher).toMatch(/Agent\|Task/)
+    expect(hooks.PreToolUse?.[0]?.hooks).toHaveLength(1)
     const disallowed = options.disallowedTools as string[]
     for (const builtin of ['Bash', 'Read', 'Write', 'Edit', 'WebFetch']) {
       expect(disallowed).toContain(builtin)
@@ -367,17 +474,14 @@ describe('a scripted SDK turn', () => {
     expect(String(options.systemPrompt)).toContain('Agent')
   })
 
-  it('destructive tools require writer approval through canUseTool', async() => {
+  it('destructive tools require writer approval through the PreToolUse hook', async() => {
     const harness = await makeHarness([initMessage('s'), successResult('ok')])
     cleanupRoots.push(harness.root)
     await harness.runner.buildGraph().invoke(
       { messages: [{ content: 'hi' }] },
       { configurable: { thread_id: 't' } }
     )
-    const canUseTool = harness.sdk.calls[0].options.canUseTool as (
-      name: string,
-      input: Record<string, unknown>
-    ) => Promise<{ behavior: string; message?: string }>
+    const canUseTool = gateAdapter(harness.runner)
 
     // Approved path.
     harness.approveNext.value = true
@@ -408,20 +512,13 @@ describe('a scripted SDK turn', () => {
       proposal = payload as never
     })
 
-    // Trigger MCP registration (buildGraph → buildWordbirdMcpServer).
-    harness.runner.setMode('approvals')
-    await harness.runner.buildGraph().invoke(
-      { messages: [{ content: 'hi' }] },
-      { configurable: { thread_id: 't' } }
-    )
-
-    const bridged = harness.sdk.registeredTools.find((t) => t.name === 'propose_text_edit')
-    expect(bridged).toBeTruthy()
-    const result = (await bridged!.handler({
+    // executeHttpTool is the exact wrapper the loopback HTTP MCP server
+    // registers for every tool — it runs in-process through runForModel.
+    const result = await executeHttpTool(harness.service, 'propose_text_edit', {
       fname: 'manuscript/chapter-one/opening.md',
       oldText: 'The keeper waited.',
       newText: 'The keeper waited for the tide.'
-    })) as { content: Array<{ text: string }>; isError?: boolean }
+    })
 
     expect(result.isError).toBeFalsy()
     expect(result.content[0].text).toMatch(/Edit proposal created/i)
@@ -429,11 +526,11 @@ describe('a scripted SDK turn', () => {
     expect(proposal!.edit.filePath).toBe('manuscript/chapter-one/opening.md')
 
     // Errors come back as tool errors, never crashes.
-    const failed = (await bridged!.handler({
+    const failed = await executeHttpTool(harness.service, 'propose_text_edit', {
       fname: 'manuscript/chapter-one/opening.md',
       oldText: 'text that does not exist',
       newText: 'x'
-    })) as { isError?: boolean; content: Array<{ text: string }> }
+    })
     expect(failed.isError).toBe(true)
     expect(failed.content[0].text).toMatch(/Error:/)
   })
@@ -552,22 +649,35 @@ describe('provider parity', () => {
       )
       const options = harness.sdk.calls[0].options
       const allowed = new Set(options.allowedTools as string[])
-      const registered = new Set(harness.sdk.registeredTools.map((tool) => tool.name))
       const agents = options.agents as Record<string, { tools: string[] }>
+      // The loopback HTTP MCP server registers ALL tools; mode gating lives
+      // in the allowlist + subagent tool lists, so those are what we pin.
 
+      // No subagent def may carry a destructive tool (a listed tool is
+      // pre-approved inside the subagent, shadowing the writer-approval gate).
       for (const [roleName, def] of Object.entries(agents)) {
         for (const prefixed of def.tools) {
           const bare = prefixed.replace(MCP_TOOL_PREFIX, '')
-          expect(registered.has(bare), `${mode}/${roleName}: ${bare} unregistered`).toBe(true)
           expect(
             DESTRUCTIVE_TOOLS.includes(bare),
             `${mode}/${roleName}: destructive ${bare} in subagent def`
           ).toBe(false)
         }
       }
-      for (const bare of registered) {
-        const ok = allowed.has(`${MCP_TOOL_PREFIX}${bare}`) || DESTRUCTIVE_TOOLS.includes(bare)
-        expect(ok, `${mode}: ${bare} registered but not allowlisted`).toBe(true)
+      // ask mode is mechanically read-only: no write tool is allowlisted, and
+      // no subagent may list one.
+      if (mode === 'ask') {
+        for (const write of WRITE_TOOL_NAMES) {
+          expect(allowed.has(`${MCP_TOOL_PREFIX}${write}`), `ask: ${write} allowlisted`).toBe(false)
+        }
+        for (const [roleName, def] of Object.entries(agents)) {
+          for (const prefixed of def.tools) {
+            expect(
+              WRITE_TOOL_NAMES.includes(prefixed.replace(MCP_TOOL_PREFIX, '')),
+              `ask/${roleName}: write tool in subagent def`
+            ).toBe(false)
+          }
+        }
       }
       const hasPropose = allowed.has(`${MCP_TOOL_PREFIX}propose_text_edit`)
       expect(hasPropose, mode).toBe(mode !== 'ask')
@@ -624,7 +734,7 @@ describe('stop means stop', () => {
   })
 })
 
-describe('duplicate-spawn guard (canUseTool on Task)', () => {
+describe('duplicate-spawn guard (PreToolUse hook on Task)', () => {
   it('an identical (type, task) spawn is bounced; distinct ones pass', async() => {
     const harness = await makeHarness([initMessage('s'), successResult('ok')])
     cleanupRoots.push(harness.root)
@@ -633,11 +743,7 @@ describe('duplicate-spawn guard (canUseTool on Task)', () => {
       { messages: [{ content: 'hi' }] },
       { configurable: { thread_id: 't-dup' } }
     )
-    const canUseTool = harness.sdk.calls[0].options.canUseTool as (
-      name: string,
-      input: Record<string, unknown>,
-      extra?: { agentID?: string }
-    ) => Promise<{ behavior: string; message?: string }>
+    const canUseTool = gateAdapter(harness.runner)
 
     const spawn = { subagent_type: 'researcher', prompt: 'Research 1890s lighthouse fuel.' }
     // Current runtime name ('Agent'), legacy name ('Task'), and even a
@@ -674,8 +780,351 @@ describe('duplicate-spawn guard (canUseTool on Task)', () => {
       { messages: [{ content: 'again' }] },
       { configurable: { thread_id: 't-dup' } }
     )
-    const nextCanUse = harness.sdk.calls[1].options.canUseTool as typeof canUseTool
+    const nextCanUse = gateAdapter(harness.runner)
     expect((await nextCanUse('Task', spawn)).behavior).toBe('allow')
+  })
+
+  it('serializes subagents: a second concurrent spawn is denied, reset on a new turn', async() => {
+    // prj13 empty-tools race: parallel subagents collapse the in-process
+    // tool channel. The gate caps live concurrency at 1 — a second spawn
+    // while one is in flight is denied so the model spawns sequentially.
+    const harness = await makeHarness([initMessage('s'), successResult('ok')])
+    cleanupRoots.push(harness.root)
+    harness.runner.setMode('auto')
+    await harness.runner.buildGraph().invoke(
+      { messages: [{ content: 'hi' }] },
+      { configurable: { thread_id: 't-serial' } }
+    )
+    const gate = gateAdapter(harness.runner)
+
+    // First spawn reserves the single slot (distinct ids required — the
+    // gate keys concurrency on tool_use_id).
+    const first = await gate('Agent', { subagent_type: 'researcher', prompt: 'Aaa' }, 'id-a')
+    expect(first.behavior).toBe('allow')
+    // A genuinely DIFFERENT spawn (not a dup) is still denied — a slot is busy.
+    const second = await gate('Agent', { subagent_type: 'drafter', prompt: 'Bbb' }, 'id-b')
+    expect(second.behavior).toBe('deny')
+    expect(second.message).toMatch(/one at a time|already running/i)
+
+    // A NEW turn clears in-flight tracking → spawns allowed again.
+    await harness.runner.buildGraph().invoke(
+      { messages: [{ content: 'again' }] },
+      { configurable: { thread_id: 't-serial' } }
+    )
+    const gate2 = gateAdapter(harness.runner)
+    expect(
+      (await gate2('Agent', { subagent_type: 'researcher', prompt: 'Ccc' }, 'id-c')).behavior
+    ).toBe('allow')
+  })
+
+  it('reclaims a slot held by a spawn that died without reporting back', async() => {
+    // A subagent that fails hard emits NO tool_result, so the normal release
+    // never runs. Without reclamation its slot stays taken and every later
+    // spawn is denied for the rest of the turn — the supervisor then looks
+    // like it is waiting forever (writer report, 2026-07-20).
+    const harness = await makeHarness([initMessage('s'), successResult('ok')])
+    cleanupRoots.push(harness.root)
+    harness.runner.setMode('auto')
+    await harness.runner.buildGraph().invoke(
+      { messages: [{ content: 'hi' }] },
+      { configurable: { thread_id: 't-stale' } }
+    )
+    const gate = gateAdapter(harness.runner)
+
+    expect((await gate('Agent', { subagent_type: 'researcher', prompt: 'A' }, 'dead')).behavior)
+      .toBe('allow')
+    // Still fresh → the next spawn waits its turn.
+    expect((await gate('Agent', { subagent_type: 'drafter', prompt: 'B' }, 'b')).behavior)
+      .toBe('deny')
+
+    // Pretend the dead spawn was admitted longer ago than the stale window.
+    const slots = (
+      harness.runner as unknown as { _inFlightSpawnIds: Map<string, number> }
+    )._inFlightSpawnIds
+    slots.set('dead', Date.now() - SPAWN_SLOT_STALE_MS - 1)
+
+    expect(
+      (await gate('Agent', { subagent_type: 'drafter', prompt: 'C' }, 'c')).behavior,
+      'a dead subagent must not wedge the gate shut'
+    ).toBe('allow')
+  })
+})
+
+describe('Stop landing in the pre-stream window (missed-abort pin)', () => {
+  it('an abort during brief-building still interrupts the stream promptly', async() => {
+    // Live repro 2026-07-19: the abort listener attaches AFTER several
+    // awaits (SDK load, brief build, session read). A Stop in that window
+    // aborted a signal with no listener — addEventListener on an
+    // already-aborted signal never fires — and the whole turn ran to
+    // completion. The runner must check the signal after attaching.
+    const harness = await makeHarness([])
+    cleanupRoots.push(harness.root)
+
+    let interrupts = 0
+    let interrupted = false
+    const sdk = {
+      tool: (name: string) => ({ name }),
+      createSdkMcpServer: (options: { name: string }) => ({ type: 'sdk', name: options.name }),
+      query: () => {
+        async function * gen(): AsyncGenerator<SdkMessage, void> {
+          yield initMessage('s-abort')
+          if (interrupted) return
+          yield successResult('should never be reached after an interrupt')
+        }
+        const stream = gen() as AsyncGenerator<SdkMessage, void> & {
+          interrupt?: () => Promise<unknown>
+        }
+        stream.interrupt = async() => {
+          interrupts += 1
+          interrupted = true
+        }
+        return stream
+      }
+    }
+
+    const controller = new AbortController()
+    const runner = new AgentSDKRunner({
+      config: { provider: 'claude-code', apiKey: '', model: 'sonnet' },
+      callbacks: {
+        emitActivity: () => {},
+        requestApproval: async() => true,
+        // The Stop lands while the brief is still being built — inside
+        // the invoke, before the stream exists.
+        buildBrief: async() => {
+          controller.abort()
+          return 'PROJECT BRIEF (test)'
+        }
+      },
+      toolService: harness.service,
+      stateDir: harness.stateDir,
+      sdkModule: sdk as never
+    })
+    runner.setMode('ask')
+
+    await runner.buildGraph().invoke(
+      { messages: [{ content: 'research something long' }] },
+      { configurable: { thread_id: 't-missed-abort' }, signal: controller.signal }
+    )
+    expect(interrupts).toBe(1)
+  })
+})
+
+describe('Stop escalates on a stubborn stream (hard-kill pin)', () => {
+  it('when interrupt() does nothing, the SDK abortController + close() end the run', async() => {
+    // interrupt() is a SOFT request the runtime can outlive (queue-drain
+    // semantics; live repro 2026-07-19). The runner must escalate after a
+    // bounded grace: abort the SDK's own abortController and close() the
+    // stream — Stop is a guarantee, not a request.
+    const harness = await makeHarness([])
+    cleanupRoots.push(harness.root)
+
+    let closed = false
+    let capturedOptions: Record<string, unknown> = {}
+    const sdk = {
+      tool: (name: string) => ({ name }),
+      createSdkMcpServer: (options: { name: string }) => ({ type: 'sdk', name: options.name }),
+      query: ({ options }: { options: Record<string, unknown> }) => {
+        capturedOptions = options
+        async function * gen(): AsyncGenerator<SdkMessage, void> {
+          yield initMessage('s-stubborn')
+          // A "stream that will not die": keeps yielding until closed.
+          for (let i = 0; i < 200; i += 1) {
+            if (closed) return
+            await new Promise((resolve) => setTimeout(resolve, 50))
+            yield { type: 'assistant', message: { content: [] } }
+          }
+        }
+        const stream = gen() as AsyncGenerator<SdkMessage, void> & {
+          interrupt?: () => Promise<unknown>
+          close?: () => void
+        }
+        stream.interrupt = async() => undefined // deliberately useless
+        stream.close = () => {
+          closed = true
+        }
+        return stream
+      }
+    }
+
+    const controller = new AbortController()
+    const runner = new AgentSDKRunner({
+      config: { provider: 'claude-code', apiKey: '', model: 'sonnet' },
+      callbacks: { emitActivity: () => {}, requestApproval: async() => true },
+      toolService: harness.service,
+      stateDir: harness.stateDir,
+      sdkModule: sdk as never
+    })
+    runner.setMode('ask')
+
+    const started = Date.now()
+    const pending = runner.buildGraph().invoke(
+      { messages: [{ content: 'go' }] },
+      { configurable: { thread_id: 't-stubborn' }, signal: controller.signal }
+    )
+    setTimeout(() => controller.abort(), 100)
+    await pending
+    // Ended via the escalation (~100ms abort + 2s grace), nowhere near
+    // the stream's natural ~10s lifetime.
+    expect(Date.now() - started).toBeLessThan(6000)
+    expect(closed).toBe(true)
+    // The SDK-level kill switch was wired into the query options.
+    const sdkController = capturedOptions.abortController as AbortController
+    expect(sdkController).toBeInstanceOf(AbortController)
+    expect(sdkController.signal.aborted).toBe(true)
+  }, 15000)
+})
+
+describe('Stop reaches in-process tools (the bridge signal)', () => {
+  it('an aborted turn signal makes every bridged tool refuse before running', async() => {
+    // Root cause of "Stop doesn't stop" (live report, 2026-07-18):
+    // interrupt() only halts the model loop — queued mcp__wordbird__
+    // calls had NO signal and ran to completion, retry sleeps included.
+    // executeHttpTool threads getSignal into runForModel exactly as the
+    // loopback HTTP MCP server does.
+    const harness = await makeHarness([])
+    cleanupRoots.push(harness.root)
+    const controller = new AbortController()
+    const getSignal = (): AbortSignal => controller.signal
+
+    // Before Stop: the tool runs normally.
+    const before = await executeHttpTool(harness.service, 'list_structure', {}, getSignal)
+    expect(before.isError).not.toBe(true)
+
+    controller.abort()
+    const after = await executeHttpTool(harness.service, 'list_structure', {}, getSignal)
+    expect(after.isError).toBe(true)
+    expect(JSON.stringify(after.content)).toMatch(/stopped by writer/i)
+  })
+
+  it('points the SDK at the loopback HTTP MCP server (alwaysLoad, type http)', async() => {
+    // The empty-tools fix: WordBird tools are served over a local HTTP MCP
+    // server (results survive) instead of the in-process transport (drops
+    // them). The config the SDK receives must be type:'http' + alwaysLoad.
+    const harness = await makeHarness([initMessage('s'), successResult('ok')])
+    cleanupRoots.push(harness.root)
+    harness.runner.setMode('auto')
+    await harness.runner.buildGraph().invoke(
+      { messages: [{ content: 'hi' }] },
+      { configurable: { thread_id: 't-http' } }
+    )
+    const servers = harness.sdk.calls[0].options.mcpServers as Record<
+      string,
+      { type?: string; alwaysLoad?: boolean; url?: string }
+    >
+    expect(servers.wordbird.type).toBe('http')
+    expect(servers.wordbird.alwaysLoad).toBe(true)
+    expect(servers.wordbird.url).toMatch(/^http:\/\/127\.0\.0\.1:/)
+  })
+})
+
+describe('live-suite thrift options', () => {
+  it('turnBudget caps recursionLimit (maxTurns) below the mode default', async() => {
+    const harness = await makeHarness([])
+    cleanupRoots.push(harness.root)
+    const capped = new AgentSDKRunner({
+      config: { provider: 'claude-code', apiKey: '', model: 'sonnet' },
+      callbacks: {
+        emitActivity: () => {},
+        requestApproval: async() => true
+      },
+      toolService: harness.service,
+      stateDir: harness.stateDir,
+      turnBudget: 10
+    })
+    capped.setMode('auto')
+    expect(capped.recursionLimit()).toBe(10)
+    // Unset = the generous mode-scaled default (production behavior).
+    const uncapped = new AgentSDKRunner({
+      config: { provider: 'claude-code', apiKey: '', model: 'sonnet' },
+      callbacks: {
+        emitActivity: () => {},
+        requestApproval: async() => true
+      },
+      toolService: harness.service,
+      stateDir: harness.stateDir
+    })
+    uncapped.setMode('auto')
+    expect(uncapped.recursionLimit()).toBeGreaterThan(10)
+  })
+
+  it('subagentModel pins every SDK agent definition; omitted = inherit', () => {
+    const pinned = buildSdkAgents('auto', '', '', 'haiku')
+    for (const agent of Object.values(pinned)) {
+      expect(agent.model).toBe('haiku')
+    }
+    const inherit = buildSdkAgents('auto', '')
+    for (const agent of Object.values(inherit)) {
+      expect(agent.model).toBeUndefined()
+    }
+  })
+})
+
+describe('GATHERED THIS TURN on the SDK path (research ledger injection)', () => {
+  it('buildSdkAgents appends the section to warm roles only — the auditor stays cold', () => {
+    const agents = buildSdkAgents('auto', 'BRIEF-X', 'GATHERED-SENTINEL-42')
+    expect(agents.researcher.prompt).toContain('GATHERED-SENTINEL-42')
+    expect(agents.explorer.prompt).toContain('GATHERED-SENTINEL-42')
+    expect(agents.drafter.prompt).toContain('GATHERED-SENTINEL-42')
+    expect(agents.steward.prompt).toContain('GATHERED-SENTINEL-42')
+    expect(agents.auditor.prompt).not.toContain('GATHERED-SENTINEL-42')
+    // Omitting the section changes nothing (first invoke of a turn).
+    const bare = buildSdkAgents('auto', 'BRIEF-X')
+    expect(bare.researcher.prompt).not.toContain('GATHERED-SENTINEL-42')
+  })
+
+  it('the supervisor systemPrompt and subagent prompts carry the invoke-time section', async() => {
+    const harness = await makeHarness([initMessage('s'), successResult('ok')])
+    cleanupRoots.push(harness.root)
+    harness.gathered.value = 'GATHERED-AT-INVOKE'
+    harness.runner.setMode('auto')
+    await harness.runner.buildGraph().invoke(
+      { messages: [{ content: 'hi' }] },
+      { configurable: { thread_id: 't-g' } }
+    )
+    const options = harness.sdk.calls[0].options
+    expect(String(options.systemPrompt)).toContain('GATHERED-AT-INVOKE')
+    const agents = options.agents as Record<string, { prompt: string }>
+    expect(agents.researcher.prompt).toContain('GATHERED-AT-INVOKE')
+    expect(agents.auditor.prompt).not.toContain('GATHERED-AT-INVOKE')
+  })
+
+  it('spawns get the LIVE section via updatedInput; auditors and dedup stay untouched', async() => {
+    const harness = await makeHarness([initMessage('s'), successResult('ok')])
+    cleanupRoots.push(harness.root)
+    harness.gathered.value = 'GATHERED-EARLY'
+    harness.runner.setMode('auto')
+    await harness.runner.buildGraph().invoke(
+      { messages: [{ content: 'hi' }] },
+      { configurable: { thread_id: 't-live' } }
+    )
+    const canUseTool = gateAdapter(harness.runner)
+
+    // The ledger grew between invoke start and this spawn — the spawn
+    // must carry the CURRENT section, not the invoke-time snapshot.
+    harness.gathered.value = 'GATHERED-LATE'
+    const spawn = await canUseTool('Agent', {
+      subagent_type: 'researcher',
+      prompt: 'Research Elam religion.'
+    })
+    expect(spawn.behavior).toBe('allow')
+    expect(String(spawn.updatedInput?.prompt)).toContain('Research Elam religion.')
+    expect(String(spawn.updatedInput?.prompt)).toContain('GATHERED-LATE')
+
+    // coldStart role: the auditor's task rides through untouched.
+    const audit = await canUseTool('Agent', {
+      subagent_type: 'auditor',
+      prompt: 'Check continuity in chapter one.'
+    })
+    expect(audit.behavior).toBe('allow')
+    expect(audit.updatedInput?.prompt).toBe('Check continuity in chapter one.')
+
+    // Dedup keys on the ORIGINAL task text — the appended section can
+    // never make an identical spawn look distinct.
+    const dup = await canUseTool('Agent', {
+      subagent_type: 'researcher',
+      prompt: 'Research Elam religion.'
+    })
+    expect(dup.behavior).toBe('deny')
   })
 })
 
@@ -696,5 +1145,232 @@ describe('connect-time probe', () => {
     ])
     cleanupRoots.push(bad.root)
     await expect(bad.runner.probe()).rejects.toThrow(/setup-token|log in/i)
+  })
+})
+
+// ---- Graceful degradation under failure -------------------------------------
+//
+// Load-induced failures are EXPECTED (flaky network, a wedged tool, a dead
+// subagent, a runtime that dies mid-stream). What matters is that the system
+// DEGRADES rather than wedging or crashing: the failure reaches the model
+// and the writer, the turn ends, and the NEXT turn still works. These pin
+// recovery, not just error surfacing.
+
+describe('failure handling: degrades, never wedges', () => {
+  it('a tool that THROWS becomes a tool error, and the run keeps going', async() => {
+    const harness = await makeHarness([initMessage('s'), successResult('done')])
+    cleanupRoots.push(harness.root)
+    // read_unit on a nonexistent id throws inside the handler.
+    const failed = await executeHttpTool(harness.service, 'read_unit', { unitId: 'nope' })
+    expect(failed.isError).toBe(true)
+    expect(failed.content[0].text).toMatch(/error/i)
+    // The service is NOT poisoned — the next tool call still succeeds.
+    const ok = await executeHttpTool(harness.service, 'list_structure', {})
+    expect(ok.isError).toBeFalsy()
+  })
+
+  it('an oversized tool result is truncated, not dropped or crashed', async() => {
+    const harness = await makeHarness([])
+    cleanupRoots.push(harness.root)
+    const huge = 'x'.repeat(TOOL_OUTPUT_CHAR_CAP * 2)
+    fs.writeFileSync(path.join(harness.root, 'manuscript/chapter-one/opening.md'), huge)
+    const result = await executeHttpTool(harness.service, 'read_project_file', {
+      fname: 'manuscript/chapter-one/opening.md'
+    })
+    expect(result.isError).toBeFalsy()
+    expect(result.content[0].text.length).toBeLessThan(TOOL_OUTPUT_CHAR_CAP + 200)
+    expect(result.content[0].text).toMatch(/truncated/i)
+  })
+
+  it('a runtime that dies mid-stream surfaces the error AND leaves the next turn usable', async() => {
+    // The wedge risk: an exception escaping the stream loop could leave the
+    // runner holding turn state (in-flight spawns, active query) so every
+    // later turn is refused. It must recover completely.
+    const harness = await makeHarness([])
+    cleanupRoots.push(harness.root)
+    let call = 0
+    const scripted: SdkMessage[] = [initMessage('s'), successResult('recovered')]
+    ;(harness.sdk as unknown as { query: ScriptedSdk['query'] }).query = ({ prompt, options }) => {
+      harness.sdk.calls.push({ prompt, options: options ?? {} })
+      call += 1
+      const dies = call === 1
+      async function * gen(): AsyncGenerator<SdkMessage, void> {
+        yield initMessage('s')
+        if (dies) throw new Error('runtime died mid-stream')
+        for (const message of scripted.slice(1)) yield message
+      }
+      const stream = gen() as ReturnType<ScriptedSdk['query']>
+      stream.interrupt = async() => undefined
+      return stream
+    }
+    harness.runner.setMode('auto')
+
+    await expect(
+      harness.runner.buildGraph().invoke(
+        { messages: [{ content: 'first' }] },
+        { configurable: { thread_id: 't-die' } }
+      )
+    ).rejects.toThrow(/runtime died/i)
+
+    // RECOVERY: the very next turn on the SAME thread completes normally.
+    const second = await harness.runner.buildGraph().invoke(
+      { messages: [{ content: 'second' }] },
+      { configurable: { thread_id: 't-die' } }
+    )
+    expect(second.messages[0]?.content).toBe('recovered')
+  })
+
+  it('a failed subagent frees its slot immediately, so the next spawn proceeds', async() => {
+    // The reported "waits forever": a dead subagent held the only
+    // concurrency slot and every later spawn was denied for the rest of the
+    // turn. A FAILED tool_result must release it at once — no waiting for
+    // the stale-slot timeout.
+    const harness = await makeHarness([
+      initMessage('s'),
+      assistantToolUse('Agent', { subagent_type: 'researcher', prompt: 'Research Elam' }, 'tu-sub'),
+      userToolResult('tu-sub', true),
+      successResult('done')
+    ])
+    cleanupRoots.push(harness.root)
+    harness.runner.setMode('auto')
+    await harness.runner.buildGraph().invoke(
+      { messages: [{ content: 'go' }] },
+      { configurable: { thread_id: 't-subfail' } }
+    )
+
+    // The writer SEES the failure (status row + activity line).
+    expect(harness.statuses.some((s) => s.status === 'failed')).toBe(true)
+    expect(
+      harness.activity.some((event) => /tool failed/i.test(`${event.label} ${event.detail ?? ''}`))
+    ).toBe(true)
+
+    // …and the gate is open again for a genuinely different spawn.
+    const gate = gateAdapter(harness.runner)
+    expect(
+      (await gate('Agent', { subagent_type: 'drafter', prompt: 'Draft it' }, 'tu-next')).behavior
+    ).toBe('allow')
+  })
+
+  it('an abort mid-run ends the turn and does not poison the next one', async() => {
+    const harness = await makeHarness([initMessage('s'), successResult('after-abort')])
+    cleanupRoots.push(harness.root)
+    harness.runner.setMode('auto')
+    const controller = new AbortController()
+    controller.abort()
+    // An aborted turn resolves (empty) rather than hanging or throwing.
+    const aborted = await harness.runner.buildGraph().invoke(
+      { messages: [{ content: 'stopped' }] },
+      { configurable: { thread_id: 't-abort-recover' }, signal: controller.signal }
+    )
+    expect(typeof aborted.messages[0]?.content).toBe('string')
+
+    const next = await harness.runner.buildGraph().invoke(
+      { messages: [{ content: 'again' }] },
+      { configurable: { thread_id: 't-abort-recover' } }
+    )
+    expect(next.messages[0]?.content).toBe('after-abort')
+  })
+})
+
+// ---- Negative cases: inject the failure, observe the reaction ----------------
+
+describe('negative cases: a wedged runtime cannot hang the turn', () => {
+  /** A stream that yields `head`, then goes silent forever. */
+  const wedgingSdk = (harness: Harness, head: SdkMessage[]): void => {
+    ;(harness.sdk as unknown as { query: ScriptedSdk['query'] }).query = ({ prompt, options }) => {
+      harness.sdk.calls.push({ prompt, options: options ?? {} })
+      async function * gen(): AsyncGenerator<SdkMessage, void> {
+        for (const message of head) yield message
+        // …and now nothing, ever.
+        await new Promise(() => {})
+      }
+      const stream = gen() as ReturnType<ScriptedSdk['query']>
+      stream.interrupt = async() => undefined
+      return stream
+    }
+  }
+
+  it('total silence ends the turn as a BUDGET event (session kept, "continue" resumes)', async() => {
+    const harness = await makeHarness([], '', { silenceMs: 120 })
+    cleanupRoots.push(harness.root)
+    wedgingSdk(harness, [initMessage('s-wedge')])
+    harness.runner.setMode('auto')
+
+    const started = Date.now()
+    await expect(
+      harness.runner.buildGraph().invoke(
+        { messages: [{ content: 'go' }] },
+        { configurable: { thread_id: 't-wedge' } }
+      )
+      // Budget semantics, NOT a crash — the manager turns this into the
+      // "say continue" reply rather than an error card.
+    ).rejects.toSatisfy((error: Error) => error.name === 'GraphRecursionError')
+    // It gave up promptly instead of hanging.
+    expect(Date.now() - started).toBeLessThan(5000)
+  })
+
+  it('a stream that keeps talking is NEVER cut short by the silence budget', async() => {
+    // The timer is per-message: slow-but-alive work must survive. Heartbeats
+    // arrive at half the budget, for longer than the budget in total.
+    const harness = await makeHarness([], '', { silenceMs: 150 })
+    cleanupRoots.push(harness.root)
+    ;(harness.sdk as unknown as { query: ScriptedSdk['query'] }).query = ({ prompt, options }) => {
+      harness.sdk.calls.push({ prompt, options: options ?? {} })
+      async function * gen(): AsyncGenerator<SdkMessage, void> {
+        yield initMessage('s-alive')
+        for (let beat = 0; beat < 6; beat += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 75))
+          yield assistantToolUse(`${MCP_TOOL_PREFIX}list_structure`, {}, `tu-${beat}`)
+        }
+        yield successResult('finished slowly')
+      }
+      const stream = gen() as ReturnType<ScriptedSdk['query']>
+      stream.interrupt = async() => undefined
+      return stream
+    }
+    harness.runner.setMode('auto')
+
+    const response = await harness.runner.buildGraph().invoke(
+      { messages: [{ content: 'slow but alive' }] },
+      { configurable: { thread_id: 't-alive' } }
+    )
+    expect(response.messages[0]?.content).toBe('finished slowly')
+  })
+
+  it('after a wedge the runner is reusable — the next turn completes', async() => {
+    const harness = await makeHarness([], '', { silenceMs: 120 })
+    cleanupRoots.push(harness.root)
+    let call = 0
+    ;(harness.sdk as unknown as { query: ScriptedSdk['query'] }).query = ({ prompt, options }) => {
+      harness.sdk.calls.push({ prompt, options: options ?? {} })
+      call += 1
+      const wedge = call === 1
+      async function * gen(): AsyncGenerator<SdkMessage, void> {
+        yield initMessage('s')
+        if (wedge) await new Promise(() => {})
+        yield successResult('back to normal')
+      }
+      const stream = gen() as ReturnType<ScriptedSdk['query']>
+      stream.interrupt = async() => undefined
+      return stream
+    }
+    harness.runner.setMode('auto')
+
+    await expect(
+      harness.runner.buildGraph().invoke(
+        { messages: [{ content: 'first' }] },
+        { configurable: { thread_id: 't-wedge-recover' } }
+      )
+    ).rejects.toSatisfy((error: Error) => error.name === 'GraphRecursionError')
+
+    const second = await harness.runner.buildGraph().invoke(
+      { messages: [{ content: 'second' }] },
+      { configurable: { thread_id: 't-wedge-recover' } }
+    )
+    expect(second.messages[0]?.content).toBe('back to normal')
+  })
+
+  it('the silence budget defaults to the production value when unset', () => {
+    expect(SDK_SILENCE_TIMEOUT_MS).toBeGreaterThanOrEqual(120_000)
   })
 })

@@ -10,6 +10,29 @@
  * deliberate device).
  */
 
+import { escapeRegExp } from './markdownText'
+
+/** One definition of "a word" for every prose metric in this file. */
+const WORD_RE = /[A-Za-z’']+/g
+
+const wordsOf = (text: string): string[] => text.match(WORD_RE) ?? []
+
+/**
+ * Split prose into sentences (newlines are not sentence breaks — a line
+ * wrap mid-sentence must not inflate the count). Shared by the single-unit
+ * lint and the corpus lint so their rhythm stats cannot drift apart.
+ */
+const sentencesOf = (text: string): string[] =>
+  text
+    .replace(/\n+/g, ' ')
+    .split(/(?<=[.!?…])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => /[A-Za-z]/.test(sentence))
+
+/** Word counts per sentence — the input to every rhythm/monotony check. */
+const sentenceWordLengths = (text: string): number[] =>
+  sentencesOf(text).map((sentence) => wordsOf(sentence).length)
+
 export interface ProseLintFinding {
   /** Check id, kebab-case (doubled-word, filler-word, banned-term, …). */
   type: string
@@ -109,13 +132,9 @@ export const lintProse = (
   const lower = text.toLowerCase()
 
   // ---- token + sentence stats ----
-  const words = text.match(/[A-Za-z’']+/g) ?? []
-  const sentences = text
-    .replace(/\n+/g, ' ')
-    .split(/(?<=[.!?…])\s+/)
-    .map((s) => s.trim())
-    .filter((s) => /[A-Za-z]/.test(s))
-  const sentenceLengths = sentences.map((s) => (s.match(/[A-Za-z’']+/g) ?? []).length)
+  const words = wordsOf(text)
+  const sentences = sentencesOf(text)
+  const sentenceLengths = sentences.map((sentence) => wordsOf(sentence).length)
   const totalWords = words.length
   const avg =
     sentenceLengths.length > 0
@@ -262,7 +281,7 @@ export const lintProse = (
 
   // ---- banned terms from style.md ----
   for (const term of options.bannedTerms ?? []) {
-    const re = new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi')
+    const re = new RegExp(`\\b${escapeRegExp(term)}\\b`, 'gi')
     const match = re.exec(text)
     if (match) {
       const hits = text.match(re)?.length ?? 1
@@ -276,4 +295,126 @@ export const lintProse = (
   }
 
   return { stats, findings }
+}
+
+// ---- Corpus (anti-slop) lint --------------------------------------------------
+// SOTA audit feature 3: AI prose "slop" is a CROSS-SCENE signal — a pet
+// phrase or scene-opening the model reuses across chapters, or a rhythm
+// so uniform it reads as machine-generated. lintProse sees one scene;
+// lintCorpus sees the whole manuscript and flags what only shows up in
+// aggregate. Pure (no fs/LLM) so the book-run critic gate is deterministic.
+
+export interface CorpusUnit {
+  /** Display id/title for the finding (scene title or path). */
+  label: string
+  text: string
+}
+
+export interface CorpusFinding {
+  type: 'cross-scene-echo' | 'repeated-opening' | 'corpus-rhythm-uniformity'
+  message: string
+  /** Labels of the units the signal spans. */
+  units: string[]
+  count?: number
+}
+
+export interface CorpusLintResult {
+  unitCount: number
+  findings: CorpusFinding[]
+}
+
+/** How many distinct scenes must share a phrase before it reads as echo. */
+const ECHO_MIN_UNITS = 3
+/** Phrase length (in words) compared across scenes. */
+const ECHO_NGRAM = 4
+/** Leading words of a scene compared when hunting repeated openings. */
+const OPENING_WORDS = 5
+
+const contentTokens = (text: string): string[] =>
+  (text.toLowerCase().match(/[a-z’']+/g) ?? []).filter((w) => w.length > 1)
+
+const ngramsOf = (tokens: string[], n: number): string[] => {
+  const out: string[] = []
+  for (let i = 0; i + n <= tokens.length; i += 1) {
+    const gram = tokens.slice(i, i + n)
+    // Skip all-stopword grams (structural, not stylistic).
+    if (gram.every((w) => STOPWORDS.has(w))) continue
+    out.push(gram.join(' '))
+  }
+  return out
+}
+
+export const lintCorpus = (units: CorpusUnit[]): CorpusLintResult => {
+  const findings: CorpusFinding[] = []
+  const real = units.filter((u) => /[a-z]/i.test(u.text))
+  if (real.length < 2) return { unitCount: real.length, findings }
+
+  // ---- cross-scene echo: distinctive 4-grams spanning ≥3 scenes ----
+  const gramUnits = new Map<string, Set<string>>()
+  for (const unit of real) {
+    const grams = new Set(ngramsOf(contentTokens(unit.text), ECHO_NGRAM))
+    for (const gram of grams) {
+      const set = gramUnits.get(gram) ?? new Set<string>()
+      set.add(unit.label)
+      gramUnits.set(gram, set)
+    }
+  }
+  const echoes = [...gramUnits.entries()]
+    .filter(([, set]) => set.size >= ECHO_MIN_UNITS)
+    .sort((a, b) => b[1].size - a[1].size)
+    .slice(0, 12)
+  for (const [gram, set] of echoes) {
+    findings.push({
+      type: 'cross-scene-echo',
+      message: `"${gram}" recurs across ${set.size} scenes — a signature phrase or AI echo; vary it`,
+      units: [...set].slice(0, 8),
+      count: set.size
+    })
+  }
+
+  // ---- repeated scene openings ----
+  const openings = new Map<string, string[]>()
+  for (const unit of real) {
+    const opener = contentTokens(unit.text).slice(0, OPENING_WORDS).join(' ')
+    if (!opener) continue
+    const list = openings.get(opener) ?? []
+    list.push(unit.label)
+    openings.set(opener, list)
+  }
+  for (const [opener, labels] of openings) {
+    if (labels.length >= 2) {
+      findings.push({
+        type: 'repeated-opening',
+        message: `${labels.length} scenes open on the same beat ("${opener}…") — openings should vary`,
+        units: labels.slice(0, 8),
+        count: labels.length
+      })
+    }
+  }
+
+  // ---- corpus-wide rhythm uniformity ----
+  const allLengths: number[] = []
+  for (const unit of real) {
+    allLengths.push(...sentenceWordLengths(unit.text).filter((length) => length > 0))
+  }
+  if (allLengths.length >= 40) {
+    const mean = allLengths.reduce((a, b) => a + b, 0) / allLengths.length
+    const sd = Math.sqrt(
+      allLengths.reduce((sum, l) => sum + (l - mean) ** 2, 0) / allLengths.length
+    )
+    const cv = mean > 0 ? sd / mean : 1
+    // Human fiction typically varies sentence length a lot (CV ~0.5–0.8);
+    // a very low CV across the whole book reads as machine-flat.
+    if (cv < 0.35 && mean > 6) {
+      findings.push({
+        type: 'corpus-rhythm-uniformity',
+        message:
+          `Sentence lengths barely vary across the manuscript (avg ${Math.round(mean)} words, ` +
+          `variation ${Math.round(cv * 100)}% of mean) — vary short punchy lines against longer ones`,
+        units: real.map((u) => u.label).slice(0, 8)
+      })
+    }
+  }
+
+  return { unitCount: real.length, findings }
 }

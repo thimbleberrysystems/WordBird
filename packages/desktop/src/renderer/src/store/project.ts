@@ -187,6 +187,16 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
+  const importManuscript = async(): Promise<void> => {
+    try {
+      // Main prompts for the source file + destination, splits it into
+      // chapters/scenes, and opens the new project.
+      await window.electron.project.import()
+    } catch (err) {
+      console.error('Manuscript import failed:', err)
+    }
+  }
+
   function CREATE_BUFFERED_STATE(): BufferedProjectState {
     return createBufferedProjectState({
       projectTree: projectTree.value
@@ -424,6 +434,7 @@ export const useProjectStore = defineStore('project', () => {
     LISTEN_FOR_UPDATE_PROJECT,
     createProject,
     loadProject,
+    importManuscript,
     setCurrentProject,
     CHANGE_ACTIVE_ITEM,
     CHANGE_CLIPBOARD,

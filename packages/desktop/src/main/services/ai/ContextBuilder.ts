@@ -119,6 +119,12 @@ export class ContextBuilder {
    * warning visible exactly once, so most readers missed it).
    */
   private _turnFreshness = new Map<string, { changed: string[]; events: string[] }>()
+  /** Writer's message this turn — the seed for Codex-style bible
+   * auto-injection (frozen at beginTurn, cleared at endTurn). */
+  private _turnLoreSeed = new Map<string, string>()
+  /** Computed-once lore section per turn (workers + supervisor iterations
+   * reuse it instead of re-scanning the bible each brief build). */
+  private _turnLoreSection = new Map<string, string>()
 
   /** Where the writer is looking (view + open scene); set from the renderer. */
   setSessionContext(context: ISessionContext | null): void {
@@ -138,7 +144,7 @@ export class ContextBuilder {
    * candidates; the agent's own mid-turn edits stay out of the next window
    * (endTurn closes it after they happen).
    */
-  beginTurn(projectRoot: string): void {
+  beginTurn(projectRoot: string, loreSeed = ''): void {
     const changed = this._collectChangedSince(
       projectRoot,
       this._lastTurnEndedAt.get(projectRoot)
@@ -146,12 +152,55 @@ export class ContextBuilder {
     const events = this._projectEvents.get(projectRoot) ?? []
     this._projectEvents.delete(projectRoot)
     this._turnFreshness.set(projectRoot, { changed, events })
+    this._turnLoreSeed.set(projectRoot, loreSeed)
+    this._turnLoreSection.delete(projectRoot)
   }
 
   /** The turn finished (success or failure) — close the freshness window. */
   endTurn(projectRoot: string): void {
     this._lastTurnEndedAt.set(projectRoot, Date.now())
     this._turnFreshness.delete(projectRoot)
+    this._turnLoreSeed.delete(projectRoot)
+    this._turnLoreSection.delete(projectRoot)
+  }
+
+  /**
+   * Codex-style bible auto-injection, computed once per turn. Seed =
+   * the writer's message (frozen at beginTurn) + the live selection +
+   * the open scene's prose, so entities in play — named OR just present
+   * in the scene being drafted — get their canon pages inlined.
+   */
+  private async _buildTurnLore(
+    projectRoot: string,
+    leaves: INovelUnit[]
+  ): Promise<string> {
+    const cached = this._turnLoreSection.get(projectRoot)
+    if (cached !== undefined) return cached
+    const seed = this._turnLoreSeed.get(projectRoot)
+    if (seed === undefined) return '' // no active turn (probe/manual build)
+
+    const seedParts: string[] = [seed]
+    const ctx = this._sessionContext
+    if (ctx?.selection?.text) seedParts.push(ctx.selection.text)
+    if (ctx?.currentUnitId) {
+      const open = leaves.find((l) => l.id === ctx.currentUnitId)
+      if (open?.path) {
+        try {
+          seedParts.push(fs.readFileSync(path.join(projectRoot, open.path), 'utf8'))
+        } catch {
+          // Open scene unreadable — skip; mention detection still runs on the rest.
+        }
+      }
+    }
+    let section = ''
+    try {
+      const { buildLoreSection } = await import('../novel/LoreInjection')
+      section = await buildLoreSection(projectRoot, seedParts.join('\n'))
+    } catch {
+      section = ''
+    }
+    this._turnLoreSection.set(projectRoot, section)
+    return section
   }
 
   /**
@@ -359,6 +408,16 @@ export class ContextBuilder {
         // No research yet.
       }
 
+      // Voice exemplars: the writer's own prose, so drafters/line-editors
+      // match the VOICE instead of producing "clean stranger" output.
+      try {
+        const { buildVoiceSection } = await import('../novel/VoicePriming')
+        const voice = buildVoiceSection(projectRoot)
+        if (voice) sections.push(voice)
+      } catch {
+        // No exemplars — style.md doctrine still applies.
+      }
+
       // Settled creative choices: agents must never relitigate these.
       try {
         const decisions = listDecisions(projectRoot)
@@ -461,10 +520,24 @@ export class ContextBuilder {
           'style page, and chapter/scene shells. Do not assume any existing content.'
         )
       } else if (biblePages === 0) {
+        let importedFrom: string | undefined
+        try {
+          const raw = JSON.parse(
+            fs.readFileSync(path.join(projectRoot, '.wordbird', 'project.json'), 'utf8')
+          ) as { importedFrom?: string }
+          if (typeof raw.importedFrom === 'string') importedFrom = raw.importedFrom
+        } catch {
+          // No/invalid marker — treat as a normal no-bible project.
+        }
         sections.push(
-          'NO STORY BIBLE YET: prose exists but no canon pages. When characters or places ' +
-          'come up, offer to establish bible pages for them (with aliases) so future work ' +
-          'stays consistent.'
+          importedFrom
+            ? `FRESHLY IMPORTED (from ${importedFrom}): a full manuscript was imported but ` +
+              'has no canon yet. Follow the POST-IMPORT playbook — OFFER a retro-outline pass ' +
+              'and review-gated bible extraction (mine recurring names via project_health, ' +
+              'propose a page with aliases for each, stating only what the prose establishes).'
+            : 'NO STORY BIBLE YET: prose exists but no canon pages. When characters or places ' +
+              'come up, offer to establish bible pages for them (with aliases) so future work ' +
+              'stays consistent.'
         )
       }
 
@@ -479,6 +552,12 @@ export class ContextBuilder {
       if (whosWhere) {
         sections.push(`WHO'S WHERE (bible entities in the prose — details: where_appears):\n${whosWhere}`)
       }
+
+      // Codex-style bible auto-injection: the FULL pages for entities in
+      // play this turn, inlined so agents write consistent canon without
+      // a read_bible round-trip (the #1 consistency-failure fix).
+      const lore = await this._buildTurnLore(projectRoot, leaves)
+      if (lore) sections.push(lore)
 
       // Book-level summary from the agent-maintained ladder, if present.
       const bookSummaryPath = path.join(projectRoot, '.wordbird', 'summaries', 'book.md')

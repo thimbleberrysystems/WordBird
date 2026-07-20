@@ -683,6 +683,16 @@ describe('per-turn lookup budget (research must END)', () => {
 
 describe('rate-limit tolerance (no writer intervention)', () => {
   const originalDelays = [...WEB_RETRY_DELAYS_MS]
+
+  it('retry backoff stays bounded so a slow call cannot kill the MCP stream', () => {
+    // A single in-process MCP tool call that stays in flight too long makes
+    // the SDK CLI close the tool stream (prj13; upstream #114). The total
+    // retry sleep must stay well under that tolerance — the old
+    // [1500,4000,10000] = 15.5s was a stream-killer.
+    const total = originalDelays.reduce((a, b) => a + b, 0)
+    expect(total).toBeLessThanOrEqual(4000)
+  })
+
   beforeEach(() => {
     // Instant retries in tests.
     WEB_RETRY_DELAYS_MS.splice(0, WEB_RETRY_DELAYS_MS.length, 1, 1, 1)
@@ -702,6 +712,39 @@ describe('rate-limit tolerance (no writer intervention)', () => {
     }
     expect(result.results[0].url).toContain('ok.example.com')
     expect(mockedGet).toHaveBeenCalledTimes(2)
+  })
+
+  it('STOP MEANS STOP: an aborted signal refuses the lookup before any network', async() => {
+    const controller = new AbortController()
+    controller.abort()
+    const handler = (
+      service as unknown as { _handlers: Map<Handler & never, Handler> }
+    )._handlers.get('web_search' as never)!
+    await expect(
+      handler({ query: 'storms stopped' }, { projectRoot: null, signal: controller.signal })
+    ).rejects.toThrow(/stopped by writer/i)
+    expect(mockedGet).not.toHaveBeenCalled()
+  })
+
+  it('STOP MEANS STOP: aborting mid-backoff cancels the retry wait immediately', async() => {
+    // Real (long) delays for this one: the abort must cut the sleep short.
+    WEB_RETRY_DELAYS_MS.splice(0, WEB_RETRY_DELAYS_MS.length, 5000, 5000, 5000)
+    const rateLimited = Object.assign(new Error('Request failed with status code 429'), {
+      response: { status: 429 }
+    })
+    mockedGet.mockRejectedValue(rateLimited)
+    const controller = new AbortController()
+    const handler = (
+      service as unknown as { _handlers: Map<Handler & never, Handler> }
+    )._handlers.get('web_search' as never)!
+    const started = Date.now()
+    const pending = handler(
+      { query: 'storms aborted midway' },
+      { projectRoot: null, signal: controller.signal }
+    )
+    setTimeout(() => controller.abort(), 50)
+    await expect(pending).rejects.toThrow(/stopped by writer/i)
+    expect(Date.now() - started).toBeLessThan(2000)
   })
 
   it('thrown 429s (axios reject shape) retry too, honoring the attempt budget', async() => {

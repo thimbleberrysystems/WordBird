@@ -17,6 +17,7 @@ import type {
   IpcMainEventChannels,
   BootInfo,
   ProjectCreateArgs,
+  ProjectImportArgs,
   ProjectLoadArgs
 } from '@shared/types/ipc'
 
@@ -240,6 +241,7 @@ const ripgrepAPI = {
 
 const projectAPI = {
   create: (args: ProjectCreateArgs = {}) => invoke('mt::project:create', args),
+  import: (args: ProjectImportArgs = {}) => invoke('mt::project:import', args),
   load: (args: ProjectLoadArgs = {}) => invoke('mt::project:load', args),
   validate: (path: string) => invoke('mt::project:validate', path),
   saveAs: (currentPath: string) => invoke('mt::project:save-as', currentPath)

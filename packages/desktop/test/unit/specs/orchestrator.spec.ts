@@ -546,3 +546,84 @@ describe('destructive tools always ask the writer', () => {
     expect(bound).not.toContain('delete_unit')
   })
 })
+
+describe('GATHERED THIS TURN (research ledger) injection', () => {
+  const makeWithGathered = (
+    model: ScriptedModel,
+    buildGathered: () => string
+  ): Orchestrator =>
+    new Orchestrator({
+      modelFactory: () => model as never,
+      tools: [echoTool as never],
+      callbacks: {
+        emitActivity: (e) => activities.push(e),
+        requestApproval: async() => true,
+        buildGathered
+      }
+    })
+
+  const findCall = (model: ScriptedModel, marker: string): BaseMessage[] | undefined =>
+    model.calls.find((messages) => String(messages[0]?.content ?? '').includes(marker))
+
+  it('warm workers and the supervisor carry the section; the auditor never does', async() => {
+    const model = new ScriptedModel([
+      spawnCall([
+        { role: 'explorer', task: 'map chapter one' },
+        { role: 'auditor', task: 'audit chapter one' }
+      ]),
+      new AIMessage('worker report'),
+      new AIMessage('worker report'),
+      new AIMessage('All done.')
+    ])
+    const orchestrator = makeWithGathered(model, () => 'GATHERED-SENTINEL-99')
+    orchestrator.setMode('auto')
+    await invokeGraph(orchestrator, 'sweep the chapter')
+
+    const supervisorCall = findCall(model, 'You are Biscuit')
+    expect(String(supervisorCall?.[0]?.content)).toContain('GATHERED-SENTINEL-99')
+
+    const explorerCall = findCall(model, 'Explorer sub-agent')
+    expect(String(explorerCall?.[0]?.content)).toContain('GATHERED-SENTINEL-99')
+
+    // coldStart pin: the continuity auditor verifies from source — the
+    // ledger section must never reach its context.
+    const auditorCall = findCall(model, 'Continuity Auditor sub-agent')
+    expect(auditorCall).toBeDefined()
+    expect(String(auditorCall?.[0]?.content)).not.toContain('GATHERED-SENTINEL-99')
+  })
+
+  it('the section is LIVE, not frozen: wave 2 sees what wave 1 gathered', async() => {
+    let generation = 0
+    const model = new ScriptedModel([
+      spawnCall([{ role: 'explorer', task: 'wave one task' }]),
+      new AIMessage('wave one report'),
+      spawnCall([{ role: 'explorer', task: 'wave two task' }]),
+      new AIMessage('wave two report'),
+      new AIMessage('Done.')
+    ])
+    const orchestrator = makeWithGathered(model, () => `GATHERED-GEN-${++generation}`)
+    orchestrator.setMode('auto')
+    await invokeGraph(orchestrator, 'two waves please')
+
+    const waveOne = model.calls.find((m) => String(m[1]?.content ?? '') === 'wave one task')
+    const waveTwo = model.calls.find((m) => String(m[1]?.content ?? '') === 'wave two task')
+    const genOf = (call: BaseMessage[] | undefined): number =>
+      Number(/GATHERED-GEN-(\d+)/.exec(String(call?.[0]?.content ?? ''))?.[1] ?? -1)
+    expect(genOf(waveOne)).toBeGreaterThan(0)
+    expect(genOf(waveTwo)).toBeGreaterThan(genOf(waveOne))
+  })
+
+  it('no buildGathered callback → prompts are unchanged', async() => {
+    const model = new ScriptedModel([
+      spawnCall([{ role: 'explorer', task: 'look' }]),
+      new AIMessage('report'),
+      new AIMessage('Done.')
+    ])
+    const orchestrator = makeOrchestrator(model)
+    orchestrator.setMode('auto')
+    await invokeGraph(orchestrator, 'go')
+    for (const call of model.calls) {
+      expect(String(call[0]?.content ?? '')).not.toContain('GATHERED-SENTINEL')
+    }
+  })
+})

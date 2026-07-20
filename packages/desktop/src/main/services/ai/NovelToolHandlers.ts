@@ -143,6 +143,10 @@ interface UnitSummaryNode {
   thread?: string
   label?: string
   notes?: string
+  goal?: string
+  conflict?: string
+  outcome?: string
+  valueShift?: string
   synopsis?: string
   wordCount?: number
   children?: UnitSummaryNode[]
@@ -163,6 +167,12 @@ const toSummaryNode = (unit: INovelUnit): UnitSummaryNode => ({
   thread: unit.thread,
   label: unit.label,
   notes: unit.notes,
+  // Scene craft (yWriter GMC + Story Grid value shift) — agent-readable
+  // so the model can honor and health-check the writer's structure.
+  goal: unit.goal,
+  conflict: unit.conflict,
+  outcome: unit.outcome,
+  valueShift: unit.valueShift,
   // On a 1000-scene novel, full synopses would dominate the context.
   synopsis: unit.synopsis && unit.synopsis.length > MAX_SYNOPSIS_CHARS
     ? unit.synopsis.slice(0, MAX_SYNOPSIS_CHARS) + '…'
@@ -542,7 +552,8 @@ const updateUnitMeta = async(
   const unitId = str(args, 'unitId')
   const update: Record<string, string> = {}
   const FIELDS = [
-    'title', 'status', 'pov', 'location', 'synopsis', 'when', 'thread', 'label', 'notes'
+    'title', 'status', 'pov', 'location', 'synopsis', 'when', 'thread', 'label', 'notes',
+    'goal', 'conflict', 'outcome', 'valueShift'
   ] as const
   for (const key of FIELDS) {
     const value = optStr(args, key)
@@ -720,8 +731,38 @@ const lintProseTool = async(
   const root = requireRoot(context)
   const unitId = optStr(args, 'unitId')
   const fname = optStr(args, 'fname')
+
+  // Corpus (anti-slop) mode: lint the WHOLE manuscript for cross-scene
+  // echoes, repeated openings, and machine-flat rhythm — signals only
+  // visible in aggregate. The book-run critic pass runs this.
+  if (optBool(args, 'corpus') === true) {
+    const structure = await structureService.loadReconciled(root)
+    const { lintCorpus } = await import('../novel/ProseLint')
+    const units: Array<{ label: string; text: string }> = []
+    for (const leaf of collectLeaves(structure.units)) {
+      if (!leaf.path) continue
+      try {
+        units.push({ label: leaf.title, text: await readTextSafe(resolveInside(root, leaf.path)) })
+      } catch {
+        // Unreadable unit — skip; the rest still lint.
+      }
+    }
+    const result = lintCorpus(units)
+    const MAX = 30
+    return {
+      scope: 'corpus',
+      unitCount: result.unitCount,
+      findingCount: result.findings.length,
+      findings: result.findings.slice(0, MAX),
+      truncated: result.findings.length > MAX,
+      note:
+        'Corpus-level anti-slop signals — a recurring phrase can be a deliberate motif; ' +
+        'weigh each against intent. Vary echoes/openings the writer did not choose.'
+    }
+  }
+
   if (!unitId === !fname) {
-    throw new Error('Provide exactly one of unitId or fname.')
+    throw new Error('Provide exactly one of unitId, fname, or corpus:true.')
   }
 
   let target: string
@@ -1767,6 +1808,60 @@ const setWritingMethod = async(
   }
 }
 
+/**
+ * relationship_map — deterministically regenerate bible/relationships.md
+ * (a mermaid graph) from the fact ledger. Inter-entity facts become
+ * edges; the result rides the normal review queue as an edit proposal so
+ * the writer approves it like any other change (never a silent write).
+ */
+const relationshipMapTool = async(
+  _args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const root = requireRoot(context)
+  const { factService } = await import('../novel/FactService')
+  const { getEntityIndex } = await import('../novel/EntityIndex')
+  const { buildRelationshipDoc } = await import('../novel/RelationshipMap')
+
+  const facts = await factService.list(root)
+  const index = await getEntityIndex(root)
+  const doc = buildRelationshipDoc(
+    facts.map((f) => ({ subject: f.subject, relation: f.relation, object: f.object })),
+    index.entities.map((e) => ({ name: e.name, aliases: e.aliases }))
+  )
+  if (!doc) {
+    return {
+      generated: false,
+      note:
+        'No inter-entity relationships in the fact ledger yet — record_fact triples ' +
+        'whose subject AND object are both bible entities (e.g. "Zara / sister of / Mara"), ' +
+        'then regenerate.'
+    }
+  }
+
+  const relative = path.join('bible', 'relationships.md')
+  const filePath = resolveInside(root, relative, 'bible')
+  let oldContent = ''
+  try {
+    oldContent = await readTextSafe(filePath)
+  } catch {
+    // New file.
+  }
+  if (isLockedCanon(oldContent)) {
+    throw new Error('bible/relationships.md is locked canon — unlock it to regenerate the map.')
+  }
+  return {
+    edit: {
+      id: crypto.randomUUID(),
+      filePath: relative,
+      newContent: doc,
+      reason: 'Regenerated relationship map from the fact ledger'
+    },
+    oldContent,
+    originalPath: filePath
+  }
+}
+
 export const registerNovelAgentToolHandlers = (service: AgentToolService): void => {
   service.registerHandler('list_structure', listStructure)
   service.registerHandler('read_unit', readUnit)
@@ -1783,6 +1878,7 @@ export const registerNovelAgentToolHandlers = (service: AgentToolService): void 
   service.registerHandler('log_continuity_issue', logContinuityIssue)
   service.registerHandler('record_fact', recordFact)
   service.registerHandler('list_facts', listFacts)
+  service.registerHandler('relationship_map', relationshipMapTool)
   service.registerHandler('lint_prose', lintProseTool)
   service.registerHandler('list_skills', listSkillsTool)
   service.registerHandler('use_skill', useSkillTool)

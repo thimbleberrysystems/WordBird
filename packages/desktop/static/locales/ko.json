@@ -429,7 +429,8 @@
     "structureHerosJourney": "영웅의 여정",
     "structureSevenPoint": "7포인트",
     "structureRomancing": "Romancing the Beat (로맨스)",
-    "methodHint": "선택 사항 — Biscuit이 당신의 방식에 맞춰 돕습니다. 언제든 Biscuit에게 말해 바꿀 수 있어요."
+    "methodHint": "선택 사항 — Biscuit이 당신의 방식에 맞춰 돕습니다. 언제든 Biscuit에게 말해 바꿀 수 있어요.",
+    "importManuscript": "Import Manuscript"
   },
   "import": {
     "title": "가져오기 또는 열기",
@@ -1436,7 +1437,10 @@
     "open": "열기",
     "rename": "이름 바꾸기",
     "newFolder": "새 폴더",
-    "deleteFileConfirm": "{name}을(를) 삭제할까요? 스냅샷에 사본이 남습니다."
+    "deleteFileConfirm": "{name}을(를) 삭제할까요? 스냅샷에 사본이 남습니다.",
+    "streakTip": "{days}-day writing streak",
+    "sessionTip": "Words written this session",
+    "dailyQuota": "{words} words/day to finish in {days} days"
   },
   "history": {
     "title": "스냅샷",
@@ -1478,7 +1482,12 @@
     "outlineTip": "아웃라인 — 편집 가능한 표",
     "timelineTip": "타임라인 — 이야기 시간 순 장면",
     "statusCycleTip": "상태: {status} — 클릭하면 아이디어 → 초고 → 수정 → 완성 순환",
-    "povPlaceholder": "시점"
+    "povPlaceholder": "시점",
+    "craftColumns": "Craft columns",
+    "colGoal": "Goal",
+    "colConflict": "Conflict",
+    "colOutcome": "Outcome",
+    "colValueShift": "Value shift"
   },
   "continuity": {
     "title": "연속성",
@@ -1595,7 +1604,9 @@
     "startersHint": "시작 프롬프트 — 클릭하면 입력창에 채워집니다",
     "mentionButtonTip": "장면이나 설정집 페이지 참조 (@)",
     "startersButtonTip": "시작 프롬프트 (/)",
-    "historyHintTip": "빈 입력창에서 ↑ 를 누르면 이전 입력을 불러옵니다"
+    "historyHintTip": "빈 입력창에서 ↑ 를 누르면 이전 입력을 불러옵니다",
+    "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
+    "selDraft": "Draft"
   },
   "review": {
     "pendingOne": "대기 중인 편집 1개",

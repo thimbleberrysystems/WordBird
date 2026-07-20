@@ -429,7 +429,8 @@
     "structureHerosJourney": "Jornada do Herói",
     "structureSevenPoint": "Sete pontos",
     "structureRomancing": "Romancing the Beat (romance)",
-    "methodHint": "Opcional — o Biscuit adapta a ajuda ao seu método. Mude quando quiser, é só dizer ao Biscuit."
+    "methodHint": "Opcional — o Biscuit adapta a ajuda ao seu método. Mude quando quiser, é só dizer ao Biscuit.",
+    "importManuscript": "Import Manuscript"
   },
   "import": {
     "title": "Importar ou Abrir",
@@ -1436,7 +1437,10 @@
     "open": "Abrir",
     "rename": "Renomear",
     "newFolder": "Nova pasta",
-    "deleteFileConfirm": "Excluir {name}? Um instantâneo guarda uma cópia."
+    "deleteFileConfirm": "Excluir {name}? Um instantâneo guarda uma cópia.",
+    "streakTip": "{days}-day writing streak",
+    "sessionTip": "Words written this session",
+    "dailyQuota": "{words} words/day to finish in {days} days"
   },
   "history": {
     "title": "Instantâneos",
@@ -1478,7 +1482,12 @@
     "outlineTip": "Esquema — cenas em tabela editável",
     "timelineTip": "Cronologia — cenas no tempo da história",
     "statusCycleTip": "Status: {status} — clique para alternar ideia → rascunho → revisado → final",
-    "povPlaceholder": "PDV"
+    "povPlaceholder": "PDV",
+    "craftColumns": "Craft columns",
+    "colGoal": "Goal",
+    "colConflict": "Conflict",
+    "colOutcome": "Outcome",
+    "colValueShift": "Value shift"
   },
   "continuity": {
     "title": "Continuidade",
@@ -1595,7 +1604,9 @@
     "startersHint": "Sugestões iniciais — clique para preencher",
     "mentionButtonTip": "Referenciar uma cena ou página da bíblia (@)",
     "startersButtonTip": "Sugestões iniciais (/)",
-    "historyHintTip": "↑ com a entrada vazia recupera mensagens anteriores"
+    "historyHintTip": "↑ com a entrada vazia recupera mensagens anteriores",
+    "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
+    "selDraft": "Draft"
   },
   "review": {
     "pendingOne": "1 edição pendente",

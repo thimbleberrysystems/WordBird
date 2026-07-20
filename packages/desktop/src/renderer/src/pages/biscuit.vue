@@ -9,8 +9,9 @@ import { onMounted } from 'vue'
 import RightPrompt from '@/components/rightPrompt/RightPrompt.vue'
 import { useProjectStore } from '@/store/project'
 import { usePreferencesStore } from '@/store/preferences'
-import { langGraphService } from '@/services/langgraph'
+import { mirrorAiConnectionState } from '@/services/langgraph'
 import { addThemeStyle } from '@/util/theme'
+import { initAgentReviewFallback } from '@/services/agentReviewFallback'
 
 /**
  * Detached Biscuit window: full-window chat. The opener passes the live
@@ -34,6 +35,9 @@ if (projectRoot) {
 
 // Match the app theme (passed as a query param at open time).
 onMounted(async () => {
+  // The detached window has no editor — the fallback ingests proposals
+  // and drives review actions disk-only, so the queue works here too.
+  initAgentReviewFallback()
   const initialTheme = params.get('theme')
   if (initialTheme) addThemeStyle(initialTheme)
 
@@ -43,19 +47,7 @@ onMounted(async () => {
   // too. Without this the detached chat believed it was disconnected.
   const preferencesStore = usePreferencesStore()
   preferencesStore.ASK_FOR_USER_PREFERENCE()
-  window.electron.ai.onConnectionState((state) => {
-    langGraphService.applyMainState(state)
-    preferencesStore.aiIsConnected = state.connected
-    if (state.capabilities) preferencesStore.aiCapabilities = state.capabilities
-  })
-  try {
-    const state = await window.electron.ai.getConnectionState()
-    langGraphService.applyMainState(state)
-    preferencesStore.aiIsConnected = state.connected
-    if (state.capabilities) preferencesStore.aiCapabilities = state.capabilities
-  } catch {
-    // Main not ready — the next broadcast will catch us up.
-  }
+  await mirrorAiConnectionState(preferencesStore)
 })
 </script>
 

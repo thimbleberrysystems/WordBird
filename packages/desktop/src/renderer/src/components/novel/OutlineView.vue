@@ -6,142 +6,195 @@
       :title="t('empty.outlineTitle')"
       :hint="t('empty.outlineHint')"
     />
-    <table
-      v-else
-      class="outline-table"
-    >
-      <thead>
-        <tr>
-          <th class="col-title">
-            {{ t('views.colTitle') }}
-          </th>
-          <th class="col-pov">
-            POV
-          </th>
-          <th class="col-location">
-            {{ t('views.colLocation') }}
-          </th>
-          <th class="col-status">
-            {{ t('views.colStatus') }}
-          </th>
-          <th class="col-thread">
-            {{ t('views.colThread') }}
-          </th>
-          <th class="col-label">
-            {{ t('views.colLabel') }}
-          </th>
-          <th class="col-words">
-            {{ t('views.colWords') }}
-          </th>
-          <th class="col-synopsis">
-            {{ t('views.colSynopsis') }}
-          </th>
-          <th class="col-notes">
-            {{ t('views.colNotes') }}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <template
-          v-for="row in rows"
-          :key="row.unit.id"
-        >
-          <tr
-            v-if="row.isHeader"
-            class="group-row"
+    <template v-else>
+      <div class="outline-toolbar">
+        <label class="craft-toggle">
+          <input
+            v-model="showCraft"
+            type="checkbox"
+            class="craft-toggle-input"
           >
-            <td colspan="9">
-              {{ row.label }}
-            </td>
+          {{ t('views.craftColumns') }}
+        </label>
+      </div>
+      <table class="outline-table">
+        <thead>
+          <tr>
+            <th class="col-title">
+              {{ t('views.colTitle') }}
+            </th>
+            <th class="col-pov">
+              POV
+            </th>
+            <th class="col-location">
+              {{ t('views.colLocation') }}
+            </th>
+            <th class="col-status">
+              {{ t('views.colStatus') }}
+            </th>
+            <th class="col-thread">
+              {{ t('views.colThread') }}
+            </th>
+            <th class="col-label">
+              {{ t('views.colLabel') }}
+            </th>
+            <th class="col-words">
+              {{ t('views.colWords') }}
+            </th>
+            <th class="col-synopsis">
+              {{ t('views.colSynopsis') }}
+            </th>
+            <th class="col-notes">
+              {{ t('views.colNotes') }}
+            </th>
+            <template v-if="showCraft">
+              <th class="col-craft">
+                {{ t('views.colGoal') }}
+              </th>
+              <th class="col-craft">
+                {{ t('views.colConflict') }}
+              </th>
+              <th class="col-craft">
+                {{ t('views.colOutcome') }}
+              </th>
+              <th class="col-craft">
+                {{ t('views.colValueShift') }}
+              </th>
+            </template>
           </tr>
-          <tr
-            v-else
-            class="scene-row"
-            @contextmenu.prevent="showRowMenu($event, row.unit)"
+        </thead>
+        <tbody>
+          <template
+            v-for="row in rows"
+            :key="row.unit.id"
           >
-            <td
-              class="col-title clickable"
-              :style="{ paddingLeft: `${row.depth * 16 + 10}px` }"
-              @click="novelStore.openUnit(row.unit)"
+            <tr
+              v-if="row.isHeader"
+              class="group-row"
             >
-              {{ row.unit.title }}
-            </td>
-            <td class="col-pov">
-              <input
-                class="cell-input"
-                :value="row.unit.pov ?? ''"
-                @change="save(row.unit, 'pov', $event)"
+              <td :colspan="showCraft ? 13 : 9">
+                {{ row.label }}
+              </td>
+            </tr>
+            <tr
+              v-else
+              class="scene-row"
+              @contextmenu.prevent="showRowMenu($event, row.unit)"
+            >
+              <td
+                class="col-title clickable"
+                :style="{ paddingLeft: `${row.depth * 16 + 10}px` }"
+                @click="novelStore.openUnit(row.unit)"
               >
-            </td>
-            <td class="col-location">
-              <input
-                class="cell-input"
-                :value="row.unit.location ?? ''"
-                @change="save(row.unit, 'location', $event)"
-              >
-            </td>
-            <td class="col-status">
-              <select
-                class="cell-select"
-                :value="row.unit.status ?? 'idea'"
-                @change="save(row.unit, 'status', $event)"
-              >
-                <option value="idea">
-                  idea
-                </option>
-                <option value="draft">
-                  draft
-                </option>
-                <option value="revised">
-                  revised
-                </option>
-                <option value="final">
-                  final
-                </option>
-              </select>
-            </td>
-            <td class="col-thread">
-              <input
-                class="cell-input"
-                :value="row.unit.thread ?? ''"
-                @change="save(row.unit, 'thread', $event)"
-              >
-            </td>
-            <td class="col-label">
-              <input
-                class="cell-input"
-                :value="row.unit.label ?? ''"
-                @change="save(row.unit, 'label', $event)"
-              >
-            </td>
-            <td class="col-words">
-              {{ row.unit.wordCount ?? 0 }}
-            </td>
-            <td class="col-synopsis">
-              <input
-                class="cell-input"
-                :value="row.unit.synopsis ?? ''"
-                :placeholder="t('views.noSynopsis')"
-                @change="save(row.unit, 'synopsis', $event)"
-              >
-            </td>
-            <td class="col-notes">
-              <input
-                class="cell-input"
-                :value="row.unit.notes ?? ''"
-                :placeholder="t('views.noNotes')"
-                @change="save(row.unit, 'notes', $event)"
-              >
-            </td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
+                {{ row.unit.title }}
+              </td>
+              <td class="col-pov">
+                <input
+                  class="cell-input"
+                  :value="row.unit.pov ?? ''"
+                  @change="save(row.unit, 'pov', $event)"
+                >
+              </td>
+              <td class="col-location">
+                <input
+                  class="cell-input"
+                  :value="row.unit.location ?? ''"
+                  @change="save(row.unit, 'location', $event)"
+                >
+              </td>
+              <td class="col-status">
+                <select
+                  class="cell-select"
+                  :value="row.unit.status ?? 'idea'"
+                  @change="save(row.unit, 'status', $event)"
+                >
+                  <option value="idea">
+                    idea
+                  </option>
+                  <option value="draft">
+                    draft
+                  </option>
+                  <option value="revised">
+                    revised
+                  </option>
+                  <option value="final">
+                    final
+                  </option>
+                </select>
+              </td>
+              <td class="col-thread">
+                <input
+                  class="cell-input"
+                  :value="row.unit.thread ?? ''"
+                  @change="save(row.unit, 'thread', $event)"
+                >
+              </td>
+              <td class="col-label">
+                <input
+                  class="cell-input"
+                  :value="row.unit.label ?? ''"
+                  @change="save(row.unit, 'label', $event)"
+                >
+              </td>
+              <td class="col-words">
+                {{ row.unit.wordCount ?? 0 }}
+              </td>
+              <td class="col-synopsis">
+                <input
+                  class="cell-input"
+                  :value="row.unit.synopsis ?? ''"
+                  :placeholder="t('views.noSynopsis')"
+                  @change="save(row.unit, 'synopsis', $event)"
+                >
+              </td>
+              <td class="col-notes">
+                <input
+                  class="cell-input"
+                  :value="row.unit.notes ?? ''"
+                  :placeholder="t('views.noNotes')"
+                  @change="save(row.unit, 'notes', $event)"
+                >
+              </td>
+              <template v-if="showCraft">
+                <td class="col-craft">
+                  <input
+                    class="cell-input cell-craft cell-goal"
+                    :value="row.unit.goal ?? ''"
+                    @change="save(row.unit, 'goal', $event)"
+                  >
+                </td>
+                <td class="col-craft">
+                  <input
+                    class="cell-input cell-craft cell-conflict"
+                    :value="row.unit.conflict ?? ''"
+                    @change="save(row.unit, 'conflict', $event)"
+                  >
+                </td>
+                <td class="col-craft">
+                  <input
+                    class="cell-input cell-craft cell-outcome"
+                    :value="row.unit.outcome ?? ''"
+                    @change="save(row.unit, 'outcome', $event)"
+                  >
+                </td>
+                <td class="col-craft">
+                  <input
+                    class="cell-input cell-craft cell-value-shift"
+                    :value="row.unit.valueShift ?? ''"
+                    @change="save(row.unit, 'valueShift', $event)"
+                  >
+                </td>
+              </template>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import EmptyState from '../common/EmptyState.vue'
 import { popupContextMenu } from '../../contextMenu/popupMenu'
@@ -152,6 +205,10 @@ import type { INovelUnit, INovelUnitUpdate } from '@shared/types/novel'
 
 const novelStore = useNovelStore()
 const { structure } = storeToRefs(novelStore)
+
+// Story Grid / yWriter craft columns (goal/conflict/outcome/value shift)
+// — off by default so the outline stays readable, on for structural work.
+const showCraft = ref(false)
 
 interface OutlineRow {
   unit: INovelUnit
@@ -280,6 +337,36 @@ const showRowMenu = (event: MouseEvent, unit: INovelUnit): void => {
 .col-pov,
 .col-location {
   width: 110px;
+}
+
+.outline-toolbar {
+  display: flex;
+  gap: 8px;
+  /* Left-aligned and sticky: .outline-view scrolls horizontally, and with
+     the craft columns on, the table is wider than the viewport — a
+     right-aligned toolbar ends up off-screen. */
+  justify-content: flex-start;
+  position: sticky;
+  left: 0;
+  margin-bottom: 10px;
+}
+
+.craft-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--iconColor);
+  cursor: pointer;
+  user-select: none;
+}
+
+.craft-toggle-input {
+  cursor: pointer;
+}
+
+.col-craft {
+  width: 130px;
 }
 
 .col-thread,

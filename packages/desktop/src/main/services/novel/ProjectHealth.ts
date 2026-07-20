@@ -34,6 +34,7 @@ import { ENTRY_RE as DECISION_ENTRY_RE } from './Decisions'
 import { HARNESS_MARKER_RE } from '../ai/coherencePass'
 import { parseBannedTerms } from './ProseLint'
 import type { INovelUnit, NovelUnitStatus } from '../../../shared/types/novel'
+import { escapeRegExp } from './markdownText'
 
 export interface HealthFinding {
   id: string
@@ -180,8 +181,6 @@ const hashish = (text: string): string => {
   }
   return String(h)
 }
-
-const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 /** Mine capitalized name candidates from prose (conservative). */
 export const mineNameCandidates = (

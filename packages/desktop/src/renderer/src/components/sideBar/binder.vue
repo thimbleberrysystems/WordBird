@@ -3,6 +3,16 @@
     <div class="binder-header">
       <span class="binder-title">{{ t('binder.title') }}</span>
       <span
+        v-if="streak > 0"
+        class="binder-streak"
+        :title="t('binder.streakTip', { days: String(streak) })"
+      >🔥{{ streak }}</span>
+      <span
+        v-if="sessionWords > 0"
+        class="binder-session"
+        :title="t('binder.sessionTip')"
+      >⏱{{ fmtCount(sessionWords) }}</span>
+      <span
         v-if="todayWords !== 0"
         class="binder-today"
         :class="{ negative: todayWords < 0 }"
@@ -40,6 +50,13 @@
         :class="{ done: targetRatio >= 1 }"
         :style="{ width: `${Math.min(100, targetRatio * 100)}%` }"
       />
+    </div>
+    <!-- Dabble-style daily quota when a finish-by date is set. -->
+    <div
+      v-if="dailyQuotaLabel"
+      class="binder-quota"
+    >
+      {{ dailyQuotaLabel }}
     </div>
 
     <div class="binder-toolbar">
@@ -225,11 +242,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import BinderNode from './binderNode.vue'
 import { useNovelStore } from '@/store/novel'
+import { daysUntil, dailyQuota, parseTargetInput } from '@/util/writingGoals'
 import { useEditorStore } from '@/store/editor'
 import { useProjectStore } from '@/store/project'
 import { useLayoutStore } from '@/store/layout'
@@ -312,6 +330,7 @@ const togglePin = async (file: string): Promise<void> => {
   pinnedSkills.value = result.pinned
 }
 
+// Initial pin load; project switches are handled in the combined watch below.
 watch(() => projectStore.currentProjectPath, refreshPins, { immediate: true })
 
 // Passive "Biscuit reached for it" dot: watch the agent activity feed for
@@ -327,8 +346,15 @@ const agentActivityHandler = (event: unknown): void => {
     }
   }
 }
+// The binder is v-if-mounted (sidebar column switches remount it), so the
+// activity subscription must be released or handlers accumulate.
+let offAgentActivity: (() => void) | null = null
 onMounted(() => {
-  window.electron.ai.onActivity?.(agentActivityHandler)
+  offAgentActivity = window.electron.ai.onActivity(agentActivityHandler)
+})
+onBeforeUnmount(() => {
+  offAgentActivity?.()
+  offAgentActivity = null
 })
 
 const SKILL_TEMPLATE =
@@ -449,10 +475,17 @@ const compiling = ref(false)
 
 // ---- Manuscript word target (per project, writer-set) ----
 const targetKey = computed(() => `wordbird-target:${projectStore.currentProjectPath ?? ''}`)
+const deadlineKey = computed(() => `wordbird-deadline:${projectStore.currentProjectPath ?? ''}`)
 const wordTarget = ref(0)
+/** Optional finish-by date (YYYY-MM-DD) for the target — drives the
+ * Dabble-style daily quota. Empty string = no deadline. */
+const deadline = ref('')
+/** Manuscript total when the app/project opened this session. */
+const sessionStart = ref<number | null>(null)
 
 const loadTarget = (): void => {
   wordTarget.value = Number(localStorage.getItem(targetKey.value)) || 0
+  deadline.value = localStorage.getItem(deadlineKey.value) ?? ''
 }
 
 // ---- Words written today (baseline recorded main-side per local day) ----
@@ -482,24 +515,57 @@ const targetTip = computed(() =>
   t('binder.targetTip', { percent: String(Math.round(targetRatio.value * 100)) })
 )
 
+const daysToDeadline = computed<number | null>(() => daysUntil(deadline.value))
+
+const quota = computed<number | null>(() =>
+  dailyQuota(wordTarget.value, totalWordCount.value, daysToDeadline.value)
+)
+
+const dailyQuotaLabel = computed(() =>
+  quota.value === null
+    ? ''
+    : t('binder.dailyQuota', {
+      words: fmtCount(quota.value),
+      days: String(daysToDeadline.value)
+    })
+)
+
+/** Words written this SESSION (since the app/project opened). */
+const sessionWords = computed(() =>
+  sessionStart.value === null ? 0 : Math.max(0, totalWordCount.value - sessionStart.value)
+)
+
 const editTarget = async (): Promise<void> => {
   let value: string
   try {
+    // One prompt, optional "by DATE": "50000" or "50000 by 2026-12-31".
+    const current =
+      wordTarget.value > 0
+        ? deadline.value
+          ? `${wordTarget.value} by ${deadline.value}`
+          : String(wordTarget.value)
+        : ''
     const result = await ElMessageBox.prompt(t('binder.targetPrompt'), t('binder.targetTitle'), {
-      inputValue: wordTarget.value > 0 ? String(wordTarget.value) : '',
-      inputPattern: /^\d*$/,
+      inputValue: current,
+      inputPattern: /^\s*\d*\s*(by\s*\d{4}-\d{2}-\d{2}\s*)?$/i,
       inputErrorMessage: t('binder.targetInvalid')
     })
     value = result.value
   } catch {
     return // cancelled
   }
-  const parsed = Number(value) || 0
+  const { target: parsed, deadline: parsedDeadline } = parseTargetInput(value)
   wordTarget.value = parsed
+  deadline.value = parsedDeadline
   if (parsed > 0) {
     localStorage.setItem(targetKey.value, String(parsed))
   } else {
     localStorage.removeItem(targetKey.value)
+  }
+  if (deadline.value) {
+    localStorage.setItem(deadlineKey.value, deadline.value)
+  } else {
+    localStorage.removeItem(deadlineKey.value)
   }
 }
 
@@ -524,11 +590,18 @@ const historyBarHeight = (written: number): number => {
   return written > 0 ? Math.max(2, Math.round((written / max) * 18)) : 1
 }
 
-/** Consecutive days (ending today) with words written. */
+/** Consecutive days with words written. Today counts when >0 but an
+ * as-yet-unwritten today (0) is "in progress" — it does NOT break a
+ * streak the writer earned on prior days. */
 const streak = computed(() => {
+  const days = history.value
   let count = 0
-  for (let i = history.value.length - 1; i >= 0; i--) {
-    if (history.value[i].written > 0) count += 1
+  let start = days.length - 1
+  // Skip an in-progress (zero) today so opening the app mid-streak
+  // doesn't read as streak zero.
+  if (start >= 0 && days[start].written === 0) start -= 1
+  for (let i = start; i >= 0; i--) {
+    if (days[i].written > 0) count += 1
     else break
   }
   return count
@@ -547,17 +620,33 @@ onMounted(() => {
   loadHistory()
 })
 
+// Switching projects resets everything project-scoped in ONE handler, so
+// the order is explicit rather than dependent on watcher registration.
 watch(
   () => projectStore.currentProjectPath,
   () => {
+    sessionStart.value = null
     novelStore.refresh()
     loadTarget()
     loadHistory()
+    refreshPins()
   }
 )
 // The history bars move with today's writing.
 watch(totalWordCount, () => loadHistory())
 
+// Session baseline: capture the manuscript total the first time it is
+// known this session (and re-baseline when the project switches).
+watch(
+  totalWordCount,
+  (total) => {
+    // Baseline on the FIRST reading, zero included: gating on `total > 0`
+    // made a brand-new project adopt its first writing burst as the
+    // baseline, so the session counter stayed at 0 for that whole session.
+    if (sessionStart.value === null && typeof total === 'number') sessionStart.value = total
+  },
+  { immediate: true }
+)
 // Word counts move as the writer saves — refresh whenever the binder
 // becomes the visible sidebar view.
 watch(

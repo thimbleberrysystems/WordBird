@@ -429,7 +429,8 @@
     "structureHerosJourney": "Hero's Journey",
     "structureSevenPoint": "Seven-Point",
     "structureRomancing": "Romancing the Beat (romance)",
-    "methodHint": "Optional — Biscuit adapts its help to your method. You can change this any time, just tell Biscuit."
+    "methodHint": "Optional — Biscuit adapts its help to your method. You can change this any time, just tell Biscuit.",
+    "importManuscript": "Import Manuscript"
   },
   "import": {
     "title": "Import or Open",
@@ -1416,7 +1417,7 @@
     "empty": "Nothing here yet — add a chapter to begin.",
     "setTargetTip": "Click to set a manuscript word target",
     "targetTitle": "Manuscript target",
-    "targetPrompt": "How many words are you aiming for? Leave empty to remove the target.",
+    "targetPrompt": "How many words are you aiming for? Optionally add a deadline, e.g. \"50000 by 2026-12-31\". Leave empty to remove the target.",
     "targetInvalid": "Numbers only",
     "targetTip": "{percent}% of your word target",
     "todayTip": "Words written today",
@@ -1437,7 +1438,10 @@
     "open": "Open",
     "rename": "Rename",
     "newFolder": "New folder",
-    "deleteFileConfirm": "Delete {name}? A snapshot keeps a copy."
+    "deleteFileConfirm": "Delete {name}? A snapshot keeps a copy.",
+    "streakTip": "{days}-day writing streak",
+    "sessionTip": "Words written this session",
+    "dailyQuota": "{words} words/day to finish in {days} days"
   },
   "history": {
     "title": "Snapshots",
@@ -1470,6 +1474,11 @@
     "colLabel": "Label",
     "colNotes": "Notes",
     "noNotes": "No notes",
+    "craftColumns": "Craft columns",
+    "colGoal": "Goal",
+    "colConflict": "Conflict",
+    "colOutcome": "Outcome",
+    "colValueShift": "Value shift",
     "allThreads": "All threads",
     "threadFilterTip": "Show one subplot/thread lane",
     "allLabels": "All labels",
@@ -1596,7 +1605,9 @@
     "startersHint": "Starter prompts — click to fill the input",
     "mentionButtonTip": "Reference a scene or bible page (@)",
     "startersButtonTip": "Starter prompts (/)",
-    "historyHintTip": "Press ↑ in the empty input to recall previous prompts"
+    "historyHintTip": "Press ↑ in the empty input to recall previous prompts",
+    "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
+    "selDraft": "Draft"
   },
   "review": {
     "pendingOne": "1 pending edit",

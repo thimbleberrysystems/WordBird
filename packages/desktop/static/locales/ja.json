@@ -429,7 +429,8 @@
     "structureHerosJourney": "英雄の旅",
     "structureSevenPoint": "7ポイント",
     "structureRomancing": "Romancing the Beat（恋愛）",
-    "methodHint": "任意 — Biscuit はあなたの手法に合わせて支援します。いつでも Biscuit に伝えて変更できます。"
+    "methodHint": "任意 — Biscuit はあなたの手法に合わせて支援します。いつでも Biscuit に伝えて変更できます。",
+    "importManuscript": "Import Manuscript"
   },
   "import": {
     "title": "インポートまたは開く",
@@ -1436,7 +1437,10 @@
     "open": "開く",
     "rename": "名前を変更",
     "newFolder": "新しいフォルダ",
-    "deleteFileConfirm": "{name} を削除しますか？スナップショットにコピーが残ります。"
+    "deleteFileConfirm": "{name} を削除しますか？スナップショットにコピーが残ります。",
+    "streakTip": "{days}-day writing streak",
+    "sessionTip": "Words written this session",
+    "dailyQuota": "{words} words/day to finish in {days} days"
   },
   "history": {
     "title": "スナップショット",
@@ -1478,7 +1482,12 @@
     "outlineTip": "アウトライン — 編集可能な表でシーンを",
     "timelineTip": "タイムライン — 物語時間順のシーン",
     "statusCycleTip": "ステータス: {status} — クリックでアイデア → 草稿 → 改訂 → 完成 と切替",
-    "povPlaceholder": "視点"
+    "povPlaceholder": "視点",
+    "craftColumns": "Craft columns",
+    "colGoal": "Goal",
+    "colConflict": "Conflict",
+    "colOutcome": "Outcome",
+    "colValueShift": "Value shift"
   },
   "continuity": {
     "title": "整合性",
@@ -1595,7 +1604,9 @@
     "startersHint": "スタータープロンプト — クリックで入力欄に反映",
     "mentionButtonTip": "シーンや設定資料ページを参照 (@)",
     "startersButtonTip": "スタータープロンプト (/)",
-    "historyHintTip": "空の入力欄で ↑ を押すと過去の入力を呼び出せます"
+    "historyHintTip": "空の入力欄で ↑ を押すと過去の入力を呼び出せます",
+    "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
+    "selDraft": "Draft"
   },
   "review": {
     "pendingOne": "保留中の編集 1件",

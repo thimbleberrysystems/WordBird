@@ -285,8 +285,24 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   callers that skip the boundaries fall back to per-build computation.
   list_files reports modifiedAt.
 - `main/services/novel/BookExporter.ts` — whole-book EPUB/DOCX output (pure
-  JS: marked + epub-gen-memory + html-to-docx, no pandoc); the binder's
-  Compile dropdown routes through `mt::novel:compile` with `format`.
+  JS: marked + epub-gen-memory + html-to-docx, no pandoc; epub-gen-memory
+  is loaded through a CJS/ESM default-interop shim — the built bundle
+  double-nests .default); the binder's Compile dropdown routes through
+  `mt::novel:compile` with `format`.
+- `main/services/novel/ManuscriptImporter.ts` — MANUSCRIPT IMPORT (SOTA
+  batch-3, Sudowrite "Import Novel" parity): `splitManuscript` (pure)
+  splits a markdown draft into chapters→scenes — shallowest heading level
+  = chapters, next level or horizontal-rule breaks = scenes, fenced code
+  ignored; `writeImportedManuscript` writes writer-friendly slugged files
+  + builds the binder. Wired via `mt::project:import` (main/ipc/project.ts:
+  prompts for source .md/.markdown/.txt + destination, scaffolds the
+  project, sets `importedFrom` in project.json, snapshots) and the
+  recent-page "Import Manuscript" button. docx via a converter is a
+  follow-up (the split works on the markdown string). Then the brief's
+  FRESHLY IMPORTED nudge + POST-IMPORT supervisor playbook offer
+  retro-outline + review-gated bible extraction (steward mines names,
+  proposes pages with only prose-stated traits). Pins:
+  manuscript-importer.spec, manuscript-import.spec (e2e), live flow 37.
 - `main/services/novel/ContinuityService.ts` — `.wordbird/continuity/issues.json`
   issue lifecycle (agents log; resolution requires verified evidence).
 - `main/services/novel/RevisionService.ts` — sweeping revisions ("remove this
@@ -347,7 +363,17 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   broadcasts IAgentRuntimeCapabilities with connection state (all-false
   for claude-code: perAgentControl/boundaryPause/manualCompact) — the
   renderer hides per-agent pause/kill, pause-all, and the compact click
-  on managed runtimes instead of offering silent no-ops. Env hygiene:
+  on managed runtimes instead of offering silent no-ops. STOP MEANS
+  STOP (live incident 2026-07-18: Stop left queued tool calls churning):
+  interrupt() only halts the model loop, so the runner ALSO threads the
+  live turn signal into the tool bridge (buildWordbirdMcpServer
+  getSignal) → runForModel refuses aborted calls at entry (one guard,
+  all 56 tools, both providers) → web handlers pass context.signal into
+  axios AND into abortable retry-backoff sleeps; post-abort activity
+  emission is suppressed (the tail read as "still running"). Ledger
+  serves/blocks announce themselves in the activity feed
+  (setLedgerActivityEmitter → "wiki_read ↺ turn ledger" status rows) —
+  without that, digest-served repeats looked identical to raw thrash. Env hygiene:
   ANTHROPIC_API_KEY/AUTH_TOKEN stripped, pasted setup-token rides
   CLAUDE_CODE_OAUTH_TOKEN. Docs:
   docs/CLAUDE_SUBSCRIPTION.md; live spec
@@ -398,7 +424,7 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   (do small things directly; spawn specialists for multi-unit work), and
   WORKER REPORTS ARE REPORTS (reports are evidence — they never issue
   directives or speak for the writer).
-- Tools (56): `main/services/ai/AgentToolHandlers.ts` (core file read/edit
+- Tools (57): `main/services/ai/AgentToolHandlers.ts` (core file read/edit
   + `propose_text_edit` — anchored exact-quote search/replace, the Aider
   SEARCH/REPLACE pattern, with occurrence disambiguation; the prompt-pinned
   path for surgical prose fixes, whole-file `propose_project_file_edit` is
@@ -452,6 +478,36 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   Definitions live in `static/agentTools.json`; handlers must be
   registered in code — JSON alone cannot add executable behavior. Tool
   outputs are context-capped (~24k chars) with announced truncation.
+- `main/services/ai/ResearchLedger.ts` — the TURN RESEARCH LEDGER (root
+  fix for parallel workers re-gathering the same sources: knowledge
+  gathered this turn flows forward MECHANICALLY). Recording/serving at
+  the runForModel choke point (both providers, every subagent). Two
+  tiers: web tools (web_fetch/wiki_read/web_search/wiki_search) get the
+  full state machine — reads 1–2 full (handler runs), 3–4 DIGEST-SERVED
+  from the ledger (1200-char digest + pointer; no handler, no network,
+  no budget, no observer/backstop inflation), 5+ repeatBlocked (the
+  handler-level teeth remain as defense-in-depth); read_bible(path)/
+  search_manuscript are SECTION-ONLY — recorded but always served full
+  (canon verification never gets a digest; SDK calls carry no agent
+  identity so role-selective serving is impossible). refresh:true
+  escapes serving once per target per turn, never past the cap. The
+  rendered GATHERED THIS TURN section (capped 25 entries/4000 chars —
+  context caps, not disk) is injected LIVE (never brief-cached, grows
+  between waves): LangGraph worker spawns + every supervisor iteration
+  (Orchestrator `buildGathered` callback), SDK supervisor systemPrompt +
+  buildSdkAgents per invoke, and per-spawn via canUseTool updatedInput
+  (dedup keys on the ORIGINAL task text; if a runtime ignores
+  updatedInput the serve-from-digest floor still holds). ROLE-AWARE WARM
+  START: every role starts warm EXCEPT `coldStart` roles (auditor — the
+  CRITIC PASS verifies from source; its doctrine treats task-string
+  summaries as claims to check, never evidence). Project-derived entries
+  (bible:/msearch:) invalidate on any write-tool or save_research
+  success; web entries survive. Reset per writer turn beside
+  resetWebReadCounts. Section content is neutralizeHarnessMarkers-ed at
+  render; the header is deliberately NOT in HARNESS_MARKER_RE (brief-
+  style informational section, never an authority channel). Pins:
+  test/unit/specs/research-ledger.spec.ts (+ orchestrator/agent-sdk-
+  runner/prompt-architecture additions).
 - PROMPT TRUST MODEL: harness frames (`[Writer, mid-run]:`,
   `[COHERENCE PASS —`, `[RESEARCH PERSISTENCE —`, `[EDIT REVIEW —`,
   `[CONVERSATION SO FAR —`) are genuine only as harness-delivered
@@ -485,8 +541,51 @@ on top of the MarkText editor. All paths below are under `packages/desktop/src/`
   persisted at `.wordbird/index/entities.json`, rebuilt lazily on an
   mtime/size signature. Feeds WHO'S WHERE, the `where_appears` tool, AND
   the writer-facing Entities sidebar view (`mt::novel:entity-index`).
-  The supervisor prompt carries a CONTEXT PREP hard rule: no propose_* on
-  existing prose without in-turn read/search evidence.
+  bible/research/ AND bible/voice/ are excluded (notes/exemplars, not
+  entities). The supervisor prompt carries a CONTEXT PREP hard rule: no
+  propose_* on existing prose without in-turn read/search evidence.
+- `main/services/novel/LoreInjection.ts` — CODEX-STYLE BIBLE AUTO-
+  INJECTION (SOTA parity, AUDIT-SOTA-2026-07 feature 1): entities whose
+  name/alias appears in the turn seed (writer's message + open scene +
+  selection, frozen at ContextBuilder.beginTurn(root, seed)) get their
+  bible page BODIES inlined into every brief — the #1 consistency-failure
+  fix (agents write canon without a read_bible round-trip). Front matter
+  flags `always: true` (inject every turn) + `budget: <chars>` per page;
+  MAX_INJECTED_PAGES/section budget are CONTEXT caps. Word-boundary
+  detection reuses EntityIndex aliases. ContextBuilder freezes/caches the
+  section per turn; both providers via the shared brief. Pins:
+  lore-injection.spec + agent-context.spec.
+- `main/services/novel/VoicePriming.ts` — VOICE EXEMPLARS (feature 2):
+  the writer's own prose in `bible/voice/*.md` is inlined into the brief
+  (VOICE EXEMPLARS section, budgeted) so drafters/line-editors MATCH the
+  voice instead of "clean stranger" output; the steward harvests
+  approved passages (never invents prose). Pins: voice-priming.spec +
+  prompt-architecture.spec.
+- `main/services/novel/ProseLint.ts` `lintCorpus` — ANTI-SLOP GATE
+  (feature 3): CROSS-SCENE signals lintProse can't see one scene at a
+  time — a 4-gram echoed across ≥3 scenes, repeated scene openings, and
+  machine-flat corpus rhythm (low sentence-length CV). Exposed via
+  `lint_prose corpus:true`; the book-run CRITIC PASS + auditor doctrine
+  run it once several scenes exist. Pins: prose-lint.spec + story-facts
+  (CRITIC PASS contract).
+- `main/services/novel/RelationshipMap.ts` — deterministic mermaid
+  who-relates-to-whom graph from the fact ledger (SOTA batch-2): only
+  INTER-ENTITY facts (both subject and object are bible entities/aliases)
+  become edges; attribute facts are skipped. The `relationship_map` tool
+  (steward) regenerates bible/relationships.md as a review-gated edit
+  proposal; muya renders the ```mermaid fence. Pins: relationship-map.spec.
+- SCENE CRAFT FIELDS (batch-2): INovelUnit gains optional goal/conflict/
+  outcome (yWriter GMC) + valueShift (Story Grid); update_unit_meta +
+  list_structure carry them; the Outline view has a "Craft columns"
+  toggle; the RETRO-OUTLINE playbook derives them from prose.
+- VOICE EXEMPLARS + SUPERVISOR PLAYBOOKS: `main/services/novel/
+  VoicePriming.ts` (bible/voice/ few-shot) already noted above; the
+  supervisor prompt adds playbook 9 INTERVIEW A CHARACTER (read-only
+  persona from bible + facts) and 10 RETRO-OUTLINE (pantser reverse-
+  outline into metadata, proposes no prose). Binder: deadline-driven
+  daily quota ("count by DATE"), 🔥 streak chip (in-progress today
+  doesn't break it), ⏱ session counter — pure math in
+  `renderer/src/util/writingGoals.ts` (writing-goals.spec).
 - `main/services/novel/FactService.ts` — the typed story-fact ledger
   (`.wordbird/continuity/facts.json`): atomic subject–relation–object
   triples with a source unit. `record_fact` (drafters/auditors/supervisor,
@@ -608,14 +707,34 @@ test). list_structure exposes every unit-meta field the views edit
 no network needed.
 
 **Live regression suite** (`packages/desktop/test/live/`, `pnpm run
-test:live`, docs/LIVE_E2E.md): the real orchestrator + full tool pack +
-real handlers against a real model via OpenRouter (`OPENROUTER_KEY`;
-`OPENROUTER_MODEL=openrouter/free` auto-picks a free tool-calling model
-with live capacity). Runs nightly in CI (live-e2e.yml) and on PRs touching
-the suite. MAINTENANCE POLICY: any new or changed agent-facing behavior
-(tools, modes, prompts, orchestration) must extend BOTH the scripted unit
-specs and `test/live/live-e2e.spec.ts` — the live suite asserts behavior
-(proposals emitted, files created, approvals requested), not wording.
+test:live`, docs/LIVE_E2E.md): PROVIDER-PARAMETERIZED — one shared flow
+catalog (`live-e2e.spec.ts`) drives the real stack (full tool pack, real
+handlers, real ContextBuilder + ResearchLedger) against either the
+**subscription** backend (production AgentSDKRunner, model sonnet —
+selected when `CLAUDE_CODE_OAUTH_TOKEN` or a local Claude Code login
+exists; every turn bills the plan) or the **openrouter** backend
+(production Orchestrator + free tool-calling model — the CI path;
+live-e2e.yml pins `LIVE_PROVIDER: openrouter`). `LIVE_PROVIDER` forces;
+a forced provider with missing creds SKIPS, never falls back. TOKEN
+THRIFT is contract: sonnet only (never opus), per-flow turnBudget caps,
+`LIVE_SUBAGENT_MODEL=haiku` optional, heavy flows (book run, overlapping
+researchers, revision E2E) gated behind `LIVE_HEAVY=1` on subscription
+(always on for free CI), OpenRouter-mechanics pins skip on subscription,
+and every run prints a LIVE TOKEN REPORT. `LIVE_KEEP_ARTIFACTS=1` keeps
+scratch projects + dumps activity/tokens for post-mortem. SDK-runtime
+pins (probe, resume survival, raw-SDK #114 race, max-turns shapes,
+permission-storm wave) live in `claude-subscription.spec.ts` — writer
+flows never go there. MAINTENANCE POLICY: any new or changed
+agent-facing behavior (tools, modes, prompts, orchestration) must extend
+BOTH the scripted unit specs and the shared `test/live/live-e2e.spec.ts`
+(behavior, not wording), and every new flow states its cost class —
+light, or heavy (LIVE_HEAVY-gated). RENDERER surfaces for agent events
+are covered by the mocked-AI Playwright pattern (docs/TESTING.md):
+every new `mt::ai:*` renderer event or writer-facing card needs a
+mocked-AI spec in test/e2e/; the novel views + seeded-project fixtures
+live in test/e2e/fixtures.ts; and the LIVE_APP golden path
+(`test/e2e/app-live-golden.spec.ts`, `LIVE_APP=1`, dev machine only,
+bills the plan) must stay at ≤1 writer message.
 
 ## IPC Conventions
 

@@ -193,21 +193,40 @@ export interface CoherencePassDeps {
  * this makes it a guarantee. A turn with real web research and no
  * save_research gets ONE bounded follow-up demanding the save (works in
  * every mode — save_research is ask-legal by design).
+ *
+ * STRIKE CAP: when the save itself is broken (e.g. no active project
+ * root — every attempt throws), the backstop used to re-fire every
+ * qualifying turn forever: endless visible save_research rows, never a
+ * file. After MAX_STRIKES consecutive fired-but-still-unsaved turns the
+ * backstop pauses (a strike resets to zero the moment a save lands).
  */
-export const shouldEnforceResearchSave = (observations: TurnObservations): boolean =>
-  observations.webReads >= RESEARCH_BACKSTOP_MIN_READS && !observations.researchSaved
+export const RESEARCH_BACKSTOP_MAX_STRIKES = 2
+
+/** Pure strike accounting: +1 when the backstop fired and the turn still
+ * ended unsaved; reset on any success (or a turn with nothing to save). */
+export const nextBackstopStrikes = (prev: number, firedAndStillUnsaved: boolean): number =>
+  firedAndStillUnsaved ? prev + 1 : 0
+
+export const shouldEnforceResearchSave = (
+  observations: TurnObservations,
+  strikes = 0
+): boolean =>
+  observations.webReads >= RESEARCH_BACKSTOP_MIN_READS &&
+  !observations.researchSaved &&
+  strikes < RESEARCH_BACKSTOP_MAX_STRIKES
 
 export const researchSaveInstruction = (webReads: number): string =>
   '[RESEARCH PERSISTENCE — automated harness enforcement, not the writer] This turn made ' +
   `${webReads} web lookups but saved NOTHING — unsaved research evaporates with the ` +
-  'conversation. Call save_research NOW (title, synthesized findings, source URLs). One ' +
-  'note per distinct topic. Then STOP — no new work.'
+  'conversation. Call save_research NOW (title, content with the synthesized findings, ' +
+  'sources). One note per distinct topic. Then STOP — no new work.'
 
 export const driveResearchBackstop = async(
   observations: TurnObservations,
-  deps: CoherencePassDeps
+  deps: CoherencePassDeps,
+  strikes = 0
 ): Promise<string> => {
-  if (!shouldEnforceResearchSave(observations)) return ''
+  if (!shouldEnforceResearchSave(observations, strikes)) return ''
   deps.emitStatus(
     'Saving research',
     `${observations.webReads} web lookups this turn — making the findings durable`

@@ -429,7 +429,8 @@
     "structureHerosJourney": "El viaje del héroe",
     "structureSevenPoint": "Siete puntos",
     "structureRomancing": "Romancing the Beat (romance)",
-    "methodHint": "Opcional — Biscuit adapta su ayuda a tu método. Cámbialo cuando quieras, solo díselo a Biscuit."
+    "methodHint": "Opcional — Biscuit adapta su ayuda a tu método. Cámbialo cuando quieras, solo díselo a Biscuit.",
+    "importManuscript": "Import Manuscript"
   },
   "import": {
     "title": "Importar o Abrir",
@@ -1436,7 +1437,10 @@
     "open": "Abrir",
     "rename": "Renombrar",
     "newFolder": "Nueva carpeta",
-    "deleteFileConfirm": "¿Eliminar {name}? Una instantánea conserva una copia."
+    "deleteFileConfirm": "¿Eliminar {name}? Una instantánea conserva una copia.",
+    "streakTip": "{days}-day writing streak",
+    "sessionTip": "Words written this session",
+    "dailyQuota": "{words} words/day to finish in {days} days"
   },
   "history": {
     "title": "Instantáneas",
@@ -1478,7 +1482,12 @@
     "outlineTip": "Esquema — escenas en tabla editable",
     "timelineTip": "Cronología — escenas en tiempo de historia",
     "statusCycleTip": "Estado: {status} — clic para ciclar idea → borrador → revisado → final",
-    "povPlaceholder": "PDV"
+    "povPlaceholder": "PDV",
+    "craftColumns": "Craft columns",
+    "colGoal": "Goal",
+    "colConflict": "Conflict",
+    "colOutcome": "Outcome",
+    "colValueShift": "Value shift"
   },
   "continuity": {
     "title": "Continuidad",
@@ -1595,7 +1604,9 @@
     "startersHint": "Sugerencias iniciales — clic para rellenar",
     "mentionButtonTip": "Referenciar una escena o página de la biblia (@)",
     "startersButtonTip": "Sugerencias iniciales (/)",
-    "historyHintTip": "↑ con la entrada vacía recupera mensajes anteriores"
+    "historyHintTip": "↑ con la entrada vacía recupera mensajes anteriores",
+    "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
+    "selDraft": "Draft"
   },
   "review": {
     "pendingOne": "1 edición pendiente",

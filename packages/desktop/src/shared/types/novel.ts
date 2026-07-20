@@ -65,6 +65,14 @@ export interface INovelUnit {
   label?: string
   /** Private writer notes for this unit (Scrivener-style document notes). */
   notes?: string
+  /** Scene craft (yWriter GMC / Story Grid): the POV character's GOAL in
+   * the scene, the CONFLICT opposing it, and the OUTCOME/turn. Optional. */
+  goal?: string
+  conflict?: string
+  outcome?: string
+  /** Story Grid value shift: the charged value at scene start → end
+   * (e.g. "safe → in danger", "trust → betrayal"). Free text. */
+  valueShift?: string
   /** Cached word count of the backing file (leaf units only). */
   wordCount?: number
   children?: INovelUnit[]
@@ -105,6 +113,10 @@ export interface INovelUnitUpdate {
   thread?: string
   label?: string
   notes?: string
+  goal?: string
+  conflict?: string
+  outcome?: string
+  valueShift?: string
 }
 
 /** A continuity problem recorded by the agent (or writer) for review. */

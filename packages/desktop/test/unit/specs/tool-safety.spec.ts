@@ -18,7 +18,8 @@ import {
 } from '../../../src/main/services/ai/pathGuards'
 import {
   AgentToolService,
-  AgentToolPackLoader
+  AgentToolPackLoader,
+  PROJECT_MUTATING_TOOLS
 } from '../../../src/main/services/ai/AgentToolService'
 import { registerBuiltInAgentToolHandlers } from '../../../src/main/services/ai/AgentToolHandlers'
 import { EditResolutionTracker } from '../../../src/main/services/ai/EditResolutionTracker'
@@ -321,6 +322,63 @@ describe('supervisor tool lists', () => {
   })
 })
 
+// ---- Project-changed refresh contract ---------------------------------------------------
+
+describe('PROJECT_MUTATING_TOOLS (renderer refresh contract)', () => {
+  it('direct-writing tools are members — save_research was the live gap', () => {
+    // The bug: save_research wrote bible/research/ but the binder never
+    // refreshed, so the writer saw "save_research ran, nothing saved".
+    for (const name of [
+      'save_research',
+      'delete_folder',
+      'restore_snapshot',
+      'update_summary',
+      'create_folder'
+    ]) {
+      expect(PROJECT_MUTATING_TOOLS.has(name), name).toBe(true)
+    }
+    // Review-queue proposals (renderer refreshes on accept) and pure
+    // reads stay out.
+    for (const name of ['propose_text_edit', 'propose_bible_update', 'read_bible', 'list_structure']) {
+      expect(PROJECT_MUTATING_TOOLS.has(name), name).toBe(false)
+    }
+  })
+
+  it('a successful save_research fires the renderer refresh; reads never do', async() => {
+    const refreshed: Array<string | null> = []
+    service.setProjectChangedEmitter((projectRoot) => refreshed.push(projectRoot))
+    await service.runForModel('save_research', { title: 'Elam politics', content: 'Findings.' })
+    expect(refreshed).toEqual([root])
+    expect(fs.existsSync(path.join(root, 'bible/research/elam-politics.md'))).toBe(true)
+
+    refreshed.length = 0
+    await service.runForModel('read_bible', {})
+    expect(refreshed).toEqual([])
+  })
+
+  it('repointing the tool-service root between turns moves the write target', async() => {
+    // Pin for the turn-start root refresh: the service root used to be
+    // frozen at connect, sending saves into the OLD project after a
+    // project switch.
+    const rootB = fs.mkdtempSync(path.join(os.tmpdir(), 'wordbird-safety-b-'))
+    try {
+      fs.mkdirSync(path.join(rootB, '.wordbird'), { recursive: true })
+      fs.writeFileSync(
+        path.join(rootB, '.wordbird/project.json'),
+        JSON.stringify({ name: 'B', flavor: 'flat' })
+      )
+      await service.runForModel('save_research', { title: 'One', content: 'x' })
+      service.setProjectRoot(rootB)
+      await service.runForModel('save_research', { title: 'Two', content: 'y' })
+      expect(fs.existsSync(path.join(root, 'bible/research/one.md'))).toBe(true)
+      expect(fs.existsSync(path.join(rootB, 'bible/research/two.md'))).toBe(true)
+      expect(fs.existsSync(path.join(root, 'bible/research/two.md'))).toBe(false)
+    } finally {
+      fs.rmSync(rootB, { recursive: true, force: true })
+    }
+  })
+})
+
 // ---- F4: confirm metadata is honest ----------------------------------------------------
 
 describe('agentTools.json confirm field', () => {
@@ -332,7 +390,10 @@ describe('agentTools.json confirm field', () => {
       'propose_new_file',
       'propose_bible_update',
       'propose_plan',
-      'ask_writer'
+      'ask_writer',
+      // relationship_map emits a review-gated edit proposal for
+      // bible/relationships.md — same review card as any propose_*.
+      'relationship_map'
     ])
     const pack = JSON.parse(fs.readFileSync(TOOL_PACK, 'utf8')) as {
       tools: Array<{ id: string; confirm: string }>

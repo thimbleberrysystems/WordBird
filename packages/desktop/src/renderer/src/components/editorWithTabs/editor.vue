@@ -134,6 +134,7 @@ import {
   applyAllPendingEdits,
   planMultiFileApply
 } from '@/services/agentMultiFileApply'
+import { setEditorReviewActive } from '@/services/agentReviewFallback'
 
 const { t } = useI18n()
 const STANDAR_Y = 320
@@ -1453,7 +1454,10 @@ onMounted(() => {
   bus.on('switch-spellchecker-language', switchSpellcheckLanguage)
   bus.on('open-command-spellchecker-switch-language', openSpellcheckerLanguageCommand)
   bus.on('replace-misspelling', replaceMisspelling)
-  // Global Apply All / Discard All from the bar above the Biscuit prompt
+  // Global Apply All / Discard All from the bar above the Biscuit prompt.
+  // While mounted, THESE handlers own review actions — the window-level
+  // fallback (agentReviewFallback.ts) stands down.
+  setEditorReviewActive(true)
   bus.on('agent-apply-all', handleAgentApplyAll)
   bus.on('agent-apply-one', handleAgentApplyOne)
   bus.on('agent-discard-one', handleAgentDiscardOne)
@@ -1467,8 +1471,12 @@ onMounted(() => {
     oldContent: string
     originalPath: string
   }): void => {
-    if (agentStore.getPendingEdit(proposal.edit.id)) return
-    agentStore.addPendingEdit(proposal.edit, proposal.oldContent, proposal.originalPath)
+    // The window-level fallback may have ingested this proposal already
+    // (its subscription outlives the editor). Dup-TOLERANT, not an early
+    // return: auto-apply scheduling and the inline diff must still run.
+    if (!agentStore.getPendingEdit(proposal.edit.id)) {
+      agentStore.addPendingEdit(proposal.edit, proposal.oldContent, proposal.originalPath)
+    }
 
     // Auto mode: the writer chose speed over per-edit review — apply
     // automatically. Safety comes from the snapshot handleAgentApplyAll
@@ -1632,6 +1640,8 @@ onBeforeUnmount(() => {
   bus.off('agent-apply-one', handleAgentApplyOne)
   bus.off('agent-discard-one', handleAgentDiscardOne)
   bus.off('agent-discard-all', handleAgentDiscardAll)
+  // Hand review actions back to the window-level fallback.
+  setEditorReviewActive(false)
   bus.off('language-changed', handleLanguageChanged)
 
   // Remove AI edit proposal listener

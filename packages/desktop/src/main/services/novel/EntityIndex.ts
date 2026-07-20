@@ -16,6 +16,7 @@ import path from 'path'
 import fs from 'fs'
 import fsPromises from 'fs/promises'
 import { structureService, collectLeaves } from './StructureService'
+import { escapeRegExp } from './markdownText'
 
 export interface IEntityAppearance {
   unitId: string
@@ -56,10 +57,11 @@ export const listBiblePages = (root: string): string[] => {
     for (const entry of entries) {
       const full = path.join(dir, entry.name)
       if (entry.isDirectory()) {
-        // bible/research/ holds research NOTES, not story entities —
-        // indexing them would pollute WHO'S WHERE and trip the
-        // orphan-page/missing-aliases health checks for every note.
-        if (entry.name === 'research') continue
+        // bible/research/ holds research NOTES and bible/voice/ holds
+        // style EXEMPLARS — neither describes story entities; indexing
+        // them would pollute WHO'S WHERE and trip orphan/alias health
+        // checks for every note.
+        if (entry.name === 'research' || entry.name === 'voice') continue
         walk(full)
       } else if (entry.name.endsWith('.md') && !NON_ENTITY_PAGES.has(entry.name)) {
         pages.push(path.relative(root, full))
@@ -95,8 +97,6 @@ export const parsePageAliases = (content: string): string[] => {
   }
   return []
 }
-
-const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 const countOccurrences = (haystack: string, term: string): number => {
   if (!term) return 0

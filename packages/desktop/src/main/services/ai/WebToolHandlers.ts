@@ -208,11 +208,37 @@ const coalesce = async(key: string, work: () => Promise<unknown>): Promise<unkno
 // Free/keyless endpoints (DuckDuckGo, Wikipedia, dictionaryapi) throttle.
 // Retries happen HERE, mechanically, so a 429 never needs the writer (or
 // the model) to intervene. Delays are exported and mutable for tests.
-export const WEB_RETRY_DELAYS_MS = [1500, 4000, 10000]
+// BOUNDED IN-FLIGHT TIME: these sleeps run INSIDE a single in-process MCP
+// tool call, and a call that stays in flight too long makes the SDK CLI
+// close the whole tool stream (see MCP_TOOL_TIMEOUT in AgentSDKRunner and
+// upstream claude-agent-sdk #114). The old [1500,4000,10000] could hold a
+// rate-limited call open ~15.5s; keep the total well under the stream's
+// tolerance — a couple of quick retries absorb transient blips, and a
+// persistent 429 fails fast (the model re-requests later; cache/ledger
+// serve the retry) instead of hanging the stream for everyone.
+export const WEB_RETRY_DELAYS_MS = [800, 2000]
 const RETRYABLE_STATUS = new Set([429, 502, 503])
 const RETRYABLE_CODES = new Set(['ECONNRESET', 'ETIMEDOUT', 'ECONNABORTED', 'EAI_AGAIN'])
 
-const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
+/** Abortable backoff: a Stop mid-retry must not wait out the delay —
+ * post-Stop, queued web tools used to keep sleeping/fetching for many
+ * seconds while the writer watched activity that would not die. */
+const sleep = (ms: number, signal?: AbortSignal): Promise<void> =>
+  new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new Error('Stopped by writer.'))
+      return
+    }
+    const onAbort = (): void => {
+      clearTimeout(timer)
+      reject(new Error('Stopped by writer.'))
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    signal?.addEventListener('abort', onAbort, { once: true })
+  })
 
 const retryAfterMs = (headers: Record<string, unknown> | undefined): number | null => {
   const raw = headers?.['retry-after']
@@ -229,29 +255,33 @@ const retryAfterMs = (headers: Record<string, unknown> | undefined): number | nu
  */
 const getWithRetry = async(
   url: string,
-  config: Record<string, unknown>
+  config: Record<string, unknown>,
+  signal?: AbortSignal
 ): Promise<{ status: number; data: unknown; headers: Record<string, unknown> }> => {
   let lastError: unknown
   for (let attempt = 0; attempt <= WEB_RETRY_DELAYS_MS.length; attempt++) {
+    if (signal?.aborted) throw new Error('Stopped by writer.')
     try {
-      const response = await axios.get(url, config as never)
+      const response = await axios.get(url, { ...(config as object), signal } as never)
       const status = Number(response.status)
       if (RETRYABLE_STATUS.has(status) && attempt < WEB_RETRY_DELAYS_MS.length) {
         await sleep(
           retryAfterMs(response.headers as Record<string, unknown>) ??
-            WEB_RETRY_DELAYS_MS[attempt]
+            WEB_RETRY_DELAYS_MS[attempt],
+          signal
         )
         continue
       }
       return response as never
     } catch (error) {
+      if (signal?.aborted) throw new Error('Stopped by writer.')
       lastError = error
       const err = error as { code?: string; response?: { status?: number } }
       const retryable =
         (err.code && RETRYABLE_CODES.has(err.code)) ||
         (err.response?.status !== undefined && RETRYABLE_STATUS.has(err.response.status))
       if (!retryable || attempt >= WEB_RETRY_DELAYS_MS.length) throw error
-      await sleep(WEB_RETRY_DELAYS_MS[attempt])
+      await sleep(WEB_RETRY_DELAYS_MS[attempt], signal)
     }
   }
   throw lastError
@@ -395,8 +425,9 @@ const safeLookup = makeSafeLookup()
 export const MAX_KNOWN_URLS = 5000
 const knownUrls = new Set<string>()
 
-/** Comparison form: case-normalized origin, no hash, query kept. */
-const normalizeUrl = (raw: string): string | null => {
+/** Comparison form: case-normalized origin, no hash, query kept.
+ * Exported so ResearchLedger keys can never drift from handler keys. */
+export const normalizeUrl = (raw: string): string | null => {
   try {
     const url = new URL(raw)
     url.hash = ''
@@ -548,7 +579,7 @@ const webFetchLive = async(
       headers: { 'User-Agent': USER_AGENT, Accept: 'text/html,text/plain,*/*;q=0.8' },
       // Treat every status (incl. 3xx) as resolved so we can handle it.
       validateStatus: () => true
-    })
+    }, context.signal)
 
     if (REDIRECT_STATUSES.has(response.status)) {
       const location = String(response.headers.location ?? '')
@@ -621,7 +652,7 @@ export const parseDuckDuckGoHtml = (
 
 const webSearch = async(
   args: Record<string, unknown>,
-  _context: AgentToolContext
+  context: AgentToolContext
 ): Promise<unknown> => {
   const query = str(args, 'query')
   const maxResults = Math.min(optInt(args, 'maxResults') ?? 5, 10)
@@ -642,13 +673,17 @@ const webSearch = async(
   const exhausted = consumeLookupBudget()
   if (exhausted) return { query, results: [], ...exhausted }
 
-  const response = await getWithRetry('https://html.duckduckgo.com/html/', {
-    params: { q: query },
-    timeout: FETCH_TIMEOUT_MS,
-    maxContentLength: MAX_RESPONSE_BYTES,
-    responseType: 'text',
-    headers: { 'User-Agent': USER_AGENT }
-  })
+  const response = await getWithRetry(
+    'https://html.duckduckgo.com/html/',
+    {
+      params: { q: query },
+      timeout: FETCH_TIMEOUT_MS,
+      maxContentLength: MAX_RESPONSE_BYTES,
+      responseType: 'text',
+      headers: { 'User-Agent': USER_AGENT }
+    },
+    context.signal
+  )
 
   const results = parseDuckDuckGoHtml(String(response.data ?? '')).slice(0, maxResults)
   for (const result of results) rememberUrl(result.url)
@@ -678,7 +713,7 @@ export const sanitizeWikiLang = (lang: string | undefined): string => {
 
 const wikiSearch = async(
   args: Record<string, unknown>,
-  _context: AgentToolContext
+  context: AgentToolContext
 ): Promise<unknown> => {
   const query = str(args, 'query')
   const lang = sanitizeWikiLang(optStrLocal(args, 'lang'))
@@ -704,7 +739,8 @@ const wikiSearch = async(
       params: { q: query, limit },
       timeout: FETCH_TIMEOUT_MS,
       headers: { 'User-Agent': USER_AGENT }
-    }
+    },
+    context.signal
   )
 
   const searchData = response.data as { pages?: Array<Record<string, unknown>> } | undefined
@@ -765,19 +801,23 @@ const wikiReadLive = async(
   const exhausted = consumeLookupBudget()
   if (exhausted) return { title, lang, found: false, ...exhausted }
   // Plain-text extract of the full article via the MediaWiki API.
-  const response = await getWithRetry(`https://${lang}.wikipedia.org/w/api.php`, {
-    params: {
-      action: 'query',
-      prop: 'extracts',
-      explaintext: 1,
-      redirects: 1,
-      format: 'json',
-      titles: title
+  const response = await getWithRetry(
+    `https://${lang}.wikipedia.org/w/api.php`,
+    {
+      params: {
+        action: 'query',
+        prop: 'extracts',
+        explaintext: 1,
+        redirects: 1,
+        format: 'json',
+        titles: title
+      },
+      timeout: FETCH_TIMEOUT_MS,
+      maxContentLength: MAX_RESPONSE_BYTES,
+      headers: { 'User-Agent': USER_AGENT }
     },
-    timeout: FETCH_TIMEOUT_MS,
-    maxContentLength: MAX_RESPONSE_BYTES,
-    headers: { 'User-Agent': USER_AGENT }
-  })
+    context.signal
+  )
 
   const wikiData = response.data as
     | { query?: { pages?: Record<string, unknown> } }
@@ -814,7 +854,7 @@ const wikiReadLive = async(
 
 const dictionaryLookup = async(
   args: Record<string, unknown>,
-  _context: AgentToolContext
+  context: AgentToolContext
 ): Promise<unknown> => {
   const word = str(args, 'word')
   if (!/^[\p{L}\p{M}'’-]{1,60}$/u.test(word)) {
@@ -827,7 +867,8 @@ const dictionaryLookup = async(
       timeout: FETCH_TIMEOUT_MS,
       headers: { 'User-Agent': USER_AGENT },
       validateStatus: () => true
-    }
+    },
+    context.signal
   )
 
   if (response.status === 404) {

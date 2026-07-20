@@ -362,6 +362,22 @@
           "notes": {
             "type": "string",
             "description": "Private writer notes attached to this unit (not prose; visible in the Outline view)."
+          },
+          "goal": {
+            "type": "string",
+            "description": "The POV character's goal in this scene (yWriter GMC)."
+          },
+          "conflict": {
+            "type": "string",
+            "description": "What opposes the goal in this scene."
+          },
+          "outcome": {
+            "type": "string",
+            "description": "How the scene turns/ends (disaster, victory, cliffhanger)."
+          },
+          "valueShift": {
+            "type": "string",
+            "description": "Story Grid value shift: charged value at scene start → end (e.g. \"safe → in danger\")."
           }
         },
         "required": [
@@ -639,10 +655,25 @@
       }
     },
     {
+      "id": "relationship_map",
+      "name": "relationship_map",
+      "displayName": "Regenerate relationship map",
+      "description": "Deterministically regenerate bible/relationships.md (a mermaid graph of who-relates-to-whom) from the fact ledger. Only facts whose subject AND object are both bible entities become edges. Result rides the review queue as an edit proposal.",
+      "handler": "relationship_map",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "renderer",
+      "schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
       "id": "lint_prose",
       "name": "lint_prose",
       "displayName": "Lint prose (deterministic)",
-      "description": "Deterministic prose checks over one scene or file — the fiction equivalent of running the linter after an edit: doubled words, close repetitions, filler words (very/just/suddenly…), POV filter phrases (she felt/he saw), -ly adverb density, sentence-length stats and monotony, passive-voice share, punctuation hygiene, and any banned terms from bible/style.md. Run it on prose you just drafted or are about to polish; findings are objective SIGNALS to weigh, not laws. Pass exactly one of unitId or fname.",
+      "description": "Deterministic prose checks over one scene or file — the fiction equivalent of running the linter after an edit: doubled words, close repetitions, filler words (very/just/suddenly…), POV filter phrases (she felt/he saw), -ly adverb density, sentence-length stats and monotony, passive-voice share, punctuation hygiene, and any banned terms from bible/style.md. Run it on prose you just drafted or are about to polish; findings are objective SIGNALS to weigh, not laws. Pass exactly one of unitId or fname. Pass corpus:true to lint the whole manuscript for AI-slop echoes/rhythm across scenes.",
       "handler": "lint_prose",
       "enabled": true,
       "scope": "project",
@@ -657,6 +688,10 @@
           "fname": {
             "type": "string",
             "description": "Project-relative file path (alternative to unitId)."
+          },
+          "corpus": {
+            "type": "boolean",
+            "description": "Lint the WHOLE manuscript for anti-slop signals (cross-scene echoes, repeated openings, machine-flat rhythm) instead of one unit. Ignores unitId/fname."
           }
         },
         "required": []

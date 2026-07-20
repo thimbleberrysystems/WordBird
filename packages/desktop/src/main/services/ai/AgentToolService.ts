@@ -1,6 +1,7 @@
 import fsPromises from 'fs/promises'
 import log from 'electron-log'
 import { neutralizeHarnessMarkers } from './coherencePass'
+import type { ResearchLedger } from './ResearchLedger'
 import { z } from 'zod'
 import { convertJsonSchemaToZod } from 'zod-from-json-schema'
 import { tool } from '@langchain/core/tools'
@@ -181,8 +182,18 @@ export class AgentToolPackLoader {
  * Tools that change the project on disk directly (files/structure/metadata):
  * after any of them succeeds, the renderer must refresh its trees so the
  * writer sees the change immediately — never on the next manual refresh.
+ *
+ * MEMBERSHIP RULE: a tool belongs here iff its handler directly writes,
+ * moves, or deletes WRITER-VISIBLE project files (manuscript/, bible/,
+ * plans/, skills/, folders) without going through the review queue.
+ * Deliberately absent: propose_* tools (the renderer applies them on
+ * accept and refreshes then) and .wordbird/-internal writers
+ * (record_fact / continuity issues / snapshots / revision state — not
+ * rendered from the file tree). save_research WAS missing from this set
+ * — the live "save_research ran but nothing appeared" bug: the note was
+ * on disk, the binder just never refreshed.
  */
-const PROJECT_MUTATING_TOOLS = new Set([
+export const PROJECT_MUTATING_TOOLS = new Set([
   'propose_new_unit',
   'restructure_unit',
   'update_unit_meta',
@@ -190,11 +201,14 @@ const PROJECT_MUTATING_TOOLS = new Set([
   'create_folder',
   'move_file',
   'delete_file',
+  'delete_folder',
   'update_summary',
   'set_writing_method',
   'save_plan',
   'update_plan',
-  'record_decision'
+  'record_decision',
+  'save_research',
+  'restore_snapshot'
 ])
 
 export class AgentToolService {
@@ -207,9 +221,36 @@ export class AgentToolService {
   private _writerQuestionEmitter: WriterQuestionEmitter | null = null
   private _projectChangedEmitter: ((root: string | null) => void) | null = null
   private _toolRunObserver: ((observation: ToolRunObservation) => void) | null = null
+  private _researchLedger: ResearchLedger | null = null
+  private _ledgerActivityEmitter:
+    | ((info: { toolName: string; target: string; reads: number; blocked: boolean }) => void)
+    | null = null
 
   setEditProposalEmitter(emitter: EditProposalEmitter): void {
     this._editProposalEmitter = emitter
+  }
+
+  /**
+   * The turn-scoped research ledger (injected, like the observer, so
+   * tests stay scriptable). Lives at THIS choke point because both
+   * providers' tools flow through runForModel — recording or serving
+   * anywhere else would miss SDK subagent calls.
+   */
+  setResearchLedger(ledger: ResearchLedger | null): void {
+    this._researchLedger = ledger
+  }
+
+  /**
+   * Fired whenever the ledger serves a repeat as a digest or withholds
+   * it. The activity log shows every CALL at call time — without this,
+   * ledger-served repeats look identical to real re-fetches and the
+   * writer sees "the same thrash as before" while the defense is in
+   * fact working (live report, 2026-07-18).
+   */
+  setLedgerActivityEmitter(
+    emitter: ((info: { toolName: string; target: string; reads: number; blocked: boolean }) => void) | null
+  ): void {
+    this._ledgerActivityEmitter = emitter
   }
 
   /**
@@ -371,16 +412,43 @@ export class AgentToolService {
     args: Record<string, unknown>,
     signal?: AbortSignal
   ): Promise<unknown> {
+    // STOP MEANS STOP: once the writer aborts the run, no queued tool call
+    // may start. This single guard covers every tool on both providers —
+    // without it, the SDK path kept executing dozens of queued calls
+    // (with retry sleeps) long after the Stop button.
+    if (signal?.aborted) throw new Error('Stopped by writer.')
     const loaded =
       this._tools.get(toolName) ??
       Array.from(this._tools.values()).find((item) => item.definition.name === toolName)
     if (!loaded) throw new Error(`Unknown agent tool: ${toolName}`)
+
+    // Turn ledger first: a repeat of an already-gathered web target is
+    // served as a digest (or blocked past the cap) WITHOUT running the
+    // handler — no network, no budget, and no _notifyToolRun (a served
+    // repeat is not a real lookup; it must not inflate the research-save
+    // backstop's counters or trigger UI refresh). Section-only tools
+    // (read_bible / search_manuscript) always pass through.
+    const served = this._researchLedger?.checkRepeat(loaded.definition.name, args)
+    if (served) {
+      try {
+        this._ledgerActivityEmitter?.({
+          toolName: loaded.definition.name,
+          target: String(served.target ?? ''),
+          reads: Number(served.reads ?? served.repeatRead ?? 0),
+          blocked: served.repeatBlocked === true
+        })
+      } catch {
+        // Visibility is advisory — never fail the serve over it.
+      }
+      return neutralizeHarnessMarkers(JSON.stringify(served))
+    }
 
     const context: AgentToolContext = {
       projectRoot: this._currentProjectRoot,
       signal
     }
     const result = await loaded.handler(args, context)
+    this._researchLedger?.record(loaded.definition.name, args, result)
     // A proposal IS the write event — notify before the short-circuits.
     this._notifyToolRun(loaded.definition.name, args)
 

@@ -36,19 +36,23 @@ import {
   clearUrlProvenance,
   resetWebReadCounts
 } from './WebToolHandlers'
+import { researchLedger } from './ResearchLedger'
 import { getActiveAgentProjectRoot, setAgentToolAccessor } from './AgentProjectRootResolver'
 import { EditResolutionTracker } from './EditResolutionTracker'
 import { driveBookRun, AUTO_CONTINUE_MESSAGE } from './bookRun'
 import {
   WRITE_TOOL_EVENT_NAMES,
   STEWARD_SIGNAL_TOOLS,
+  RESEARCH_BACKSTOP_MAX_STRIKES,
   acceptancePrepend,
   driveCoherencePass,
   driveResearchBackstop,
   emptyObservations,
   markSteward,
+  nextBackstopStrikes,
   observeResearchTool,
   observeWrite,
+  shouldEnforceResearchSave,
   type TurnObservations
 } from './coherencePass'
 import { FileCheckpointSaver } from './FileCheckpointSaver'
@@ -274,6 +278,9 @@ export class LangGraphManager {
   private _turnRunning = false
   /** What this turn changed — feeds the mechanical coherence pass. */
   private _turnObservations: TurnObservations = emptyObservations()
+  /** Consecutive turns the research backstop fired but nothing saved —
+   * past RESEARCH_BACKSTOP_MAX_STRIKES it pauses instead of nagging. */
+  private _researchBackstopStrikes = 0
 
   private _emitRunState(): void {
     const state = !this._turnRunning
@@ -573,10 +580,34 @@ export class LangGraphManager {
             toolName,
             `${toolName}${detail ? ` ${String(detail).slice(0, 80)}` : ''}`
           )
+          // A write may change what a bible/manuscript read returned —
+          // drop those ledger entries so later readers see fresh content.
+          researchLedger.invalidateProjectReads()
+        }
+        if (toolName === 'save_research') {
+          researchLedger.invalidateProjectReads()
         }
         if (STEWARD_SIGNAL_TOOLS.has(toolName)) {
           markSteward(this._turnObservations)
         }
+      })
+      // The turn ledger records/serves at the same choke point the
+      // observer watches — both providers, every subagent.
+      this._agentToolService.setResearchLedger(researchLedger)
+      // Make the ledger's work VISIBLE: activity rows appear at CALL time,
+      // so served repeats looked identical to real re-fetches — the writer
+      // saw "the same thrash as before" while no network or tokens were
+      // actually spent. Each serve/block now announces itself in the feed.
+      this._agentToolService.setLedgerActivityEmitter(({ toolName, target, reads, blocked }) => {
+        this._broadcast('mt::ai:activity', {
+          id: crypto.randomUUID(),
+          ts: Date.now(),
+          kind: 'status',
+          label: `${toolName} ↺ turn ledger`,
+          detail: blocked
+            ? `"${target}" read ${reads}× — content withheld (no network, no tokens)`
+            : `"${target}" read ${reads}× — digest served from this turn's ledger (no network)`
+        })
       })
 
       this._agent = null
@@ -626,7 +657,11 @@ export class LangGraphManager {
         drainSteering: () => this._steeringQueue.splice(0),
         // Scene N→N+1 handoff for drafters (seamless consecutive scenes).
         buildHandoff: (task) =>
-          contextBuilder.buildSceneHandoff(getActiveAgentProjectRoot(), task)
+          contextBuilder.buildSceneHandoff(getActiveAgentProjectRoot(), task),
+        // GATHERED THIS TURN — read LIVE at every spawn / supervisor
+        // iteration (never cached with the brief): the ledger grows as
+        // the turn progresses and later waves must see earlier reads.
+        buildGathered: () => researchLedger.renderSection()
       }
 
       if (provider === 'claude-code') {
@@ -694,6 +729,9 @@ export class LangGraphManager {
 
   disconnect(): void {
     this._checkpointer?.flush()
+    // The claude-code runner holds a loopback HTTP MCP server — release it.
+    const disposable = this._orchestrator as { dispose?: () => Promise<void> } | null
+    disposable?.dispose?.().catch(() => {})
     this._agent = null
     this._orchestrator = null
     this._currentProvider = null
@@ -915,6 +953,14 @@ export class LangGraphManager {
     // Same-page re-read counters restart with the turn.
     resetWebReadCounts()
     this._agentToolService.resetTurnCallCounts()
+    researchLedger.reset()
+    // The tool service's project root follows the ACTIVE project at every
+    // turn start (it used to be frozen at connect — after a project
+    // switch, save_research and friends wrote into the OLD project's
+    // root). Turn-start, not a live resolver: a mid-turn window switch
+    // must never tear one turn's writes across two projects.
+    const turnRoot = getActiveAgentProjectRoot()
+    this._agentToolService.setProjectRoot(turnRoot)
 
     // Approvals-mode coherence trigger: a just-accepted batch means the
     // manuscript changed — the turn OPENS with the steward pass.
@@ -941,8 +987,13 @@ export class LangGraphManager {
     // (supervisor iterations + workers + book-run segments) sees the same
     // changed-files/events warning; the window closes at turn end so the
     // agent's own mid-turn edits don't false-alarm next turn.
-    const turnRoot = getActiveAgentProjectRoot()
-    if (turnRoot) contextBuilder.beginTurn(turnRoot)
+    // The writer's own message(s) seed Codex-style bible auto-injection:
+    // entities mentioned here get their pages inlined into every brief.
+    const loreSeed = outgoing
+      .filter((m) => m.role === 'user')
+      .map((m) => m.content)
+      .join('\n')
+    if (turnRoot) contextBuilder.beginTurn(turnRoot, loreSeed)
 
     this._turnRunning = true
     this._emitRunState()
@@ -960,17 +1011,42 @@ export class LangGraphManager {
       // happened and nothing was saved, ONE bounded follow-up demands the
       // save_research (doctrine made mechanical, all modes). Never after
       // Stop.
+      const backstopWasEligible =
+        !signal?.aborted && shouldEnforceResearchSave(this._turnObservations)
       const researchReply = signal?.aborted
         ? ''
-        : await driveResearchBackstop(this._turnObservations, {
-          invokeNext: async(instruction) => {
-            const followUp = await invokeOnce([new HumanMessage(instruction)])
-            return this._extractResponseContent(followUp)
+        : await driveResearchBackstop(
+          this._turnObservations,
+          {
+            invokeNext: async(instruction) => {
+              const followUp = await invokeOnce([new HumanMessage(instruction)])
+              return this._extractResponseContent(followUp)
+            },
+            emitStatus: (label, detail) => this._emitBookRunStatus(label, detail)
           },
-          emitStatus: (label, detail) => this._emitBookRunStatus(label, detail)
-        })
+          this._researchBackstopStrikes
+        )
       if (researchReply) {
         content = `${content}\n\n${researchReply}`
+      }
+      // Strike accounting: a fired backstop that STILL ended unsaved is a
+      // strike (the save path itself is broken — e.g. no project root);
+      // past the cap the backstop pauses instead of nagging forever.
+      // Any successful save resets to zero.
+      const priorStrikes = this._researchBackstopStrikes
+      this._researchBackstopStrikes = nextBackstopStrikes(
+        priorStrikes,
+        researchReply !== '' && !this._turnObservations.researchSaved
+      )
+      if (
+        backstopWasEligible &&
+        priorStrikes < RESEARCH_BACKSTOP_MAX_STRIKES &&
+        this._researchBackstopStrikes >= RESEARCH_BACKSTOP_MAX_STRIKES
+      ) {
+        this._emitBookRunStatus(
+          'Research save failing',
+          'save_research did not persist after repeated attempts — enforcement paused; check the active project'
+        )
       }
 
       // STOP means stop: an aborted turn never gets a coherence follow-up

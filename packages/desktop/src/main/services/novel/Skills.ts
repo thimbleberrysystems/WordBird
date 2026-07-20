@@ -17,6 +17,7 @@
 
 import fs from 'fs'
 import path from 'path'
+import { stripFrontMatter } from './markdownText'
 
 export interface SkillMeta {
   /** Display/lookup name (front matter `name:` → filename stem fallback). */
@@ -62,8 +63,7 @@ export const parseSkillMeta = (content: string, fname: string): SkillMeta => {
 }
 
 /** The instruction text: content minus front matter. */
-export const skillBody = (content: string): string =>
-  content.replace(/^---\n[\s\S]*?\n---\n?/, '').trim()
+export const skillBody = (content: string): string => stripFrontMatter(content)
 
 const MAX_SKILL_DEPTH = 3
 

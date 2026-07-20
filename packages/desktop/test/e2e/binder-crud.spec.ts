@@ -3,7 +3,7 @@ import type { ElectronApplication, Page } from 'playwright'
 import * as fs from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
-import { launchElectron, clickMenuById, expectNoRendererErrors, closeElectron } from './helpers'
+import { closeElectron, ensureSidebar, expectNoRendererErrors, launchElectron } from './helpers'
 
 /**
  * Binder CRUD against a real WordBird project opened from the CLI: the
@@ -56,9 +56,7 @@ test.describe('Binder CRUD (real project)', () => {
   })
 
   test('the binder renders the manuscript tree', async() => {
-    if (!(await page.locator('.side-bar').isVisible())) {
-      await clickMenuById(app, 'sideBarMenuItem')
-    }
+    await ensureSidebar(app, page)
     await expect(page.locator('.binder')).toBeVisible({ timeout: 15000 })
     await expect(page.locator('.binder')).toContainText('chapter', { ignoreCase: true })
   })

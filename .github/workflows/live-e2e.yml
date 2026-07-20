@@ -38,4 +38,9 @@ jobs:
         env:
           OPENROUTER_KEY: ${{ secrets.OPENROUTER_KEY }}
           OPENROUTER_MODEL: openrouter/free
+          # Deterministic provider selection: CI is the OpenRouter path
+          # (heavy flows always run there — free). A future
+          # CLAUDE_CODE_OAUTH_TOKEN secret + second job could add a
+          # subscription lane; deliberately not wired (user decision).
+          LIVE_PROVIDER: openrouter
         run: pnpm run test:live

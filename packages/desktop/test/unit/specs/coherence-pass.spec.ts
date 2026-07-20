@@ -8,6 +8,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import {
+  RESEARCH_BACKSTOP_MAX_STRIKES,
   STEWARD_FIX_TOOLS,
   WRITE_TOOL_EVENT_NAMES,
   acceptancePrepend,
@@ -16,8 +17,10 @@ import {
   driveResearchBackstop,
   emptyObservations,
   markSteward,
+  nextBackstopStrikes,
   observeResearchTool,
   observeWrite,
+  researchSaveInstruction,
   shouldEnforceCoherence,
   shouldEnforceResearchSave,
   writesSinceSteward,
@@ -177,6 +180,37 @@ describe('research-persistence backstop', () => {
     invokeNext.mockClear()
     expect(await driveResearchBackstop(withResearch(4, true), { invokeNext, emitStatus })).toBe('')
     expect(invokeNext).not.toHaveBeenCalled()
+  })
+
+  it('STRIKE CAP: a persistently failing save pauses the backstop instead of nagging forever', async() => {
+    // Strike accounting is pure: fired-and-still-unsaved increments,
+    // anything else resets.
+    expect(nextBackstopStrikes(0, true)).toBe(1)
+    expect(nextBackstopStrikes(1, true)).toBe(2)
+    expect(nextBackstopStrikes(2, false)).toBe(0)
+
+    // The gate: below the cap the backstop fires, at the cap it pauses.
+    const observations = withResearch(4, false)
+    expect(shouldEnforceResearchSave(observations, 0)).toBe(true)
+    expect(shouldEnforceResearchSave(observations, RESEARCH_BACKSTOP_MAX_STRIKES - 1)).toBe(true)
+    expect(shouldEnforceResearchSave(observations, RESEARCH_BACKSTOP_MAX_STRIKES)).toBe(false)
+
+    const invokeNext = vi.fn().mockResolvedValue('tried')
+    const emitStatus = vi.fn()
+    expect(
+      await driveResearchBackstop(
+        observations,
+        { invokeNext, emitStatus },
+        RESEARCH_BACKSTOP_MAX_STRIKES
+      )
+    ).toBe('')
+    expect(invokeNext).not.toHaveBeenCalled()
+  })
+
+  it('the backstop instruction names args that exist in the tool schema (content, not findings)', () => {
+    const instruction = researchSaveInstruction(4)
+    expect(instruction).toContain('content')
+    expect(instruction).not.toMatch(/\bsynthesized findings, source URLs\b/)
   })
 })
 

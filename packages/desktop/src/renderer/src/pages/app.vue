@@ -73,9 +73,10 @@ import Corkboard from '@/components/novel/Corkboard.vue'
 import OutlineView from '@/components/novel/OutlineView.vue'
 import TimelineView from '@/components/novel/TimelineView.vue'
 import SelectionActions from '@/components/novel/SelectionActions.vue'
+import { initAgentReviewFallback } from '@/services/agentReviewFallback'
 import { useNovelStore } from '@/store/novel'
 import bus from '@/bus'
-import { langGraphService } from '@/services/langgraph'
+import { mirrorAiConnectionState } from '@/services/langgraph'
 import { DEFAULT_STYLE } from '@/config'
 import { useLayoutStore } from '@/store/layout'
 import { useListenForMainStore } from '@/store/listenForMain'
@@ -183,6 +184,10 @@ const setupDragDropHandler = (): void => {
   )
 }
 onMounted(async () => {
+  // Proposal ingestion + review-action fallback: ALWAYS on at the window
+  // level, so proposals render even with no file open (ProjectHome) —
+  // the editor's richer handlers take over whenever it mounts.
+  initAgentReviewFallback()
   // Detached Biscuit window closed → bring the docked panel back.
   window.electron.ai.onBiscuitReattach(() => {
     layoutStore.SET_LAYOUT({ showRightPrompt: true })
@@ -204,18 +209,11 @@ onMounted(async () => {
   )
 
   // Main broadcasts every connection transition — mirror it so the UI and
-  // the reconnect guards never drift from reality. Also PULL the current
-  // state: a reloaded (or newly opened) window missed earlier broadcasts.
-  window.electron.ai.onConnectionState((state) => {
-    langGraphService.applyMainState(state)
-    preferencesStore.aiIsConnected = state.connected
-    if (state.capabilities) preferencesStore.aiCapabilities = state.capabilities
+  // the reconnect guards never drift from reality.
+  mirrorAiConnectionState(preferencesStore).catch(() => {
+    // The broadcast subscription is already live; a failed initial pull is
+    // caught up by the next transition.
   })
-  window.electron.ai.getConnectionState?.().then((state) => {
-    langGraphService.applyMainState(state)
-    preferencesStore.aiIsConnected = state.connected
-    if (state.capabilities) preferencesStore.aiCapabilities = state.capabilities
-  }).catch(() => { /* main not ready — the broadcast will catch us up */ })
   if (window.wordbird?.initialState) {
     preferencesStore.SET_USER_PREFERENCE(window.wordbird.initialState)
   }

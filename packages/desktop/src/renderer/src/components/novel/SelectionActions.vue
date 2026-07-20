@@ -71,6 +71,14 @@ interface SelAction {
 
 const actions: SelAction[] = [
   {
+    id: 'draft',
+    label: () => t('biscuit.selDraft'),
+    instruction:
+      'Draft this BEAT into full prose. This is a terse outline note, not prose to ' +
+      'preserve — expand it into a finished passage that matches the surrounding voice, ' +
+      'POV, and tense, then replace the beat with the scene it describes.'
+  },
+  {
     id: 'rewrite',
     label: () => t('biscuit.selRewrite'),
     instruction: 'Rewrite this passage — keep the meaning and events, improve the prose.'

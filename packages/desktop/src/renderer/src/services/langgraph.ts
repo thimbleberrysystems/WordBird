@@ -117,3 +117,31 @@ class LangGraphService {
 }
 
 export const langGraphService = new LangGraphService()
+
+/**
+ * Mirror main's AI connection state into this window: subscribe to every
+ * transition AND pull the current one (a window opened or reloaded after a
+ * connect missed the earlier broadcast). Shared by both entrypoints —
+ * app.vue and biscuit.vue — so the two can never drift apart.
+ */
+export const mirrorAiConnectionState = async(preferencesStore: {
+  aiIsConnected: boolean
+  aiCapabilities?: unknown
+}): Promise<void> => {
+  const apply = (state: {
+    connected: boolean
+    provider: string | null
+    model: string | null
+    capabilities?: unknown
+  }): void => {
+    langGraphService.applyMainState(state)
+    preferencesStore.aiIsConnected = state.connected
+    if (state.capabilities) preferencesStore.aiCapabilities = state.capabilities
+  }
+  window.electron.ai.onConnectionState(apply)
+  try {
+    apply(await window.electron.ai.getConnectionState())
+  } catch {
+    // Main not ready — the next broadcast will catch us up.
+  }
+}

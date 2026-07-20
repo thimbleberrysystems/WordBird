@@ -57,6 +57,12 @@ describe('EntityIndex', () => {
     expect(names).toContain('The Lighthouse')
     expect(names).not.toContain('Style')
 
+    // Voice exemplars are prose samples, not entities — never indexed
+    // (would pollute WHO'S WHERE and trip orphan/alias health checks).
+    write('bible/voice/opening.md', 'Zara Zara Zara — voice sample, never an entity.\n')
+    const withVoice = await buildEntityIndex(root)
+    expect(withVoice.entities.map((e) => e.page).some((p) => p.includes('voice/'))).toBe(false)
+
     const zara = index.entities.find((e) => e.name === 'Zara Voss')!
     expect(zara.aliases).toContain('Detective Voss')
     // the-alley: "Zara" + "Detective Voss" (Voss alone doesn't count) = 2

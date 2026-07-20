@@ -85,7 +85,17 @@ const BOOK_CSS = `
 `
 
 export const exportEpub = async(markdown: string, meta: BookMeta): Promise<Buffer> => {
-  const { default: epub } = await import('epub-gen-memory')
+  // CJS/ESM interop differs between vitest and the BUILT electron-vite
+  // main bundle: in the CJS build the dynamic import resolves to a
+  // namespace whose .default nests ANOTHER .default ("epub is not a
+  // function" — caught live by compile-export.spec, 2026-07-19).
+  const mod = (await import('epub-gen-memory')) as unknown as {
+    default?: { default?: unknown }
+  }
+  const epub = (mod.default?.default ?? mod.default ?? mod) as (
+    options: unknown,
+    chapters: unknown
+  ) => Promise<Buffer>
   const slices = splitChapters(markdown)
   const chapters =
     slices.length > 0

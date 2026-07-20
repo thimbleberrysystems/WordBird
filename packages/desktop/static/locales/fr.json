@@ -429,7 +429,8 @@
     "structureHerosJourney": "Voyage du héros",
     "structureSevenPoint": "Sept points",
     "structureRomancing": "Romancing the Beat (romance)",
-    "methodHint": "Facultatif — Biscuit adapte son aide à votre méthode. Modifiable à tout moment, dites-le simplement à Biscuit."
+    "methodHint": "Facultatif — Biscuit adapte son aide à votre méthode. Modifiable à tout moment, dites-le simplement à Biscuit.",
+    "importManuscript": "Import Manuscript"
   },
   "import": {
     "title": "Importer ou ouvrir",
@@ -1436,7 +1437,10 @@
     "open": "Ouvrir",
     "rename": "Renommer",
     "newFolder": "Nouveau dossier",
-    "deleteFileConfirm": "Supprimer {name} ? Un instantané en conserve une copie."
+    "deleteFileConfirm": "Supprimer {name} ? Un instantané en conserve une copie.",
+    "streakTip": "{days}-day writing streak",
+    "sessionTip": "Words written this session",
+    "dailyQuota": "{words} words/day to finish in {days} days"
   },
   "history": {
     "title": "Instantanés",
@@ -1478,7 +1482,12 @@
     "outlineTip": "Plan — les scènes en tableau éditable",
     "timelineTip": "Chronologie — les scènes dans le temps du récit",
     "statusCycleTip": "Statut : {status} — cliquez pour passer idée → brouillon → révisé → final",
-    "povPlaceholder": "PDV"
+    "povPlaceholder": "PDV",
+    "craftColumns": "Craft columns",
+    "colGoal": "Goal",
+    "colConflict": "Conflict",
+    "colOutcome": "Outcome",
+    "colValueShift": "Value shift"
   },
   "continuity": {
     "title": "Continuité",
@@ -1595,7 +1604,9 @@
     "startersHint": "Suggestions de départ — cliquez pour remplir",
     "mentionButtonTip": "Référencer une scène ou une page de la bible (@)",
     "startersButtonTip": "Suggestions de départ (/)",
-    "historyHintTip": "↑ dans le champ vide rappelle vos messages précédents"
+    "historyHintTip": "↑ dans le champ vide rappelle vos messages précédents",
+    "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
+    "selDraft": "Draft"
   },
   "review": {
     "pendingOne": "1 modification en attente",

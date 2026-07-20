@@ -22,6 +22,15 @@
           >
             {{ t('recent.loadProject') }}
           </el-button>
+          <el-button
+            text
+            bg
+            type="primary"
+            class="import-manuscript-btn"
+            @click="importManuscript"
+          >
+            {{ t('recent.importManuscript') }}
+          </el-button>
         </div>
       </div>
     </div>
@@ -158,6 +167,10 @@ const confirmCreate = () => {
 
 const loadProject = () => {
   projectStore.loadProject()
+}
+
+const importManuscript = () => {
+  projectStore.importManuscript()
 }
 </script>
 

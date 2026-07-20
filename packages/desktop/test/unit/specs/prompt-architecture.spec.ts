@@ -71,6 +71,14 @@ describe('the guard reaches every prompt layer from one source', () => {
     }
   })
 
+  it('the supervisor is told one subject = one researcher (anti-overlap)', () => {
+    // prj12: 4 researchers spawned on ONE subject (Elam overview/geography/
+    // politics/religion) all thrashed the same core pages. Sub-topics of a
+    // subject must go to one researcher, not parallel workers.
+    const prompt = buildSupervisorPrompt('auto', 6)
+    expect(prompt).toContain('ONE SUBJECT = ONE RESEARCHER')
+  })
+
   it('LIVE PIN: the worker frame never ends the prompt — conventions close it', () => {
     // Observed live (flow 18, 3× fail incl. nemotron-ultra): ending the
     // prompt on "your reply is consumed…" made models reply WITHOUT the
@@ -90,6 +98,57 @@ describe('the guard reaches every prompt layer from one source', () => {
     for (const role of ['drafter', 'line-editor', 'plotter'] as const) {
       expect(AGENT_ROLES[role].systemPrompt, role).toContain(signature)
     }
+  })
+
+  it('the drafter carries BEAT EXPANSION doctrine (terse beat → full passage)', () => {
+    expect(AGENT_ROLES.drafter.systemPrompt).toContain('BEAT EXPANSION')
+    expect(AGENT_ROLES.drafter.systemPrompt).toContain('not prose to preserve')
+  })
+
+  it('VOICE EXEMPLARS doctrine reaches the prose roles; steward can harvest', () => {
+    // The prose-producing roles are told to match the writer's exemplars.
+    for (const role of ['drafter', 'line-editor'] as const) {
+      expect(AGENT_ROLES[role].systemPrompt, role).toContain('VOICE EXEMPLARS')
+    }
+    // Only the steward is told to HARVEST them (never invent prose).
+    expect(AGENT_ROLES.steward.systemPrompt).toContain('bible/voice/')
+    expect(AGENT_ROLES.steward.systemPrompt).toContain('never invent prose')
+  })
+
+  it('GATHERED THIS TURN doctrine reaches every warm role but never the auditor', () => {
+    // The auditor is the deliberate coldStart role: its value is the
+    // independent look, so its prompt carries verify-from-source doctrine
+    // instead of any invitation to lean on other agents' digests.
+    for (const role of ['explorer', 'researcher', 'drafter', 'line-editor', 'plotter', 'steward'] as const) {
+      expect(AGENT_ROLES[role].systemPrompt, role).toContain('GATHERED THIS TURN')
+    }
+    expect(AGENT_ROLES.auditor.coldStart).toBe(true)
+    expect(AGENT_ROLES.auditor.systemPrompt).not.toContain('GATHERED THIS TURN')
+    expect(AGENT_ROLES.auditor.systemPrompt).toContain('VERIFY FROM SOURCE')
+    // Supervisor: later waves synthesize, never re-gather.
+    const prompt = buildSupervisorPrompt('auto', 6)
+    expect(prompt).toContain('GATHERED THIS TURN')
+    expect(prompt).toContain('never re-gathering of listed sources')
+  })
+
+  it('save_research doctrine names args that exist in the schema (content, not findings)', () => {
+    // The schema requires `content`; both providers validate BEFORE the
+    // handler runs, so prompts telling models to pass "findings" produced
+    // schema rejections. Wording must track the schema.
+    expect(AGENT_ROLES.researcher.systemPrompt).toContain('save_research (title, content')
+    expect(AGENT_ROLES.researcher.systemPrompt).not.toContain('save_research (title, findings')
+  })
+
+  it('the ledger section header is deliberately NOT a harness marker', () => {
+    // GATHERED THIS TURN is a brief-style informational section (like
+    // RESEARCH ON FILE) — digests + pointers, never an authority channel
+    // — so it does not join HARNESS_MARKER_RE. Ledger content is instead
+    // neutralized at render time (see research-ledger.spec).
+    HARNESS_MARKER_RE.lastIndex = 0
+    expect(HARNESS_MARKER_RE.test('GATHERED THIS TURN (shared across all agents this turn):')).toBe(
+      false
+    )
+    expect(neutralizeHarnessMarkers('GATHERED THIS TURN: x')).toBe('GATHERED THIS TURN: x')
   })
 })
 

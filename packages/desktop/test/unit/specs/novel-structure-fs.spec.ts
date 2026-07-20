@@ -242,3 +242,65 @@ describe('StructureService.compile', () => {
     expect(result.content).toBe('\n')
   })
 })
+
+describe('StructureService.moveUnit (service path — persistence + integrity)', () => {
+  const seed = async(): Promise<INovelStructure> => {
+    write('manuscript/part-one/ch-01/01-opening.md', 'It began with rain.')
+    write('manuscript/part-one/ch-01/02-inciting.md', 'Then the letter arrived.')
+    write('manuscript/part-one/ch-02/01-turn.md', 'Everything changed.')
+    const structure = await service.scan(root, 'chapters-scenes')
+    await service.save(root, structure)
+    return structure
+  }
+
+  it('persists the moved order to structure.json', async() => {
+    const structure = await seed()
+    const part = structure.units[0]
+    const [ch1, ch2] = part.children!
+    const scene = ch1.children![0]
+    await service.moveUnit(root, structure, scene.id, ch2.id, 0)
+
+    const saved = JSON.parse(
+      fs.readFileSync(path.join(root, '.wordbird', 'structure.json'), 'utf8')
+    ) as INovelStructure
+    const savedCh2 = findUnit(saved.units, ch2.id)!
+    expect(savedCh2.unit.children!.map((c) => c.id)[0]).toBe(scene.id)
+    // Files never move on reorder — order lives in the manifest.
+    expect(fs.existsSync(path.join(root, 'manuscript/part-one/ch-01/01-opening.md'))).toBe(true)
+  })
+
+  it('a rejected move throws and leaves the saved manifest untouched', async() => {
+    const structure = await seed()
+    const before = fs.readFileSync(path.join(root, '.wordbird', 'structure.json'), 'utf8')
+    const part = structure.units[0]
+    const ch1 = part.children![0]
+    // Moving a chapter into its own subtree is illegal.
+    await expect(
+      service.moveUnit(root, structure, part.id, ch1.id, 0)
+    ).rejects.toThrow(/cannot move/i)
+    expect(fs.readFileSync(path.join(root, '.wordbird', 'structure.json'), 'utf8')).toBe(before)
+  })
+
+  it('reconcile after an external file add preserves the moved order (ids stable)', async() => {
+    const structure = await seed()
+    const part = structure.units[0]
+    const [ch1, ch2] = part.children!
+    const moved = ch1.children![1]
+    await service.moveUnit(root, structure, moved.id, ch2.id, 0)
+
+    // A new scene lands on disk OUTSIDE the app (sync, editor, agent).
+    write('manuscript/part-one/ch-02/02-aftermath.md', 'The dust settled.')
+    const reconciled = await service.loadReconciled(root)
+
+    const rCh2 = findUnit(reconciled.units, ch2.id)!
+    const ids = rCh2.unit.children!.map((c) => c.id)
+    // Moved unit KEPT its id and its position at the head…
+    expect(ids[0]).toBe(moved.id)
+    // …and the external file was ADOPTED — reconcile appends unknown
+    // files at the TOP LEVEL (never guesses a chapter, never loses one).
+    const everyLeaf = collectLeaves(reconciled.units)
+    expect(everyLeaf.map((l) => l.title)).toContain('aftermath')
+    const everyId = everyLeaf.map((l) => l.id)
+    expect(new Set(everyId).size).toBe(everyId.length)
+  })
+})

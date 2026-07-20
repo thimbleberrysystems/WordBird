@@ -429,7 +429,8 @@
     "structureHerosJourney": "英雄之旅",
     "structureSevenPoint": "七点结构",
     "structureRomancing": "Romancing the Beat（言情）",
-    "methodHint": "可选 — Biscuit 会按你的方法调整协助方式。随时告诉 Biscuit 即可更改。"
+    "methodHint": "可选 — Biscuit 会按你的方法调整协助方式。随时告诉 Biscuit 即可更改。",
+    "importManuscript": "Import Manuscript"
   },
   "import": {
     "title": "导入或打开",
@@ -1436,7 +1437,10 @@
     "open": "打开",
     "rename": "重命名",
     "newFolder": "新建文件夹",
-    "deleteFileConfirm": "删除 {name}？快照中保留副本。"
+    "deleteFileConfirm": "删除 {name}？快照中保留副本。",
+    "streakTip": "{days}-day writing streak",
+    "sessionTip": "Words written this session",
+    "dailyQuota": "{words} words/day to finish in {days} days"
   },
   "history": {
     "title": "快照",
@@ -1478,7 +1482,12 @@
     "outlineTip": "大纲 — 可编辑的场景表格",
     "timelineTip": "时间线 — 按故事时间排列的场景",
     "statusCycleTip": "状态：{status} — 点击循环 想法 → 草稿 → 修订 → 完成",
-    "povPlaceholder": "视角"
+    "povPlaceholder": "视角",
+    "craftColumns": "Craft columns",
+    "colGoal": "Goal",
+    "colConflict": "Conflict",
+    "colOutcome": "Outcome",
+    "colValueShift": "Value shift"
   },
   "continuity": {
     "title": "连贯性",
@@ -1595,7 +1604,9 @@
     "startersHint": "起步提示 — 点击填入输入框",
     "mentionButtonTip": "引用场景或设定页 (@)",
     "startersButtonTip": "起步提示 (/)",
-    "historyHintTip": "在空输入框按 ↑ 可调出历史输入"
+    "historyHintTip": "在空输入框按 ↑ 可调出历史输入",
+    "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
+    "selDraft": "Draft"
   },
   "review": {
     "pendingOne": "1 处待处理编辑",

@@ -1,8 +1,16 @@
 /**
- * Live check of the claude-code provider: the REAL Agent SDK runtime,
- * authenticated with a Claude subscription. Self-skips without
- * CLAUDE_CODE_OAUTH_TOKEN (generate one with `claude setup-token`) — the
- * nightly OpenRouter suite stays independent of it.
+ * SDK-SPECIFIC live pins for the claude-code provider: the REAL Agent
+ * SDK runtime, authenticated with a Claude subscription. Self-skips
+ * without CLAUDE_CODE_OAUTH_TOKEN (`claude setup-token`) or a local
+ * Claude Code login — the nightly OpenRouter suite stays independent.
+ *
+ * SCOPE: only what cannot be covered by the provider-parameterized
+ * shared suite (live-e2e.spec.ts, which runs ALL writer flows on this
+ * same runtime when the subscription is the selected provider): the
+ * connect probe, session-resume tool-server survival, the raw-SDK #114
+ * parallel race, the max-turns result-shape pin, and the production-
+ * runner permission-storm wave. Writer-flow coverage lives in the
+ * shared suite — do not add flows here.
  *
  *   CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-… pnpm run test:live
  *
@@ -118,19 +126,48 @@ live('claude-code provider (Claude subscription via Agent SDK)', () => {
     await expect(harness.runner.probe()).resolves.toBeUndefined()
   })
 
-  it('answers a bible fact through the bridged read tools', async() => {
+  it('STOP MEANS STOP: aborting mid-run ends activity promptly', async() => {
+    // Live pin for the 2026-07-18 incident: Stop interrupted the model
+    // loop but queued in-process tool calls (web retries included) kept
+    // churning — the writer watched activity that would not die. Cost:
+    // one short aborted turn (~2-4 model calls).
     const harness = await makeHarness()
     harness.runner.setMode('ask')
-    const reply = await harness.send(
-      't-sub-ground',
-      'Check the story bible: what colour are Zara Voss’s eyes? One word answer.'
-    )
-    expect(reply).toMatch(/grey|gray/i)
-    // The answer must come from the project, not memory: a WordBird tool ran.
-    expect(harness.activity.some((event) => event.kind === 'tool')).toBe(true)
-    // Ask mode is mechanically read-only.
-    expect(harness.editProposals).toHaveLength(0)
-  })
+    const controller = new AbortController()
+    const graph = harness.runner.buildGraph()
+    const pending = graph
+      .invoke(
+        {
+          messages: [
+            {
+              content:
+                'Research the full history of lighthouse construction: search and read at ' +
+                'least six different sources one after another, summarizing each.'
+            }
+          ]
+        },
+        { configurable: { thread_id: 't-stop' }, signal: controller.signal }
+      )
+      .catch(() => ({ messages: [{ content: '' }] }))
+
+    // Let the run actually start working, then hit Stop.
+    await expect
+      .poll(() => harness.activity.length, { timeout: 120_000 })
+      .toBeGreaterThan(0)
+    controller.abort()
+
+    // The invoke ends promptly (not after six sources' worth of work)…
+    const abortedAt = Date.now()
+    await pending
+    expect(Date.now() - abortedAt).toBeLessThan(30_000)
+
+    // …and the activity feed goes QUIET: no new events trail in after
+    // the stop settles (post-abort emission is suppressed).
+    await new Promise((resolve) => setTimeout(resolve, 3_000))
+    const settled = harness.activity.length
+    await new Promise((resolve) => setTimeout(resolve, 5_000))
+    expect(harness.activity.length).toBe(settled)
+  }, 300_000)
 
   it('resumed sessions keep the tool server alive (multi-turn on one thread)', async() => {
     // Every real conversation after its first message rides `resume` — a
@@ -225,6 +262,134 @@ live('claude-code provider (Claude subscription via Agent SDK)', () => {
     expect(closed).toEqual([])
   }, 600000)
 
+  it('many-tool server: a subagent making several fast calls never gets "no output" (deferral regression)', async() => {
+    // prj13 wedge (2026-07-19): with ~57 in-process tools the SDK defers
+    // them behind tool search; a deferred tool a SUBAGENT then invokes came
+    // back tool_deferred_unavailable → "completed with no output", after
+    // which every later call (local reads too) went instant-empty with NO
+    // stream-closed error. Fast calls, ~2 ok, then dead. alwaysLoad:true on
+    // createSdkMcpServer removes deferral. This drives the real SDK with a
+    // MANY-tool server (deferral threshold) + alwaysLoad and asserts a
+    // subagent's repeated fast calls all return real content.
+    const sdk = (await import('@anthropic-ai/claude-agent-sdk')) as unknown as {
+      query: (args: { prompt: string; options: Record<string, unknown> }) => AsyncIterable<unknown>
+      tool: (name: string, description: string, schema: unknown, handler: unknown) => unknown
+      createSdkMcpServer: (options: {
+        name: string
+        tools: unknown[]
+        alwaysLoad?: boolean
+      }) => unknown
+    }
+    // 40 fast tools → comfortably past the tool-search deferral threshold.
+    const tools = Array.from({ length: 40 }, (_unused, i) =>
+      sdk.tool(`probe_${i}`, `Fast probe ${i}: returns a token instantly.`, {}, async() => ({
+        content: [{ type: 'text', text: `token_${i}: OK` }]
+      }))
+    )
+    const env: Record<string, string | undefined> = { ...process.env }
+    delete env.ANTHROPIC_API_KEY
+    delete env.ANTHROPIC_AUTH_TOKEN
+    if (TOKEN) env.CLAUDE_CODE_OAUTH_TOKEN = TOKEN
+
+    const toolResults: string[] = []
+    const stream = sdk.query({
+      prompt:
+        'Spawn ONE "checker" subagent. It must call probe_0, probe_1, probe_2, probe_3, ' +
+        'and probe_4 IN SEQUENCE (five separate calls) and report each returned token.',
+      options: {
+        env,
+        model: 'haiku',
+        cwd: os.tmpdir(),
+        settingSources: [],
+        maxTurns: 30,
+        permissionMode: 'default',
+        mcpServers: {
+          repro: sdk.createSdkMcpServer({ name: 'repro', tools, alwaysLoad: true })
+        },
+        agents: {
+          checker: {
+            description: 'Calls probe tools in sequence and reports each result.',
+            prompt: 'You verify tools. Call exactly what the task says; report each token.',
+            tools: Array.from({ length: 40 }, (_u, i) => `mcp__repro__probe_${i}`),
+            model: 'haiku'
+          }
+        },
+        allowedTools: [
+          'Task',
+          ...Array.from({ length: 40 }, (_u, i) => `mcp__repro__probe_${i}`)
+        ]
+      }
+    })
+    for await (const raw of stream) {
+      const message = raw as {
+        type?: string
+        message?: { content?: Array<{ type?: string; content?: unknown }> }
+      }
+      if (message.type === 'user' && Array.isArray(message.message?.content)) {
+        for (const block of message.message.content) {
+          if (block.type === 'tool_result') toolResults.push(JSON.stringify(block.content))
+        }
+      }
+    }
+    // At least the five sequential subagent calls ran.
+    expect(toolResults.length).toBeGreaterThanOrEqual(5)
+    // NONE came back as the SDK's empty-result placeholder.
+    const empties = toolResults.filter((text) => /no output/i.test(text))
+    expect(empties, `deferred tools returned empty: ${empties.length}/${toolResults.length}`).toEqual(
+      []
+    )
+    // And the real token payloads actually arrived.
+    expect(toolResults.some((text) => /token_\d+: OK/.test(text))).toBe(true)
+  }, 600000)
+
+  it('REAL RUNNER research turn: tools keep answering, research persists (empty-tools regression)', async() => {
+    // THE prj13 wedge, through the PRODUCTION path (AgentSDKRunner + the real
+    // 57-tool server + resume) — the raw-sdk.query pins above cannot exercise
+    // it. Symptom was: after a handful of calls the IN-PROCESS MCP transport
+    // stopped delivering results, the model saw "completed with no output",
+    // reported a "live outage", and saved nothing (upstream #108 / #43642).
+    // FIXED by serving the tools over a loopback HTTP MCP server
+    // (httpMcpServer.ts) — HTTP delivers what the in-process transport drops.
+    // This guards both halves of the contract: a real note lands on disk, and
+    // the model never cries outage. WORDBIRD_TOOL_DEBUG=1 prints per-tool
+    // delivery ([tooldbg] <tool> -> <n> chars) when diagnosing a regression.
+    const prev = process.env.WORDBIRD_TOOL_DEBUG
+    process.env.WORDBIRD_TOOL_DEBUG = '1'
+    try {
+      const harness = await makeHarness()
+      harness.runner.setMode('auto')
+      const r1 = await harness.send(
+        't-empty-tools',
+        'My novel is set in ancient Elam. Research its history, geography, and religion ' +
+          'from online sources and save your findings for future reference.'
+      )
+      // Second turn rides `resume` — the path every real conversation takes.
+      const r2 = await harness.send(
+        't-empty-tools',
+        'Good — now also research the Elamite language and save that too.'
+      )
+
+      // 1) Research actually persisted (recursively, any subfolder).
+      const researchDir = path.join(harness.root, 'bible', 'research')
+      const landed =
+        fs.existsSync(researchDir) &&
+        fs
+          .readdirSync(researchDir, { recursive: true } as never)
+          .some((f) => String(f).endsWith('.md'))
+      expect(landed, 'no research note persisted to disk').toBe(true)
+
+      // 2) The model never reported a tool outage (the empty-tools tell).
+      const outage = /(intermitten|not working|dead connection|live outage|returning empty|tools.*(flaky|failing))/i
+      expect(
+        outage.test(`${r1}\n${r2}`),
+        'model reported a tool outage — empty-tools wedge reproduced'
+      ).toBe(false)
+    } finally {
+      if (prev === undefined) delete process.env.WORDBIRD_TOOL_DEBUG
+      else process.env.WORDBIRD_TOOL_DEBUG = prev
+    }
+  }, 600000)
+
   it('the real runtime reports max-turns as error_max_turns (budget-path pin)', async() => {
     // AgentSDKRunner maps subtype 'error_max_turns' onto the graceful
     // GraphRecursionError budget path (scripted pin in
@@ -300,26 +465,4 @@ live('claude-code provider (Claude subscription via Agent SDK)', () => {
     )
     expect(failures).toEqual([])
   }, 600000)
-
-  it('surgical edits arrive as review-queue proposals, never direct writes', async() => {
-    const harness = await makeHarness()
-    harness.runner.setMode('approvals')
-    const original = fs.readFileSync(
-      path.join(harness.root, 'manuscript/chapter-one/opening.md'),
-      'utf8'
-    )
-    await harness.send(
-      't-sub-edit',
-      'In the opening scene, change the word "waited" to "lingered" using a surgical ' +
-        'text edit. One word only — do not rewrite the file.'
-    )
-    expect(harness.editProposals.length).toBeGreaterThanOrEqual(1)
-    expect(harness.editProposals[0].edit.newContent).toContain('lingered')
-    // Approvals mode: the file itself is untouched until the writer accepts.
-    const after = fs.readFileSync(
-      path.join(harness.root, 'manuscript/chapter-one/opening.md'),
-      'utf8'
-    )
-    expect(after).toBe(original)
-  })
 })

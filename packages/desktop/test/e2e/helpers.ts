@@ -221,6 +221,17 @@ export const clickMenuById = async(app: ElectronApplication, id: string): Promis
   }, id)
 }
 
+/**
+ * Open the sidebar if it is not already showing. The sidebar's visibility
+ * persists across runs (layout preference), so specs that drive it must not
+ * assume either state.
+ */
+export const ensureSidebar = async(app: ElectronApplication, page: Page): Promise<void> => {
+  if (!(await page.locator('.side-bar').isVisible())) {
+    await clickMenuById(app, 'sideBarMenuItem')
+  }
+}
+
 export const waitForEditor = async(page: Page, timeout = 15000): Promise<void> => {
   await page.waitForSelector('.editor-component', { state: 'attached', timeout })
   await page.waitForFunction(

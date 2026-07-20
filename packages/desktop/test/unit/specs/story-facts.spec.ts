@@ -84,6 +84,34 @@ describe('fact ledger', () => {
     expect(brief).toContain('1 recorded fact')
     expect(brief).toContain('list_facts')
   })
+
+  it('relationship_map proposes a mermaid graph from inter-entity facts', async() => {
+    // Two bible entities so mentions resolve; prose so the index counts them.
+    write('bible/characters/zara.md', '---\naliases: [Zara]\n---\n# Zara Voss\n')
+    write('bible/characters/mara.md', '---\naliases: [Mara]\n---\n# Mara Voss\n')
+    write('manuscript/chapter-one/opening.md', 'Zara found Mara at the docks.')
+    await run('record_fact', { subject: 'Zara', relation: 'sister of', object: 'Mara' })
+    await run('record_fact', { subject: 'Zara', relation: 'eye color', object: 'grey' })
+
+    const result = (await run('relationship_map', {})) as {
+      edit?: { filePath: string; newContent: string }
+      generated?: boolean
+    }
+    expect(result.edit?.filePath).toBe(path.join('bible', 'relationships.md'))
+    expect(result.edit?.newContent).toContain('```mermaid')
+    expect(result.edit?.newContent).toContain('sister of')
+    // The attribute fact (grey) is not a relationship edge.
+    expect(result.edit?.newContent).not.toContain('eye color')
+  })
+
+  it('relationship_map reports nothing to draw when no inter-entity facts exist', async() => {
+    write('bible/characters/zara.md', '---\naliases: [Zara]\n---\n# Zara Voss\n')
+    write('manuscript/chapter-one/opening.md', 'Zara alone.')
+    await run('record_fact', { subject: 'Zara', relation: 'eye color', object: 'grey' })
+    const result = (await run('relationship_map', {})) as { generated: boolean; note: string }
+    expect(result.generated).toBe(false)
+    expect(result.note).toContain('inter-entity')
+  })
 })
 
 describe('thread / label / notes metadata', () => {
@@ -107,6 +135,42 @@ describe('thread / label / notes metadata', () => {
     expect(got.thread).toBe('Heist')
     expect(got.label).toBe('act1')
     expect(got.notes).toBe('Foreshadow the cellar.')
+  })
+
+  it('update_unit_meta sets the Story Grid / yWriter craft fields, list_structure returns them', async() => {
+    write('manuscript/chapter-one/opening.md', 'Rain.')
+    const { structureService } = await import('../../../src/main/services/novel/StructureService')
+    const structure = await structureService.loadReconciled(root)
+    const scene = structure.units[0].children![0]
+
+    await run('update_unit_meta', {
+      unitId: scene.id,
+      goal: 'Zara wants the ledger.',
+      conflict: 'The vault is guarded.',
+      outcome: 'She is caught — disaster.',
+      valueShift: 'safe → in danger'
+    })
+
+    const listed = (await run('list_structure', {})) as {
+      units: Array<{
+        children?: Array<{
+          goal?: string
+          conflict?: string
+          outcome?: string
+          valueShift?: string
+        }>
+      }>
+    }
+    const got = listed.units[0].children![0]
+    expect(got.goal).toBe('Zara wants the ledger.')
+    expect(got.conflict).toBe('The vault is guarded.')
+    expect(got.outcome).toBe('She is caught — disaster.')
+    expect(got.valueShift).toBe('safe → in danger')
+
+    // Persisted to disk (survives a reload).
+    const reloaded = await structureService.loadReconciled(root)
+    const persisted = reloaded.units[0].children![0]
+    expect(persisted.valueShift).toBe('safe → in danger')
   })
 
   it('the outline in the brief carries the thread lane', async() => {
@@ -152,6 +216,9 @@ describe('new prompt contracts', () => {
     const auto = await runSupervisor('auto')
     expect(auto).toContain('CRITIC PASS')
     expect(auto).toContain('never stack new scenes on ' + 'unreviewed ones')
+    // The critic pass includes the corpus anti-slop sweep.
+    expect(auto).toContain('lint_prose corpus:true')
+    expect(auto).toContain('AI-SLOP')
     const approvals = await runSupervisor('approvals')
     expect(approvals).not.toContain('CRITIC PASS')
   })
@@ -161,6 +228,31 @@ describe('new prompt contracts', () => {
     expect(system).toContain('LEARN MY VOICE')
     expect(system).toContain('bible/style.md')
     expect(system).toContain('record_fact for each')
+  })
+
+  it('the INTERVIEW A CHARACTER persona playbook is taught (read-only, in-voice)', async() => {
+    const system = await runSupervisor('approvals')
+    expect(system).toContain('INTERVIEW A CHARACTER')
+    // Grounds in the bible + facts, and stays read-only while in persona.
+    expect(system).toContain('list_facts about=<name>')
+    expect(system).toContain('READ-ONLY conversation')
+  })
+
+  it('the RETRO-OUTLINE playbook derives craft metadata, never invents structure', async() => {
+    const system = await runSupervisor('approvals')
+    expect(system).toContain('RETRO-OUTLINE')
+    // It DERIVES from prose into update_unit_meta (synopsis + craft), and
+    // proposes no prose.
+    expect(system).toContain('update_unit_meta with a one-line')
+    expect(system).toContain('metadata only')
+  })
+
+  it('the POST-IMPORT playbook offers review-gated bible extraction, never fabricates canon', async() => {
+    const system = await runSupervisor('approvals')
+    expect(system).toContain('POST-IMPORT')
+    expect(system).toContain('BIBLE EXTRACTION')
+    expect(system).toContain('NEVER fabricates traits')
+    expect(system).toContain('review-gated')
   })
 
   it('auditors carry the fact-ledger discipline', () => {

@@ -81,6 +81,20 @@ export interface ProjectCreateResult {
   projectPath: string | null
 }
 
+export interface ProjectImportArgs {
+  /** Source manuscript file (.md/.markdown/.txt). Prompts when omitted. */
+  filePath?: string
+  /** Destination project directory. Prompts when omitted. */
+  location?: string
+}
+
+export interface ProjectImportResult {
+  projectPath: string | null
+  chapters?: number
+  scenes?: number
+  error?: string
+}
+
 export interface ProjectLoadArgs {
   path?: string
 }
@@ -170,6 +184,7 @@ export interface IpcInvokeChannels {
   'mt::ai:fetch-models': { args: [AIProvider, string, string?]; ret: string[] }
   'mt::ai:pull-model': { args: [string, string?]; ret: { success: boolean } }
   'mt::project:create': { args: [ProjectCreateArgs?]; ret: ProjectCreateResult }
+  'mt::project:import': { args: [ProjectImportArgs?]; ret: ProjectImportResult }
   'mt::project:load': { args: [ProjectLoadArgs?]; ret: ProjectLoadResult }
   'mt::project:validate': { args: [path: string]; ret: boolean }
   'mt::project:save-as': { args: [path: string]; ret: ProjectCreateResult }

@@ -11,6 +11,7 @@ import { STRUCTURE_TEMPLATES } from '../services/novel/structureTemplates'
 import { isPlanningStyle, isStructureTemplate } from '../services/novel/ProjectMeta'
 import { snapshotService } from '../services/novel/SnapshotService'
 import type {
+  ProjectImportArgs,
   ProjectCreateArgs,
   ProjectLoadArgs
 } from '@shared/types/ipc'
@@ -176,6 +177,99 @@ export const registerProjectHandlers = (): void => {
     } catch (err) {
       log.error('Project creation failed:', err)
       return { projectPath: null }
+    }
+  })
+
+  ipcMain.handle('mt::project:import', async(e, args: ProjectImportArgs = {}) => {
+    const win = BrowserWindow.fromWebContents(e.sender)
+
+    // 1. Pick the source manuscript.
+    let source = args.filePath ? normalizePath(args.filePath) : null
+    if (!source && win) {
+      const { filePaths } = await dialog.showOpenDialog(win, {
+        properties: ['openFile'],
+        filters: [{ name: 'Manuscript', extensions: ['md', 'markdown', 'txt'] }]
+      })
+      source = filePaths?.[0] ?? null
+    }
+    if (!source || !fs.existsSync(source)) {
+      return { projectPath: null, error: 'No manuscript file chosen' }
+    }
+
+    // 2. Pick the destination project directory.
+    const location = args.location ? normalizePath(args.location) : await chooseDirectory(win)
+    if (!location) {
+      return { projectPath: null, error: 'No destination chosen' }
+    }
+
+    try {
+      const markdown = fs.readFileSync(source, 'utf8')
+      const { splitManuscript, writeImportedManuscript } = await import(
+        '../services/novel/ManuscriptImporter'
+      )
+      const split = splitManuscript(markdown)
+
+      // Scaffold the chapters-scenes project (folders + template files +
+      // marker), then write the imported scenes over it and build the binder.
+      const flavor: ProjectFlavor = 'chapters-scenes'
+      const template = FLAVOR_TEMPLATES[flavor]
+      for (const folder of template.folders) {
+        fs.mkdirSync(path.join(location, folder), { recursive: true })
+      }
+      // An imported project needs the SAME baseline files a created one gets
+      // — without .gitignore every snapshot swallows exports/ and
+      // .wordbird/agent-state/, and without bible/style.md the prose lint and
+      // the steward have no style canon to read.
+      const importName =
+        path.basename(source).replace(/\.(md|markdown|txt)$/i, '') || path.basename(location)
+      const importSlug = importName.toLowerCase().replace(/\s+/g, '-')
+      for (const [filename, content] of Object.entries(template.files)) {
+        const target = path.join(location, filename)
+        if (fs.existsSync(target)) continue
+        fs.writeFileSync(
+          target,
+          String(content).replace(/\{\{name\}\}/g, importName).replace(/\{\{slug\}\}/g, importSlug),
+          'utf8'
+        )
+      }
+      const dotWordbird = path.join(location, '.wordbird')
+      fs.mkdirSync(dotWordbird, { recursive: true })
+      fs.writeFileSync(
+        path.join(dotWordbird, 'project.json'),
+        JSON.stringify(
+          {
+            name: importName,
+            createdAt: new Date().toISOString(),
+            flavor,
+            planningStyle: 'unset',
+            structureTemplate: 'unset',
+            importedFrom: path.basename(source)
+          },
+          null,
+          2
+        ),
+        'utf8'
+      )
+
+      const result = await writeImportedManuscript(location, split)
+
+      try {
+        await git.init({ fs, dir: location })
+        await snapshotService.snapshot(location, 'Manuscript imported')
+      } catch (gitErr) {
+        log.warn('Git init after import failed:', gitErr)
+      }
+
+      updateLastOpenedFolder(win, location)
+      if (win) {
+        ipcMain.emit('app-open-directory-by-id', win.id, location, false, true)
+        win.close()
+      }
+      return { projectPath: location, chapters: result.chapters, scenes: result.scenes }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      log.error('Manuscript import failed:', err)
+      return { projectPath: null, error: message }
     }
   })
 

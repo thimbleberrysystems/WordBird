@@ -1141,7 +1141,8 @@ const starterPrompts: Array<() => string> = [
   () => t('biscuit.starterBrainstorm'),
   () => t('biscuit.starterStatus'),
   () => t('biscuit.starterContinuity'),
-  () => t('biscuit.starterHealth')
+  () => t('biscuit.starterHealth'),
+  () => t('biscuit.starterRetroOutline')
 ]
 
 const sendStarter = (text: string): void => {
@@ -1205,7 +1206,19 @@ const steerWith = async (text: string): Promise<void> => {
 // ---- Stall watchdog: "sending" must never look alive forever. Any run
 // event (activity, tokens, context) counts as a heartbeat; a long silence
 // gets an advisory card so the writer knows Stop is the way out.
-const STALL_AFTER_MS = 90_000
+const STALL_AFTER_MS_DEFAULT = 90_000
+/**
+ * Silence budget before the advisory card appears. Read per-run (not at
+ * module load) so an e2e spec can shrink it via `addInitScript` — a test
+ * that had to wait 90s would double the suite's runtime, which is why this
+ * watchdog previously had no coverage at all.
+ */
+const stallAfterMs = (): number => {
+  const override = Number(
+    (window as unknown as { __wordbirdStallMs?: unknown }).__wordbirdStallMs
+  )
+  return Number.isFinite(override) && override > 0 ? override : STALL_AFTER_MS_DEFAULT
+}
 let stallTimer: ReturnType<typeof setInterval> | null = null
 let lastRunEventAt = 0
 watch(
@@ -1226,12 +1239,15 @@ function startStallWatchdog (): void {
   stopStallWatchdog()
   lastRunEventAt = Date.now()
   let warned = false
+  const budget = stallAfterMs()
+  // Poll well inside the budget so a shrunken (test) budget still trips.
+  const tick = Math.max(200, Math.min(10_000, Math.floor(budget / 3)))
   stallTimer = setInterval(() => {
     if (!sending.value) {
       stopStallWatchdog()
       return
     }
-    if (!warned && Date.now() - lastRunEventAt > STALL_AFTER_MS) {
+    if (!warned && Date.now() - lastRunEventAt > budget) {
       warned = true
       aiMessages.value.push({
         role: 'error',
@@ -1239,7 +1255,7 @@ function startStallWatchdog (): void {
         errorInfo: { title: t('biscuit.stalledTitle'), explanation: t('biscuit.stalled') }
       })
     }
-  }, 10_000)
+  }, tick)
 }
 
 // Send message to AI
