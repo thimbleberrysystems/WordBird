@@ -187,7 +187,7 @@ export class AgentSDKRunner {
   private readonly _config: IAIConfig
   private readonly _callbacks: OrchestratorCallbacks
   private readonly _toolService: AgentToolService
-  private readonly _stateDir: string
+  private _stateDir: string
   private readonly _projectRoot: () => string | null
   private _sdkModule: AgentSdkModule | null
   /** True only when a SCRIPTED sdk was injected (unit tests). Distinct from
@@ -287,6 +287,11 @@ export class AgentSDKRunner {
   /** Total tokens this session — the book-run token ceiling reads this. */
   get sessionTokens(): number {
     return this._sessionUsage.inputTokens + this._sessionUsage.outputTokens
+  }
+
+  /** Follow a project switch: sessions are keyed per project directory. */
+  setStateDir(stateDir: string): void {
+    this._stateDir = stateDir
   }
 
   resetSessionUsage(): void {

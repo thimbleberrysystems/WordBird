@@ -13,6 +13,22 @@ import windowStateKeeper from 'electron-window-state'
 import { isLinux, isOsx } from '../config'
 
 let biscuitWindow: BrowserWindow | null = null
+/**
+ * Project the detached Biscuit window belongs to. The window is a raw
+ * BrowserWindow (never registered as an EDITOR), so when it has focus the
+ * window-manager's getActiveEditor() cannot see a project — without this
+ * the agent's state directory fell back to the GLOBAL userData path and
+ * conversations/threads leaked across projects.
+ */
+let biscuitProjectRoot: string | null = null
+
+/** The focused-Biscuit project root, or null when that window is closed. */
+export const getBiscuitProjectRoot = (): string | null =>
+  biscuitWindow && !biscuitWindow.isDestroyed() ? biscuitProjectRoot : null
+
+/** True when `id` is the live detached Biscuit window. */
+export const isBiscuitWindowId = (id: number | null | undefined): boolean =>
+  Boolean(biscuitWindow && !biscuitWindow.isDestroyed() && id === biscuitWindow.id)
 
 export interface BiscuitWindowOptions {
   conversationId?: string
@@ -78,6 +94,7 @@ export const openBiscuitWindow = (
   const win = new BrowserWindow(winOptions)
   savedState.manage(win)
   biscuitWindow = win
+  biscuitProjectRoot = options.projectRoot ?? biscuitProjectRoot
 
   const baseUrl =
     process.env.NODE_ENV === 'development' && process.env['ELECTRON_RENDERER_URL']
@@ -101,6 +118,7 @@ export const openBiscuitWindow = (
 
   win.on('closed', () => {
     biscuitWindow = null
+    biscuitProjectRoot = null
     broadcastReattach()
   })
 

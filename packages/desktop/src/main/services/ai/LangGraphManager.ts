@@ -186,6 +186,38 @@ export class LangGraphManager {
     return path.join(this._agentStateDir(), 'session.json')
   }
 
+  /** Agent-state directory the durable thread objects are currently bound to. */
+  private _boundStateDir: string | null = null
+
+  /**
+   * Re-point the checkpointer and thread id at the CURRENT project when the
+   * writer has switched since these were built. connect() resolves the
+   * directory once; nothing else did, so a session that started in project
+   * A kept writing A's thread while the writer worked in B.
+   */
+  private _rebindProjectStateIfNeeded(): void {
+    const stateDir = this._agentStateDir()
+    if (this._boundStateDir === stateDir) return
+    const previous = this._boundStateDir
+    this._boundStateDir = stateDir
+    // First bind (connect) already built these — only a genuine switch
+    // needs the rebuild.
+    if (previous === null) return
+    log.info('[LangGraphMain] Project changed; rebinding agent state to', stateDir)
+    this._checkpointer?.flush()
+    this._checkpointer = new FileCheckpointSaver(path.join(stateDir, 'checkpoints.json'))
+    this._threadId = this._loadOrCreateThreadId()
+    this._systemPromptAdded = false
+    // Proposals and mode belong to the project we just left.
+    this._editTracker.clearPending()
+    this._broadcast('mt::ai:pending-edits-cleared', {})
+    this._modeLoadedFor = null
+    this._ensureModeLoaded()
+    // The SDK runner keys its resumable sessions off the state dir too.
+    const rebindable = this._orchestrator as { setStateDir?: (dir: string) => void } | null
+    rebindable?.setStateDir?.(stateDir)
+  }
+
   private _readSessionFile(): Record<string, unknown> {
     try {
       return JSON.parse(fs.readFileSync(this._sessionPath(), 'utf8')) as Record<string, unknown>
@@ -614,8 +646,9 @@ export class LangGraphManager {
 
       // Durable thread state: checkpoints persist under the active project
       // so long agent runs survive an app restart and resume.
+      this._boundStateDir = this._agentStateDir()
       this._checkpointer = new FileCheckpointSaver(
-        path.join(this._agentStateDir(), 'checkpoints.json')
+        path.join(this._boundStateDir, 'checkpoints.json')
       )
       this._threadId = this._loadOrCreateThreadId()
 
@@ -890,6 +923,12 @@ export class LangGraphManager {
     if (!orchestrator) {
       throw new Error('Not connected to any AI provider')
     }
+    // Durable state must follow the OPEN PROJECT, not whichever project
+    // happened to be active at connect(). Without this the checkpointer and
+    // threadId stayed bound to the connect-time directory for the whole
+    // session, so switching projects carried the previous project's
+    // conversation with it.
+    this._rebindProjectStateIfNeeded()
     // Rebuild per turn: the compiled graph bakes in the permission mode,
     // which the writer can change between messages. Compilation is cheap.
     orchestrator.setMode(this._permissionMode)

@@ -13,6 +13,7 @@
 import { ref, computed, watch, type Ref, type ComputedRef } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useProjectStore } from '../store/project'
+import { conversationKeys } from '../util/conversationKeys'
 import { t } from '../i18n'
 import type { ILangGraphMessage } from '@shared/types/langgraph'
 
@@ -33,8 +34,6 @@ export interface StoredConversation {
   updatedAt: number
 }
 
-const HISTORY_KEY = 'biscuit-conversations'
-const CURRENT_KEY = 'biscuit-current-conversation'
 // sessionStorage is per-window: a reload keeps it, File → New Window and a
 // fresh app launch start without it. That distinction drives initialize().
 const WINDOW_KEY = 'biscuit-window-conversation'
@@ -72,14 +71,19 @@ export const useConversationHistory = (options: {
     [...conversations.value].sort((a, b) => b.updatedAt - a.updatedAt)
   )
 
+  /** Storage keys for the CURRENTLY open project (re-read on every access,
+   * so switching projects switches lists). */
+  const keys = (): { history: string; current: string } =>
+    conversationKeys(useProjectStore().currentProjectPath)
+
   const loadHistory = (): void => {
     try {
-      const raw = localStorage.getItem(HISTORY_KEY)
+      const raw = localStorage.getItem(keys().history)
       conversations.value = raw ? (JSON.parse(raw) as StoredConversation[]) : []
     } catch {
       conversations.value = []
     }
-    currentId.value = localStorage.getItem(CURRENT_KEY) || ''
+    currentId.value = localStorage.getItem(keys().current) || ''
   }
 
   // Fresh windows must not silently continue the durable thread another
@@ -117,8 +121,9 @@ export const useConversationHistory = (options: {
   }
 
   const persistHistory = (): void => {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(conversations.value))
-    localStorage.setItem(CURRENT_KEY, currentId.value)
+    const { history, current } = keys()
+    localStorage.setItem(history, JSON.stringify(conversations.value))
+    localStorage.setItem(current, currentId.value)
     sessionStorage.setItem(WINDOW_KEY, currentId.value)
   }
 
@@ -271,6 +276,22 @@ export const useConversationHistory = (options: {
     window.electron.clipboard.writeText(content)
     ElMessage.success(t('biscuit.exportedClipboard'))
   }
+
+  // Switching projects switches conversation lists. Without this the panel
+  // would keep showing the previous project's chats until the window
+  // reloaded — the visible half of the leak this keying fixes.
+  watch(
+    () => useProjectStore().currentProjectPath,
+    (root, previousRoot) => {
+      if (root === previousRoot) return
+      saveCurrent()
+      loadHistory()
+      currentId.value = ''
+      aiMessages.value = []
+      needsFreshThread = true
+      onSwitch()
+    }
+  )
 
   return {
     conversations,
