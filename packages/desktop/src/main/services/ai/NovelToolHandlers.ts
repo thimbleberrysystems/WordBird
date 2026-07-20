@@ -484,6 +484,29 @@ const proposeNewUnit = async(
       }
     }
   }
+  // A scene named exactly like its parent chapter yields a redundant path
+  // (the-cellar/the-cellar.md): the chapter names the FOLDER, the scene
+  // names the FILE. Refuse rather than warn — a warning in a tool result
+  // is easy to sail past, and every such unit has to be renamed by hand
+  // later. allowDuplicate is the deliberate escape hatch.
+  if (type === 'scene' && parentId && args.allowDuplicate !== true) {
+    const parent = findUnit(structure.units, parentId)?.unit
+    const normalize = (value: string): string => value.toLowerCase().replace(/\s+/g, ' ').trim()
+    if (parent && parent.type === 'chapter' && normalize(parent.title) === normalize(title)) {
+      return {
+        created: false,
+        redundantName: true,
+        note:
+          `The parent chapter is already called "${parent.title}", so a scene with the ` +
+          'same title would land at a redundant path like ' +
+          `${slugifyPlanTitle(title)}/${slugifyPlanTitle(title)}.md. The chapter names ` +
+          'the FOLDER; the scene names the FILE. Give the scene its own title for what ' +
+          'happens in it (e.g. "Dusk on the veranda"), or pass allowDuplicate: true if ' +
+          'you genuinely want both to share a name.'
+      }
+    }
+  }
+
   const unit = await structureService.createUnit(root, structure, {
     parentId,
     type,

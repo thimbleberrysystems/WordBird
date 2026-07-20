@@ -142,6 +142,23 @@ const makeDirtyProject = async(): Promise<void> => {
     title: 'Empty Part',
     children: []
   } as never)
+  // A chapter whose ONLY scene repeats its title — the doubled-path shape
+  // (the-cellar/the-cellar.md) writers read as a bug. The file must exist
+  // or reconcile drops the unit before the check ever sees it.
+  write('manuscript/the-cellar/the-cellar.md', 'The cellar door stuck.\n')
+  structure.units.push({
+    id: 'ch-doubled',
+    type: 'chapter',
+    title: 'The Cellar',
+    children: [
+      {
+        id: 'sc-doubled',
+        type: 'scene',
+        title: '  the cellar ',
+        path: 'manuscript/the-cellar/the-cellar.md'
+      }
+    ]
+  } as never)
   await structureService.save(root, structure)
 }
 
@@ -252,6 +269,11 @@ describe('checkProjectHealth on a dirty project', () => {
     expect(byId.get('duplicate-unit-ids')?.severity).toBe('warn')
     expect(byId.get('invalid-unit-status')?.items?.join(' ')).toContain('polished')
     expect(byId.get('empty-containers')?.items?.join(' ')).toContain('Empty Part')
+    // Doubled chapter/scene naming is surfaced for the steward to propose
+    // renaming — the SCENE, never the writer's chapter.
+    const doubled = byId.get('redundant-unit-names')
+    expect(doubled?.items?.join(' ')).toContain('The Cellar')
+    expect(doubled?.suggestion).toMatch(/rename the SCENE/i)
 
     const knowledge = byId.get('knowledge-hygiene')
     expect(knowledge?.items?.join(' ')).toContain('pacing')

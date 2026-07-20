@@ -240,6 +240,42 @@ describe('duplicate-work guards (parallel agents converge, never fork)', () => {
     expect(second.issueId).toBe(first.issueId)
   })
 
+  it('propose_new_unit refuses a scene named like its parent chapter', async() => {
+    // The chapter names the FOLDER and the scene names the FILE, so equal
+    // titles give a doubled path (the-cellar/the-cellar.md). Refused rather
+    // than warned: a warning in a tool result is easy to sail past, and
+    // every such unit has to be renamed by hand afterwards.
+    const structure = await structureService.loadReconciled(root)
+    const chapter = structure.units[0]
+
+    const rejected = (await run('propose_new_unit', {
+      type: 'scene',
+      title: `  ${chapter.title.toUpperCase()} `,
+      parentId: chapter.id
+    })) as { created: boolean; redundantName: boolean; note: string }
+    expect(rejected.created).toBe(false)
+    expect(rejected.redundantName).toBe(true)
+    expect(rejected.note).toMatch(/names the FOLDER/i)
+
+    // A distinct scene title under the same chapter is fine…
+    const ok = (await run('propose_new_unit', {
+      type: 'scene',
+      title: 'Dusk on the veranda',
+      parentId: chapter.id
+    })) as { created: boolean; path: string }
+    expect(ok.created).toBe(true)
+    expect(ok.path).toMatch(/dusk-on-the-veranda\.md$/)
+
+    // …and allowDuplicate remains the deliberate escape hatch.
+    const forced = (await run('propose_new_unit', {
+      type: 'scene',
+      title: chapter.title,
+      parentId: chapter.id,
+      allowDuplicate: true
+    })) as { created: boolean }
+    expect(forced.created).toBe(true)
+  })
+
   it('propose_new_unit refuses a same-titled sibling unless allowDuplicate', async() => {
     const structure = await structureService.loadReconciled(root)
     const chapterId = structure.units[0].id

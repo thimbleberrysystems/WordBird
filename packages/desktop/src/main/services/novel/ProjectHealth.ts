@@ -357,6 +357,34 @@ export const checkProjectHealth = async(root: string): Promise<HealthReport> => 
     })
   }
 
+  // ---- redundant-unit-names ----
+  // A chapter whose ONLY scene carries the same title produces a path like
+  // manuscript/the-cellar/the-cellar.md — the chapter names the folder, the
+  // scene names the file, so the name is written twice and reads as a bug.
+  // The chapter/scene split is right; the naming is what needs a nudge.
+  const normalizeTitle = (value: string): string => value.toLowerCase().replace(/\s+/g, ' ').trim()
+  const redundantlyNamed = allUnits.filter((unit) => {
+    if (unit.path || !unit.children || unit.children.length !== 1) return false
+    const only = unit.children[0]
+    return Boolean(only?.path) && normalizeTitle(only.title) === normalizeTitle(unit.title)
+  })
+  if (redundantlyNamed.length > 0) {
+    findings.push({
+      id: 'redundant-unit-names',
+      severity: 'info',
+      category: 'structure',
+      message:
+        `${redundantlyNamed.length} chapter${redundantlyNamed.length === 1 ? '' : 's'} ` +
+        `hold${redundantlyNamed.length === 1 ? 's' : ''} a single scene with the same ` +
+        'title, giving a doubled path (the-cellar/the-cellar.md)',
+      items: redundantlyNamed.slice(0, 12).map((u) => `${u.title} (${u.id})`),
+      suggestion:
+        'Rename the SCENE for what happens in it (update_unit_meta title) so the chapter ' +
+        'names the folder and the scene names the file. Propose the renames to the writer ' +
+        '— never rename their chapters unasked.'
+    })
+  }
+
   // ---- stale-summaries ----
   const staleSummaries: string[] = []
   let newestProse = 0

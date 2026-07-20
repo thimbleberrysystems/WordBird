@@ -71,6 +71,16 @@ describe('the guard reaches every prompt layer from one source', () => {
     }
   })
 
+  it('every agent is told a scene must not repeat its chapter name', () => {
+    // prj14: the agent modelled every chapter as holding ONE scene of the
+    // same title, so every path doubled (the-cellar/the-cellar.md). The
+    // chapter names the folder, the scene names the file.
+    for (const role of Object.values(AGENT_ROLES)) {
+      expect(role.systemPrompt, role.role).toContain('CHAPTER vs SCENE NAMING')
+    }
+    expect(buildSupervisorPrompt('auto', 6)).toContain('CHAPTER vs SCENE NAMING')
+  })
+
   it('the supervisor is told one subject = one researcher (anti-overlap)', () => {
     // prj12: 4 researchers spawned on ONE subject (Elam overview/geography/
     // politics/religion) all thrashed the same core pages. Sub-topics of a

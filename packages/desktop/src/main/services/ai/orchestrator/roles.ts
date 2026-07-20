@@ -58,6 +58,13 @@ export const PROJECT_CONVENTIONS =
   'scene; flat flavor: one file per chapter; scene-pool: loose scene files. Kebab-case ' +
   'filenames from the title (the-cellar.md). New prose units are created with ' +
   'propose_new_unit (prose in `content`), never by writing files directly.\n' +
+  '- CHAPTER vs SCENE NAMING: a chapter is a CONTAINER of scenes and gives its name to a ' +
+  'FOLDER; a scene is the prose file inside it. Never give a scene the same title as its ' +
+  'parent chapter — that produces a redundant path like the-cellar/the-cellar.md. Name ' +
+  'the chapter for the movement ("The Radio at Dusk") and each scene for what happens in ' +
+  'it ("Dusk on the veranda"). A chapter holding exactly one scene is fine, but the two ' +
+  'still get DIFFERENT names. Only introduce `part` units when the book genuinely has ' +
+  'parts the writer asked for — parts are not a default layer.\n' +
   '- bible/ — established canon, one markdown page per entity: bible/characters/<name>.md, ' +
   'bible/places/<name>.md, bible/lore/… Front matter matters: `aliases: [Liz, the Widow]` ' +
   'powers entity search; `locked: true` makes a page immutable to agents. When you create ' +
