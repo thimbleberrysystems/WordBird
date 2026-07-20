@@ -111,6 +111,35 @@ const SCENE_CRAFT =
   'reactive beat carries reaction → dilemma → decision. Within paragraphs, motivation ' +
   'comes before reaction. End scenes on the turn, not after it.'
 
+/**
+ * How working novelists actually organise a manuscript (Scrivener binder
+ * practice; Fictionary/Janice Hardy on scene naming; Jericho Writers and
+ * CMOS on chapters and parts). Carried by the roles that CREATE or
+ * REORGANISE units — the drafter, the plotter and the steward — so the
+ * binder they build reads like a novelist's, not a file tree.
+ */
+const STRUCTURE_CRAFT =
+  '\n\nSTRUCTURE CRAFT (how novelists actually organise a manuscript):\n' +
+  '- A SCENE is continuous action in one time and place. A CHAPTER is a division of the ' +
+  'BOOK — a deliberate stopping point for the reader. They are different jobs, so they get ' +
+  'different names.\n' +
+  '- NAME A SCENE FOR WHAT HAPPENS IN IT, in about three words: "Dusk on the veranda", ' +
+  '"The vault opens", "Amma burns the letters". A reader of the outline should know the ' +
+  'scene from its name alone. Naming is a thinking tool — if you cannot name a scene in a ' +
+  'few words, it probably does two jobs and wants splitting. Read down the scene titles ' +
+  'and you have an x-ray of the plot.\n' +
+  '- Most chapters hold SEVERAL related scenes. One scene per chapter is a legitimate ' +
+  'choice, never an automatic default — do not manufacture a chapter per scene.\n' +
+  '- Chapter naming: numbered ("Chapter 7") or titled, but be CONSISTENT across the book; ' +
+  'follow whatever the existing chapters already do rather than mixing styles.\n' +
+  '- PARTS are for books that genuinely have them — large arcs, episodic structure, or a ' +
+  'hard shift in time or place. Never add a part layer just to hold chapters.\n' +
+  '- Chapter length is a matter of RHYTHM, not word counts: one chapter far longer or ' +
+  'shorter than its neighbours changes the book\'s pace, so flag it rather than silently ' +
+  'creating it.\n' +
+  '- Splitting prose into scene-sized units is what makes reordering cheap later; prefer ' +
+  'several honest scenes over one sprawling file.'
+
 const STYLE_NOTE =
   ' If bible/style.md exists, read it first and obey it — voice, tense, POV ' +
   'rules, and banned words are the writer\'s law. If a VOICE EXEMPLARS section ' +
@@ -258,7 +287,8 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'full passage it describes in the writer\'s voice, POV, and tense, and replace the ' +
       'beat with it. ' +
       'When the assignment is complete, stop calling tools and summarize ' +
-      'what you wrote in a few sentences.'
+      'what you wrote in a few sentences.' +
+      STRUCTURE_CRAFT
     ),
     allowedTools: [
       ...READ_TOOLS,
@@ -362,7 +392,8 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'update_summary. Do NOT write prose — leave that to drafters.' +
       GATHERED_NOTE +
       ' Finish with a clear structural report: what you changed and why it strengthens ' +
-      'the story.'
+      'the story.' +
+      STRUCTURE_CRAFT
     ),
     allowedTools: [
       ...READ_TOOLS,
@@ -405,7 +436,8 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'Never touch prose style or content — you sync the project AROUND the prose.' +
       GATHERED_NOTE +
       ' Finish with a two-part report: SYNCED (what you fixed/proposed) and REMAINING ' +
-      '(what needs a specialist or the writer).'
+      '(what needs a specialist or the writer).' +
+      STRUCTURE_CRAFT
     ),
     allowedTools: [
       ...READ_TOOLS,

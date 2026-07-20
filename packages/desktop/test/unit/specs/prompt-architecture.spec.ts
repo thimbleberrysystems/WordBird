@@ -81,6 +81,24 @@ describe('the guard reaches every prompt layer from one source', () => {
     expect(buildSupervisorPrompt('auto', 6)).toContain('CHAPTER vs SCENE NAMING')
   })
 
+  it('STRUCTURE CRAFT reaches the roles that build the binder — and only those', () => {
+    // Sourced doctrine (Scrivener binder practice, Fictionary/Janice Hardy
+    // on scene naming, Jericho/CMOS on chapters and parts). It belongs to
+    // the roles that CREATE or REORGANISE units; a researcher or auditor
+    // carrying it is prompt bloat, not guidance.
+    for (const role of ['drafter', 'plotter', 'steward'] as const) {
+      const prompt = AGENT_ROLES[role].systemPrompt
+      expect(prompt, role).toContain('STRUCTURE CRAFT')
+      // The three practices that stop the prj14 shape recurring.
+      expect(prompt, role).toContain('NAME A SCENE FOR WHAT HAPPENS IN IT')
+      expect(prompt, role).toMatch(/never an automatic default/i)
+      expect(prompt, role).toMatch(/PARTS are for books that genuinely have them/i)
+    }
+    for (const role of ['researcher', 'explorer', 'auditor'] as const) {
+      expect(AGENT_ROLES[role].systemPrompt, role).not.toContain('STRUCTURE CRAFT')
+    }
+  })
+
   it('the supervisor is told one subject = one researcher (anti-overlap)', () => {
     // prj12: 4 researchers spawned on ONE subject (Elam overview/geography/
     // politics/religion) all thrashed the same core pages. Sub-topics of a

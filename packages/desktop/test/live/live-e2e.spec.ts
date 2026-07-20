@@ -120,6 +120,19 @@ live('3 · writing goes to FILES via review, never chat-paste', () => {
     expect(harness.editProposals.length).toBeGreaterThanOrEqual(1)
     const proposal = JSON.stringify(harness.editProposals[0])
     expect(proposal.toLowerCase()).toMatch(/cellar|door|zara/)
+
+    // STRUCTURE CRAFT: the scene is named for what happens in it, never
+    // after its parent chapter — a scene titled "Chapter One" lands at
+    // chapter-one/chapter-one.md, the doubled path writers read as a bug.
+    const scenePaths = harness.editProposals
+      .map((proposal) => (proposal as { edit: { filePath: string } }).edit.filePath)
+      .filter((filePath) => filePath.startsWith('manuscript/'))
+    for (const filePath of scenePaths) {
+      const parts = filePath.split('/')
+      const fileSlug = (parts.pop() ?? '').replace(/\.md$/, '')
+      const parentSlug = parts.pop() ?? ''
+      expect(fileSlug, `scene repeats its chapter name: ${filePath}`).not.toBe(parentSlug)
+    }
   })
 })
 
