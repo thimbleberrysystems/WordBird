@@ -117,3 +117,78 @@ describe('active project resolution survives focus moving off the editor', () =>
     expect(getActiveAgentProjectRoot()).toBe('/home/w/novel-b')
   })
 })
+
+// ---- The tool server must prove itself at startup ---------------------------
+
+describe('HTTP MCP server startup self-check', () => {
+  it('starts, answers an MCP initialize, and reports its tools', async() => {
+    // A dead tool server is invisible to the model except as "the wordbird
+    // tools aren't connected" — which the writer cannot act on. The server
+    // now proves it answers before the URL is handed to the runtime; this
+    // pins that the real path (build → listen → initialize) works.
+    const { AgentToolService, AgentToolPackLoader } = await import(
+      '../../../src/main/services/ai/AgentToolService'
+    )
+    const { registerBuiltInAgentToolHandlers } = await import(
+      '../../../src/main/services/ai/AgentToolHandlers'
+    )
+    const { buildWordbirdHttpMcpServer } = await import(
+      '../../../src/main/services/ai/agentSdk/httpMcpServer'
+    )
+    const pathMod = await import('path')
+
+    const service = new AgentToolService()
+    registerBuiltInAgentToolHandlers(service)
+    const loader = new AgentToolPackLoader(service.getKnownHandlerIds())
+    service.loadToolPack(
+      await loader.loadPack(pathMod.join(__dirname, '../../../static/agentTools.json'))
+    )
+
+    const handle = await buildWordbirdHttpMcpServer(service, () => undefined)
+    try {
+      expect(handle.config.type).toBe('http')
+      expect(handle.config.url).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/mcp$/)
+      expect(handle.config.alwaysLoad).toBe(true)
+      expect(handle.toolNames.length).toBeGreaterThan(0)
+
+      // EVERY TURN OPENS A FRESH MCP CLIENT. A shared transport answers one
+      // initialize and 400s the rest ("Server already initialized"), which
+      // gave tools on turn 1 and none afterwards. This second initialize —
+      // after the startup self-check already used one — is the regression
+      // pin for that.
+      const response = await fetch(handle.config.url, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          accept: 'application/json, text/event-stream'
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'initialize',
+          params: {
+            protocolVersion: '2024-11-05',
+            capabilities: {},
+            clientInfo: { name: 'spec', version: '1.0.0' }
+          }
+        })
+      })
+      expect(response.ok).toBe(true)
+    } finally {
+      await handle.close()
+    }
+  })
+
+  it('close() releases the port (no leak across sessions)', async() => {
+    const { AgentToolService } = await import('../../../src/main/services/ai/AgentToolService')
+    const { buildWordbirdHttpMcpServer } = await import(
+      '../../../src/main/services/ai/agentSdk/httpMcpServer'
+    )
+    const handle = await buildWordbirdHttpMcpServer(new AgentToolService(), () => undefined)
+    const url = handle.config.url
+    await handle.close()
+    await expect(
+      fetch(url, { method: 'POST', signal: AbortSignal.timeout(2000) })
+    ).rejects.toThrow()
+  })
+})

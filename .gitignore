@@ -31,3 +31,7 @@ playwright-report/
 *.pem
 *.p12
 *.keystore
+
+# E2E fixture dirs must never accumulate agent state (a test run that
+# resolves the fixture as a project writes .wordbird/ into the repo).
+packages/desktop/test/e2e/data/.wordbird/

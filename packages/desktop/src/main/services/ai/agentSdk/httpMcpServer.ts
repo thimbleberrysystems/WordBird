@@ -13,11 +13,15 @@
  * the whole proposal/safety pipeline is unchanged) over a loopback HTTP
  * MCP server the Agent SDK connects to with `type: 'http'`.
  *
- * SECURITY: bound to 127.0.0.1 only, and every request must carry a
- * per-server bearer token (a random UUID) the SDK is handed via the config
- * `headers`. A different local process cannot reach the tools.
+ * SECURITY: bound to 127.0.0.1 only (never reachable off-box), and every
+ * tool call still flows through runForModel's proposal/approval gates, so
+ * even a stray local caller cannot change the project without the writer's
+ * approval. A bearer token was tried and removed: the SDK's MCP http client
+ * does not reliably echo `config.headers` on the protocol handshake, which
+ * 401'd every call and left the tools looking "not connected".
  */
 import http from 'http'
+import log from 'electron-log'
 import { randomUUID } from 'crypto'
 import { convertJsonSchemaToZod } from 'zod-from-json-schema'
 import type { AgentToolService } from '../AgentToolService'
@@ -25,6 +29,8 @@ import { MCP_SERVER_NAME, TOOL_OUTPUT_CHAR_CAP } from './toolBridge'
 
 /** Per-call wall-clock ceiling the SDK applies to this server's tools. */
 const HTTP_MCP_TOOL_TIMEOUT_MS = 60000
+/** Startup self-check budget — the server is local, so this is generous. */
+const SELF_CHECK_TIMEOUT_MS = 5000
 
 export interface HttpMcpServerConfig {
   type: 'http'
@@ -38,6 +44,46 @@ export interface HttpMcpServerHandle {
   config: HttpMcpServerConfig
   toolNames: string[]
   close: () => Promise<void>
+}
+
+/**
+ * Drive one real MCP `initialize` against the freshly-started server and
+ * require a sane answer. Throws a writer-legible error otherwise, so a dead
+ * tool channel surfaces at connect instead of as the agent guessing that
+ * "the tools aren't connected".
+ */
+const assertMcpServerAnswers = async(url: string): Promise<void> => {
+  let response: Response
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'initialize',
+        params: {
+          protocolVersion: '2024-11-05',
+          capabilities: {},
+          clientInfo: { name: 'wordbird-selfcheck', version: '1.0.0' }
+        }
+      }),
+      signal: AbortSignal.timeout(SELF_CHECK_TIMEOUT_MS)
+    })
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
+    throw new Error(
+      `WordBird's tool server did not start (${detail}). Biscuit cannot read or ` +
+        'write your project without it — restart the app, and report this if it persists.'
+    )
+  }
+  if (!response.ok) {
+    throw new Error(
+      `WordBird's tool server answered ${response.status} during startup. Biscuit ` +
+        'cannot read or write your project without it — restart the app, and report ' +
+        'this if it persists.'
+    )
+  }
 }
 
 /** Result shape an MCP tool call returns to the model. */
@@ -99,34 +145,59 @@ export const buildWordbirdHttpMcpServer = async(
 
   const toolNames = service.getDefinitions().map((d) => d.name)
 
-  // ONE McpServer + ONE stateful transport — the exact shape a live probe
-  // proved delivers reliably (6/6 results incl. a 30KB payload). The SDK
-  // opens a fresh MCP client per turn; the stateful transport accepts each
-  // one's initialize and tracks it by session id internally.
-  const mcp = new McpServer({ name: MCP_SERVER_NAME, version: '1.0.0' })
-  for (const definition of service.getDefinitions()) {
-    const shape = (convertJsonSchemaToZod(definition.schema) as unknown as {
-      shape: Record<string, unknown>
-    }).shape
-    mcp.registerTool(
-      definition.name,
-      { description: definition.description, inputSchema: shape as never },
-      (async(args: Record<string, unknown>) =>
-        executeHttpTool(service, definition.name, args, getSignal)) as never
-    )
+  /**
+   * One McpServer instance per MCP SESSION. A single shared transport
+   * cannot be reused: it answers exactly one `initialize` and rejects the
+   * next with 400 "Server already initialized". The SDK opens a FRESH MCP
+   * client for every turn, so a shared transport gave the writer tools on
+   * turn 1 and none afterwards — "the mcp__wordbird__* tools aren't
+   * connected at all, for any agent type" (writer report, 2026-07-20).
+   */
+  const buildMcp = (): InstanceType<typeof McpServer> => {
+    const mcp = new McpServer({ name: MCP_SERVER_NAME, version: '1.0.0' })
+    for (const definition of service.getDefinitions()) {
+      const shape = (convertJsonSchemaToZod(definition.schema) as unknown as {
+        shape: Record<string, unknown>
+      }).shape
+      mcp.registerTool(
+        definition.name,
+        { description: definition.description, inputSchema: shape as never },
+        (async(args: Record<string, unknown>) =>
+          executeHttpTool(service, definition.name, args, getSignal)) as never
+      )
+    }
+    return mcp
   }
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => randomUUID() })
-  await mcp.connect(transport)
+
+  // sessionId → live transport. An initialize (no session header) mints a
+  // new one; every later request routes by its mcp-session-id.
+  const sessions = new Map<string, InstanceType<typeof StreamableHTTPServerTransport>>()
 
   // SECURITY: bound to 127.0.0.1 ONLY (below), so no off-box access. Every
   // tool call still flows through runForModel's proposal/approval gates, so
-  // even a stray local caller cannot write without the writer's OK. (No
-  // bearer token — the SDK's MCP http client does not reliably echo
-  // config.headers on the handshake, which 401'd every call.)
-  const server = http.createServer((req, res) => {
-    transport.handleRequest(req, res).catch(() => {
+  // even a stray local caller cannot write without the writer's OK.
+  const server = http.createServer(async(req, res) => {
+    try {
+      const sessionId = req.headers['mcp-session-id'] as string | undefined
+      const existing = sessionId ? sessions.get(sessionId) : undefined
+      if (existing) {
+        await existing.handleRequest(req, res)
+        return
+      }
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+        onsessioninitialized: (sid: string) => {
+          sessions.set(sid, transport)
+        }
+      })
+      transport.onclose = (): void => {
+        if (transport.sessionId) sessions.delete(transport.sessionId)
+      }
+      await buildMcp().connect(transport)
+      await transport.handleRequest(req, res)
+    } catch {
       if (!res.headersSent) res.writeHead(500).end()
-    })
+    }
   })
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject)
@@ -136,17 +207,23 @@ export const buildWordbirdHttpMcpServer = async(
   const port = typeof address === 'object' && address ? address.port : 0
   const url = `http://127.0.0.1:${port}/mcp`
 
+  // SELF-CHECK: prove the server actually answers before handing the URL to
+  // the runtime. A tool server that never came up is indistinguishable, from
+  // the model's side, from a mystery outage — it reports "the wordbird tools
+  // aren't connected" and the writer has nothing to act on. Failing loudly
+  // here turns that into a real, attributable error at connect time.
+  await assertMcpServerAnswers(url)
+  log.info(`[wordbird-mcp] serving ${toolNames.length} tools at ${url}`)
+
   const close = async(): Promise<void> => {
-    try {
-      await (transport as { close?: () => Promise<void> }).close?.()
-    } catch {
-      /* already closed */
+    for (const transport of sessions.values()) {
+      try {
+        await transport.close?.()
+      } catch {
+        /* already closed */
+      }
     }
-    try {
-      await (mcp as { close?: () => Promise<void> }).close?.()
-    } catch {
-      /* already closed */
-    }
+    sessions.clear()
     try {
       await new Promise<void>((resolve) => server.close(() => resolve()))
     } catch {
