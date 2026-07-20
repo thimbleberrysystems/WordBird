@@ -36,7 +36,8 @@
           <span
             v-else-if="c.id !== rightColumn && sidebarActivityStore.hasUnseen(c.id)"
             class="view-activity-dot"
-            :title="t('sideBar.newActivityTip')"
+            :class="sidebarActivityStore.severityOf(c.id) ?? 'info'"
+            :title="activityTip(c.id)"
           />
         </li>
       </ul>
@@ -85,6 +86,10 @@
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useLayoutStore } from '@/store/layout'
 import { useSidebarActivityStore } from '@/store/sidebarActivity'
+import {
+  rebaselineView,
+  resetActivityBaselines
+} from '@/services/sidebarActivityWatch'
 import { useProjectStore } from '@/store/project'
 import { useEditorStore } from '@/store/editor'
 
@@ -178,11 +183,25 @@ const handleLeftIconClick = (name: string): void => {
 // Opening a view means its changes have been seen. Watching rightColumn
 // (rather than only the click handler) also covers programmatic switches.
 watch(rightColumn, (view) => {
-  if (view) sidebarActivityStore.clear(view)
+  if (!view) return
+  sidebarActivityStore.clear(view)
+  // What they are looking at now must not come back as "new".
+  rebaselineView(view).catch(() => {})
 }, { immediate: true })
 
-// A different project starts with a clean rail.
-watch(() => projectStore.currentProjectPath, () => sidebarActivityStore.clearAll())
+// A different project starts with a clean rail and clean baselines.
+watch(() => projectStore.currentProjectPath, () => {
+  sidebarActivityStore.clearAll()
+  resetActivityBaselines()
+})
+
+/** Tooltip names WHAT is new, so a red dot is actionable at a glance. */
+const activityTip = (viewId: string): string => {
+  const severity = sidebarActivityStore.severityOf(viewId)
+  if (severity === 'error') return t('sideBar.newIssuesTip')
+  if (severity === 'warn') return t('sideBar.newWarningsTip')
+  return t('sideBar.newActivityTip')
+}
 
 const handleLeftBottomClick = (name: string): void => {
   if (name === 'settings') {
@@ -263,8 +282,10 @@ const handleExpandClick = () => {
   animation: agents-dot-pulse 1.2s infinite ease-in-out;
 }
 
-/* Same spot and colour as the live dot, but STEADY and a touch smaller:
-   "there is something new in here", not "work is happening right now". */
+/* Same spot as the live dot, but STEADY and a touch smaller: "there is
+   something new in here", not "work is happening right now". Colour keys
+   off severity — red needs a decision, yellow is worth a look, green is
+   routine progress. */
 .view-activity-dot {
   position: absolute;
   top: 11px;
@@ -272,8 +293,19 @@ const handleExpandClick = () => {
   width: 6px;
   height: 6px;
   border-radius: 50%;
+  opacity: 0.9;
+}
+
+.view-activity-dot.info {
   background: var(--themeColor, #409eff);
-  opacity: 0.85;
+}
+
+.view-activity-dot.warn {
+  background: #e6a23c;
+}
+
+.view-activity-dot.error {
+  background: #f56c6c;
 }
 
 .agents-live-dot.paused {

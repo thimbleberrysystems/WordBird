@@ -309,7 +309,9 @@
     },
     "workspace": "Espaço de trabalho do Biscuit",
     "workspaceTip": "Como o livro é feito: os planos do Biscuit e suas habilidades, separados do livro em si",
-    "newActivityTip": "Novidades desde a última vez que você abriu"
+    "newActivityTip": "Novidades desde a última vez que você abriu",
+    "newIssuesTip": "Novos problemas de continuidade precisam da sua atenção",
+    "newWarningsTip": "Novos avisos de continuidade"
   },
   "commandPalette": {
     "placeholder": "Digite um comando para executar",

@@ -155,3 +155,52 @@ test.describe('Sidebar activity dots (mocked project change)', () => {
     await expectNoRendererErrors(ctx.app)
   })
 })
+
+test.describe('Sidebar activity dots: severity', () => {
+  const ctx = useNovelProject({ issues: true })
+
+  test.beforeAll(async() => {
+    await ensureSidebar(ctx.app, ctx.page)
+  })
+
+  test('a NEW high-severity continuity issue dots Continuity red', async() => {
+    const page = ctx.page
+    // Park somewhere unrelated so the dot under test is unambiguous.
+    await page.locator('.side-bar .left-column li[title="Search"]').click()
+    const dot = page.locator('.side-bar .left-column li[title="Continuity"] .view-activity-dot')
+
+    // First project change adopts the CURRENT issues as the baseline —
+    // pre-existing issues must not dot the rail on startup.
+    await sendIpcToRenderer(ctx.app, 'mt::novel:project-changed', { root: ctx.root })
+    await page.waitForTimeout(600)
+    await expect(dot).toHaveCount(0)
+
+    // Biscuit logs a NEW high-severity issue.
+    const issuesFile = path.join(ctx.root, '.wordbird', 'continuity', 'issues.json')
+    const existing = JSON.parse(fs.readFileSync(issuesFile, 'utf8')) as unknown[]
+    existing.push({
+      id: 'issue-timeline',
+      title: 'Vault heist predates the letter',
+      description: 'Chapter two happens before chapter one.',
+      severity: 'high',
+      relatedPaths: [],
+      status: 'open',
+      createdAt: new Date().toISOString()
+    })
+    fs.writeFileSync(issuesFile, JSON.stringify(existing))
+    await sendIpcToRenderer(ctx.app, 'mt::novel:project-changed', { root: ctx.root })
+
+    // Red: this one needs a decision.
+    await expect(dot).toBeVisible({ timeout: 10000 })
+    await expect(dot).toHaveClass(/error/)
+
+    // Opening Continuity clears it and re-baselines, so it stays clear.
+    await page.locator('.side-bar .left-column li[title="Continuity"]').click()
+    await expect(dot).toHaveCount(0)
+    await sendIpcToRenderer(ctx.app, 'mt::novel:project-changed', { root: ctx.root })
+    await page.waitForTimeout(600)
+    await expect(dot).toHaveCount(0)
+
+    await expectNoRendererErrors(ctx.app)
+  })
+})

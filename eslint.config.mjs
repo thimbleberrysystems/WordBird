@@ -16,6 +16,9 @@ export default [
     ignores: [
       '.claude/**',
       '**/out/**',
+      // E2E fixture dirs: a run that resolves the fixture as a project
+      // writes .wordbird/ state into it. Never source, never linted.
+      '**/test/e2e/data/.wordbird/**',
       '**/dist/**',
       // The website ships with its own ESLint v8 config (React conventions).
       // The root config here is desktop-focused; mixing the two surfaces

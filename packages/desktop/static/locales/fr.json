@@ -309,7 +309,9 @@
     },
     "workspace": "Espace de travail de Biscuit",
     "workspaceTip": "La fabrique du livre : les plans de Biscuit et vos compétences, à part du livre lui-même",
-    "newActivityTip": "Nouvelle activité depuis votre dernière ouverture"
+    "newActivityTip": "Nouvelle activité depuis votre dernière ouverture",
+    "newIssuesTip": "De nouveaux problèmes de continuité demandent votre attention",
+    "newWarningsTip": "Nouveaux avertissements de continuité"
   },
   "commandPalette": {
     "placeholder": "Tapez une commande à exécuter",

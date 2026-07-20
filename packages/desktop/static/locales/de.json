@@ -309,7 +309,9 @@
     },
     "workspace": "Biscuit-Arbeitsbereich",
     "workspaceTip": "Wie das Buch entsteht: Biscuits Pläne und deine Skills, getrennt vom Buch selbst",
-    "newActivityTip": "Neue Aktivität seit dem letzten Öffnen"
+    "newActivityTip": "Neue Aktivität seit dem letzten Öffnen",
+    "newIssuesTip": "Neue Kontinuitätsprobleme erfordern Ihre Aufmerksamkeit",
+    "newWarningsTip": "Neue Kontinuitätswarnungen"
   },
   "commandPalette": {
     "placeholder": "Befehl zum Ausführen eingeben",

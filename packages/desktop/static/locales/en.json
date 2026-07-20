@@ -309,7 +309,9 @@
     },
     "workspace": "Biscuit workspace",
     "workspaceTip": "How the book gets made: Biscuit’s plans and your skills, kept apart from the book itself",
-    "newActivityTip": "New activity since you last opened this"
+    "newActivityTip": "New activity since you last opened this",
+    "newIssuesTip": "New continuity issues need your attention",
+    "newWarningsTip": "New continuity warnings worth a look"
   },
   "commandPalette": {
     "placeholder": "Type a command to execute",

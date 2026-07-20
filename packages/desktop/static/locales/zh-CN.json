@@ -309,7 +309,9 @@
     },
     "workspace": "Biscuit 工作区",
     "workspaceTip": "书是怎么写成的：Biscuit 的计划与你的技能，与书稿本身分开展示",
-    "newActivityTip": "自上次打开以来有新变化"
+    "newActivityTip": "自上次打开以来有新变化",
+    "newIssuesTip": "有新的连贯性问题需要处理",
+    "newWarningsTip": "有新的连贯性提醒"
   },
   "commandPalette": {
     "placeholder": "输入要执行的命令",

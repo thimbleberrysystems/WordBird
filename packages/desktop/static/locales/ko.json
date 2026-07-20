@@ -309,7 +309,9 @@
     },
     "workspace": "Biscuit 작업 공간",
     "workspaceTip": "책이 만들어지는 방식: Biscuit의 플랜과 나의 스킬, 본문과 분리 표시",
-    "newActivityTip": "마지막으로 연 이후의 새 활동"
+    "newActivityTip": "마지막으로 연 이후의 새 활동",
+    "newIssuesTip": "새로운 연속성 문제가 있습니다",
+    "newWarningsTip": "새로운 연속성 경고"
   },
   "commandPalette": {
     "placeholder": "실행할 명령을 입력하세요",

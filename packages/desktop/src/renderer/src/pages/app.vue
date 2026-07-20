@@ -83,6 +83,7 @@ import {
   useSidebarActivityStore,
   PROJECT_CHANGE_VIEWS
 } from '@/store/sidebarActivity'
+import { refreshDerivedActivity } from '@/services/sidebarActivityWatch'
 import { useListenForMainStore } from '@/store/listenForMain'
 import { usePreferencesStore } from '@/store/preferences'
 import { useEditorStore } from '@/store/editor'
@@ -204,7 +205,12 @@ onMounted(async () => {
     // Flag the views this invalidates so the writer can see WHERE Biscuit's
     // work landed without opening each one. The view they are looking at is
     // never flagged — it refreshed live.
-    sidebarActivityStore.mark(PROJECT_CHANGE_VIEWS, layoutStore.rightColumn)
+    sidebarActivityStore.mark(PROJECT_CHANGE_VIEWS, 'info', layoutStore.rightColumn)
+    // Continuity + Snapshots need their real data to say whether anything
+    // NEW arrived, and at what severity — never inferred from the event.
+    refreshDerivedActivity(layoutStore.rightColumn).catch(() => {
+      // Advisory only: a dot that cannot be computed is simply not shown.
+    })
   })
   // Where the writer is looking follows the open file, the tab set, and
   // save-state (unsaved tabs mean disk lags the screen).
