@@ -308,7 +308,8 @@
       "entities": "實體"
     },
     "workspace": "Biscuit 工作區",
-    "workspaceTip": "書是怎麼寫成的：Biscuit 的計畫與你的技能，與書稿本身分開顯示"
+    "workspaceTip": "書是怎麼寫成的：Biscuit 的計畫與你的技能，與書稿本身分開顯示",
+    "newActivityTip": "自上次開啟以來有新變化"
   },
   "commandPalette": {
     "placeholder": "輸入要執行的命令",

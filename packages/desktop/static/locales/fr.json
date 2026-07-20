@@ -308,7 +308,8 @@
       "entities": "Entités"
     },
     "workspace": "Espace de travail de Biscuit",
-    "workspaceTip": "La fabrique du livre : les plans de Biscuit et vos compétences, à part du livre lui-même"
+    "workspaceTip": "La fabrique du livre : les plans de Biscuit et vos compétences, à part du livre lui-même",
+    "newActivityTip": "Nouvelle activité depuis votre dernière ouverture"
   },
   "commandPalette": {
     "placeholder": "Tapez une commande à exécuter",

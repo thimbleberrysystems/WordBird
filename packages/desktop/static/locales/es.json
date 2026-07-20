@@ -308,7 +308,8 @@
       "entities": "Entidades"
     },
     "workspace": "Espacio de trabajo de Biscuit",
-    "workspaceTip": "Cómo se hace el libro: los planes de Biscuit y tus habilidades, aparte del libro en sí"
+    "workspaceTip": "Cómo se hace el libro: los planes de Biscuit y tus habilidades, aparte del libro en sí",
+    "newActivityTip": "Novedades desde la última vez que lo abriste"
   },
   "commandPalette": {
     "placeholder": "Escriba un comando para ejecutar",

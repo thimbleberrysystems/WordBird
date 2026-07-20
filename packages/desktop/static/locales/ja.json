@@ -308,7 +308,8 @@
       "entities": "エンティティ"
     },
     "workspace": "Biscuit ワークスペース",
-    "workspaceTip": "本の作り方：Biscuit のプランとあなたのスキル。本文とは分けて表示"
+    "workspaceTip": "本の作り方：Biscuit のプランとあなたのスキル。本文とは分けて表示",
+    "newActivityTip": "前回開いてからの新しい変更"
   },
   "commandPalette": {
     "placeholder": "実行するコマンドを入力",

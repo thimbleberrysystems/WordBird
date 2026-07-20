@@ -308,7 +308,8 @@
       "entities": "Figuren & Orte"
     },
     "workspace": "Biscuit-Arbeitsbereich",
-    "workspaceTip": "Wie das Buch entsteht: Biscuits Pläne und deine Skills, getrennt vom Buch selbst"
+    "workspaceTip": "Wie das Buch entsteht: Biscuits Pläne und deine Skills, getrennt vom Buch selbst",
+    "newActivityTip": "Neue Aktivität seit dem letzten Öffnen"
   },
   "commandPalette": {
     "placeholder": "Befehl zum Ausführen eingeben",

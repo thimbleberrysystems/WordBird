@@ -24,11 +24,19 @@
           @click="handleLeftIconClick(c.id)"
         >
           <component :is="c.icon" />
-          <!-- Live dot: agents are working right now. -->
+          <!-- Live dot: agents are working right now (pulsing). -->
           <span
             v-if="c.id === 'agents' && agentsStore.runState !== 'idle'"
             class="agents-live-dot"
             :class="{ paused: agentsStore.runState === 'paused' }"
+          />
+          <!-- Steady dot: this view's contents changed since you last
+               looked (Biscuit edited the project). Never shown on the
+               open view, and never competes with the live dot above. -->
+          <span
+            v-else-if="c.id !== rightColumn && sidebarActivityStore.hasUnseen(c.id)"
+            class="view-activity-dot"
+            :title="t('sideBar.newActivityTip')"
           />
         </li>
       </ul>
@@ -74,8 +82,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useLayoutStore } from '@/store/layout'
+import { useSidebarActivityStore } from '@/store/sidebarActivity'
 import { useProjectStore } from '@/store/project'
 import { useEditorStore } from '@/store/editor'
 
@@ -96,6 +105,7 @@ import type { TabDescriptor } from './types'
 
 const layoutStore = useLayoutStore()
 const agentsStore = useAgentsStore()
+const sidebarActivityStore = useSidebarActivityStore()
 agentsStore.init()
 const projectStore = useProjectStore()
 const editorStore = useEditorStore()
@@ -164,6 +174,15 @@ const handleLeftIconClick = (name: string): void => {
     }
   }
 }
+
+// Opening a view means its changes have been seen. Watching rightColumn
+// (rather than only the click handler) also covers programmatic switches.
+watch(rightColumn, (view) => {
+  if (view) sidebarActivityStore.clear(view)
+}, { immediate: true })
+
+// A different project starts with a clean rail.
+watch(() => projectStore.currentProjectPath, () => sidebarActivityStore.clearAll())
 
 const handleLeftBottomClick = (name: string): void => {
   if (name === 'settings') {
@@ -242,6 +261,19 @@ const handleExpandClick = () => {
   border-radius: 50%;
   background: var(--themeColor, #409eff);
   animation: agents-dot-pulse 1.2s infinite ease-in-out;
+}
+
+/* Same spot and colour as the live dot, but STEADY and a touch smaller:
+   "there is something new in here", not "work is happening right now". */
+.view-activity-dot {
+  position: absolute;
+  top: 11px;
+  right: 11px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--themeColor, #409eff);
+  opacity: 0.85;
 }
 
 .agents-live-dot.paused {

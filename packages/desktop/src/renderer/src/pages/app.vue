@@ -79,6 +79,10 @@ import bus from '@/bus'
 import { mirrorAiConnectionState } from '@/services/langgraph'
 import { DEFAULT_STYLE } from '@/config'
 import { useLayoutStore } from '@/store/layout'
+import {
+  useSidebarActivityStore,
+  PROJECT_CHANGE_VIEWS
+} from '@/store/sidebarActivity'
 import { useListenForMainStore } from '@/store/listenForMain'
 import { usePreferencesStore } from '@/store/preferences'
 import { useEditorStore } from '@/store/editor'
@@ -91,6 +95,7 @@ const mainStore = useMainStore()
 const editorStore = useEditorStore()
 const preferencesStore = usePreferencesStore()
 const layoutStore = useLayoutStore()
+const sidebarActivityStore = useSidebarActivityStore()
 const projectStore = useProjectStore()
 const novelStore = useNovelStore()
 const listenForMainStore = useListenForMainStore()
@@ -196,6 +201,10 @@ onMounted(async () => {
   // refresh the binder/views immediately instead of waiting for the watcher.
   window.electron.ai.onProjectChanged?.(() => {
     novelStore.refresh()
+    // Flag the views this invalidates so the writer can see WHERE Biscuit's
+    // work landed without opening each one. The view they are looking at is
+    // never flagged — it refreshed live.
+    sidebarActivityStore.mark(PROJECT_CHANGE_VIEWS, layoutStore.rightColumn)
   })
   // Where the writer is looking follows the open file, the tab set, and
   // save-state (unsaved tabs mean disk lags the screen).

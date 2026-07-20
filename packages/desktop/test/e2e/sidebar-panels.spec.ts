@@ -104,3 +104,54 @@ test.describe('Sidebar panels (seeded project)', () => {
     await expectNoRendererErrors(ctx.app)
   })
 })
+
+test.describe('Sidebar activity dots (mocked project change)', () => {
+  const ctx = useNovelProject()
+
+  test.beforeAll(async() => {
+    await ensureSidebar(ctx.app, ctx.page)
+  })
+
+  test('a project change dots the views it invalidates, and opening one clears it', async() => {
+    const page = ctx.page
+    // Park on a view that a project change does NOT invalidate, so the
+    // dots under test are unambiguous.
+    await page.locator('.side-bar .left-column li[title="Search"]').click()
+
+    const dotFor = (title: string): ReturnType<typeof page.locator> =>
+      page.locator(`.side-bar .left-column li[title="${title}"] .view-activity-dot`)
+
+    // Clean rail to start.
+    await expect(page.locator('.side-bar .view-activity-dot')).toHaveCount(0)
+
+    // Biscuit edited the project.
+    await sendIpcToRenderer(ctx.app, 'mt::novel:project-changed', { root: ctx.root })
+
+    // The invalidated views light up…
+    await expect(dotFor('Manuscript')).toBeVisible({ timeout: 10000 })
+    await expect(dotFor('Files')).toBeVisible()
+    // …and views the change does not touch stay clean.
+    await expect(dotFor('Search')).toHaveCount(0)
+    await expect(dotFor('Table of Contents')).toHaveCount(0)
+
+    // Opening a dotted view clears ONLY that view.
+    await page.locator('.side-bar .left-column li[title="Manuscript"]').click()
+    await expect(dotFor('Manuscript')).toHaveCount(0)
+    await expect(dotFor('Files')).toBeVisible()
+
+    await expectNoRendererErrors(ctx.app)
+  })
+
+  test('the view being looked at is never dotted', async() => {
+    const page = ctx.page
+    // Sitting on Files while the project changes: it refreshes live, so a
+    // dot there would be noise.
+    await page.locator('.side-bar .left-column li[title="Files"]').click()
+    await sendIpcToRenderer(ctx.app, 'mt::novel:project-changed', { root: ctx.root })
+    await page.waitForTimeout(500)
+    await expect(
+      page.locator('.side-bar .left-column li[title="Files"] .view-activity-dot')
+    ).toHaveCount(0)
+    await expectNoRendererErrors(ctx.app)
+  })
+})
