@@ -193,6 +193,8 @@ export const READONLY_WORKER_TOOLS: string[] = [
   'wiki_search',
   'wiki_read',
   'dictionary_lookup',
+  'search_books',
+  'search_papers',
   // Ask-mode contract (writer decision): research findings may always be
   // SAVED — bible/research/ is additive-only and never touches the
   // manuscript or canon. Losing research to read-only-ness was the bug.
@@ -252,6 +254,8 @@ export const AGENT_ROLES: Record<AgentRole, AgentRoleDefinition> = {
       'web_fetch',
       'wiki_search',
       'wiki_read',
+      'search_books',
+      'search_papers',
       'read_bible',
       'search_manuscript',
       'list_files',

@@ -1614,6 +1614,58 @@
           "options"
         ]
       }
+    },
+    {
+      "id": "search_books",
+      "name": "search_books",
+      "displayName": "Search books (Open Library)",
+      "description": "Search the Open Library catalogue for BOOKS (title, authors, year, url). Keyless and not rate-limited — the right tool for period detail, primary sources, and what people actually read at the time. Catalogue metadata only; web_fetch a url for more.",
+      "handler": "search_books",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Book subject, title, or author."
+          },
+          "maxResults": {
+            "type": "integer",
+            "description": "Max results, up to 10 (default 5)."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "id": "search_papers",
+      "name": "search_papers",
+      "displayName": "Search papers (Crossref)",
+      "description": "Search Crossref for SCHOLARLY PAPERS (title, authors, year, DOI). Keyless and not rate-limited — use for historical or scientific accuracy. Citation metadata only; many papers are paywalled, so cite the DOI rather than implying you read the full text.",
+      "handler": "search_papers",
+      "enabled": true,
+      "scope": "project",
+      "confirm": "never",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Research topic or paper title."
+          },
+          "maxResults": {
+            "type": "integer",
+            "description": "Max results, up to 10 (default 5)."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
     }
   ]
 }

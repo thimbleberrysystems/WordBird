@@ -21,6 +21,8 @@ import {
   resetWebReadCounts,
   MAX_KNOWN_URLS,
   MAX_SAME_TARGET_READS,
+  prefersEncyclopedic,
+  providersFor,
   WEB_CACHE_TTL_MS,
   WEB_RETRY_DELAYS_MS,
   WEB_TURN_LOOKUP_BUDGET
@@ -50,6 +52,31 @@ const okHtml = (body: string, headers: Record<string, string> = {}) => ({
   data: body,
   headers: { 'content-type': 'text/html', ...headers }
 })
+
+const okJson = (data: unknown) => ({ status: 200, data, headers: {} })
+
+/**
+ * Dispatch the axios mock BY URL rather than by call order. web_search now
+ * rotates across providers (Wikipedia / DDG html / DDG instant-answer) and
+ * the order depends on the query, so order-based mocks were both brittle
+ * and a poor model of what actually happens.
+ */
+const mockByUrl = (routes: Array<[RegExp, unknown]>, fallback?: unknown): void => {
+  mockedGet.mockImplementation(async(url: string) => {
+    for (const [pattern, response] of routes) {
+      if (pattern.test(url)) return response as never
+    }
+    if (fallback !== undefined) return fallback as never
+    return okJson({}) as never
+  })
+}
+
+/** Query shapes that pin provider order (see prefersEncyclopedic). */
+const ENCYCLOPEDIC = 'sukkalmah dynasty'
+const COMMERCIAL = 'best lighthouse tours near me'
+
+const emptyWiki = okJson({ query: { search: [] } })
+const emptyInstant = okJson({ RelatedTopics: [] })
 
 beforeEach(() => {
   mockedGet.mockReset()
@@ -169,34 +196,79 @@ describe('web_search handler', () => {
     '<a class="result__a" href="https://example.com/two">Two</a>' +
     '<a class="result__snippet" href="#">Second snippet.</a>'
 
-  it('queries DuckDuckGo and returns parsed results', async() => {
-    mockedGet.mockResolvedValueOnce(okHtml(ddgPage))
-    const result = (await run('web_search', { query: 'lighthouse history' })) as {
+  it('queries DuckDuckGo and returns parsed results (commercial query)', async() => {
+    mockByUrl([[/duckduckgo\.com\/html/, okHtml(ddgPage)]])
+    const result = (await run('web_search', { query: COMMERCIAL })) as {
       query: string
+      provider: string
       results: Array<{ title: string; url: string }>
       note?: string
     }
     expect(mockedGet).toHaveBeenCalledWith(
       'https://html.duckduckgo.com/html/',
-      expect.objectContaining({ params: { q: 'lighthouse history' } })
+      expect.objectContaining({ params: { q: COMMERCIAL } })
     )
+    expect(result.provider).toBe('duckduckgo-html')
     expect(result.results).toHaveLength(2)
     expect(result.results[0].url).toBe('https://example.com/one')
     expect(result.note).toBeUndefined()
+  })
+
+  it('ENCYCLOPEDIC queries go to Wikipedia FIRST — better answers, no throttle', () => {
+    // Novel research is overwhelmingly history/geography/biography, where an
+    // encyclopedia beats a scraped web index and never soft-throttles.
+    expect(prefersEncyclopedic(ENCYCLOPEDIC)).toBe(true)
+    expect(providersFor(ENCYCLOPEDIC)[0].name).toBe('wikipedia')
+    // …but anything current or commercial still starts on the web.
+    for (const q of [COMMERCIAL, 'latest news on the dig', 'buy a lighthouse lamp']) {
+      expect(prefersEncyclopedic(q), q).toBe(false)
+      expect(providersFor(q)[0].name, q).toBe('duckduckgo-html')
+    }
+  })
+
+  it('falls through to the next provider when one returns nothing', async() => {
+    mockByUrl([
+      [/wikipedia\.org/, emptyWiki],
+      [/duckduckgo\.com\/html/, okHtml(ddgPage)]
+    ])
+    const result = (await run('web_search', { query: ENCYCLOPEDIC })) as {
+      provider: string
+      results: unknown[]
+      note?: string
+    }
+    // Wikipedia was tried first and had nothing; DDG answered.
+    expect(result.provider).toBe('duckduckgo-html')
+    expect(result.results.length).toBeGreaterThan(0)
+    expect(result.note).toMatch(/after wikipedia/i)
+  })
+
+  it('a dead provider does not kill the search', async() => {
+    mockedGet.mockImplementation(async(url: string) => {
+      if (/wikipedia\.org/.test(url)) throw new Error('DNS exploded')
+      if (/duckduckgo\.com\/html/.test(url)) return okHtml(ddgPage) as never
+      return emptyInstant as never
+    })
+    const result = (await run('web_search', { query: ENCYCLOPEDIC })) as {
+      provider: string
+      results: unknown[]
+    }
+    expect(result.provider).toBe('duckduckgo-html')
+    expect(result.results.length).toBeGreaterThan(0)
   })
 
   it('clamps maxResults to 10 and defaults to 5', async() => {
     const many = Array.from({ length: 12 })
       .map((_, i) => `<a class="result__a" href="https://example.com/${i}">R${i}</a>`)
       .join('')
-    mockedGet.mockResolvedValueOnce(okHtml(many))
-    const capped = (await run('web_search', { query: 'q', maxResults: 50 })) as {
+    mockByUrl([[/duckduckgo\.com\/html/, okHtml(many)]])
+    const capped = (await run('web_search', { query: `${COMMERCIAL} a`, maxResults: 50 })) as {
       results: unknown[]
     }
     expect(capped.results.length).toBeLessThanOrEqual(10)
 
-    mockedGet.mockResolvedValueOnce(okHtml(many))
-    const defaulted = (await run('web_search', { query: 'q' })) as { results: unknown[] }
+    const defaulted = (await run('web_search', { query: `${COMMERCIAL} b` })) as {
+      results: unknown[]
+    }
     expect(defaulted.results).toHaveLength(5)
   })
 
@@ -205,14 +277,17 @@ describe('web_search handler', () => {
     // when it throttles (measured 8/8 on a burst). Treated as success, it
     // looked like a broken tool and the model burned turns rephrasing a
     // query that was never the problem.
-    mockedGet
-      .mockResolvedValueOnce({ status: 202, data: '', headers: {} })
-      .mockResolvedValueOnce(okHtml(ddgPage))
-    const result = (await run('web_search', { query: 'elam' })) as {
+    let ddgCalls = 0
+    mockedGet.mockImplementation(async(url: string) => {
+      if (!/duckduckgo\.com\/html/.test(url)) return emptyInstant as never
+      ddgCalls += 1
+      return (ddgCalls === 1 ? { status: 202, data: '', headers: {} } : okHtml(ddgPage)) as never
+    })
+    const result = (await run('web_search', { query: COMMERCIAL })) as {
       results: unknown[]
       rateLimited?: boolean
     }
-    expect(mockedGet).toHaveBeenCalledTimes(2)
+    expect(ddgCalls).toBe(2) // retried rather than reported as "no results"
     expect(result.results.length).toBeGreaterThan(0)
     expect(result.rateLimited).toBeUndefined()
   })
@@ -534,12 +609,14 @@ describe('web content cache (research is never re-downloaded)', () => {
   })
 
   it('identical searches within a turn are memoized (one network call + nudge)', async() => {
-    mockedGet.mockResolvedValue(
-      okHtml('<a class="result__a" href="https://memo.example.com/hit">Hit</a>')
-    )
-    await runRooted('web_search', { query: 'Elam ancient civilization' })
+    // Commercial query => DuckDuckGo is provider #1, so the call count
+    // below counts memo hits rather than provider fallthrough.
+    mockByUrl([
+      [/duckduckgo\.com\/html/, okHtml('<a class="result__a" href="https://memo.example.com/hit">Hit</a>')]
+    ])
+    await runRooted('web_search', { query: 'best lighthouse tours near me' })
     const second = (await runRooted('web_search', {
-      query: '  elam ANCIENT civilization '
+      query: '  BEST lighthouse tours near me '
     })) as { cached?: boolean; note?: string; results: Array<{ url: string }> }
     expect(second.cached).toBe(true)
     expect(second.note).toMatch(/2 times this turn/i)
@@ -547,7 +624,7 @@ describe('web content cache (research is never re-downloaded)', () => {
     expect(mockedGet).toHaveBeenCalledTimes(1)
     // A new turn searches live again.
     resetWebReadCounts()
-    await runRooted('web_search', { query: 'Elam ancient civilization' })
+    await runRooted('web_search', { query: 'best lighthouse tours near me' })
     expect(mockedGet).toHaveBeenCalledTimes(2)
   })
 
@@ -749,16 +826,21 @@ describe('rate-limit tolerance (no writer intervention)', () => {
   })
 
   it('a 429 then success succeeds without surfacing an error (search path)', async() => {
-    mockedGet
-      .mockResolvedValueOnce({ status: 429, data: '', headers: {} })
-      .mockResolvedValueOnce(
-        okHtml('<a class="result__a" href="https://ok.example.com/a">Hit</a>')
-      )
-    const result = (await run('web_search', { query: 'storms' })) as {
+    // Commercial query so DuckDuckGo is provider #1 and the retry is the
+    // only thing the call count reflects.
+    let ddgCalls = 0
+    mockedGet.mockImplementation(async(url: string) => {
+      if (!/duckduckgo\.com\/html/.test(url)) return { status: 200, data: {}, headers: {} } as never
+      ddgCalls += 1
+      return (ddgCalls === 1
+        ? { status: 429, data: '', headers: {} }
+        : okHtml('<a class="result__a" href="https://ok.example.com/a">Hit</a>')) as never
+    })
+    const result = (await run('web_search', { query: 'best storm tours near me' })) as {
       results: Array<{ url: string }>
     }
     expect(result.results[0].url).toContain('ok.example.com')
-    expect(mockedGet).toHaveBeenCalledTimes(2)
+    expect(ddgCalls).toBe(2)
   })
 
   it('STOP MEANS STOP: an aborted signal refuses the lookup before any network', async() => {
@@ -831,11 +913,12 @@ describe('web_fetch URL provenance', () => {
   })
 
   it('a search result becomes fetchable (the intended search→fetch loop)', async() => {
-    mockedGet.mockResolvedValueOnce(
-      okHtml('<a class="result__a" href="https://found.example.com/article">Hit</a>')
-    )
-    await run('web_search', { query: 'lighthouse' })
+    mockByUrl([
+      [/duckduckgo\.com\/html/, okHtml('<a class="result__a" href="https://found.example.com/article">Hit</a>')]
+    ])
+    await run('web_search', { query: 'best lighthouse tours near me' })
 
+    mockedGet.mockReset()
     mockedGet.mockResolvedValueOnce(okHtml('<title>Found</title>'))
     const fetched = (await run('web_fetch', { url: 'https://found.example.com/article' })) as {
       title: string

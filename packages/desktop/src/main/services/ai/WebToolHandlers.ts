@@ -658,6 +658,150 @@ export const parseDuckDuckGoHtml = (
   return results
 }
 
+interface SearchHit {
+  title: string
+  url: string
+  snippet?: string
+}
+
+interface SearchProvider {
+  name: string
+  /** Results, or null when this provider was throttled / had nothing. */
+  run: (
+    query: string,
+    maxResults: number,
+    signal?: AbortSignal
+  ) => Promise<{ hits: SearchHit[]; throttled: boolean }>
+}
+
+/**
+ * DuckDuckGo's HTML page. Best general-web coverage of the free options,
+ * but it is a SCRAPE endpoint, not an API: it soft-throttles with 202 +
+ * an empty body under any real research load (measured 8/8 on a burst).
+ * Kept first for coverage, with real providers behind it.
+ */
+const ddgHtmlProvider: SearchProvider = {
+  name: 'duckduckgo-html',
+  run: async(query, maxResults, signal) => {
+    const response = await getWithRetry(
+      'https://html.duckduckgo.com/html/',
+      {
+        params: { q: query },
+        timeout: FETCH_TIMEOUT_MS,
+        maxContentLength: MAX_RESPONSE_BYTES,
+        responseType: 'text',
+        headers: { 'User-Agent': USER_AGENT }
+      },
+      signal
+    )
+    const hits = parseDuckDuckGoHtml(String(response.data ?? '')).slice(0, maxResults)
+    return { hits, throttled: RETRYABLE_STATUS.has(Number(response.status)) && hits.length === 0 }
+  }
+}
+
+/**
+ * DuckDuckGo's OFFICIAL Instant Answer JSON API — a real API with no key,
+ * so it answers cleanly where the scrape endpoint throttles (8/8 200 on
+ * the same burst). Narrower: abstracts and related topics, not deep web
+ * results, which is why it sits behind the HTML endpoint.
+ */
+const ddgInstantProvider: SearchProvider = {
+  name: 'duckduckgo-instant',
+  run: async(query, maxResults, signal) => {
+    const response = await getWithRetry(
+      'https://api.duckduckgo.com/',
+      {
+        params: { q: query, format: 'json', no_html: 1, skip_disambig: 1 },
+        timeout: FETCH_TIMEOUT_MS,
+        maxContentLength: MAX_RESPONSE_BYTES,
+        headers: { 'User-Agent': USER_AGENT }
+      },
+      signal
+    )
+    const data = (response.data ?? {}) as {
+      AbstractText?: string
+      AbstractURL?: string
+      Heading?: string
+      RelatedTopics?: Array<{ Text?: string; FirstURL?: string }>
+    }
+    const hits: SearchHit[] = []
+    if (data.AbstractText && data.AbstractURL) {
+      hits.push({
+        title: data.Heading || query,
+        url: data.AbstractURL,
+        snippet: data.AbstractText.slice(0, 300)
+      })
+    }
+    for (const topic of data.RelatedTopics ?? []) {
+      if (hits.length >= maxResults) break
+      if (!topic.FirstURL || !topic.Text) continue
+      hits.push({ title: topic.Text.slice(0, 90), url: topic.FirstURL, snippet: topic.Text.slice(0, 300) })
+    }
+    return { hits: hits.slice(0, maxResults), throttled: false }
+  }
+}
+
+/**
+ * Wikipedia's search API. For the history, geography and biography a
+ * novelist actually researches this is often the BEST answer, not a
+ * fallback — hence prefersEncyclopedic() promoting it to first.
+ */
+const wikipediaProvider: SearchProvider = {
+  name: 'wikipedia',
+  run: async(query, maxResults, signal) => {
+    const response = await getWithRetry(
+      'https://en.wikipedia.org/w/api.php',
+      {
+        params: {
+          action: 'query',
+          list: 'search',
+          srsearch: query,
+          srlimit: Math.min(maxResults, 10),
+          format: 'json'
+        },
+        timeout: FETCH_TIMEOUT_MS,
+        maxContentLength: MAX_RESPONSE_BYTES,
+        headers: { 'User-Agent': USER_AGENT }
+      },
+      signal
+    )
+    const data = (response.data ?? {}) as {
+      query?: { search?: Array<{ title?: string; snippet?: string }> }
+    }
+    const hits: SearchHit[] = (data.query?.search ?? [])
+      .filter((row) => row.title)
+      .map((row) => ({
+        title: String(row.title),
+        url: `https://en.wikipedia.org/wiki/${encodeURIComponent(String(row.title).replace(/ /g, '_'))}`,
+        snippet: String(row.snippet ?? '').replace(/<[^>]+>/g, '').slice(0, 300)
+      }))
+    return { hits: hits.slice(0, maxResults), throttled: false }
+  }
+}
+
+/**
+ * Would an encyclopedia answer this better than a web index?
+ *
+ * Novel research is overwhelmingly history/geography/biography, where
+ * Wikipedia beats a scraped web index — but it is useless for anything
+ * current or commercial. So the test is NEGATIVE: recency and commerce
+ * markers push a query to the web providers; everything else starts at
+ * the encyclopedia. Exported for the spec.
+ */
+export const prefersEncyclopedic = (query: string): boolean => {
+  const q = query.toLowerCase()
+  if (/\b(19|20)\d{2}\b/.test(q) && /\b(news|latest|update|release|result)\b/.test(q)) return false
+  return !/\b(news|latest|today|current|recent|breaking|price|buy|cheap|deal|discount|review|reviews|vs|versus|best|top \d+|near me|download|coupon|stock|weather)\b/.test(
+    q
+  )
+}
+
+/** Provider order for a query: encyclopedic topics start at Wikipedia. */
+export const providersFor = (query: string): SearchProvider[] =>
+  prefersEncyclopedic(query)
+    ? [wikipediaProvider, ddgHtmlProvider, ddgInstantProvider]
+    : [ddgHtmlProvider, ddgInstantProvider, wikipediaProvider]
+
 const webSearch = async(
   args: Record<string, unknown>,
   context: AgentToolContext
@@ -681,40 +825,54 @@ const webSearch = async(
   const exhausted = consumeLookupBudget()
   if (exhausted) return { query, results: [], ...exhausted }
 
-  const response = await getWithRetry(
-    'https://html.duckduckgo.com/html/',
-    {
-      params: { q: query },
-      timeout: FETCH_TIMEOUT_MS,
-      maxContentLength: MAX_RESPONSE_BYTES,
-      responseType: 'text',
-      headers: { 'User-Agent': USER_AGENT }
-    },
-    context.signal
-  )
+  // ROTATE ACROSS PROVIDERS. One free endpoint throttling must not mean
+  // "no research": try each in turn and report which one answered, so a
+  // thin result is attributable rather than mysterious.
+  const attempted: string[] = []
+  let anyThrottled = false
+  for (const provider of providersFor(query)) {
+    attempted.push(provider.name)
+    let outcome: { hits: SearchHit[]; throttled: boolean }
+    try {
+      outcome = await provider.run(query, maxResults, context.signal)
+    } catch (error) {
+      if (context.signal?.aborted) throw error
+      continue // a dead provider is not a dead search
+    }
+    if (outcome.throttled) anyThrottled = true
+    if (outcome.hits.length === 0) continue
+    for (const hit of outcome.hits) rememberUrl(hit.url)
+    const payload = {
+      query,
+      provider: provider.name,
+      results: outcome.hits,
+      note:
+        attempted.length > 1
+          ? `Answered by ${provider.name} after ${attempted.slice(0, -1).join(', ')} returned nothing.`
+          : undefined
+    }
+    turnSearchCache.set(memoKey, payload)
+    return withRepeatReadNote(memoKey, payload)
+  }
 
-  const results = parseDuckDuckGoHtml(String(response.data ?? '')).slice(0, maxResults)
-  for (const result of results) rememberUrl(result.url)
-  // Still throttled after the full retry chain: say so plainly. Telling the
-  // model to "try a simpler query" here sends it rephrasing a query that was
-  // never the problem, burning turns against a limiter that wants waiting.
-  const throttled = RETRYABLE_STATUS.has(Number(response.status)) && results.length === 0
+  // Nobody had anything. Say WHY — throttled is a different instruction to
+  // the model than genuinely-no-such-results.
   const payload = {
     query,
-    results,
-    rateLimited: throttled || undefined,
-    note: throttled
-      ? 'The search engine is RATE-LIMITING us right now (it answered with an empty ' +
-        'result set), so this is not a "no such results" answer — rephrasing will not ' +
-        'help. Prefer wiki_search for encyclopedic topics, web_fetch on a URL you ' +
-        'already have, or tell the writer you could not search rather than guessing.'
-      : results.length === 0
-        ? 'No results parsed. Try a simpler query, or use web_fetch on a known URL.'
-        : undefined
+    provider: null,
+    results: [] as SearchHit[],
+    rateLimited: anyThrottled || undefined,
+    note: anyThrottled
+      ? `Every search provider is RATE-LIMITING us right now (tried: ${attempted.join(', ')}). ` +
+        'This is not a "no such results" answer — rephrasing will not help. Use wiki_read ' +
+        'on a title you already know, web_fetch on a URL you have, or tell the writer you ' +
+        'could not search rather than guessing.'
+      : `No results from any provider (tried: ${attempted.join(', ')}). Try a simpler query, ` +
+        'or web_fetch on a known URL.'
   }
-  // A throttled answer must NOT be memoized as this turn's answer for the
-  // query — a later retry in the same turn would be served the empty result.
-  if (!throttled) turnSearchCache.set(memoKey, payload)
+  // A throttled answer is never memoized as this turn's result for the
+  // query — a later retry must be allowed to reach the network again.
+  if (!anyThrottled) turnSearchCache.set(memoKey, payload)
   return withRepeatReadNote(memoKey, payload)
 }
 
@@ -930,10 +1088,126 @@ const optStrLocal = (args: Record<string, unknown>, key: string): string | undef
   return value
 }
 
+// ---- Books & papers (keyless, programmatic-use APIs) ----
+// A novelist checking period detail is better served by a library
+// catalogue and a citation index than by a web index — and unlike the
+// scrape endpoints these are real APIs that do not throttle us.
+
+const searchBooks = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const query = str(args, 'query')
+  const maxResults = Math.min(optInt(args, 'maxResults') ?? 5, 10)
+  const memoKey = `books:${query.toLowerCase().replace(/\s+/g, ' ').trim()}`
+  const reads = trackRead(memoKey)
+  if (reads > MAX_SAME_TARGET_READS) return repeatBlocked(query, reads)
+  const memoized = turnSearchCache.get(memoKey)
+  if (memoized) return withRepeatReadNote(memoKey, { ...memoized, cached: true })
+  const exhausted = consumeLookupBudget()
+  if (exhausted) return { query, results: [], ...exhausted }
+
+  const response = await getWithRetry(
+    'https://openlibrary.org/search.json',
+    {
+      params: { q: query, limit: maxResults, fields: 'title,author_name,first_publish_year,key' },
+      timeout: FETCH_TIMEOUT_MS,
+      maxContentLength: MAX_RESPONSE_BYTES,
+      headers: { 'User-Agent': USER_AGENT }
+    },
+    context.signal
+  )
+  const docs = ((response.data ?? {}) as { docs?: Array<Record<string, unknown>> }).docs ?? []
+  const results = docs.slice(0, maxResults).map((doc) => {
+    const key = typeof doc.key === 'string' ? doc.key : ''
+    const url = key ? `https://openlibrary.org${key}` : 'https://openlibrary.org'
+    rememberUrl(url)
+    return {
+      title: String(doc.title ?? 'Untitled'),
+      authors: Array.isArray(doc.author_name) ? (doc.author_name as string[]).slice(0, 3) : [],
+      year: typeof doc.first_publish_year === 'number' ? doc.first_publish_year : null,
+      url
+    }
+  })
+  const payload = {
+    query,
+    source: 'openlibrary',
+    results,
+    note:
+      results.length === 0
+        ? 'No books matched. Try the author or a broader subject.'
+        : 'Catalogue metadata only — open a url with web_fetch for detail, and cite what you use.'
+  }
+  turnSearchCache.set(memoKey, payload)
+  return withRepeatReadNote(memoKey, payload)
+}
+
+const searchPapers = async(
+  args: Record<string, unknown>,
+  context: AgentToolContext
+): Promise<unknown> => {
+  const query = str(args, 'query')
+  const maxResults = Math.min(optInt(args, 'maxResults') ?? 5, 10)
+  const memoKey = `papers:${query.toLowerCase().replace(/\s+/g, ' ').trim()}`
+  const reads = trackRead(memoKey)
+  if (reads > MAX_SAME_TARGET_READS) return repeatBlocked(query, reads)
+  const memoized = turnSearchCache.get(memoKey)
+  if (memoized) return withRepeatReadNote(memoKey, { ...memoized, cached: true })
+  const exhausted = consumeLookupBudget()
+  if (exhausted) return { query, results: [], ...exhausted }
+
+  const response = await getWithRetry(
+    'https://api.crossref.org/works',
+    {
+      params: { query, rows: maxResults, select: 'title,author,issued,DOI,URL' },
+      timeout: FETCH_TIMEOUT_MS,
+      maxContentLength: MAX_RESPONSE_BYTES,
+      headers: { 'User-Agent': USER_AGENT }
+    },
+    context.signal
+  )
+  const items =
+    ((response.data ?? {}) as { message?: { items?: Array<Record<string, unknown>> } }).message
+      ?.items ?? []
+  const results = items.slice(0, maxResults).map((item) => {
+    const doi = typeof item.DOI === 'string' ? item.DOI : ''
+    const url = typeof item.URL === 'string' ? item.URL : doi ? `https://doi.org/${doi}` : ''
+    if (url) rememberUrl(url)
+    const authors = Array.isArray(item.author)
+      ? (item.author as Array<Record<string, unknown>>)
+        .slice(0, 3)
+        .map((a) => `${String(a.given ?? '')} ${String(a.family ?? '')}`.trim())
+        .filter(Boolean)
+      : []
+    const issued = item.issued as { 'date-parts'?: number[][] } | undefined
+    return {
+      title: Array.isArray(item.title) ? String(item.title[0] ?? 'Untitled') : 'Untitled',
+      authors,
+      year: issued?.['date-parts']?.[0]?.[0] ?? null,
+      doi: doi || null,
+      url
+    }
+  })
+  const payload = {
+    query,
+    source: 'crossref',
+    results,
+    note:
+      results.length === 0
+        ? 'No papers matched. Try broader terms.'
+        : 'Citation metadata only — many papers are paywalled; cite the DOI rather than ' +
+          'implying you read the full text.'
+  }
+  turnSearchCache.set(memoKey, payload)
+  return withRepeatReadNote(memoKey, payload)
+}
+
 export const registerWebAgentToolHandlers = (service: AgentToolService): void => {
   service.registerHandler('web_search', webSearch)
   service.registerHandler('web_fetch', webFetch)
   service.registerHandler('wiki_search', wikiSearch)
   service.registerHandler('wiki_read', wikiRead)
   service.registerHandler('dictionary_lookup', dictionaryLookup)
+  service.registerHandler('search_books', searchBooks)
+  service.registerHandler('search_papers', searchPapers)
 }

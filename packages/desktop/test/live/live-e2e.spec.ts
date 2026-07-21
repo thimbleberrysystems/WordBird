@@ -233,6 +233,31 @@ live('3b · STRUCTURE CRAFT: chapters name folders, scenes name what happens', (
   }, 300_000)
 })
 
+live('3c · research providers reach the agent (books/papers + rotation)', () => {
+  it('a researcher can consult the catalogue APIs and saves what it found', async() => {
+    // The new keyless providers are only useful if a ROLE can actually
+    // reach them — a tool registered but unwired is invisible to the model.
+    const harness = await make()
+    harness.setMode('ask')
+    const reply = await harness.send(
+      't-providers',
+      'Find me one or two published BOOKS about ancient Elam using the book search tool, ' +
+        'then save a short research note listing them with their links.'
+    )
+
+    const used = harness.activity.some((event) =>
+      /search_books|search_papers|wiki_search|web_search/.test(
+        `${event.label} ${event.detail ?? ''}`
+      )
+    )
+    expect(used, 'no research tool was used at all').toBe(true)
+    // Research must PERSIST — the whole point of the note.
+    expect(researchNoteLanded(harness.root), 'no research note persisted').toBe(true)
+    // And the reply should name something concrete rather than hedging.
+    expect(reply.length).toBeGreaterThan(40)
+  }, 300_000)
+})
+
 live('4 · ask mode: live plan file, proposal card, no writes', () => {
   it('saves a plan file while brainstorming and cannot touch prose', async() => {
     const harness = await make()
