@@ -136,6 +136,103 @@ live('3 · writing goes to FILES via review, never chat-paste', () => {
   })
 })
 
+live('3b · STRUCTURE CRAFT: chapters name folders, scenes name what happens', () => {
+  /** Every leaf path in the binder, from disk. */
+  const leafPaths = (root: string): string[] => {
+    const file = path.join(root, '.wordbird', 'structure.json')
+    if (!fs.existsSync(file)) return []
+    const structure = JSON.parse(fs.readFileSync(file, 'utf8')) as {
+      units?: Array<Record<string, unknown>>
+    }
+    const out: string[] = []
+    const walk = (units: Array<Record<string, unknown>>): void => {
+      for (const unit of units) {
+        if (typeof unit.path === 'string') out.push(unit.path)
+        if (Array.isArray(unit.children)) walk(unit.children as Array<Record<string, unknown>>)
+      }
+    }
+    walk(structure.units ?? [])
+    return out
+  }
+
+  /** A path whose file slug repeats its parent folder (the-cellar/the-cellar.md). */
+  const doubled = (paths: string[]): string[] =>
+    paths.filter((filePath) => {
+      const parts = filePath.split('/')
+      const fileSlug = (parts.pop() ?? '').replace(/\.md$/, '')
+      return fileSlug === (parts.pop() ?? '')
+    })
+
+  it('POSITIVE: builds a chapter of distinctly-named scenes, no doubled paths', async() => {
+    const harness = await make()
+    harness.setMode('auto')
+    await harness.send(
+      't-structure-pos',
+      'Add a new chapter called "The Cellar" to the manuscript, and give it two short ' +
+        'scenes (2 sentences each) — Zara forcing the cellar door, then what she finds ' +
+        'below. Create the units and write the prose.'
+    )
+
+    const paths = leafPaths(harness.root)
+    const cellarScenes = paths.filter((filePath) => filePath.includes('cellar'))
+    // The chapter became a FOLDER holding scene FILES…
+    expect(cellarScenes.length, `no cellar scenes created (paths: ${paths.join(', ')})`)
+      .toBeGreaterThanOrEqual(1)
+    // …and no scene repeats its chapter's name.
+    expect(doubled(paths), 'a scene repeated its chapter name').toEqual([])
+    // Scene filenames are distinct from each other (named for what happens).
+    const slugs = cellarScenes.map((filePath) => filePath.split('/').pop())
+    expect(new Set(slugs).size).toBe(slugs.length)
+  }, 300_000)
+
+  it('NEGATIVE: a one-scene chapter still gets a distinctly-named scene', async() => {
+    // THE prj14 SHAPE, unprompted: asked for a chapter with a single scene,
+    // the agent must not name that scene after the chapter — that is the
+    // doubled path (the-vault/the-vault.md) writers read as a bug. The
+    // writer never asked for it here, so the agent must not invent it.
+    const harness = await make()
+    harness.setMode('auto')
+    await harness.send(
+      't-structure-neg',
+      'Add a chapter called "The Vault" to the manuscript with a single short scene ' +
+        '(2 sentences) where Zara cracks the vault. Create the units and write the prose.'
+    )
+
+    const paths = leafPaths(harness.root)
+    expect(paths.some((filePath) => filePath.includes('vault')), 'no vault scene created')
+      .toBe(true)
+    expect(
+      doubled(paths),
+      `agent invented a doubled path unprompted: ${doubled(paths).join(', ')}`
+    ).toEqual([])
+  }, 300_000)
+
+  it('NEGATIVE: an explicit writer override is obeyed, but the cost is explained', async() => {
+    // The writer is the author. When they DEMAND the same name, refusing
+    // outright would be paternalistic — but doing it silently would leave
+    // them with a wart they never understood. Inform, then comply.
+    const harness = await make()
+    harness.setMode('auto')
+    const reply = await harness.send(
+      't-structure-override',
+      'Create a chapter titled "The Cistern" containing exactly one scene, and title that ' +
+        'scene "The Cistern" too — the SAME name as the chapter. I know it duplicates; ' +
+        'do it anyway. Then write two sentences of prose in it.'
+    )
+
+    // Either it complied (writer autonomy) or it declined — but it must not
+    // pretend. The tradeoff has to be named in the reply.
+    const explained =
+      /same name|same title|duplicat|redundant|repeat|doubl|rename|different (name|title)/i.test(
+        reply
+      )
+    expect(
+      explained,
+      `obeyed or refused without ever naming the tradeoff: ${reply.slice(0, 300)}`
+    ).toBe(true)
+  }, 300_000)
+})
+
 live('4 · ask mode: live plan file, proposal card, no writes', () => {
   it('saves a plan file while brainstorming and cannot touch prose', async() => {
     const harness = await make()
