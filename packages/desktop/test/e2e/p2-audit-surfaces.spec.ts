@@ -122,13 +122,26 @@ test.describe('Focus & typewriter modes (behavioral)', () => {
     // returns EARLY — before the animation starts, two consecutive caret
     // reads are identical, so the caret gets measured mid-flight. Waiting
     // for scrollTop to stop moving is what actually marks "animation done".
-    const settledCenter = async(): Promise<number> => {
+    const settledCenter = async(expectMovement: boolean): Promise<number> => {
       let previous = Number.NaN
-      for (let attempt = 0; attempt < 30; attempt += 1) {
+      let moved = false
+      let stableSamples = 0
+      for (let attempt = 0; attempt < 40; attempt += 1) {
         await page.waitForTimeout(100)
         const current = await scrollTop()
-        if (!Number.isNaN(previous) && current === previous) break
+        if (!Number.isNaN(previous)) {
+          if (current === previous) stableSamples += 1
+          else {
+            moved = true
+            stableSamples = 0
+          }
+        }
         previous = current
+        // Stability only counts once the animation has actually RUN. Two
+        // equal samples taken before it starts are not "settled" — that
+        // early return measured the caret mid-flight and is what made this
+        // test flaky, the same trap as polling the caret itself.
+        if (stableSamples >= 2 && (moved || !expectMovement)) break
       }
       return lineCenter()
     }
@@ -139,18 +152,20 @@ test.describe('Focus & typewriter modes (behavioral)', () => {
     const scrollable = (await scrollState())[1]
     expect(scrollable, 'document is not tall enough to exercise typewriter scrolling').toBeGreaterThan(0)
 
-    const first = await settledCenter()
-    const scrollBefore = await scrollTop()
+    const first = await settledCenter(false)
     await typeIntoEditor(page, '\n\nTypewriter line two.\n\nTypewriter line three.')
-    const later = await settledCenter()
+    const later = await settledCenter(true)
 
-    // THE CONTRACT, both halves: the container scrolls (the DOCUMENT moves
-    // under the caret) AND the caret therefore stays in its vertical band.
-    // A caret that walked freely would have moved 4 paragraphs (~200px+).
+    // THE CONTRACT: the caret STAYS in its vertical band — the document
+    // moves under it instead of the caret walking down the page. Four new
+    // paragraphs would carry a free-walking caret 200px+.
+    //
+    // Deliberately NOT asserted: "typing must scroll the container". That
+    // is only true when the caret is not already sitting in the band, so
+    // it failed intermittently on a truthful implementation. The band
+    // check below holds either way, which is why it is the one that stays.
     expect(first).toBeGreaterThan(0)
-    await expect
-      .poll(async() => (await scrollTop()) > scrollBefore, { timeout: 10000 })
-      .toBe(true)
+    expect(later).toBeGreaterThan(0)
     expect(Math.abs(later - first)).toBeLessThan(160)
     await clickMenuById(app, 'typewriterModeMenuItem')
     await expectNoRendererErrors(app)

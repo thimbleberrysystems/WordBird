@@ -266,8 +266,29 @@ export interface UnitLike {
   [field: string]: unknown
 }
 
-export const readStructure = (root: string): { units: UnitLike[] } =>
-  JSON.parse(fs.readFileSync(path.join(root, '.wordbird', 'structure.json'), 'utf8'))
+/**
+ * Read the binder, tolerating a TORN READ.
+ *
+ * main rewrites structure.json in place, so a poll can catch it truncated
+ * and JSON.parse throws. Inside `expect.poll` a THROW fails the assertion
+ * outright instead of retrying — which is why these tests failed in
+ * milliseconds rather than timing out, and why it looked like random
+ * "load flakiness". Retry briefly, then return an empty binder so the
+ * caller's poll simply tries again.
+ */
+export const readStructure = (root: string): { units: UnitLike[] } => {
+  const file = path.join(root, '.wordbird', 'structure.json')
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      return JSON.parse(fs.readFileSync(file, 'utf8'))
+    } catch {
+      // Busy-wait a beat: the window is a single fs write.
+      const until = Date.now() + 20
+      while (Date.now() < until) { /* spin */ }
+    }
+  }
+  return { units: [] }
+}
 
 /** Depth-first search over the binder tree; null when nothing matches. */
 export const findUnit = (
@@ -282,11 +303,17 @@ export const findUnit = (
   return null
 }
 
-/** Throwing lookup by id — callers read metadata fields off the result. */
+/**
+ * Lookup by id — callers read metadata fields off the result.
+ *
+ * Returns an EMPTY unit rather than throwing when the id is absent: a unit
+ * can be momentarily missing while main rewrites the binder, and a throw
+ * inside `expect.poll` ends the assertion instead of retrying. A genuinely
+ * missing unit still fails the caller's poll, just via its timeout.
+ */
 export const findUnitById = (root: string, id: string): UnitLike => {
   const found = findUnit(readStructure(root).units, (unit) => unit.id === id)
-  if (!found) throw new Error(`unit ${id} not found in structure.json`)
-  return found
+  return found ?? ({ id, title: '' } as UnitLike)
 }
 
 /** Every id in the tree, in document order (duplicates preserved). */
