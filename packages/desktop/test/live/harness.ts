@@ -287,6 +287,13 @@ export const createHarness = async(options?: {
   /** Per-invoke turn cap — the token-thrift guard (subscription only
    * honors it via AgentSDKRunner.turnBudget; openrouter caps supersteps). */
   turnBudget?: number
+  /**
+   * Write accepted prose to disk, the way the renderer does in AUTO mode.
+   * Off by default: most flows assert that a PROPOSAL was raised (the
+   * review contract). Flows that need a real manuscript on disk — "did it
+   * actually write the novel" — turn this on.
+   */
+  autoApplyEdits?: boolean
 }): Promise<LiveHarness> => {
   if (!liveProvider) throw new Error(`No live provider: ${liveSelection.reason}`)
   const root = options?.root ?? createLiveProject()
@@ -322,6 +329,20 @@ export const createHarness = async(options?: {
   const writerQuestions: Array<{ question: string; options: Array<{ label: string }> }> = []
   service.setEditProposalEmitter((proposal) => {
     editProposals.push(proposal)
+    if (!options?.autoApplyEdits) return
+    // Auto mode: the renderer applies the batch after snapshotting. Mirror
+    // just the write so end-to-end flows can assert real files on disk.
+    const payload = proposal as { edit?: { filePath?: string; newContent?: string } }
+    const relative = payload.edit?.filePath
+    const content = payload.edit?.newContent
+    if (typeof relative !== 'string' || typeof content !== 'string') return
+    try {
+      const target = path.join(root, relative)
+      fs.mkdirSync(path.dirname(target), { recursive: true })
+      fs.writeFileSync(target, content, 'utf8')
+    } catch {
+      // Applying is best-effort in tests; the proposal list is the record.
+    }
   })
   service.setPlanProposalEmitter(({ planProposal }) => {
     planProposals.push(planProposal)

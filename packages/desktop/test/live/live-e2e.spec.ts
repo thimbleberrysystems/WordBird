@@ -55,6 +55,113 @@ const researchNoteLanded = (root: string): boolean => {
   return walk(dir)
 }
 
+/**
+ * A CENSUS of every subsystem a novel project touches. Returned as counts
+ * so a failure names the subsystem that never engaged, instead of just
+ * "something is missing" — the whole point of the whole-novel flow.
+ */
+interface ProjectCensus {
+  proseFiles: number
+  proseWords: number
+  chapters: number
+  scenes: number
+  scenesWithSynopsis: number
+  scenesWithStatus: number
+  scenesWithWhen: number
+  biblePages: number
+  researchNotes: number
+  summaries: number
+  facts: number
+  continuityIssues: number
+  plans: number
+  snapshots: number
+}
+
+const countFilesUnder = (dir: string, extension = '.md'): number => {
+  if (!fs.existsSync(dir)) return 0
+  let total = 0
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name)
+    if (entry.isDirectory()) total += countFilesUnder(full, extension)
+    else if (entry.name.endsWith(extension)) total += 1
+  }
+  return total
+}
+
+const surveyProject = async(root: string): Promise<ProjectCensus> => {
+  const { structureService } = await import('../../src/main/services/novel/StructureService')
+  let chapters = 0
+  let scenes = 0
+  let scenesWithSynopsis = 0
+  let scenesWithStatus = 0
+  let scenesWithWhen = 0
+  let proseFiles = 0
+  let proseWords = 0
+  try {
+    const structure = await structureService.loadReconciled(root)
+    const walk = (units: Array<Record<string, unknown>>): void => {
+      for (const unit of units) {
+        const children = unit.children as Array<Record<string, unknown>> | undefined
+        if (children) {
+          chapters += 1
+          walk(children)
+          continue
+        }
+        scenes += 1
+        if (String(unit.synopsis ?? '').trim()) scenesWithSynopsis += 1
+        if (String(unit.status ?? '').trim()) scenesWithStatus += 1
+        if (String(unit.when ?? '').trim()) scenesWithWhen += 1
+        const relative = typeof unit.path === 'string' ? unit.path : null
+        if (!relative) continue
+        try {
+          const text = fs.readFileSync(path.join(root, relative), 'utf8').trim()
+          if (text.length > 0) {
+            proseFiles += 1
+            proseWords += text.split(/\s+/).length
+          }
+        } catch {
+          // a unit whose file vanished is a binder-drift problem, not prose
+        }
+      }
+    }
+    walk(structure.units as unknown as Array<Record<string, unknown>>)
+  } catch {
+    // an unreadable binder leaves the structural counts at zero
+  }
+
+  const jsonCount = (file: string, key: string): number => {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(path.join(root, file), 'utf8')) as
+        | Record<string, unknown[]>
+        | unknown[]
+      if (Array.isArray(parsed)) return parsed.length
+      return Array.isArray(parsed[key]) ? (parsed[key] as unknown[]).length : 0
+    } catch {
+      return 0
+    }
+  }
+
+  return {
+    proseFiles,
+    proseWords,
+    chapters,
+    scenes,
+    scenesWithSynopsis,
+    scenesWithStatus,
+    scenesWithWhen,
+    biblePages: countFilesUnder(path.join(root, 'bible')),
+    researchNotes: countFilesUnder(path.join(root, 'bible', 'research')),
+    summaries: countFilesUnder(path.join(root, '.wordbird', 'summaries')),
+    facts: jsonCount('.wordbird/continuity/facts.json', 'facts'),
+    continuityIssues: jsonCount('.wordbird/continuity/issues.json', 'issues'),
+    plans: countFilesUnder(path.join(root, 'plans')),
+    // Reported, never asserted: the live harness has no renderer and does
+    // not git-init its scratch project, so snapshots are a property of the
+    // app rather than of this flow (they are covered by flow 16).
+    snapshots: fs.existsSync(path.join(root, '.git')) ? 1 : 0
+  }
+}
+
 const harnesses: LiveHarness[] = []
 const make = async(options?: Parameters<typeof createHarness>[0]): Promise<LiveHarness> => {
   const harness = await createHarness(options)
@@ -256,6 +363,123 @@ live('3c · research providers reach the agent (books/papers + rotation)', () =>
     // And the reply should name something concrete rather than hedging.
     expect(reply.length).toBeGreaterThan(40)
   }, 300_000)
+})
+
+liveHeavy('39 · WHOLE NOVEL: every subsystem engages, or we learn which did not — HEAVY', () => {
+  it('one instruction produces a real project: prose, binder, bible, research, knowledge', async() => {
+    // The point of this flow is COVERAGE, not prose quality. A novel
+    // project is a dozen subsystems co-operating; any one of them can stop
+    // engaging without a single unit test noticing. The census below names
+    // whichever one went quiet.
+    const harness = await make({
+      root: createEmptyLiveProject(),
+      label: 'flow-39-whole-novel',
+      autoApplyEdits: true // auto mode writes prose to disk via the renderer
+    })
+    harness.setMode('auto')
+
+    const { driveBookRun, AUTO_CONTINUE_MESSAGE, CONTINUE_RE } = await import(
+      '../../src/main/services/ai/bookRun'
+    )
+
+    let reply = await harness.send(
+      't-novel',
+      'AUTO MODE. Write the opening of a SHORT historical novella set in 1890s lighthouse ' +
+        'Cornwall. Work like a novelist, not a chatbot:\n' +
+        '1. Research the period briefly and SAVE what you find.\n' +
+        '2. Save a plan with the first three scenes as unchecked items.\n' +
+        '3. Create a chapter and draft those scenes (3-4 sentences each is fine).\n' +
+        '4. Give every scene binder metadata: synopsis, status, and a story-time `when`.\n' +
+        '5. Create bible pages for the people and places you invent.\n' +
+        '6. Record the durable facts and note any continuity risk you spot.\n' +
+        'End each segment with the exact final line "CONTINUE: <next step>" while plan ' +
+        'items remain unchecked.'
+    )
+
+    if (CONTINUE_RE.test(reply)) {
+      reply = await driveBookRun(reply, {
+        invokeNext: async() => harness.send('t-novel', AUTO_CONTINUE_MESSAGE),
+        isAuto: () => true,
+        sessionTokens: () => 0,
+        progressSignature: () => `${harness.editProposals.length}`,
+        emitStatus: () => {},
+        maxContinuations: 3,
+        tokenCeiling: Number.MAX_SAFE_INTEGER
+      })
+    }
+
+    const census = await surveyProject(harness.root)
+    // Printed unconditionally: a PASS with thin numbers is still a signal.
+    console.info(`[flow-39] census ${JSON.stringify(census)}`)
+
+    // ---- MANUSCRIPT: prose actually exists on disk ----
+    expect(census.scenes, 'no scenes were created in the binder').toBeGreaterThanOrEqual(2)
+    expect(census.proseFiles, 'binder units exist but no prose was written').toBeGreaterThanOrEqual(2)
+    expect(census.proseWords, 'prose files exist but are essentially empty').toBeGreaterThan(60)
+
+    // ---- VIEWS: corkboard / outline / timeline render from unit meta ----
+    expect(
+      census.scenesWithSynopsis,
+      'no scene carries a synopsis — the corkboard would be blank'
+    ).toBeGreaterThanOrEqual(1)
+    expect(
+      census.scenesWithStatus,
+      'no scene carries a status — the corkboard dots and outline column would be empty'
+    ).toBeGreaterThanOrEqual(1)
+
+    // ---- KNOWLEDGE: the project remembers what it decided ----
+    expect(
+      census.biblePages,
+      'no bible page was created — the story has no canon to check against'
+    ).toBeGreaterThanOrEqual(1)
+    expect(
+      census.plans,
+      'no plan file — nothing drove the multi-segment work'
+    ).toBeGreaterThanOrEqual(1)
+
+    // ---- RESEARCH + LEDGER: at least one durable knowledge artifact ----
+    // Deliberately an OR: a model may reasonably capture period knowledge
+    // as a research note, as facts, or as a logged continuity risk. Zero of
+    // the three means the knowledge layer never engaged at all.
+    const knowledge = census.researchNotes + census.facts + census.continuityIssues
+    expect(
+      knowledge,
+      `knowledge layer never engaged (research=${census.researchNotes} facts=${census.facts} ` +
+        `issues=${census.continuityIssues})`
+    ).toBeGreaterThanOrEqual(1)
+  }, 1_800_000)
+})
+
+live('40 · SYNC: a drafted scene comes back annotated for the views', () => {
+  it('drafting leaves the binder renderable, without being asked field by field', async() => {
+    // Flow 22 proves metadata lands when the writer ASKS for it. This is
+    // the harder contract: the drafting aftercare should leave the scene
+    // renderable in the corkboard/outline on its own, so the writer's views
+    // never silently drift out of sync with the manuscript.
+    const harness = await make({ label: 'flow-40-sync', autoApplyEdits: true })
+    harness.setMode('auto')
+    await harness.send(
+      't-sync',
+      'Draft a new scene for chapter one where Zara searches the lighthouse store room ' +
+        '(3 sentences), then make sure the binder is up to date for it.'
+    )
+
+    const census = await surveyProject(harness.root)
+    console.info(`[flow-40] census ${JSON.stringify(census)}`)
+
+    // A new scene exists beyond the two seeded ones…
+    expect(census.scenes, 'no new scene was added').toBeGreaterThanOrEqual(3)
+    // …and the binder is renderable: SOME scene carries a synopsis and a
+    // status, which is what the corkboard and outline actually draw.
+    expect(
+      census.scenesWithSynopsis,
+      'nothing in the binder carries a synopsis — the corkboard would be blank'
+    ).toBeGreaterThanOrEqual(1)
+    expect(
+      census.scenesWithStatus,
+      'nothing in the binder carries a status'
+    ).toBeGreaterThanOrEqual(1)
+  }, 600_000)
 })
 
 live('4 · ask mode: live plan file, proposal card, no writes', () => {

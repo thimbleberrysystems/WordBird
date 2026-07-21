@@ -40,9 +40,20 @@ LIVE_PROVIDER=openrouter OPENROUTER_KEY=sk-or-… pnpm run test:live
 - Every flow runs under a per-invoke **turn budget**
   (`AgentSDKRunner.turnBudget`, default 24) so a wandering model cannot
   burn the plan on a test.
-- **Heavy flows** (book run, overlapping researchers, revision E2E) need
-  `LIVE_HEAVY=1` on subscription; on OpenRouter (free) they always run,
-  so CI keeps full coverage.
+- **Heavy flows** (book run, overlapping researchers, revision E2E, the
+  whole-novel census) need `LIVE_HEAVY=1` on subscription; on OpenRouter
+  (free) they always run, so CI keeps full coverage.
+- **The coverage net.** Flow 39 (`WHOLE NOVEL`) drives one instruction
+  through a book run and then takes a CENSUS of the finished project —
+  prose on disk, binder units, view metadata (synopsis/status/`when`),
+  bible pages, plans, research notes, facts, continuity issues. Its
+  assertions carry per-subsystem messages, so a regression names the
+  layer that stopped engaging instead of just failing. The census is
+  printed on PASS too: thin-but-passing numbers are themselves a signal.
+  Flow 40 is its cheap counterpart — it checks that ordinary drafting
+  leaves the binder renderable without the writer asking field by field,
+  which is what keeps the corkboard and timeline in sync with the
+  manuscript.
 - Flows that pin OpenRouter mechanics (model catalog resolution, context
   window from the models API) skip on subscription.
 - Every run ends with a **LIVE TOKEN REPORT** (per-harness and total
