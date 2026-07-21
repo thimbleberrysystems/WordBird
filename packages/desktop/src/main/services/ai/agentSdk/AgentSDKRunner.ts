@@ -142,7 +142,8 @@ export const SPAWN_SLOT_STALE_MS = 180_000
  * — before the turn gives up on it. A wedged runtime otherwise leaves the
  * `for await` waiting indefinitely: the writer sees "running" forever and
  * Stop is the only exit. Generous on purpose, because silence is normal
- * while a slow tool runs (MCP_TOOL_TIMEOUT is 60s) and a legitimately long
+ * while a slow tool runs (MCP_TOOL_TIMEOUT is 120s — it must outlast a
+ * rate-limited web fetch's full retry chain) and a legitimately long
  * book-run segment must never be cut short. Firing is treated as a BUDGET
  * event, not a crash: the session persists, so "continue" resumes.
  */
@@ -937,7 +938,7 @@ export class AgentSDKRunner {
     // ~15s (FETCH_TIMEOUT_MS) plus retry backoff, so give tools a generous
     // hard wall-clock ceiling. Web handlers keep their own tighter
     // timeouts, so this only stops the STREAM from dying under a slow call.
-    if (!env.MCP_TOOL_TIMEOUT) env.MCP_TOOL_TIMEOUT = '60000'
+    if (!env.MCP_TOOL_TIMEOUT) env.MCP_TOOL_TIMEOUT = '120000'
     return env
   }
 

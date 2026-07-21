@@ -27,8 +27,16 @@ import { convertJsonSchemaToZod } from 'zod-from-json-schema'
 import type { AgentToolService } from '../AgentToolService'
 import { MCP_SERVER_NAME, TOOL_OUTPUT_CHAR_CAP } from './toolBridge'
 
-/** Per-call wall-clock ceiling the SDK applies to this server's tools. */
-const HTTP_MCP_TOOL_TIMEOUT_MS = 60000
+/**
+ * Per-call wall-clock ceiling the SDK applies to this server's tools.
+ *
+ * Must outlast the slowest legitimate tool: a rate-limited web fetch retries
+ * 3× behind WEB_RETRY_DELAYS_MS (15.5s of backoff) with a 15s request
+ * timeout each — ~75s worst case. A ceiling below that would cut the retry
+ * chain and hand the model a failure the backoff was about to absorb.
+ * The runner's silence watchdog (5 min) is the real backstop.
+ */
+const HTTP_MCP_TOOL_TIMEOUT_MS = 120_000
 /** Startup self-check budget — the server is local, so this is generous. */
 const SELF_CHECK_TIMEOUT_MS = 5000
 

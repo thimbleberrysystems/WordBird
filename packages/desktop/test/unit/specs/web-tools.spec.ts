@@ -200,6 +200,49 @@ describe('web_search handler', () => {
     expect(defaulted.results).toHaveLength(5)
   })
 
+  it('a 202 soft-throttle is RETRIED, not reported as "no results"', async() => {
+    // DuckDuckGo answers 202 Accepted with an empty body instead of 429
+    // when it throttles (measured 8/8 on a burst). Treated as success, it
+    // looked like a broken tool and the model burned turns rephrasing a
+    // query that was never the problem.
+    mockedGet
+      .mockResolvedValueOnce({ status: 202, data: '', headers: {} })
+      .mockResolvedValueOnce(okHtml(ddgPage))
+    const result = (await run('web_search', { query: 'elam' })) as {
+      results: unknown[]
+      rateLimited?: boolean
+    }
+    expect(mockedGet).toHaveBeenCalledTimes(2)
+    expect(result.results.length).toBeGreaterThan(0)
+    expect(result.rateLimited).toBeUndefined()
+  })
+
+  it('a persistent throttle says RATE-LIMITED and is not memoized', async() => {
+    // Instant retries: the real backoff is deliberately long (it has to
+    // outlast a genuine 429), which would outrun the test timeout.
+    const realDelays = [...WEB_RETRY_DELAYS_MS]
+    WEB_RETRY_DELAYS_MS.splice(0, WEB_RETRY_DELAYS_MS.length, 1, 1, 1)
+    try {
+      mockedGet.mockResolvedValue({ status: 202, data: '', headers: {} })
+      const first = (await run('web_search', { query: 'still limited' })) as {
+        rateLimited?: boolean
+        note?: string
+      }
+      expect(first.rateLimited).toBe(true)
+      expect(first.note).toMatch(/RATE-LIMITING/i)
+      // Rephrasing is the wrong advice here — it must not be suggested.
+      expect(first.note).not.toMatch(/simpler query/i)
+
+      // The empty answer must NOT become this turn's cached result: a later
+      // retry has to be allowed to reach the network again.
+      const callsBefore = mockedGet.mock.calls.length
+      await run('web_search', { query: 'still limited' })
+      expect(mockedGet.mock.calls.length).toBeGreaterThan(callsBefore)
+    } finally {
+      WEB_RETRY_DELAYS_MS.splice(0, WEB_RETRY_DELAYS_MS.length, ...realDelays)
+    }
+  })
+
   it('empty results carry a corrective note for the model', async() => {
     mockedGet.mockResolvedValueOnce(okHtml('<html>no results markup</html>'))
     const result = (await run('web_search', { query: 'zzz' })) as { note?: string }
@@ -684,13 +727,17 @@ describe('per-turn lookup budget (research must END)', () => {
 describe('rate-limit tolerance (no writer intervention)', () => {
   const originalDelays = [...WEB_RETRY_DELAYS_MS]
 
-  it('retry backoff stays bounded so a slow call cannot kill the MCP stream', () => {
-    // A single in-process MCP tool call that stays in flight too long makes
-    // the SDK CLI close the tool stream (prj13; upstream #114). The total
-    // retry sleep must stay well under that tolerance — the old
-    // [1500,4000,10000] = 15.5s was a stream-killer.
+  it('retry backoff is generous enough to outlast a real 429', () => {
+    // The keyless endpoints (DuckDuckGo HTML, Wikipedia) throttle hard. A
+    // 2-step/2.8s budget made "429" the normal outcome of web_search
+    // instead of a blip the writer never sees. Retries must ride it out.
+    expect(originalDelays.length).toBeGreaterThanOrEqual(3)
     const total = originalDelays.reduce((a, b) => a + b, 0)
-    expect(total).toBeLessThanOrEqual(4000)
+    expect(total).toBeGreaterThanOrEqual(12_000)
+    // …and the delays escalate, so a persistent limiter is not hammered.
+    for (let i = 1; i < originalDelays.length; i += 1) {
+      expect(originalDelays[i]).toBeGreaterThan(originalDelays[i - 1])
+    }
   })
 
   beforeEach(() => {

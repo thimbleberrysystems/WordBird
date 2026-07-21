@@ -208,16 +208,24 @@ const coalesce = async(key: string, work: () => Promise<unknown>): Promise<unkno
 // Free/keyless endpoints (DuckDuckGo, Wikipedia, dictionaryapi) throttle.
 // Retries happen HERE, mechanically, so a 429 never needs the writer (or
 // the model) to intervene. Delays are exported and mutable for tests.
-// BOUNDED IN-FLIGHT TIME: these sleeps run INSIDE a single in-process MCP
-// tool call, and a call that stays in flight too long makes the SDK CLI
-// close the whole tool stream (see MCP_TOOL_TIMEOUT in AgentSDKRunner and
-// upstream claude-agent-sdk #114). The old [1500,4000,10000] could hold a
-// rate-limited call open ~15.5s; keep the total well under the stream's
-// tolerance — a couple of quick retries absorb transient blips, and a
-// persistent 429 fails fast (the model re-requests later; cache/ledger
-// serve the retry) instead of hanging the stream for everyone.
-export const WEB_RETRY_DELAYS_MS = [800, 2000]
-const RETRYABLE_STATUS = new Set([429, 502, 503])
+// SIZED FOR REAL RATE LIMITS. The keyless endpoints (DuckDuckGo HTML,
+// Wikipedia) throttle hard, so the backoff has to outlast a 429 — a
+// 2-step/2.8s budget made "429" the normal outcome of web_search rather
+// than a blip the writer never sees.
+//
+// This was briefly shortened because long in-flight sleeps killed the
+// IN-PROCESS MCP stream (upstream #114). That transport is gone — tools
+// now ride a loopback HTTP MCP server with MCP_TOOL_TIMEOUT headroom — so
+// the constraint that justified the short budget no longer applies.
+// Retry-After from the server always wins over these defaults.
+export const WEB_RETRY_DELAYS_MS = [1500, 4000, 10000]
+// 202 is DuckDuckGo's SOFT THROTTLE: it answers 202 Accepted with an empty
+// body instead of 429 when it decides you are asking too fast (measured
+// 8/8 on a burst). Treating it as success is why "web search returns
+// nothing" looked like a broken tool — the model then burned turns
+// rephrasing a query that was never the problem. It is not a success code
+// for any endpoint we call, so retrying it is safe.
+const RETRYABLE_STATUS = new Set([202, 429, 502, 503])
 const RETRYABLE_CODES = new Set(['ECONNRESET', 'ETIMEDOUT', 'ECONNABORTED', 'EAI_AGAIN'])
 
 /** Abortable backoff: a Stop mid-retry must not wait out the delay —
@@ -687,15 +695,26 @@ const webSearch = async(
 
   const results = parseDuckDuckGoHtml(String(response.data ?? '')).slice(0, maxResults)
   for (const result of results) rememberUrl(result.url)
+  // Still throttled after the full retry chain: say so plainly. Telling the
+  // model to "try a simpler query" here sends it rephrasing a query that was
+  // never the problem, burning turns against a limiter that wants waiting.
+  const throttled = RETRYABLE_STATUS.has(Number(response.status)) && results.length === 0
   const payload = {
     query,
     results,
-    note:
-      results.length === 0
+    rateLimited: throttled || undefined,
+    note: throttled
+      ? 'The search engine is RATE-LIMITING us right now (it answered with an empty ' +
+        'result set), so this is not a "no such results" answer — rephrasing will not ' +
+        'help. Prefer wiki_search for encyclopedic topics, web_fetch on a URL you ' +
+        'already have, or tell the writer you could not search rather than guessing.'
+      : results.length === 0
         ? 'No results parsed. Try a simpler query, or use web_fetch on a known URL.'
         : undefined
   }
-  turnSearchCache.set(memoKey, payload)
+  // A throttled answer must NOT be memoized as this turn's answer for the
+  // query — a later retry in the same turn would be served the empty result.
+  if (!throttled) turnSearchCache.set(memoKey, payload)
   return withRepeatReadNote(memoKey, payload)
 }
 

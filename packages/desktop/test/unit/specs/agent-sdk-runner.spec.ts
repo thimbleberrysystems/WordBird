@@ -293,7 +293,9 @@ describe('subscription env hygiene', () => {
     const harness = await makeHarness([])
     cleanupRoots.push(harness.root)
     const env = harness.runner.buildEnv({ PATH: '/usr/bin' } as NodeJS.ProcessEnv)
-    expect(Number(env.MCP_TOOL_TIMEOUT)).toBeGreaterThanOrEqual(30000)
+    // Must outlast a rate-limited web fetch's whole retry chain
+    // (~75s worst case) or the ceiling cuts retries the backoff would absorb.
+    expect(Number(env.MCP_TOOL_TIMEOUT)).toBeGreaterThanOrEqual(90_000)
     // Respect an operator override rather than clobbering it.
     const overridden = harness.runner.buildEnv({
       MCP_TOOL_TIMEOUT: '99999'
