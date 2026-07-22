@@ -697,8 +697,18 @@ live('11 · deletes always ask, even in auto mode', () => {
       't-delete',
       'Delete the scene about the letter from the manuscript — remove it completely.'
     )
-    const deleteApprovals = harness.approvals.filter((a) => a.summary.includes('DELETE'))
-    expect(deleteApprovals.length).toBeGreaterThanOrEqual(1)
+    // BOTH providers must gate the delete, and they word the card differently:
+    // the LangGraph orchestrator raises "DELETE requested — …" while the SDK
+    // runner raises "DESTRUCTIVE OPERATION — …". Matching one spelling made
+    // this pass on openrouter and fail on subscription for no safety reason.
+    // The contract is that a destructive card appeared, not its phrasing.
+    const deleteApprovals = harness.approvals.filter((a) =>
+      /DELETE|DESTRUCTIVE/i.test(a.summary)
+    )
+    expect(
+      deleteApprovals.length,
+      `no destructive approval raised. Cards: ${harness.approvals.map((a) => a.summary).join(' | ') || '(none)'}`
+    ).toBeGreaterThanOrEqual(1)
 
     const fs = await import('fs')
     const path = await import('path')
@@ -1198,11 +1208,20 @@ live('25 · continuity lifecycle: contradiction found, filed, fix proposed', () 
     )
     const issuesPath = path.join(harness.root, '.wordbird/continuity/issues.json')
     expect(fs.existsSync(issuesPath)).toBe(true)
-    const issues = JSON.parse(fs.readFileSync(issuesPath, 'utf8')) as {
-      issues: Array<{ status: string }>
-    }
-    const open = issues.issues.filter((issue) => issue.status === 'open')
-    expect(open.length).toBeGreaterThanOrEqual(1)
+    // issues.json holds a BARE ARRAY on disk (ContinuityService.save writes
+    // `IContinuityIssue[]`; only the IPC layer wraps it as `{ issues }`).
+    // Reading it as the wrapped shape made this throw a TypeError on
+    // `undefined.filter` the moment the agent actually logged something —
+    // i.e. it could only "pass" while the feature under test did nothing.
+    const parsed = JSON.parse(fs.readFileSync(issuesPath, 'utf8'))
+    const logged = (Array.isArray(parsed) ? parsed : parsed.issues ?? []) as Array<{
+      status: string
+    }>
+    const open = logged.filter((issue) => issue.status === 'open')
+    expect(
+      open.length,
+      `no open issue was filed. On disk: ${JSON.stringify(parsed).slice(0, 300)}`
+    ).toBeGreaterThanOrEqual(1)
 
     await harness.send(
       't-continuity',
