@@ -21,50 +21,73 @@
 
 <br>
 
+![WordBird — the binder, the manuscript, and Biscuit](docs/assets/wordbird.png?raw=true)
+
 ## Why WordBird?
 
 Every AI writing tool can generate a paragraph. Almost none can keep a **400-page novel coherent** — and not one lets you say *"this character no longer exists"* and safely carry that decision through the entire book.
 
-WordBird can. It's built around three ideas no other novel-writing app combines:
+WordBird is built around three ideas no other novel-writing app combines:
 
-🤖 **A real agent team, not a text box.** Biscuit doesn't just autocomplete. It orchestrates specialist AI agents — explorers that sweep your manuscript, researchers that hit the web and Wikipedia, drafters, continuity auditors, line editors, and plotters — spawned dynamically and running in parallel, with the whole operation narrated in plain language.
+🤖 **A real agent team, not a text box.** Biscuit orchestrates specialist agents — explorers that sweep your manuscript, researchers that hit the web, drafters, continuity auditors, line editors, plotters, and a steward that keeps the whole project in sync — spawned as the work demands and running in parallel, with the operation narrated in plain language.
 
-🔍 **Nothing lands without your say-so.** Every AI change arrives as a reviewable diff — accept per hunk, per file, or all at once — exactly like a modern code editor, but built for prose. Autonomy is a dial you control (Plan / Ask / Auto / Max, cycled with Shift+Tab), and every sweeping change is snapshot-protected so one click rewinds it.
+🔍 **Nothing lands without your say-so.** Every change to your prose arrives as a reviewable diff — accept per change or all at once. Autonomy is a dial you control, and every sweeping operation takes a snapshot first, so one click rewinds it.
 
-🏠 **Your book stays yours.** Plain Markdown files on your disk. Your own AI keys — OpenAI, Anthropic, Gemini, OpenRouter — or fully local with Ollama. No cloud lock-in, no proprietary format, no subscription holding your manuscript hostage.
+🏠 **Your book stays yours.** Plain Markdown files on your disk. Your own AI keys — OpenAI, Anthropic, Gemini, OpenRouter — a Claude Pro/Max subscription, or fully local with Ollama. No cloud lock-in, no proprietary format, no subscription holding your manuscript hostage.
 
-## Screenshot
+## The writing environment
 
-![WordBird — the novel-writing editor with the Biscuit AI companion](docs/assets/wordbird.png?raw=true)
+**The Binder** is a Scrivener-style manuscript tree with drag-to-reorder, per-scene status, POV and word counts. Projects come in three layouts — chapters & scenes, a flat scene pool, or single-file chapters — and all of them are just Markdown folders you can open in any other editor.
 
-## What it does
+**Four ways to see your book.** Page for writing, Corkboard for scene cards and synopses, Outline for a sortable metadata table (status, POV, location, plus goal/conflict/outcome and value-shift craft columns), and Timeline for story-time against narrative order, with subplot threads as filterable lanes.
 
-### ✍️ A serious writing environment
-- **Distraction-free WYSIWYG editor** — write Markdown, see finished prose; focus & typewriter modes
-- **The Binder** — Scrivener-style manuscript tree with drag-to-reorder, per-scene status and word counts
-- **Corkboard, Outline & Timeline views** — scene cards with synopses, a metadata table (POV, location, status), and story-time vs narrative-order chronology
-- **Three project layouts** — chapters & scenes, a flat scene pool, or simple one-file chapters; all plain Markdown folders
-- **Compile** — assemble the whole manuscript into one document with configurable separators
-- **35 themes, 9 languages**, KaTeX math, Mermaid diagrams, and everything else a Markdown editor should have
+**The editor** is distraction-free WYSIWYG: you write Markdown and see finished prose. Focus and typewriter modes, a source view, KaTeX math, Mermaid and PlantUML diagrams, 32 themes, and 9 languages.
 
-### 📖 A story bible the AI treats as law
-- Characters, places, plot threads, and research live as editable Markdown pages the AI reads **before** writing and keeps updated as your story grows
-- **Locked canon** — mark any fact immutable and no agent may ever contradict it; if prose conflicts, the prose gets fixed
-- **Aliases** — "Liz", "Lizzy", and "the Widow Hale" are all Elizabeth; searches and revisions never miss a reference
-- A **style guide** (voice, tense, POV rules, banned words) every drafting agent obeys
+**Goals that fit how novelists work.** Set a word target with a finish-by date and WordBird computes the daily quota, tracks your streak, and counts the session — plus a per-project history of what you wrote each day.
 
-### 🤖 Biscuit, the agentic companion
-- **Brainstorm** with an AI that researches online (web search, full Wikipedia access, dictionary & thesaurus) and saves cited findings into your bible
-- **Draft** scenes and chapters grounded in your canon, outline, and voice
-- **Select any passage** in the editor → Rewrite / Expand / Describe / ask anything — results arrive as inline diffs
-- **Sweeping revisions**: *"Marcus never existed"* becomes a guided workflow — Biscuit interviews you for guidance, maps every affected scene with evidence for your approval, executes in resumable batches through the review queue, then audits that zero references survive
-- **Continuity inspector** — agents log contradictions (eye color, timeline, who-knows-what) with quoted evidence; issues close only when verified fixed in the prose
-- **29+ typed tools**, each role-scoped: read-only agents can never write; only you approve prose changes
+**Get your book in and out.** Import an existing manuscript and WordBird splits it into chapters and scenes by its own headings. Compile the finished thing to Markdown, EPUB, or DOCX, or export single documents as HTML or PDF.
 
-### 🛟 Safety rails everywhere
-- **Snapshots & rewind** — the entire project (prose + bible together) is versioned; a friendly History panel rewinds any change, including everything an agent did
-- **Durable memory** — conversations survive restarts; long agent runs resume where they stopped; a Copilot-style ring shows when Biscuit will condense older conversation
-- **Budgets** — hard caps on agents per wave, waves per turn, and context size; the AI can't run away with your money
+**Snapshots over the whole project.** Prose and bible are versioned together, so a rewind restores a consistent moment rather than one file. Browse history, diff any file against any snapshot, preview exactly what a restore would change, and roll back — including everything an agent did.
+
+## The story bible
+
+Characters, places, plot threads, and research live as editable Markdown pages that agents read **before** writing and keep current as the story grows.
+
+- **Aliases** — "Liz", "Lizzy", and "the Widow Hale" are all Elizabeth, so searches and revisions never miss a reference
+- **Locked canon** — mark a page immutable and no agent may contradict it on any route; if the prose conflicts, the prose gets fixed
+- **A style guide** — voice, tense, POV rules, and banned words that every drafting agent obeys
+- **Voice exemplars** — passages of your own prose that drafters match, so the book sounds like you rather than like a model
+- **A fact ledger** — typed subject–relation–object facts with their source scene, which auditors check new prose against and which generate a relationship map
+- **A decisions log** — settled creative choices with reasons, so a question you already answered never gets relitigated
+- **Skills** — your own technique files ("how I write fight scenes") that Biscuit follows when the task matches, and `biscuit.md` for standing instructions that ride every turn
+
+An **entity index** reads all of it deterministically — no model involved — to tell you who appears where, and to feed each turn's context with the bible pages that scene actually needs.
+
+## Biscuit, the agentic companion
+
+**Research that lands in your bible.** Web search across multiple providers, full Wikipedia, dictionary and thesaurus, book catalogues and academic papers — with findings saved as cited notes rather than lost in chat. Fetched sources are cached per project and shared between agents working the same turn.
+
+**Drafting grounded in your book.** Scenes are written against your outline, canon, and voice, with the tail of the preceding scene handed forward so continuity holds at the seams.
+
+**Select any passage** → Rewrite, Expand, Describe, or ask anything; results arrive as inline diffs.
+
+**Sweeping revisions.** *"Marcus never existed"* becomes a guided workflow: Biscuit interviews you, maps every affected scene with evidence for your approval, executes in resumable batches through the review queue, then audits that no references survive.
+
+**Continuity and health.** Agents log contradictions — eye colour, timeline, who-knows-what — with quoted evidence, and issues close only when a fix is verified in the prose. A steward runs a deterministic health check over the whole project (missing metadata, stale summaries, contradictory facts, recurring names with no bible page, binder-vs-disk drift) and repairs or reports what it finds.
+
+**Prose linting.** Deterministic checks for doubled words, filler, filter phrases, passive and adverb density, and your own banned terms — plus corpus-wide checks for phrases echoed across scenes and machine-flat rhythm.
+
+**Plans and book runs.** Biscuit writes multi-step plans as files you can edit, and in auto mode can continue through a plan across many turns — bounded by budgets, a no-progress detector, and your approval at every ceiling.
+
+**Watch it work.** An agent tree shows each sub-agent, its task, and its tool calls live; the sidebar marks which views changed while you were elsewhere; transcripts of every conversation are searchable alongside your manuscript.
+
+## Safety rails
+
+- **Three modes** — Ask is mechanically read-only, Approvals queues every change for review, Auto applies after taking a snapshot. Cycle them with ctrl+shift; the choice is remembered per project.
+- **59 typed tools, scoped per role** — read-only agents cannot write, and prose changes only reach your files through the review queue or an explicit approval.
+- **Nothing touches internals** — `.wordbird/` and `.git/` are off-limits to every tool, enforced when a change is proposed and again when it is applied.
+- **Everything is per project** — conversations, permission mode, agent state, and caches never leak between books.
+- **Budgets** — caps on agents per wave, waves per turn, and context size, with a ring showing when older conversation will be condensed.
 
 ## Download
 
@@ -90,7 +113,8 @@ WordBird is a pnpm monorepo (Electron 42 + Vue 3 + LangGraph). See [CLAUDE.md](C
 ```bash
 pnpm install
 pnpm run dev      # start in development mode
-pnpm run test     # 740+ unit tests
+pnpm run test     # unit tests
+pnpm run test:e2e # Playwright end-to-end tests
 pnpm run build:linux | build:mac | build:win
 ```
 
