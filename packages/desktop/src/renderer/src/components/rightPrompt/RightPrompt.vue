@@ -488,6 +488,7 @@ import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '../../store/preferences'
 import { useLayoutStore } from '../../store/layout'
 import { useProjectStore } from '../../store/project'
+import { modeKey } from '../../util/projectStorageKeys'
 import { useNovelStore } from '../../store/novel'
 import { useEditorStore } from '../../store/editor'
 import { useAgentsStore } from '../../store/agents'
@@ -622,20 +623,35 @@ const normalizeMode = (value: string | null): AgentPermissionMode => {
 // project's .wordbird/agent-state/session.json, so a project reopens in the
 // mode the writer last used with it (a brand-new project starts in the safe
 // approvals default). The renderer mirrors main's answer; localStorage keeps
-// a copy only for the auto-apply check in editor.vue.
-const mode = ref<AgentPermissionMode>(normalizeMode(localStorage.getItem('biscuit-mode')))
+// a per-project copy only for the auto-apply checks in editor.vue and
+// agentReviewFallback.ts.
+//
+// The cache is keyed by project because those checks auto-apply edits when
+// it reads `auto`: a shared key let the mode of the LAST project stand in
+// until main answered, which could auto-apply in a project the writer never
+// put in auto mode. An unknown project now normalizes to `approvals`.
+const cachedMode = (): string | null =>
+  localStorage.getItem(modeKey(useProjectStore().currentProjectPath))
+const mode = ref<AgentPermissionMode>(normalizeMode(cachedMode()))
 
 const refreshModeFromMain = async (): Promise<void> => {
   try {
     const { mode: saved } = await window.electron.ai.getMode()
     mode.value = normalizeMode(saved)
-    localStorage.setItem('biscuit-mode', mode.value)
+    localStorage.setItem(modeKey(useProjectStore().currentProjectPath), mode.value)
   } catch {
-    // Main not ready yet — the localStorage mirror stands in.
+    // Main not ready yet — the per-project mirror stands in.
   }
 }
 // Adopt the saved mode when the active project changes (and at mount below).
-watch(() => useProjectStore().currentProjectPath, refreshModeFromMain)
+// Re-seed from the NEW project's cache first: main's answer is a round trip,
+// and until it lands the mode line must never still show the old project's.
+watch(() => useProjectStore().currentProjectPath, () => {
+  mode.value = normalizeMode(cachedMode())
+  refreshModeFromMain().catch(() => {
+    // Already swallowed inside; the cache stands in.
+  })
+})
 
 const currentModeInfo = computed(
   () => MODES.find((m) => m.id === mode.value) ?? MODES[1]
@@ -643,7 +659,7 @@ const currentModeInfo = computed(
 
 const setMode = async (m: AgentPermissionMode): Promise<void> => {
   mode.value = m
-  localStorage.setItem('biscuit-mode', m)
+  localStorage.setItem(modeKey(useProjectStore().currentProjectPath), m)
   try {
     await window.electron.ai.setMode(m)
   } catch {
@@ -1097,7 +1113,7 @@ onMounted(() => {
   // Mode changes broadcast from main keep every window's mode line in sync.
   unsubModeChanged = window.electron.ai.onModeChanged?.(({ mode: m }) => {
     mode.value = normalizeMode(m)
-    localStorage.setItem('biscuit-mode', mode.value)
+    localStorage.setItem(modeKey(useProjectStore().currentProjectPath), mode.value)
   }) ?? null
   // Approvals broadcast to every window; whoever answers clears the rest.
   unsubApprovalResolved = window.electron.ai.onApprovalResolved(({ id }) => {

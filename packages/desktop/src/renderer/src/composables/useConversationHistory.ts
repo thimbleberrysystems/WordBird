@@ -13,7 +13,7 @@
 import { ref, computed, watch, type Ref, type ComputedRef } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useProjectStore } from '../store/project'
-import { conversationKeys } from '../util/conversationKeys'
+import { conversationKeys } from '../util/projectStorageKeys'
 import { t } from '../i18n'
 import type { ILangGraphMessage } from '@shared/types/langgraph'
 

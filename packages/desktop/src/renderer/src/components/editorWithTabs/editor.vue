@@ -121,6 +121,7 @@ import { addCommonStyle, setEditorWidth, setWrapCodeBlocks } from '@/util/theme'
 import { usePreferencesStore } from '@/store/preferences'
 import { useEditorStore } from '@/store/editor'
 import { useProjectStore } from '@/store/project'
+import { modeKey } from '@/util/projectStorageKeys'
 import { applyAgentEditToCurrentFile } from '@/services/agentEditorApply'
 import type { IAgentEditProposal } from '@shared/types/langgraph'
 import { storeToRefs } from 'pinia'
@@ -1481,7 +1482,9 @@ onMounted(() => {
     // Auto mode: the writer chose speed over per-edit review — apply
     // automatically. Safety comes from the snapshot handleAgentApplyAll
     // takes before writing, so the whole batch is one Rewind away.
-    const mode = localStorage.getItem('biscuit-mode')
+    // Per-project key: a mode cached by a DIFFERENT project must never
+    // authorize auto-apply here (see util/projectStorageKeys).
+    const mode = localStorage.getItem(modeKey(projectStore.currentProjectPath))
     if (mode === 'auto') {
       scheduleAutoApply()
       return

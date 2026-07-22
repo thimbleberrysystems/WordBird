@@ -25,6 +25,7 @@ import { ElMessage } from 'element-plus'
 import bus from '../bus'
 import { useAgentStore } from '../store/agent'
 import { useProjectStore } from '../store/project'
+import { modeKey } from '../util/projectStorageKeys'
 
 let editorReviewActive = false
 /** editor.vue marks itself active on mount so the fallback stands down. */
@@ -121,6 +122,7 @@ export const initAgentReviewFallback = (): void => {
   initialized = true
 
   const agentStore = useAgentStore()
+  const projectStore = useProjectStore()
 
   const ingest = (proposal: {
     edit: { id: string; filePath: string; newContent: string; reason?: string }
@@ -131,7 +133,10 @@ export const initAgentReviewFallback = (): void => {
     agentStore.addPendingEdit(proposal.edit as never, proposal.oldContent, proposal.originalPath)
     // Auto mode with no editor mounted: the writer chose speed — apply
     // from here (snapshot first), or these proposals would sit forever.
-    if (!editorReviewActive && localStorage.getItem('biscuit-mode') === 'auto') {
+    // Per-project key: another project's cached mode must never authorize
+    // auto-apply here (see util/projectStorageKeys).
+    const mode = localStorage.getItem(modeKey(projectStore.currentProjectPath))
+    if (!editorReviewActive && mode === 'auto') {
       scheduleFallbackAutoApply()
     }
   }

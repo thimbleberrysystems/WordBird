@@ -24,7 +24,7 @@ vi.mock('../../../src/main/windows/biscuit', () => ({
   isBiscuitWindowId: () => false
 }))
 
-import { conversationKeys } from '../../../src/renderer/src/util/conversationKeys'
+import { conversationKeys, modeKey } from '../../../src/renderer/src/util/projectStorageKeys'
 import {
   getActiveAgentProjectRoot,
   setAgentToolAccessor,
@@ -54,6 +54,33 @@ describe('conversation list keys are per project', () => {
     expect(conversationKeys(undefined)).toEqual(none)
     // …and that scratch list is NOT any project's list.
     expect(none.history).not.toBe(conversationKeys('/home/w/novel-a').history)
+  })
+})
+
+describe('the cached permission mode is per project', () => {
+  it('two projects never share a mode key', () => {
+    expect(modeKey('/home/w/novel-a')).not.toBe(modeKey('/home/w/novel-b'))
+    expect(modeKey('/home/w/novel-a')).toContain('/home/w/novel-a')
+    expect(modeKey('  /home/w/novel-a  ')).toBe(modeKey('/home/w/novel-a'))
+  })
+
+  it('no project open falls back to the bare scratch key', () => {
+    expect(modeKey(null)).toBe('biscuit-mode')
+    expect(modeKey('')).toBe(modeKey(undefined))
+    expect(modeKey(null)).not.toBe(modeKey('/home/w/novel-a'))
+  })
+
+  it('SAFETY: a project in auto cannot authorize auto-apply in another', () => {
+    // The auto-apply checks in editor.vue and agentReviewFallback.ts read
+    // this key synchronously and apply edits when it says `auto`. Under the
+    // old shared key, opening a second project inherited the first one's
+    // `auto` until main answered — applying edits in a project the writer
+    // never put in auto mode. A miss must read as unknown, not as another
+    // project's answer.
+    const store = new Map<string, string>()
+    store.set(modeKey('/home/w/novel-a'), 'auto')
+    expect(store.get(modeKey('/home/w/novel-b'))).toBeUndefined()
+    expect(store.get(modeKey('/home/w/novel-b')) === 'auto').toBe(false)
   })
 })
 
