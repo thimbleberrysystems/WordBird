@@ -98,18 +98,49 @@ export const launchElectron = async(
   for (const [k, v] of Object.entries(process.env)) if (v !== undefined) env[k] = v
   env.PERF_TESTING = 'true'
   if (options.suppressErrorDialog) env.MARKTEXT_ERROR_INTERACTION = '1'
-  const app = await _electron.launch({
-    executablePath,
-    args,
-    cwd: projectRoot,
-    env,
-    timeout: 30000
-  })
-  if (options.suppressErrorDialog) await installRendererErrorCounter(app)
-  const page = await app.firstWindow()
-  await page.waitForLoadState('domcontentloaded')
-  await new Promise((resolve) => setTimeout(resolve, 500))
-  return { app, page }
+  try {
+    const app = await _electron.launch({
+      executablePath,
+      args,
+      cwd: projectRoot,
+      env,
+      timeout: 30000
+    })
+    if (options.suppressErrorDialog) await installRendererErrorCounter(app)
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    return { app, page }
+  } catch (error) {
+    throw new Error(describeLaunchFailure(error))
+  }
+}
+
+/**
+ * Electron opens REAL windows, so the suite's ~190 launches all go through the
+ * X server $DISPLAY points at. When that connection drops mid-run — common on
+ * WSLg and busy desktop sessions — every later launch dies instantly with
+ * Playwright's generic "Target page, context or browser has been closed", and
+ * a whole run reads as application bugs rather than one environment failure.
+ * Name it instead, with the fix.
+ */
+const describeLaunchFailure = (error: unknown): string => {
+  const message = error instanceof Error ? error.message : String(error)
+  const xDropped =
+    /X connection error|XGetWindowAttributes failed|Target page, context or browser has been closed/.test(
+      message
+    )
+  if (!xDropped) return message
+  return (
+    'Electron could not open a window — the X server connection was lost ' +
+    `(DISPLAY=${process.env.DISPLAY ?? '(unset)'}).\n` +
+    'This is an ENVIRONMENT failure, not a test failure: once the connection ' +
+    'drops, every remaining launch in the run fails the same way.\n' +
+    'Run the suite under a private X server (what CI does):\n' +
+    '  sudo apt-get install -y xvfb   # once\n' +
+    '  pnpm run test:e2e              # picks xvfb up automatically\n\n' +
+    `Original error: ${message}`
+  )
 }
 
 // Capture renderer-process errors that would otherwise pop the "Unexpected
