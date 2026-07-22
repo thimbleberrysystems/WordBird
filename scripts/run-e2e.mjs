@@ -25,7 +25,20 @@
 import { spawn, spawnSync } from 'node:child_process'
 
 const args = process.argv.slice(2)
-const playwright = ['playwright', 'test', 'test/e2e', ...args]
+
+// --config is REQUIRED, not decorative. Playwright resolves a config relative
+// to the CWD (packages/desktop); this one lives in test/e2e/, so plain
+// `playwright test test/e2e` silently ran with DEFAULTS — 24 workers instead
+// of `workers: 1`, and no retries. The suite's specs share seeded projects and
+// assume one worker, and 24 concurrent Electron apps is also what exhausted
+// the X server. Passing it explicitly is what makes the settings real.
+const playwright = [
+  'playwright',
+  'test',
+  '--config',
+  'test/e2e/playwright.config.ts',
+  ...args
+]
 
 const hasXvfb =
   process.platform === 'linux' &&

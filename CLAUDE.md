@@ -206,10 +206,18 @@ pnpm run typecheck     # vue-tsc --noEmit (CI enforces)
 pnpm -C packages/desktop exec vitest run test/unit/specs/markdown-basic.spec.ts
 pnpm -C packages/desktop exec vitest run -t 'partial test name'
 
-# Single Playwright spec (playwright.config.ts lives in test/e2e/)
-pnpm -C packages/desktop exec playwright test test/e2e/launch.spec.ts
-pnpm -C packages/desktop exec playwright test -g 'partial test name'
+# Single Playwright spec. ALWAYS pass --config: playwright resolves a config
+# relative to the CWD (packages/desktop) and this one lives in test/e2e/, so
+# omitting it silently runs with DEFAULTS — 24 workers instead of `workers: 1`,
+# and no retries. The specs share seeded projects and assume one worker, and
+# 24 concurrent Electron apps exhausts the X server mid-run.
+pnpm -C packages/desktop exec playwright test --config test/e2e/playwright.config.ts test/e2e/launch.spec.ts
+pnpm -C packages/desktop exec playwright test --config test/e2e/playwright.config.ts -g 'partial test name'
 ```
+
+`pnpm run test:e2e` handles this for you (scripts/run-e2e.mjs), and also runs
+the suite under `xvfb-run` when available so Electron's real windows get a
+private X server — the same isolation CI uses.
 
 ## Code Style
 
