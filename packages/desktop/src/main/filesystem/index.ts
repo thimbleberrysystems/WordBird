@@ -1,5 +1,6 @@
-import { readlinkSync, outputFile } from 'fs-extra'
+import { readlinkSync, ensureDir } from 'fs-extra'
 import path from 'path'
+import writeFileAtomic from 'write-file-atomic'
 import { isDirectory, isFile, isSymbolicLink } from 'common/filesystem'
 
 /**
@@ -21,18 +22,27 @@ export const normalizeAndResolvePath = (pathname: string): string => {
   return path.resolve(pathname)
 }
 
-export const writeFile = (
+export const writeFile = async(
   pathname: string,
   content: string | Buffer,
   extension?: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  options: BufferEncoding | { encoding?: BufferEncoding } | undefined | any = 'utf-8'
+  options: BufferEncoding | undefined = 'utf-8'
 ): Promise<void> => {
   if (!pathname) {
     return Promise.reject(new Error('[ERROR] Cannot save file without path.'))
   }
   pathname = !extension || pathname.endsWith(extension) ? pathname : `${pathname}${extension}`
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return outputFile(pathname, content as any, options)
+  // write-file-atomic does not create parent directories; recreate a moved or
+  // deleted folder first so an (auto)save into it still succeeds.
+  await ensureDir(path.dirname(pathname))
+
+  // Durable atomic save: write to a temp file in the target's directory, fsync
+  // it, then rename it over the target. This survives an application crash AND
+  // a power loss / OS reboot — the fsync before the rename is what closes the
+  // window that otherwise leaves a full-length, zero-filled manuscript; a bare
+  // rename is only namespace-atomic, not data-durable. write-file-atomic also
+  // preserves the target's mode/owner, writes through a symlink to its target,
+  // and uses a unique temp name — all of which a plain temp+rename dropped.
+  await writeFileAtomic(pathname, content, options)
 }

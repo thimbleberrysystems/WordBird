@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import writeFileAtomic from 'write-file-atomic'
 import log from 'electron-log'
 import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import { TypedEmitter } from '@shared/types/typedEmitter'
@@ -33,7 +34,6 @@ class EditorBufferStore extends TypedEmitter<EditorBufferStoreEvents> {
   bufferStores: Record<string, BufferStoreEntry> | null
   serviceName: string
   encryptKeys: string[]
-  writeSequence: number
 
   constructor(paths: EditorBufferStorePaths) {
     super()
@@ -46,7 +46,6 @@ class EditorBufferStore extends TypedEmitter<EditorBufferStoreEvents> {
     this.bufferStores = null
     this.serviceName = 'wordbird'
     this.encryptKeys = []
-    this.writeSequence = 0
 
     this.init()
   }
@@ -181,26 +180,13 @@ class EditorBufferStore extends TypedEmitter<EditorBufferStoreEvents> {
   }
 
   writeBufferStoreFile(filePath: string, newState: unknown): void {
-    const tempPath = path.join(
-      path.dirname(filePath),
-      `.${path.basename(filePath)}.${process.pid}.${Date.now()}.${++this.writeSequence}.tmp`
-    )
-
-    try {
-      // Write temp file first, then rename to the final file for atomicity
-      // and reduced risk of data corruption.
-      fs.writeFileSync(tempPath, JSON.stringify(newState), 'utf8')
-      fs.renameSync(tempPath, filePath)
-    } catch (err) {
-      try {
-        if (fs.existsSync(tempPath)) {
-          fs.unlinkSync(tempPath)
-        }
-      } catch (cleanupErr) {
-        console.error('Failed to clean up temporary buffer store file', cleanupErr)
-      }
-      throw err
-    }
+    // Durable atomic write: write-file-atomic writes to a temp file, fsyncs it,
+    // then renames it over the target. The previous temp-file + rename here was
+    // namespace-atomic (crash-safe) but omitted the fsync, so a power loss could
+    // still leave this crash-recovery buffer — which holds the writer's unsaved
+    // tab content — truncated or zero-filled, the same gap the document save
+    // path had.
+    writeFileAtomic.sync(filePath, JSON.stringify(newState), 'utf8')
   }
 
   updateBufferState(e: IpcMainInvokeEvent, newState: unknown): boolean {
