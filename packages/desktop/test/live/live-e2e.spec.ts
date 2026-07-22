@@ -482,6 +482,50 @@ live('40 · SYNC: a drafted scene comes back annotated for the views', () => {
   }, 600_000)
 })
 
+live('41 · VOICE: onboarding asks for the writer’s prose and never invents it', () => {
+  it('requests voice exemplars without fabricating any', async() => {
+    // Why this flow exists: unrelated novels were reading alike because the
+    // scaffolded style page stated a voice in its own placeholders. With the
+    // placeholders neutralized, the ONLY voice definition is the writer's —
+    // so onboarding has to ask for it, and must never paper over the gap by
+    // writing exemplars itself (a model-authored exemplar would just teach
+    // the model its own voice back).
+    const harness = await make({ root: createEmptyLiveProject(), label: 'flow-41-voice' })
+    harness.setMode('auto')
+    // Onboarding INTERVIEWS before it builds (playbook 1), so the voice ask
+    // belongs to the setup offer, not the opening turn. Answer the interview
+    // the way a writer would, then assert.
+    const first = await harness.send(
+      't-voice',
+      'I want to start a literary novel about a beekeeper in rural Georgia. Set the project up.'
+    )
+    const second = await harness.send(
+      't-voice',
+      'Third limited, past tense, about 60k words, and I discover as I go rather than ' +
+        'outlining. The emotional core is inherited guilt. Go ahead and set it up.'
+    )
+
+    const asked = `${first} ${second} ${harness.writerQuestions.map((q) => q.question).join(' ')}`
+    // BEHAVIOR, not wording: some request for the writer's own writing.
+    expect(
+      /voice|style|sample|exemplar|passage|excerpt|prose you|your writing|sound like/i.test(asked),
+      `onboarding never asked for the writer's voice. Reply: ${asked.slice(0, 400)}`
+    ).toBe(true)
+
+    // THE HARD INVARIANT: no exemplar may exist that the writer did not
+    // supply — not on disk, not as a proposal.
+    const voiceDir = path.join(harness.root, 'bible', 'voice')
+    const written = fs.existsSync(voiceDir)
+      ? fs.readdirSync(voiceDir).filter((n) => /\.(md|markdown)$/i.test(n))
+      : []
+    expect(written, `agent fabricated voice exemplars: ${written.join(', ')}`).toEqual([])
+    const proposedVoice = harness.editProposals.filter((p) =>
+      String((p as { path?: string }).path ?? '').includes('bible/voice/')
+    )
+    expect(proposedVoice, 'agent proposed a voice exemplar it wrote itself').toHaveLength(0)
+  }, 600_000)
+})
+
 live('4 · ask mode: live plan file, proposal card, no writes', () => {
   it('saves a plan file while brainstorming and cannot touch prose', async() => {
     const harness = await make()

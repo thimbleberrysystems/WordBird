@@ -91,13 +91,35 @@ const excerpt = (text: string, index: number, span = 60): string => {
 }
 
 /**
+ * HTML comments in a style page are GUIDANCE FOR THE WRITER, never canon:
+ * the scaffold keeps its examples there precisely so no reader — model or
+ * parser — mistakes them for the writer's own choices.
+ */
+export const stripHtmlComments = (markdown: string): string =>
+  markdown.replace(/<!--[\s\S]*?-->/g, '')
+
+/**
+ * Style-page fields the writer has left blank — a bullet whose label ends
+ * in `:` with nothing after it (`- Tense:`). An untouched scaffold reports
+ * every field, which is what ProjectHealth's `style-unfilled` check
+ * surfaces: blank fields mean the drafters fall back to the model default
+ * voice, the reason unrelated projects read alike.
+ */
+export const unfilledStyleFields = (styleMarkdown: string): string[] =>
+  stripHtmlComments(styleMarkdown)
+    .split('\n')
+    .map((line) => /^\s*[-*]\s+([^:]+):\s*$/.exec(line))
+    .filter((match): match is RegExpExecArray => match !== null)
+    .map((match) => match[1].trim())
+
+/**
  * Parse banned/avoid terms from a style page: bullet items under a
  * heading containing "banned"/"avoid", plus inline `avoid:`/`banned:`
  * lines (comma-separated). Tolerant — malformed pages yield [].
  */
 export const parseBannedTerms = (styleMarkdown: string): string[] => {
   const terms: string[] = []
-  const lines = styleMarkdown.split('\n')
+  const lines = stripHtmlComments(styleMarkdown).split('\n')
   let inBannedSection = false
   for (const line of lines) {
     const heading = /^#{1,6}\s+(.+)$/.exec(line)

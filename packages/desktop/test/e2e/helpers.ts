@@ -286,7 +286,11 @@ export const getMarkdownContent = async(page: Page, app: ElectronApplication): P
 }
 
 export const typeIntoEditor = async(page: Page, text: string): Promise<void> => {
-  await page.click('.editor-component', { timeout: 5000 })
+  // 15s, matching waitForEditor: the full suite runs several Electron apps at
+  // once, and a starved renderer can take well over 5s to accept a click on an
+  // element that is already present. The old 5s cap made this the suite's most
+  // frequent load flake — the click timed out, never the assertion.
+  await page.click('.editor-component', { timeout: 15000 })
   await page.keyboard.type(text, { delay: 0 })
 }
 

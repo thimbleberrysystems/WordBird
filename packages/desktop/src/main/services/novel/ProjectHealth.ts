@@ -32,7 +32,7 @@ import { revisionService } from './RevisionService'
 import { listSkills, readPinnedSkills } from './Skills'
 import { ENTRY_RE as DECISION_ENTRY_RE } from './Decisions'
 import { HARNESS_MARKER_RE } from '../ai/coherencePass'
-import { parseBannedTerms } from './ProseLint'
+import { parseBannedTerms, unfilledStyleFields } from './ProseLint'
 import type { INovelUnit, NovelUnitStatus } from '../../../shared/types/novel'
 import { escapeRegExp } from './markdownText'
 
@@ -771,6 +771,43 @@ export const checkProjectHealth = async(root: string): Promise<HealthReport> => 
         message: 'bible/structure.md exists but no structureTemplate is recorded in the writing method'
       })
     }
+  })
+
+  // ---- voice definition: an unfilled style page + no exemplars ----
+  // Left blank, the drafters have nothing to match but the model's default
+  // voice — the reason unrelated projects read alike. A scaffold that was
+  // never touched looks perfectly healthy without this check.
+  await guarded('style-unfilled', () => {
+    let style = ''
+    try {
+      style = fs.readFileSync(path.join(root, 'bible', 'style.md'), 'utf8')
+    } catch {
+      return
+    }
+    const blanks = unfilledStyleFields(style)
+    let exemplars = 0
+    try {
+      exemplars = fs
+        .readdirSync(path.join(root, 'bible', 'voice'))
+        .filter((name) => /\.(md|markdown)$/i.test(name)).length
+    } catch {
+      exemplars = 0
+    }
+    // Exemplars ARE a voice definition — the strongest one. A writer who
+    // supplied prose to match does not need nagging about blank fields.
+    if (blanks.length === 0 || exemplars > 0) return
+    findings.push({
+      id: 'style-unfilled',
+      severity: 'warn',
+      category: 'hygiene',
+      message:
+        `bible/style.md has ${blanks.length} unfilled field${blanks.length === 1 ? '' : 's'} ` +
+        'and bible/voice/ is empty — drafts fall back to the model default voice',
+      items: blanks,
+      suggestion:
+        'Ask the writer for their voice answers (POV, tense, narrator) and offer to ' +
+        'harvest 2-3 passages of THEIR prose into bible/voice/ as exemplars.'
+    })
   })
 
   // ---- banned terms swept project-wide (style.md is canon) ----

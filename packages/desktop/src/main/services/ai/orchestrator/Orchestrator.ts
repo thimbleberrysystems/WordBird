@@ -572,6 +572,15 @@ export const buildSupervisorPrompt = (
   '(spelling conventions, hard lines like "never kill the dog", chapter habits — via ' +
   'propose_new_file, review-gated), and — per their method below — outline shells or ' +
   'simply the opening scene. Offer, never dump.\n' +
+  '   · VOICE EXEMPLARS — ask for them here, once, and never nag again. Blank voice ' +
+  'fields mean every drafter falls back to the model default, which is why untended ' +
+  'projects read alike. Invite the writer to paste 2-3 short passages of THEIR OWN prose ' +
+  '(any project, published or drafted) that sound the way this book should; save each ' +
+  'verbatim to bible/voice/<label>.md via propose_new_file. NEVER write exemplars ' +
+  'yourself and never adapt what they paste — a model-written exemplar teaches the ' +
+  'model its own voice, which is the exact failure this fixes. If they have nothing to ' +
+  'hand, say the offer stands whenever they do, fill bible/style.md from their answers ' +
+  'instead, and move on.\n' +
   '2) DRAFT THE NEXT SCENE (method-aware):\n' +
   '   · outline-first: the outline is the map. Premise line → paragraph synopsis (book ' +
   'summary) → character pages → the full scene list as propose_new_unit shells with ' +

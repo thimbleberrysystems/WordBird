@@ -9,6 +9,7 @@ import { isValidProjectPath } from '../filesystem/markdown'
 import { structureService } from '../services/novel/StructureService'
 import { STRUCTURE_TEMPLATES } from '../services/novel/structureTemplates'
 import { isPlanningStyle, isStructureTemplate } from '../services/novel/ProjectMeta'
+import { FLAVOR_TEMPLATES } from '../services/novel/projectScaffold'
 import { snapshotService } from '../services/novel/SnapshotService'
 import type {
   ProjectImportArgs,
@@ -31,56 +32,6 @@ const chooseDirectory = async(win: BrowserWindow | null): Promise<string | null>
     return null
   }
   return normalizePath(filePaths[0])
-}
-
-// Per-flavor novel project scaffolding. All flavors share the story bible
-// and notes; they differ only in how prose files are laid out on disk
-// (see @shared/types/novel for the flavor descriptions).
-const COMMON_FOLDERS = [
-  'skills',
-  'bible/characters',
-  'bible/places',
-  'bible/threads',
-  'bible/research',
-  'notes'
-]
-
-const STYLE_TEMPLATE =
-  '# Style Guide\n\n' +
-  '## Voice & tense\n\n- Point of view: (e.g. third limited, single POV per scene)\n' +
-  '- Tense: (e.g. past)\n- Narrator voice: (e.g. wry, restrained; no purple prose)\n\n' +
-  '## Prose rules\n\n- Dialogue tags: (e.g. said/asked only)\n' +
-  '- Words/phrases to avoid: (e.g. suddenly, very, "little did they know")\n' +
-  '- Profanity/content boundaries:\n\n' +
-  '## Character voices\n\n- (Name): speech habits, vocabulary, rhythm\n'
-
-// Boilerplate diet: guidance lives in the views' empty states now, not
-// in scaffolded READMEs the writer has to delete.
-const COMMON_FILES: Record<string, string> = {
-  'bible/style.md': STYLE_TEMPLATE,
-  // Compiled output and agent thread state are derived/machine-local —
-  // keep them out of snapshots.
-  '.gitignore': 'exports/\n.wordbird/agent-state/\n'
-}
-
-const FLAVOR_TEMPLATES: Record<
-  ProjectFlavor,
-  { folders: string[]; files: Record<string, string> }
-> = {
-  // No placeholder chapters/scenes: the binder starts empty and the first
-  // unit is the writer's (or Biscuit's onboarding playbook's) to create.
-  'chapters-scenes': {
-    folders: [...COMMON_FOLDERS, 'manuscript'],
-    files: { ...COMMON_FILES }
-  },
-  'scene-pool': {
-    folders: [...COMMON_FOLDERS, 'scenes'],
-    files: { ...COMMON_FILES }
-  },
-  flat: {
-    folders: [...COMMON_FOLDERS],
-    files: { ...COMMON_FILES }
-  }
 }
 
 const isProjectFlavor = (value: unknown): value is ProjectFlavor =>
