@@ -1648,6 +1648,8 @@
     "projectHomeAskPrompt": "Help me set up this novel: interview me briefly about my story, then create the story bible and the first chapter with an opening scene.",
     "projectHomeCreate": "Create your first chapter",
     "projectHomeHint": "A fresh manuscript. Create your first chapter, or let Biscuit set the whole project up around your idea.",
+    "projectHomeResumeHint": "{words} words so far. Open a scene from the Manuscript panel to keep writing.",
+    "projectHomeResume": "Continue \"{title}\"",
     "searchHint": "Every scene, bible page, note, and plan — type above to search.",
     "searchTitle": "Search the whole project",
     "skillsHint": "Your reusable technique files. Add one and Biscuit follows it when the task matches.",

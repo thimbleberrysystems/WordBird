@@ -1647,6 +1647,8 @@
     "projectHomeAskPrompt": "Ayúdame a montar esta novela: entrevístame brevemente sobre mi historia y luego crea la biblia y el primer capítulo con una escena inicial.",
     "projectHomeCreate": "Crear tu primer capítulo",
     "projectHomeHint": "Un manuscrito nuevo. Crea tu primer capítulo o deja que Biscuit monte el proyecto alrededor de tu idea.",
+    "projectHomeResumeHint": "{words} palabras hasta ahora. Abre una escena desde el panel Manuscrito para seguir escribiendo.",
+    "projectHomeResume": "Continuar «{title}»",
     "searchHint": "Cada escena, página de la biblia, nota y plan — escribe arriba para buscar.",
     "searchTitle": "Buscar en todo el proyecto",
     "skillsHint": "Tus técnicas reutilizables. Añade una y Biscuit la seguirá cuando la tarea coincida.",

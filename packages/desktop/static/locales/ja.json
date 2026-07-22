@@ -1647,6 +1647,8 @@
     "projectHomeAskPrompt": "この小説のセットアップを手伝って：物語について簡単にインタビューして、ストーリーバイブルと冒頭シーン付きの第1章を作成して。",
     "projectHomeCreate": "最初の章を作る",
     "projectHomeHint": "まっさらな原稿です。最初の章を作るか、あなたのアイデアを軸に Biscuit にプロジェクトを組み立てさせましょう。",
+    "projectHomeResumeHint": "これまでに {words} 語。原稿パネルからシーンを開いて執筆を続けましょう。",
+    "projectHomeResume": "「{title}」を続ける",
     "searchHint": "すべてのシーン・バイブル・ノート・プラン — 上に入力して検索。",
     "searchTitle": "プロジェクト全体を検索",
     "skillsHint": "再利用できるテクニックファイル。追加すれば、合うタスクで Biscuit が従います。",

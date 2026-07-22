@@ -49,10 +49,15 @@ test.describe('Binder CRUD (real project)', () => {
   test('project home fills the previously-blank center pane', async() => {
     // A project with no file open used to render NOTHING in the editor
     // area — now it's a launchpad.
-    await expect(page.locator('.project-home')).toBeVisible({ timeout: 15000 })
-    await expect(page.locator('.project-home')).toContainText('first chapter', {
-      ignoreCase: true
-    })
+    const home = page.locator('.project-home')
+    await expect(home).toBeVisible({ timeout: 15000 })
+    // This project HAS a scene, so the launchpad offers a way back into it.
+    // It must not read as a fresh project — this assertion used to require
+    // "first chapter" here, which pinned exactly the bug a writer reported
+    // (a populated manuscript inviting them to start over).
+    await expect(home).toContainText('words so far')
+    await expect(home).toContainText('Continue')
+    await expect(home).not.toContainText('first chapter', { ignoreCase: true })
   })
 
   test('the binder renders the manuscript tree', async() => {

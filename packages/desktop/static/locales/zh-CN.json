@@ -1647,6 +1647,8 @@
     "projectHomeAskPrompt": "帮我搭建这部小说：先简单采访我了解故事，然后创建故事圣经和带开场场景的第一章。",
     "projectHomeCreate": "创建第一章",
     "projectHomeHint": "全新的书稿。创建你的第一章，或让 Biscuit 围绕你的想法搭建整个项目。",
+    "projectHomeResumeHint": "目前 {words} 字。从“书稿”面板打开一个场景继续写作。",
+    "projectHomeResume": "继续《{title}》",
     "searchHint": "每个场景、圣经页面、笔记和计划 — 在上方输入即可搜索。",
     "searchTitle": "搜索整个项目",
     "skillsHint": "你的可复用技巧文件。添加后，任务匹配时 Biscuit 会遵循。",

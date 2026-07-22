@@ -1647,6 +1647,8 @@
     "projectHomeAskPrompt": "Hilf mir, diesen Roman aufzusetzen: Befrage mich kurz zu meiner Geschichte und lege dann Story-Bibel und das erste Kapitel mit einer Eröffnungsszene an.",
     "projectHomeCreate": "Erstes Kapitel anlegen",
     "projectHomeHint": "Ein frisches Manuskript. Lege dein erstes Kapitel an — oder lass Biscuit das Projekt rund um deine Idee aufsetzen.",
+    "projectHomeResumeHint": "Bisher {words} Wörter. Öffne eine Szene im Manuskript-Bereich, um weiterzuschreiben.",
+    "projectHomeResume": "„{title}“ fortsetzen",
     "searchHint": "Jede Szene, Bibel-Seite, Notiz und jeder Plan — oben tippen und suchen.",
     "searchTitle": "Das ganze Projekt durchsuchen",
     "skillsHint": "Deine wiederverwendbaren Technik-Dateien. Lege eine an und Biscuit folgt ihr bei passenden Aufgaben.",

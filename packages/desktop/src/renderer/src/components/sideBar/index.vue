@@ -88,7 +88,8 @@ import { useLayoutStore } from '@/store/layout'
 import { useSidebarActivityStore } from '@/store/sidebarActivity'
 import {
   rebaselineView,
-  resetActivityBaselines
+  resetActivityBaselines,
+  primeActivityBaselines
 } from '@/services/sidebarActivityWatch'
 import { useProjectStore } from '@/store/project'
 import { useEditorStore } from '@/store/editor'
@@ -189,11 +190,17 @@ watch(rightColumn, (view) => {
   rebaselineView(view).catch(() => {})
 }, { immediate: true })
 
-// A different project starts with a clean rail and clean baselines.
+// A different project starts with a clean rail and clean baselines — and is
+// baselined IMMEDIATELY, so the first issue or snapshot of the session is
+// measured against what was already on disk rather than establishing the
+// baseline itself (which used to swallow that first dot).
 watch(() => projectStore.currentProjectPath, () => {
   sidebarActivityStore.clearAll()
   resetActivityBaselines()
-})
+  primeActivityBaselines().catch(() => {
+    // Advisory: without a baseline the next refresh errs toward dotting.
+  })
+}, { immediate: true })
 
 /** Tooltip names WHAT is new, so a red dot is actionable at a glance. */
 const activityTip = (viewId: string): string => {

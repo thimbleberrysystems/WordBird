@@ -69,6 +69,23 @@ export const resetActivityBaselines = (): void => {
 }
 
 /**
+ * Take the "nothing has happened yet" baseline for a freshly opened project.
+ *
+ * This must run at PROJECT LOAD, not lazily on the first change event. When
+ * the baseline was taken lazily, the first change of a session was the thing
+ * that established it — so the first continuity issue Biscuit logged, and
+ * the first snapshot it took, silently never dotted. A missed red dot is the
+ * most expensive one to miss.
+ *
+ * Priming here also keeps the opposite failure away: a project opened with
+ * pre-existing issues starts quiet, because those were already on disk when
+ * the writer arrived.
+ */
+export const primeActivityBaselines = async(): Promise<void> => {
+  await Promise.all([rebaselineView('continuity'), rebaselineView('history')])
+}
+
+/**
  * Compare the live data against the baseline and mark what actually grew.
  * `activeViewId` is never marked — the writer is looking at it.
  */
@@ -78,32 +95,27 @@ export const refreshDerivedActivity = async(activeViewId: string | null): Promis
   const activity = useSidebarActivityStore()
 
   // --- Continuity: NEW open issues, at their own severity ---------------
+  // A MISSING baseline counts as "seen nothing", so anything on disk reads
+  // as new. primeActivityBaselines takes the real baseline at project load;
+  // if that never ran (or failed), erring toward showing the dot is right —
+  // a spurious dot costs a glance, a swallowed red one costs a plot hole.
   const issues = await openIssues(root)
-  const ids = new Set(issues.map((i) => String(i.id ?? '')))
-  const baseline = seenIssueIds.get(root)
-  if (baseline === undefined) {
-    // First look this session: adopt as the baseline rather than dotting
-    // every pre-existing issue.
-    seenIssueIds.set(root, ids)
-  } else {
-    const fresh = issues.filter((issue) => !baseline.has(String(issue.id ?? '')))
-    if (fresh.length > 0) {
-      const loudest = fresh.reduce<ActivitySeverity>(
-        (worst, issue) =>
-          severityForIssue(String(issue.severity ?? '')) === 'error' ? 'error' : worst,
-        'warn'
-      )
-      activity.mark(['continuity'], loudest, activeViewId)
-    }
+  const baseline = seenIssueIds.get(root) ?? new Set<string>()
+  const fresh = issues.filter((issue) => !baseline.has(String(issue.id ?? '')))
+  if (fresh.length > 0) {
+    const loudest = fresh.reduce<ActivitySeverity>(
+      (worst, issue) =>
+        severityForIssue(String(issue.severity ?? '')) === 'error' ? 'error' : worst,
+      'warn'
+    )
+    activity.mark(['continuity'], loudest, activeViewId)
   }
 
   // --- Snapshots: a new one is routine progress -------------------------
   const count = await snapshotCount(root)
   if (count !== null) {
-    const previous = seenSnapshotCount.get(root)
-    if (previous === undefined) {
-      seenSnapshotCount.set(root, count)
-    } else if (count > previous) {
+    const previous = seenSnapshotCount.get(root) ?? 0
+    if (count > previous) {
       seenSnapshotCount.set(root, count)
       activity.mark(['history'], 'info', activeViewId)
     }

@@ -1647,6 +1647,8 @@
     "projectHomeAskPrompt": "이 소설의 설정을 도와줘: 내 이야기에 대해 간단히 인터뷰한 뒤 스토리 바이블과 오프닝 장면이 있는 1장을 만들어줘.",
     "projectHomeCreate": "첫 장 만들기",
     "projectHomeHint": "새 원고입니다. 첫 장을 만들거나, Biscuit에게 아이디어를 중심으로 프로젝트를 구성하게 하세요.",
+    "projectHomeResumeHint": "지금까지 {words}단어. 원고 패널에서 장면을 열어 계속 써 보세요.",
+    "projectHomeResume": "\"{title}\" 이어 쓰기",
     "searchHint": "모든 장면·바이블·노트·플랜 — 위에 입력해 검색하세요.",
     "searchTitle": "프로젝트 전체 검색",
     "skillsHint": "재사용 가능한 기법 파일. 추가하면 맞는 작업에서 Biscuit이 따릅니다.",
