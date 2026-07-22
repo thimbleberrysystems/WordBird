@@ -21,6 +21,7 @@ import type {
   IAgentEditProposalPayload,
   IAgentEditResolution
 } from '../../../shared/types/langgraph'
+import { writeFileDurableSync } from '../../filesystem/atomic'
 
 interface PendingEntry {
   payload: IAgentEditProposalPayload
@@ -97,7 +98,7 @@ export class EditResolutionTracker {
         pending: this._pending,
         resolutions: this._resolutions.slice(-MAX_RESOLUTIONS)
       }
-      fs.writeFileSync(this._filePath(), JSON.stringify(state), 'utf8')
+      writeFileDurableSync(this._filePath(), JSON.stringify(state))
     } catch (error) {
       log.warn('[EditResolutionTracker] Failed to persist state:', error)
     }

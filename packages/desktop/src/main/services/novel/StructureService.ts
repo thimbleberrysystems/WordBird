@@ -21,6 +21,7 @@ import type {
   INovelCompileResult,
   ProjectFlavor
 } from '../../../shared/types/novel'
+import { writeFileDurable } from '../../filesystem/atomic'
 
 const STRUCTURE_RELATIVE_PATH = path.join('.wordbird', 'structure.json')
 
@@ -153,7 +154,7 @@ export const updateDailyWordStats = async(
   }
   day.last = currentTotal
   try {
-    await fsPromises.writeFile(statsPath, JSON.stringify(stats, null, 2), 'utf8')
+    await writeFileDurable(statsPath, JSON.stringify(stats, null, 2))
   } catch {
     return undefined
   }
@@ -376,7 +377,7 @@ export class StructureService {
   async save(root: string, structure: INovelStructure): Promise<void> {
     const target = this.structurePath(root)
     await fsPromises.mkdir(path.dirname(target), { recursive: true })
-    await fsPromises.writeFile(target, JSON.stringify(structure, null, 2), 'utf8')
+    await writeFileDurable(target, JSON.stringify(structure, null, 2))
   }
 
   /** Read the project's flavor from `.wordbird/project.json` (if recorded). */
@@ -636,7 +637,7 @@ export class StructureService {
         throw new Error(`Unsafe unit path: ${relative}`)
       }
       await fsPromises.mkdir(path.dirname(path.join(root, relative)), { recursive: true })
-      await fsPromises.writeFile(path.join(root, relative), '', 'utf8')
+      await writeFileDurable(path.join(root, relative), '')
       unit.path = relative
       unit.status = 'idea'
       unit.wordCount = 0
@@ -741,14 +742,14 @@ export class StructureService {
         await fsPromises.mkdir(path.dirname(outputPath), { recursive: true })
         const format = options.format ?? 'md'
         if (format === 'md') {
-          await fsPromises.writeFile(outputPath, content, 'utf8')
+          await writeFileDurable(outputPath, content)
         } else {
           const { renderBook } = await import('./BookExporter')
           const { readProjectMeta } = await import('./ProjectMeta')
           const rendered = await renderBook(content, format, {
             title: readProjectMeta(root).name
           })
-          await fsPromises.writeFile(outputPath, rendered)
+          await writeFileDurable(outputPath, rendered)
         }
       }
       return { ok: true, content, outputPath, wordCount: countWords(content) }

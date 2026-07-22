@@ -14,6 +14,7 @@ import type {
   ProjectFlavor,
   StructureTemplate
 } from '../../../shared/types/novel'
+import { writeFileDurable } from '../../filesystem/atomic'
 
 const markerPath = (root: string): string => path.join(root, '.wordbird', 'project.json')
 
@@ -75,6 +76,6 @@ export const updateProjectMeta = async(
   }
   const next = { ...raw, ...patch }
   await fsPromises.mkdir(path.dirname(markerPath(root)), { recursive: true })
-  await fsPromises.writeFile(markerPath(root), JSON.stringify(next, null, 2), 'utf8')
+  await writeFileDurable(markerPath(root), JSON.stringify(next, null, 2))
   return readProjectMeta(root)
 }

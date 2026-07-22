@@ -36,6 +36,7 @@ import { appendDecision, listDecisions } from '../novel/Decisions'
 import { checkProjectHealth } from '../novel/ProjectHealth'
 import type { AgentToolContext, AgentToolService } from './AgentToolService'
 import type { INovelUnit, IContinuityIssue } from '../../../shared/types/novel'
+import { writeFileDurable } from '../../filesystem/atomic'
 
 const execFileAsync = promisify(execFile)
 
@@ -932,7 +933,7 @@ const updateSummary = async(
   const content = str(args, 'content')
   const target = summaryPath(root, targetId)
   await fsPromises.mkdir(path.dirname(target), { recursive: true })
-  await fsPromises.writeFile(target, content, 'utf8')
+  await writeFileDurable(target, content)
   return { updated: true, target: path.relative(root, target) }
 }
 
@@ -1503,7 +1504,7 @@ const savePlan = async(
   const relative = planPathFor(root, title, optStr(args, 'folder'))
   const target = path.join(root, relative)
   await fsPromises.mkdir(path.dirname(target), { recursive: true })
-  await fsPromises.writeFile(target, `# ${title}\n\n${plan}\n`, 'utf8')
+  await writeFileDurable(target, `# ${title}\n\n${plan}\n`)
 
   return {
     created: true,
@@ -1578,7 +1579,7 @@ const saveResearch = async(
     ...(sources.length > 0 ? ['sources:', ...sources.map((source) => `  - ${source}`)] : []),
     '---'
   ].join('\n')
-  await fsPromises.writeFile(target, `${frontMatter}\n\n# ${title}\n\n${content}\n`, 'utf8')
+  await writeFileDurable(target, `${frontMatter}\n\n# ${title}\n\n${content}\n`)
 
   return {
     saved: true,
@@ -1604,7 +1605,7 @@ const updatePlan = async(
   }
   const existing = await readTextSafe(target)
   const existingTitle = /^#\s+(.+)$/m.exec(existing)?.[1]?.trim() ?? 'Plan'
-  await fsPromises.writeFile(target, `# ${title ?? existingTitle}\n\n${plan}\n`, 'utf8')
+  await writeFileDurable(target, `# ${title ?? existingTitle}\n\n${plan}\n`)
   return { updated: true, planId, planSaved: { path: planId } }
 }
 
@@ -1816,7 +1817,7 @@ const setWritingMethod = async(
   const beatSheetPath = path.join(root, 'bible', 'structure.md')
   if (beatSheet && !fs.existsSync(beatSheetPath)) {
     await fsPromises.mkdir(path.dirname(beatSheetPath), { recursive: true })
-    await fsPromises.writeFile(beatSheetPath, beatSheet, 'utf8')
+    await writeFileDurable(beatSheetPath, beatSheet)
     seededBeatSheet = true
   }
 

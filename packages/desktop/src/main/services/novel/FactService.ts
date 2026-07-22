@@ -16,6 +16,7 @@
 import path from 'path'
 import fsPromises from 'fs/promises'
 import crypto from 'crypto'
+import { writeFileDurable } from '../../filesystem/atomic'
 
 export interface IStoryFact {
   id: string
@@ -70,7 +71,7 @@ export class FactService {
     const entry: IStoryFact = { id: crypto.randomUUID(), at: Date.now(), ...fact }
     facts.push(entry)
     await fsPromises.mkdir(path.dirname(factsPath(root)), { recursive: true })
-    await fsPromises.writeFile(factsPath(root), JSON.stringify({ facts }, null, 2), 'utf8')
+    await writeFileDurable(factsPath(root), JSON.stringify({ facts }, null, 2))
     return { fact: entry, duplicate: false }
   }
 

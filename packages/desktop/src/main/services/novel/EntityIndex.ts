@@ -17,6 +17,7 @@ import fs from 'fs'
 import fsPromises from 'fs/promises'
 import { structureService, collectLeaves } from './StructureService'
 import { escapeRegExp } from './markdownText'
+import { writeFileDurable } from '../../filesystem/atomic'
 
 export interface IEntityAppearance {
   unitId: string
@@ -186,7 +187,7 @@ export const buildEntityIndex = async(root: string): Promise<IEntityIndex> => {
   try {
     const target = indexPath(root)
     await fsPromises.mkdir(path.dirname(target), { recursive: true })
-    await fsPromises.writeFile(target, JSON.stringify(index), 'utf8')
+    await writeFileDurable(target, JSON.stringify(index))
   } catch {
     // Persisting is an optimization — the in-memory result still serves.
   }

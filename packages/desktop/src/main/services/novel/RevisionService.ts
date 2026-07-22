@@ -20,6 +20,7 @@ import type {
   IRevisionImpactEntry,
   RevisionUnitStatus
 } from '../../../shared/types/novel'
+import { writeFileDurable } from '../../filesystem/atomic'
 
 const revisionsDir = (root: string): string => path.join(root, '.wordbird', 'revisions')
 const revisionDir = (root: string, id: string): string => path.join(revisionsDir(root), id)
@@ -39,7 +40,7 @@ export class RevisionService {
       entries: []
     }
     await fsPromises.mkdir(revisionDir(root, id), { recursive: true })
-    await fsPromises.writeFile(directivePath(root, id), directive, 'utf8')
+    await writeFileDurable(directivePath(root, id), directive)
     await this._save(root, revision)
     // The whole point of a revision is that it can be undone.
     await snapshotService.snapshot(root, `Before revision: ${title}`, true)
@@ -47,11 +48,7 @@ export class RevisionService {
   }
 
   private async _save(root: string, revision: IRevision): Promise<void> {
-    await fsPromises.writeFile(
-      metaPath(root, revision.id),
-      JSON.stringify(revision, null, 2),
-      'utf8'
-    )
+    await writeFileDurable(metaPath(root, revision.id), JSON.stringify(revision, null, 2))
   }
 
   async get(root: string, id: string): Promise<{ revision: IRevision; directive: string } | null> {

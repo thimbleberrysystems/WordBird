@@ -18,6 +18,7 @@ import path from 'path'
 import fsPromises from 'fs/promises'
 import type { ProjectFlavor } from '../../../shared/types/novel'
 import { slugify } from './StructureService'
+import { writeFileDurable } from '../../filesystem/atomic'
 
 export interface ImportedScene {
   title: string
@@ -204,7 +205,7 @@ export const writeImportedManuscript = async(
       const relative = path.posix.join('manuscript', chapterSlug, `${sceneSlug}.md`)
       const target = path.join(root, 'manuscript', chapterSlug, `${sceneSlug}.md`)
       await fsPromises.mkdir(path.dirname(target), { recursive: true })
-      await fsPromises.writeFile(target, `${scene.content}\n`, 'utf8')
+      await writeFileDurable(target, `${scene.content}\n`)
       files.push(relative)
     }
   }

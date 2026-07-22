@@ -58,6 +58,7 @@ import {
 import { FileCheckpointSaver } from './FileCheckpointSaver'
 import { Orchestrator } from './orchestrator/Orchestrator'
 import type { OrchestratorCallbacks } from './orchestrator/Orchestrator'
+import { writeFileDurableSync } from '../../filesystem/atomic'
 import { AgentSDKRunner } from './agentSdk/AgentSDKRunner'
 import { contextBuilder } from './ContextBuilder'
 import type Accessor from '../../app/accessor'
@@ -228,11 +229,9 @@ export class LangGraphManager {
 
   private _writeSessionFile(patch: Record<string, unknown>): void {
     try {
-      fs.mkdirSync(this._agentStateDir(), { recursive: true })
-      fs.writeFileSync(
+      writeFileDurableSync(
         this._sessionPath(),
-        JSON.stringify({ ...this._readSessionFile(), ...patch }),
-        'utf8'
+        JSON.stringify({ ...this._readSessionFile(), ...patch })
       )
     } catch (error) {
       log.warn('[LangGraphMain] Failed to persist session state:', error)

@@ -7,6 +7,7 @@
 import path from 'path'
 import fsPromises from 'fs/promises'
 import type { IContinuityIssue } from '../../../shared/types/novel'
+import { writeFileDurable } from '../../filesystem/atomic'
 
 const issuesPath = (root: string): string =>
   path.join(root, '.wordbird', 'continuity', 'issues.json')
@@ -25,7 +26,7 @@ export class ContinuityService {
   async save(root: string, issues: IContinuityIssue[]): Promise<void> {
     const target = issuesPath(root)
     await fsPromises.mkdir(path.dirname(target), { recursive: true })
-    await fsPromises.writeFile(target, JSON.stringify(issues, null, 2), 'utf8')
+    await writeFileDurable(target, JSON.stringify(issues, null, 2))
   }
 
   async add(root: string, issue: IContinuityIssue): Promise<number> {

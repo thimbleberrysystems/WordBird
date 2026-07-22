@@ -10,7 +10,6 @@
  */
 
 import fs from 'fs'
-import path from 'path'
 import log from 'electron-log'
 import { MemorySaver } from '@langchain/langgraph'
 import type {
@@ -19,6 +18,7 @@ import type {
   PendingWrite
 } from '@langchain/langgraph-checkpoint'
 import type { RunnableConfig } from '@langchain/core/runnables'
+import { writeFileDurableSync } from '../../filesystem/atomic'
 
 const B64_TAG = '__wordbird_b64__'
 
@@ -135,10 +135,9 @@ export class FileCheckpointSaver extends MemorySaver {
         storage: encode(self.storage),
         writes: encode(self.writes)
       })
-      fs.mkdirSync(path.dirname(this._filePath), { recursive: true })
-      const tmp = `${this._filePath}.tmp`
-      fs.writeFileSync(tmp, payload, 'utf8')
-      fs.renameSync(tmp, this._filePath)
+      // Was a hand-rolled temp+rename: crash-safe, but with no fsync a power
+      // loss could still leave the checkpoint store zero-filled.
+      writeFileDurableSync(this._filePath, payload)
     } catch (error) {
       log.error('[checkpoint] Failed to persist checkpoint store:', error)
     }

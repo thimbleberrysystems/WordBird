@@ -16,6 +16,7 @@
 import fs from 'fs'
 import path from 'path'
 import { isLockedCanon } from '../ai/pathGuards'
+import { writeFileDurableSync } from '../../filesystem/atomic'
 
 export const DECISIONS_FILE = path.join('bible', 'decisions.md')
 
@@ -82,7 +83,6 @@ export const appendDecision = (
     ...(reason?.trim() ? { reason: reason.trim() } : {})
   }
   const base = content ? content.replace(/\s*$/, '') + '\n' : HEADER
-  fs.mkdirSync(path.dirname(target), { recursive: true })
-  fs.writeFileSync(target, base + formatDecision(entry) + '\n', 'utf8')
+  writeFileDurableSync(target, base + formatDecision(entry) + '\n')
   return entry
 }

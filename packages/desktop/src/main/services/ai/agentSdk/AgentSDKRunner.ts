@@ -49,6 +49,7 @@ import {
   type AgentSdkModule
 } from './toolBridge'
 import { buildWordbirdHttpMcpServer, type HttpMcpServerHandle } from './httpMcpServer'
+import { writeFileDurableSync } from '../../../filesystem/atomic'
 
 /** Claude Code built-ins that could bypass the review queue — never bound. */
 // DENY EVERY SDK BUILT-IN EXCEPT THE SPAWN TOOL (Agent/Task).
@@ -962,8 +963,7 @@ export class AgentSDKRunner {
 
   private _saveSessions(sessions: Record<string, string>): void {
     try {
-      fs.mkdirSync(this._stateDir, { recursive: true })
-      fs.writeFileSync(this._sessionsPath(), JSON.stringify(sessions, null, 2))
+      writeFileDurableSync(this._sessionsPath(), JSON.stringify(sessions, null, 2))
     } catch (error) {
       log.warn('[AgentSDKRunner] Could not persist session map:', error)
     }
