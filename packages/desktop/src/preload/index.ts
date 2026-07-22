@@ -349,6 +349,8 @@ const aiAPI = {
     openTabs?: string[]
     unsavedTabs?: string[]
     selection?: { text: string; file?: string }
+    /** Project the renderer scoped this vantage to; main drops a mismatch. */
+    projectRoot?: string
   } | null) => ipcRenderer.send('mt::ai:set-session-context', context),
   onApprovalResolved: (handler: (event: { id: string }) => void) => {
     const subscription = (_e: unknown, event: { id: string }) => handler(event)

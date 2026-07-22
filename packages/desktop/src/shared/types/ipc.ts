@@ -361,6 +361,8 @@ export interface IpcSendChannels {
       openTabs?: string[]
       unsavedTabs?: string[]
       selection?: { text: string; file?: string }
+      /** Project the renderer scoped this vantage to (see ISessionContext). */
+      projectRoot?: string
     } | null
   ]
   'mt::ai:edit-resolved': [resolution: IAgentEditResolution]

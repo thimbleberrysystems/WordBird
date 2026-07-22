@@ -12,6 +12,7 @@ import { ElMessage } from 'element-plus'
 import { t } from '../i18n'
 import { useProjectStore } from './project'
 import { useEditorStore } from './editor'
+import { isTabInProject, partitionTabs, type ScopedTab } from '../util/projectScope'
 import type {
   INovelStructure,
   INovelUnit,
@@ -177,19 +178,28 @@ export const useNovelStore = defineStore('novel', () => {
         : undefined
       const tabName = (f: { filename?: string; pathname?: string }): string =>
         f.filename || (f.pathname ? window.path.basename(f.pathname) : '') || 'untitled'
-      const tabs = editorStore.tabs as Array<{
-        filename?: string
-        pathname?: string
-        isSaved?: boolean
-      }>
+      // SCOPE: the editor keeps unsaved buffers across project switches (by
+      // design — losing them would be worse), so `tabs` can hold files from a
+      // project the writer left, or one that no longer exists. Reporting those
+      // as vantage made Biscuit describe another project's files as this
+      // book's work in progress. Only this project's tabs are the agent's
+      // business; main re-applies the same filter.
+      const allTabs = editorStore.tabs as ScopedTab[]
+      const { inProject: tabs } = partitionTabs(allTabs, root.value)
+      const currentInScope = isTabInProject(
+        (editorStore.currentFile ?? {}) as ScopedTab,
+        root.value
+      )
       const selected = currentSelection.value.trim()
       window.electron.ai.setSessionContext({
         viewMode: viewMode.value,
+        projectRoot: root.value ?? undefined,
         currentUnitId: unit?.id,
-        currentFile: pathname ?? undefined,
+        currentFile: currentInScope ? pathname ?? undefined : undefined,
         openTabs: tabs.map(tabName).filter(Boolean),
         unsavedTabs: tabs.filter((f) => f.isSaved === false).map(tabName),
-        selection: selected
+        // A selection inside a foreign tab is not this project's text either.
+        selection: selected && currentInScope
           ? {
             text: selected.slice(0, 400),
             file: editorStore.currentFile

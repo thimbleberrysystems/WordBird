@@ -11,13 +11,25 @@
         <li
           v-for="file of tabs"
           :key="file.id"
-          :title="file.pathname"
-          :class="{ active: currentFile?.id === file.id, unsaved: !file.isSaved }"
+          :title="tabTooltip(file)"
+          :class="{
+            active: currentFile?.id === file.id,
+            unsaved: !file.isSaved,
+            foreign: !isTabInProject(file, projectRoot)
+          }"
           :data-id="file.id"
           @click.stop="selectFile(file)"
           @click.middle="closeTab(file.id)"
           @contextmenu.prevent="handleContextMenu($event, file)"
         >
+          <!-- A tab from another project (or one since deleted): the editor
+               keeps unsaved buffers across project switches on purpose, so say
+               so rather than letting it pass as part of this book. -->
+          <span
+            v-if="!isTabInProject(file, projectRoot)"
+            class="foreign-marker"
+            aria-hidden="true"
+          >⧉</span>
           <span>{{ file.filename }}</span>
           <span class="unsaved-dot" />
           <el-icon
@@ -45,6 +57,8 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useEditorStore } from '@/store/editor'
 import { useLayoutStore } from '@/store/layout'
+import { useProjectStore } from '@/store/project'
+import { isTabInProject } from '@/util/projectScope'
 import { storeToRefs } from 'pinia'
 import autoScroll from 'dom-autoscroller'
 import dragula from 'dragula'
@@ -55,8 +69,18 @@ import type { IFileState } from '@shared/types/files'
 
 const editorStore = useEditorStore()
 const layoutStore = useLayoutStore()
+const projectStore = useProjectStore()
 
 const { currentFile, tabs } = storeToRefs(editorStore)
+const { currentProjectPath: projectRoot } = storeToRefs(projectStore)
+
+/** Name the reason a tab is marked, so the badge is self-explaining. */
+const tabTooltip = (file: IFileState): string =>
+  isTabInProject(file, projectRoot.value)
+    ? file.pathname
+    : `${file.pathname}\n\nThis tab belongs to a different project — it stays open so ` +
+      'unsaved work is never lost, but it is not part of the project you have open, ' +
+      'and Biscuit is not told about it.'
 
 const tabContainer = ref<HTMLElement | null>(null)
 const tabDropContainer = ref<HTMLElement | null>(null)
@@ -332,6 +356,18 @@ onBeforeUnmount(() => {
       border-radius: 50%;
       background: var(--themeColor);
       flex-shrink: 0;
+    }
+    /* A tab left over from another project: dimmed and badged, so it reads
+       as "still here for safekeeping" rather than as part of this book. */
+    & > .foreign-marker {
+      flex-shrink: 0;
+      margin-right: 4px;
+      opacity: 0.75;
+      font-size: 11px;
+    }
+    &.foreign > span {
+      opacity: 0.6;
+      font-style: italic;
     }
   }
   & > li.unsaved:not(.active) {

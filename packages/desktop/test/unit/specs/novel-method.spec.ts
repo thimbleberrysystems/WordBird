@@ -182,6 +182,46 @@ describe('brief carries method, vantage, and timeline', () => {
     expect(brief).toContain('"Rain fell on the pier."')
     builder.setSessionContext(null)
   })
+
+  it('DROPS a vantage scoped to a different project', async() => {
+    // WRITER-REPORTED: on a brand-new project, Biscuit described four files
+    // from a since-deleted project as this book's work in progress. The
+    // renderer now filters tabs by project, and states which project it
+    // scoped to; a vantage belonging to another one is not half-trusted —
+    // it is dropped, covering a stale renderer, a mid-turn project switch,
+    // and the detached Biscuit window pointing elsewhere.
+    write('manuscript/chapter-one/opening.md', 'Rain fell on the pier.')
+    builder.setSessionContext({
+      viewMode: 'page',
+      projectRoot: '/somewhere/else/prj15',
+      currentFile: 'braided-novel-elam-to-vanni.md',
+      openTabs: ['braided-novel-elam-to-vanni.md', 'the-artefact.md'],
+      unsavedTabs: ['the-artefact.md']
+    })
+
+    const brief = await builder.buildProjectBrief(root)
+
+    expect(brief).not.toContain('braided-novel-elam-to-vanni.md')
+    expect(brief).not.toContain('the-artefact.md')
+    expect(brief).not.toContain("WRITER'S VANTAGE")
+    builder.setSessionContext(null)
+  })
+
+  it('keeps a vantage scoped to THIS project', async() => {
+    // The guard must not swallow the legitimate case it sits in front of.
+    write('manuscript/chapter-one/opening.md', 'Rain fell on the pier.')
+    builder.setSessionContext({
+      viewMode: 'page',
+      projectRoot: root,
+      openTabs: ['opening.md']
+    })
+
+    const brief = await builder.buildProjectBrief(root)
+
+    expect(brief).toContain("WRITER'S VANTAGE")
+    expect(brief).toContain('open tabs: opening.md')
+    builder.setSessionContext(null)
+  })
 })
 
 describe('list_structure exposes the full metadata read', () => {

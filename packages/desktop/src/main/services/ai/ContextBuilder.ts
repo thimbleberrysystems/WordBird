@@ -95,6 +95,15 @@ export interface ISessionContext {
   unsavedTabs?: string[]
   /** Text the writer currently has highlighted in the editor. */
   selection?: { text: string; file?: string }
+  /**
+   * The project the renderer scoped this vantage to. Tabs arrive as bare
+   * filenames, so main cannot re-check containment itself; instead the
+   * renderer states which project it filtered for, and a vantage belonging to
+   * a different project is dropped rather than described as this one's. That
+   * covers a stale renderer, a project switched mid-turn, and the detached
+   * Biscuit window pointing elsewhere.
+   */
+  projectRoot?: string
 }
 
 /** Cap for the selection excerpt carried into the brief. */
@@ -475,7 +484,13 @@ export class ContextBuilder {
 
       // Where the writer is looking right now (view + open scene + working
       // set + live selection), when known.
-      if (this._sessionContext) {
+      // A vantage scoped to a DIFFERENT project describes files this brief has
+      // nothing to do with. Drop it whole rather than half-trust it.
+      const vantageIsForThisProject =
+        !this._sessionContext?.projectRoot ||
+        !projectRoot ||
+        path.resolve(this._sessionContext.projectRoot) === path.resolve(projectRoot)
+      if (this._sessionContext && vantageIsForThisProject) {
         const ctx = this._sessionContext
         const vantageBits: string[] = [`${ctx.viewMode} view`]
         if (ctx.currentUnitId) {
