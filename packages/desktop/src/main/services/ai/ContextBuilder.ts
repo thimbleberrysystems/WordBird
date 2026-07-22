@@ -486,10 +486,16 @@ export class ContextBuilder {
       // set + live selection), when known.
       // A vantage scoped to a DIFFERENT project describes files this brief has
       // nothing to do with. Drop it whole rather than half-trust it.
+      //
+      // FAILS CLOSED on an UNDECLARED scope too: main holds one session
+      // context for the whole app, so a context sent while no project was
+      // open (no projectRoot) outlived the switch and got rendered as the new
+      // project's working set. When we are building for a project, an
+      // unattributed vantage is not evidence about it.
       const vantageIsForThisProject =
-        !this._sessionContext?.projectRoot ||
         !projectRoot ||
-        path.resolve(this._sessionContext.projectRoot) === path.resolve(projectRoot)
+        (!!this._sessionContext?.projectRoot &&
+          path.resolve(this._sessionContext.projectRoot) === path.resolve(projectRoot))
       if (this._sessionContext && vantageIsForThisProject) {
         const ctx = this._sessionContext
         const vantageBits: string[] = [`${ctx.viewMode} view`]

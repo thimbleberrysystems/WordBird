@@ -157,7 +157,7 @@ describe('brief carries method, vantage, and timeline', () => {
       location: 'The pier'
     })
 
-    builder.setSessionContext({ viewMode: 'timeline', currentUnitId: scene.id })
+    builder.setSessionContext({ viewMode: 'timeline', projectRoot: root, currentUnitId: scene.id })
     const brief = await builder.buildProjectBrief(root)
     expect(brief).toContain('@1871-06-02')
     expect(brief).toContain('loc: The pier')
@@ -170,6 +170,7 @@ describe('brief carries method, vantage, and timeline', () => {
     write('manuscript/chapter-one/opening.md', 'Rain fell on the pier.')
     builder.setSessionContext({
       viewMode: 'page',
+      projectRoot: root,
       currentFile: 'opening.md',
       openTabs: ['opening.md', 'the-letter.md'],
       unsavedTabs: ['the-letter.md'],
@@ -203,6 +204,25 @@ describe('brief carries method, vantage, and timeline', () => {
 
     expect(brief).not.toContain('braided-novel-elam-to-vanni.md')
     expect(brief).not.toContain('the-artefact.md')
+    expect(brief).not.toContain("WRITER'S VANTAGE")
+    builder.setSessionContext(null)
+  })
+
+  it('DROPS a vantage that declares no project at all', async() => {
+    // THE REGRESSION THAT SURVIVED THE FIRST FIX (writer-reported twice):
+    // main holds ONE session context for the whole app. One sent while no
+    // project was open carries no projectRoot, outlived the switch into a new
+    // project, and was rendered as that project's working set — naming files
+    // from a previous project. An unattributed vantage is not evidence.
+    write('manuscript/chapter-one/opening.md', 'Rain fell on the pier.')
+    builder.setSessionContext({
+      viewMode: 'page',
+      openTabs: ['braided-novel-elam-to-vanni.md', 'the-artefact.md']
+    })
+
+    const brief = await builder.buildProjectBrief(root)
+
+    expect(brief).not.toContain('braided-novel-elam-to-vanni.md')
     expect(brief).not.toContain("WRITER'S VANTAGE")
     builder.setSessionContext(null)
   })

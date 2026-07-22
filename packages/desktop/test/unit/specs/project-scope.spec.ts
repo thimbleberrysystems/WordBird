@@ -40,10 +40,15 @@ describe('isTabInProject', () => {
     expect(isTabInProject({ filename: 'Untitled-1' }, ROOT)).toBe(true)
   })
 
-  it('keeps every tab when no project is open', () => {
-    // Nothing to be outside of; the scratch window still has a working set.
-    expect(isTabInProject({ pathname: '/anywhere/x.md' }, null)).toBe(true)
-    expect(isTabInProject({ pathname: '/anywhere/x.md' }, '')).toBe(true)
+  it('FAILS CLOSED when no project is open', () => {
+    // How the bug survived its own fix: between launch and opening a project
+    // the root is null. Treating that as "everything is in scope" sent the
+    // previous project's tabs as vantage, and main kept that stale context
+    // after the new project opened. A tab we cannot attribute is not reported.
+    expect(isTabInProject({ pathname: '/anywhere/x.md' }, null)).toBe(false)
+    expect(isTabInProject({ pathname: '/anywhere/x.md' }, '')).toBe(false)
+    // …but an untitled buffer is still the writer's own live work.
+    expect(isTabInProject({ filename: 'Untitled-1' }, null)).toBe(true)
   })
 
   it('tolerates a trailing separator on the root', () => {

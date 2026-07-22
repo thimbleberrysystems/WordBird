@@ -7,7 +7,7 @@
  */
 
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { t } from '../i18n'
 import { useProjectStore } from './project'
@@ -212,6 +212,14 @@ export const useNovelStore = defineStore('novel', () => {
       // Context is advisory — never let it break the UI.
     }
   }
+
+  // Re-scope the vantage the moment the project changes. Without this, main
+  // keeps the context the previous project sent — same tabs, so no tab watcher
+  // fires — and describes those files as the NEW project's working set. This
+  // is what let the bug survive its first fix.
+  watch(root, () => {
+    sendSessionContext()
+  })
 
   function collectUnits(units: INovelUnit[]): INovelUnit[] {
     const out: INovelUnit[] = []

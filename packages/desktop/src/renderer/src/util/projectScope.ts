@@ -50,12 +50,18 @@ export interface ScopedTab {
 
 /**
  * True when a tab belongs to the open project: an untitled buffer, or a file
- * inside the project root. With no project open every tab is in scope —
- * there is nothing to be outside of.
+ * inside the project root.
+ *
+ * FAILS CLOSED when no project is open. The first version returned true there
+ * ("nothing to be outside of") and that is exactly how the bug survived its
+ * own fix: between launching and opening a project the root is null, the
+ * whole tab set — including files from a previous project — was sent as
+ * vantage, and main then held that stale context after the new project
+ * opened. A tab we cannot attribute is a tab we do not report.
  */
 export const isTabInProject = (tab: ScopedTab, root: string | null | undefined): boolean => {
   if (!tab.pathname) return true
-  if (!root) return true
+  if (!root) return false
   return isInside(root, tab.pathname)
 }
 
