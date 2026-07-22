@@ -91,6 +91,8 @@ export class LangGraphManager {
   private _currentProvider: AIProvider | null = null
   private _currentModel: string | null = null
   private _currentAbortController: AbortController | null = null
+  /** Config the live agent was built for; makes connect() idempotent. */
+  private _connectedFingerprint: string | null = null
   private _agentToolService: AgentToolService = new AgentToolService()
   private _systemPromptAdded: boolean = false
   private _checkpointer: FileCheckpointSaver | null = null
@@ -554,6 +556,24 @@ export class LangGraphManager {
     // Saved prefs may still carry the retired 'ollama_bundled' provider.
     const config: IAIConfig = { ...rawConfig, provider: normalizeProvider(rawConfig.provider) }
     const { provider, apiKey, baseUrl } = config
+
+    // IDEMPOTENT: a connect for the configuration we are already on is a
+    // no-op, not a rebuild.
+    //
+    // The renderer re-checks the connection on EVERY preference broadcast
+    // (CHECK_AI_CONNECTION), and preferences change for unrelated reasons —
+    // sidebar width, layout, theme. Without this guard each of those tore the
+    // agent down mid-run (`_agent = null`, new orchestrator, new checkpointer)
+    // and re-probed, which on claude-code costs a real billed turn. That is
+    // how a long task "dropped the connection": nothing failed, the runtime
+    // was rebuilt out from under it. A failed probe then ran `disconnect()`,
+    // which is why reconnecting by hand was needed afterwards.
+    const fingerprint = `${provider}|${config.model ?? ''}|${apiKey ?? ''}|${baseUrl ?? ''}`
+    if (this.isConnected && this._connectedFingerprint === fingerprint) {
+      this._broadcastConnectionState()
+      return
+    }
+
     this._currentProvider = provider
     this._currentModel = config.model || null
 
@@ -731,6 +751,7 @@ export class LangGraphManager {
         config.maxTokens ?? DEFAULT_MAX_OUTPUT_TOKENS
       )
       this._agent = this._orchestrator.buildGraph() as unknown as CompiledAgent
+      this._connectedFingerprint = fingerprint
       this._broadcastConnectionState()
     } catch (error) {
       log.error('[LangGraphMain] Connect error details:', error)
@@ -766,6 +787,7 @@ export class LangGraphManager {
     disposable?.dispose?.().catch(() => {})
     this._agent = null
     this._orchestrator = null
+    this._connectedFingerprint = null
     this._currentProvider = null
     this._currentModel = null
     this._systemPromptAdded = false

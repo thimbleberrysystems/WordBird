@@ -371,6 +371,17 @@ export class AgentSDKRunner {
     if (/billing/i.test(detail)) {
       return new Error(`Claude reported a billing problem for this account. (${detail})`)
     }
+    // TRANSIENT, and nothing to fix in Settings. A long run can exhaust the
+    // plan's limit; reported as a bare "runtime error" it reads like a broken
+    // connection, and the obvious response — reconnect — re-probes straight
+    // back into the same limit.
+    if (/rate[ _-]?limit|overloaded|429|too many requests/i.test(detail)) {
+      return new Error(
+        'Claude plan limit reached — this is temporary and your login is fine. ' +
+        'Wait for the limit to reset and continue; long runs resume from where ' +
+        `they stopped. (${detail})`
+      )
+    }
     return new Error(`Claude Code runtime error: ${detail}`)
   }
 
