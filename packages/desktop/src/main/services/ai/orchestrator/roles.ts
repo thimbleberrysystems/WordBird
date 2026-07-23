@@ -133,8 +133,11 @@ const STRUCTURE_CRAFT =
   'and you have an x-ray of the plot.\n' +
   '- Most chapters hold SEVERAL related scenes. One scene per chapter is a legitimate ' +
   'choice, never an automatic default — do not manufacture a chapter per scene.\n' +
-  '- Chapter naming: numbered ("Chapter 7") or titled, but be CONSISTENT across the book; ' +
-  'follow whatever the existing chapters already do rather than mixing styles.\n' +
+  '- Chapter naming: numbered ("Chapter 7"), titled ("The Vault"), or a NUMERAL-PREFIXED ' +
+  'title — a roman or arabic numeral before the name ("I. The Arrival", "II. Dusk on the ' +
+  'Veranda", "Chapter 3: The Vault"). Any scheme is fine; the rule is be CONSISTENT across ' +
+  'the book — follow whatever the existing chapters already do rather than mixing styles, ' +
+  'and when the writer asks for a scheme (or biscuit.md records one), use it throughout.\n' +
   // The chapter-vs-part DECISION is single-sourced in PROJECT_CONVENTIONS
   // (which these roles also carry via withConventions, and which the
   // supervisor gets directly) — see prompt-architecture.spec's parts pins.

@@ -92,6 +92,9 @@ describe('the guard reaches every prompt layer from one source', () => {
       // The practices that stop the prj14 shape recurring.
       expect(prompt, role).toContain('NAME A SCENE FOR WHAT HAPPENS IN IT')
       expect(prompt, role).toMatch(/never an automatic default/i)
+      // Chapter-naming palette includes the numeral-prefixed style
+      // ("I. The Arrival") as a consistent option, not just bare number/title.
+      expect(prompt, role).toMatch(/I\. The Arrival|NUMERAL-PREFIXED/i)
       // The chapter-vs-part criteria reach these roles too, now via
       // PROJECT_CONVENTIONS (withConventions) rather than a second copy here.
       expect(prompt, role).toMatch(/large arcs, episodic structure, or a hard shift/i)
