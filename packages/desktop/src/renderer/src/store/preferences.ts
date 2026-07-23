@@ -116,7 +116,15 @@ export interface PreferencesState {
   aiProvider: string
   aiConfigs: Record<
     string,
-    { apiKey: string; baseUrl?: string; model?: string; temperature?: number; maxTokens?: number }
+    {
+      apiKey: string
+      baseUrl?: string
+      model?: string
+      temperature?: number
+      maxTokens?: number
+      contextWindow?: number
+      enable1MContext?: boolean
+    }
   >
   aiIsConnected: boolean
   /** Active provider runtime capabilities (all-true = LangGraph default). */

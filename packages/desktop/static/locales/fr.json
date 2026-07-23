@@ -720,7 +720,16 @@
       "modelConnected": "Connexion au modèle réussie",
       "modelConnectionFailed": "Échec de la connexion au modèle : {error}",
       "noModels": "Aucun modèle trouvé. Vérifiez vos identifiants.",
-      "fetchModelsFailed": "Impossible de récupérer les modèles : {error}"
+      "fetchModelsFailed": "Impossible de récupérer les modèles : {error}",
+      "contextWindow": "Fenêtre de contexte",
+      "maxOutput": "Sortie max.",
+      "limitDetected": "détecté via l'API",
+      "limitEstimated": "estimé",
+      "limitOverride": "remplacement manuel",
+      "enable1M": "Activer le contexte 1M (bêta)",
+      "enable1MNote": "jetons au-delà de 200k facturés ~2× · nécessite un niveau de compte éligible",
+      "contextOverride": "Remplacer la fenêtre de contexte",
+      "contextOverrideNotes": "Laissez vide pour utiliser la fenêtre détectée."
     },
     "markdown": {
       "title": "Markdown",

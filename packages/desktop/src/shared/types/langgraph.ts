@@ -12,6 +12,14 @@ export interface IAIProviderConfig {
   maxTokens?: number
   /** Manual context-window override (tokens); otherwise resolved per provider. */
   contextWindow?: number
+  /**
+   * Anthropic only: opt into the 1M-token context beta
+   * (`context-1m-2025-08-07`). When true, the beta header is sent on both the
+   * models list and every message call, and the budget uses the reported (up
+   * to 1M) window. When false/undefined, no header and the window is capped at
+   * 200k. Tokens past 200k are billed ~2x and require an eligible account tier.
+   */
+  enable1MContext?: boolean
 }
 
 export interface IAIConfig extends IAIProviderConfig {

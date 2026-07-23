@@ -61,19 +61,20 @@ import type { OrchestratorCallbacks } from './orchestrator/Orchestrator'
 import { writeFileDurableSync } from '../../filesystem/atomic'
 import { AgentSDKRunner } from './agentSdk/AgentSDKRunner'
 import { contextBuilder } from './ContextBuilder'
+import {
+  ANTHROPIC_1M_BETA,
+  DEFAULT_MAX_OUTPUT_TOKENS,
+  limitSource,
+  resolveContextWindowSync,
+  resolveMaxOutput
+} from './modelLimits'
 import type Accessor from '../../app/accessor'
 
 const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000
 
-/**
- * Default reply cap when the writer hasn't set one. A hard cap must exist
- * (Anthropic's API requires max_tokens, and the context budget reserves
- * this amount out of the window) — but it has to be prose-sized: a full
- * scene is ~2-3k tokens and reasoning models spend budget on hidden
- * thinking before emitting a word. 8192 fits both with headroom; the
- * writer can raise/lower it in Settings → Biscuit.
- */
-const DEFAULT_MAX_OUTPUT_TOKENS = 8192
+// DEFAULT_MAX_OUTPUT_TOKENS (the prose-sized reply cap) + the Anthropic 1M
+// constants now live in ./modelLimits so the resolution is unit-testable
+// without Electron.
 
 type CompiledAgent = {
   invoke: (
@@ -517,44 +518,50 @@ export class LangGraphManager {
    * small local model from overflowing.
    */
   private async _resolveContextWindow(config: IAIConfig): Promise<number> {
-    if (Number.isFinite(config.contextWindow) && (config.contextWindow as number) > 0) {
-      return Math.floor(config.contextWindow as number)
-    }
     const model = config.model || ''
-    const reported = this._modelContextLengths.get(model)
-    if (reported) return reported
+    const inputs = {
+      provider: config.provider,
+      model,
+      reportedContext: this._modelContextLengths.get(model),
+      override: config.contextWindow,
+      enable1MContext: config.enable1MContext
+    }
+    // Pure resolution handles override → API-reported → provider rules. It
+    // returns null only for Ollama with no cached value, where a live
+    // /api/show lookup is the fallback.
+    const resolved = resolveContextWindowSync(inputs)
+    if (resolved !== null) return resolved
 
-    if (config.provider === 'ollama') {
-      try {
-        const base = config.baseUrl || PROVIDER_BASE_URLS.ollama
-        const response = await axios.post(`${base}/api/show`, { model }, { timeout: 10000 })
-        const info = (response.data?.model_info ?? {}) as Record<string, unknown>
-        for (const [key, value] of Object.entries(info)) {
-          if (key.endsWith('.context_length') && Number.isFinite(Number(value))) {
-            return Number(value)
-          }
+    try {
+      const base = config.baseUrl || PROVIDER_BASE_URLS.ollama
+      const response = await axios.post(`${base}/api/show`, { model }, { timeout: 10000 })
+      const info = (response.data?.model_info ?? {}) as Record<string, unknown>
+      for (const [key, value] of Object.entries(info)) {
+        if (key.endsWith('.context_length') && Number.isFinite(Number(value))) {
+          return Number(value)
         }
-      } catch (error) {
-        log.warn('[LangGraphMain] Could not read Ollama context length:', error)
       }
-      return 8192
+    } catch (error) {
+      log.warn('[LangGraphMain] Could not read Ollama context length:', error)
     }
+    return 8192
+  }
 
-    const id = model.toLowerCase()
-    if (
-      config.provider === 'anthropic' ||
-      config.provider === 'claude-code' ||
-      id.includes('claude')
-    ) {
-      return 200000
-    }
-    if (config.provider === 'google' || id.includes('gemini')) return 1000000
-    if (config.provider === 'openai') {
-      if (id.startsWith('gpt-4.1')) return 1000000
-      if (id.startsWith('gpt-3.5')) return 16385
-      return 128000
-    }
-    return 32768
+  /**
+   * What the connect window shows: the resolved context window + max output
+   * for a config, and where the number came from — 'override' (writer set
+   * contextWindow), 'api' (advertised by the provider's models endpoint), or
+   * 'default' (a family-table estimate). Populated maps require a prior
+   * fetchModels, which the connect/refresh flow already runs.
+   */
+  async resolveModelLimits(
+    config: IAIConfig
+  ): Promise<{ contextWindow: number; maxOutput: number; source: 'override' | 'api' | 'default' }> {
+    const contextWindow = await this._resolveContextWindow(config)
+    const model = config.model || ''
+    const maxOutput = resolveMaxOutput(this._modelMaxOutputs.get(model))
+    const source = limitSource(config.contextWindow, this._modelContextLengths.has(model))
+    return { contextWindow, maxOutput, source }
   }
 
   async connect(rawConfig: IAIConfig): Promise<void> {
@@ -588,7 +595,7 @@ export class LangGraphManager {
       if (provider !== 'claude-code') {
         await this._validateCredentials(provider, apiKey, baseUrl)
       }
-      await this.fetchModels(provider, apiKey, baseUrl)
+      await this.fetchModels(provider, apiKey, baseUrl, config.enable1MContext)
 
       // Reply cap: the writer's setting (or the prose-sized default),
       // clamped to the model's supported max output where the provider
@@ -805,7 +812,12 @@ export class LangGraphManager {
     this._broadcastConnectionState()
   }
 
-  async fetchModels(rawProvider: AIProvider, apiKey: string, baseUrl?: string): Promise<string[]> {
+  async fetchModels(
+    rawProvider: AIProvider,
+    apiKey: string,
+    baseUrl?: string,
+    enable1MContext = false
+  ): Promise<string[]> {
     const provider = normalizeProvider(rawProvider)
     const actualBaseUrl = baseUrl || PROVIDER_BASE_URLS[provider]
 
@@ -864,13 +876,25 @@ export class LangGraphManager {
           ]
         }
         const url = `${actualBaseUrl}/models`
-        const response = await axios.get(url, {
-          headers: {
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01'
-          }
-        })
-        return response.data.data?.map((m: Record<string, unknown>) => String(m.id)) || []
+        const headers: Record<string, string> = {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
+        }
+        // With the 1M beta enabled, ask so max_input_tokens reports the real
+        // per-model ceiling (1M for capable models) rather than the default.
+        if (enable1MContext) headers['anthropic-beta'] = ANTHROPIC_1M_BETA
+        const response = await axios.get(url, { headers })
+        const rows = (response.data.data ?? []) as Array<Record<string, unknown>>
+        // Anthropic now advertises real per-model limits — remember both so
+        // budgets/caps are sized from the API, not a hardcode.
+        for (const m of rows) {
+          const id = String(m.id)
+          const ctx = Number(m.max_input_tokens)
+          if (Number.isFinite(ctx) && ctx > 0) this._modelContextLengths.set(id, ctx)
+          const out = Number(m.max_tokens)
+          if (Number.isFinite(out) && out > 0) this._modelMaxOutputs.set(id, out)
+        }
+        return rows.map((m) => String(m.id))
       } else if (provider === 'google') {
         if (!apiKey) {
           throw new Error('API Key is required for Google Gemini')
@@ -880,6 +904,17 @@ export class LangGraphManager {
         const googleBase = baseUrl || PROVIDER_BASE_URLS.google
         const response = await axios.get(`${googleBase}/v1beta/models?key=${apiKey}`)
         const models = (response.data?.models ?? []) as Array<Record<string, unknown>>
+        // Gemini advertises inputTokenLimit / outputTokenLimit per model —
+        // capture both, keyed by the same `models/`-stripped id the dropdown
+        // uses, so budgets/caps come from the API rather than the hardcode.
+        for (const m of models) {
+          const id = String(m.name ?? '').replace(/^models\//, '')
+          if (!id) continue
+          const ctx = Number(m.inputTokenLimit)
+          if (Number.isFinite(ctx) && ctx > 0) this._modelContextLengths.set(id, ctx)
+          const out = Number(m.outputTokenLimit)
+          if (Number.isFinite(out) && out > 0) this._modelMaxOutputs.set(id, out)
+        }
         const generative = models
           .filter((m) =>
             Array.isArray(m.supportedGenerationMethods)
@@ -1301,7 +1336,12 @@ export class LangGraphManager {
           ...common,
           apiKey,
           anthropicApiKey: apiKey,
-          model: targetModel
+          model: targetModel,
+          // Opt-in 1M context: the beta header must ride every message call,
+          // not just the models list, or requests past 200k are rejected.
+          ...(config.enable1MContext
+            ? { clientOptions: { defaultHeaders: { 'anthropic-beta': ANTHROPIC_1M_BETA } } }
+            : {})
         }) as unknown as BaseChatModel
 
       case 'google':

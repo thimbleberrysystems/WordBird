@@ -104,6 +104,47 @@
               :on-change="(val: string | number | boolean) => updateConfig({ model: String(val) })"
             />
 
+            <!-- Detected context/output for the selected model. -->
+            <div
+              v-if="modelLimits"
+              class="model-limits"
+            >
+              <span class="model-limits-item">
+                {{ t('preferences.ai.contextWindow') }}:
+                <strong>{{ fmtTokens(modelLimits.contextWindow) }}</strong>
+              </span>
+              <span class="model-limits-item">
+                {{ t('preferences.ai.maxOutput') }}:
+                <strong>{{ fmtTokens(modelLimits.maxOutput) }}</strong>
+              </span>
+              <span class="model-limits-source">
+                {{ modelLimits.source === 'default'
+                  ? t('preferences.ai.limitEstimated')
+                  : modelLimits.source === 'override'
+                    ? t('preferences.ai.limitOverride')
+                    : t('preferences.ai.limitDetected') }}
+              </span>
+            </div>
+
+            <!-- Anthropic 1M context beta opt-in. -->
+            <el-checkbox
+              v-if="aiProvider === 'anthropic'"
+              :model-value="!!currentConfig.enable1MContext"
+              class="beta-toggle"
+              @change="(val: boolean) => updateConfig({ enable1MContext: val })"
+            >
+              {{ t('preferences.ai.enable1M') }}
+              <span class="beta-note">{{ t('preferences.ai.enable1MNote') }}</span>
+            </el-checkbox>
+
+            <!-- Optional manual context-window override. -->
+            <text-box
+              :description="t('preferences.ai.contextOverride')"
+              :input="currentConfig.contextWindow ? String(currentConfig.contextWindow) : ''"
+              :notes="t('preferences.ai.contextOverrideNotes')"
+              :on-change="updateContextOverride"
+            />
+
             <div class="action-group">
               <el-button
                 type="primary"
@@ -193,6 +234,12 @@ const modelConnecting = ref(false)
 const modelConnectionStatus = ref<{ type: 'success' | 'error', message: string } | null>(null)
 const modelError = ref('')
 const pullProgress = ref<{ percent?: number; status?: string } | null>(null)
+// Detected/resolved limits for the selected model (shown in the connect UI).
+const modelLimits = ref<{
+  contextWindow: number
+  maxOutput: number
+  source: 'override' | 'api' | 'default'
+} | null>(null)
 
 // Watchers
 watch(aiProvider, () => {
@@ -205,7 +252,12 @@ watch(aiProvider, () => {
 
 watch(() => currentConfig.value?.model, () => {
   modelConnectionStatus.value = null
+  refreshModelLimits()
 })
+
+// The 1M opt-in and a manual override both change the resolved window.
+watch(() => currentConfig.value?.enable1MContext, () => refreshModelLimits())
+watch(() => currentConfig.value?.contextWindow, () => refreshModelLimits())
 
 // Methods
 const handleProviderChange = (val: string | number | boolean) => {
@@ -223,6 +275,38 @@ const updateMaxTokens = (val: string) => {
   }
 }
 
+// An empty override clears it (fall back to the provider-resolved window);
+// otherwise store the number.
+const updateContextOverride = (val: string) => {
+  const trimmed = val.trim()
+  if (!trimmed) {
+    updateConfig({ contextWindow: undefined })
+    return
+  }
+  const parsed = Number.parseInt(trimmed, 10)
+  if (Number.isFinite(parsed) && parsed > 0) updateConfig({ contextWindow: parsed })
+}
+
+/** Ask main for the resolved window/output for the current model. */
+const refreshModelLimits = async () => {
+  if (!currentConfig.value?.model) {
+    modelLimits.value = null
+    return
+  }
+  try {
+    modelLimits.value = await window.electron.ai.modelLimits(getFullConfig())
+  } catch {
+    modelLimits.value = null
+  }
+}
+
+/** Compact display, e.g. 1,000,000 → "1M", 200000 → "200k". */
+const fmtTokens = (n: number): string => {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`
+  if (n >= 1000) return `${Math.round(n / 1000)}k`
+  return String(n)
+}
+
 const getErrorMessage = (err: unknown): string =>
   err instanceof Error ? err.message : String(err)
 
@@ -237,13 +321,16 @@ const fetchDynamicModels = async () => {
     const models = await langGraphService.fetchModels(
       aiProvider.value as AIProvider,
       config.apiKey,
-      config.baseUrl
+      config.baseUrl,
+      config.enable1MContext
     )
 
     if (models.length === 0) {
       modelError.value = t('preferences.ai.noModels')
     } else {
       dynamicModels.value = models
+      // Limits maps are now populated for these models.
+      refreshModelLimits()
     }
   } catch (err) {
     modelError.value = t('preferences.ai.fetchModelsFailed', { error: getErrorMessage(err) })
@@ -403,6 +490,34 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.model-limits {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  font-size: 13px;
+  color: var(--secondaryColor, var(--editorColor));
+}
+.model-limits-item strong {
+  color: var(--editorColor);
+}
+.model-limits-source {
+  font-size: 12px;
+  opacity: 0.7;
+  font-style: italic;
+}
+.beta-toggle {
+  align-items: flex-start;
+  height: auto;
+  white-space: normal;
+}
+.beta-note {
+  display: block;
+  font-size: 12px;
+  opacity: 0.7;
+  line-height: 1.3;
 }
 
 .status-msg {

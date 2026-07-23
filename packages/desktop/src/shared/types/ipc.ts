@@ -187,7 +187,11 @@ export interface IpcInvokeChannels {
     args: []
     ret: { compacted: boolean; repaired: number; busy?: boolean }
   }
-  'mt::ai:fetch-models': { args: [AIProvider, string, string?]; ret: string[] }
+  'mt::ai:fetch-models': { args: [AIProvider, string, string?, boolean?]; ret: string[] }
+  'mt::ai:model-limits': {
+    args: [IAIConfig]
+    ret: { contextWindow: number; maxOutput: number; source: 'override' | 'api' | 'default' }
+  }
   'mt::ai:pull-model': { args: [string, string?]; ret: { success: boolean } }
   'mt::project:create': { args: [ProjectCreateArgs?]; ret: ProjectCreateResult }
   'mt::project:import': { args: [ProjectImportArgs?]; ret: ProjectImportResult }

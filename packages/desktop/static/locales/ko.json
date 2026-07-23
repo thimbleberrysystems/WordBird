@@ -720,7 +720,16 @@
       "modelConnected": "모델 연결 성공",
       "modelConnectionFailed": "모델 연결 실패: {error}",
       "noModels": "모델을 찾을 수 없습니다. 자격 증명을 확인하세요.",
-      "fetchModelsFailed": "모델을 가져오지 못했습니다: {error}"
+      "fetchModelsFailed": "모델을 가져오지 못했습니다: {error}",
+      "contextWindow": "컨텍스트 창",
+      "maxOutput": "최대 출력",
+      "limitDetected": "API에서 감지됨",
+      "limitEstimated": "추정값",
+      "limitOverride": "수동 재정의",
+      "enable1M": "1M 컨텍스트 활성화 (베타)",
+      "enable1MNote": "200k 초과 토큰은 약 2배 청구 · 적격 계정 등급 필요",
+      "contextOverride": "컨텍스트 창 재정의",
+      "contextOverrideNotes": "비워두면 감지된 창을 사용합니다."
     },
     "markdown": {
       "title": "마크다운",

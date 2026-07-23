@@ -241,7 +241,15 @@ declare global {
       onRunState: (
         handler: (state: { state: 'idle' | 'running' | 'paused' }) => void
       ) => () => void
-      fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) => Promise<string[]>
+      fetchModels: (
+        provider: AIProvider,
+        apiKey: string,
+        baseUrl?: string,
+        enable1MContext?: boolean
+      ) => Promise<string[]>
+      modelLimits: (
+        config: IAIConfig
+      ) => Promise<{ contextWindow: number; maxOutput: number; source: 'override' | 'api' | 'default' }>
       pullModel: (model: string, baseUrl?: string) => Promise<{ success: boolean }>
       onPullProgress: (
         handler: (progress: { percent?: number; status?: string; digest?: string }) => void

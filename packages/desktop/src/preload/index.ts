@@ -384,8 +384,9 @@ const aiAPI = {
     ipcRenderer.on('mt::ai:run-state', subscription)
     return () => ipcRenderer.removeListener('mt::ai:run-state', subscription)
   },
-  fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string) =>
-    invoke('mt::ai:fetch-models', provider, apiKey, baseUrl),
+  fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string, enable1MContext?: boolean) =>
+    invoke('mt::ai:fetch-models', provider, apiKey, baseUrl, enable1MContext),
+  modelLimits: (config: IAIConfig) => invoke('mt::ai:model-limits', config),
   pullModel: (model: string, baseUrl?: string) => invoke('mt::ai:pull-model', model, baseUrl),
   onPullProgress: (
     handler: (progress: { percent?: number; status?: string; digest?: string }) => void

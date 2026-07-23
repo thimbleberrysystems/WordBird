@@ -720,7 +720,16 @@
       "modelConnected": "モデル接続に成功しました",
       "modelConnectionFailed": "モデル接続に失敗しました：{error}",
       "noModels": "モデルが見つかりません。認証情報を確認してください。",
-      "fetchModelsFailed": "モデルの取得に失敗しました：{error}"
+      "fetchModelsFailed": "モデルの取得に失敗しました：{error}",
+      "contextWindow": "コンテキストウィンドウ",
+      "maxOutput": "最大出力",
+      "limitDetected": "APIから検出",
+      "limitEstimated": "推定値",
+      "limitOverride": "手動上書き",
+      "enable1M": "1Mコンテキストを有効化（ベータ）",
+      "enable1MNote": "200kを超えるトークンは約2倍課金 · 対象アカウント階層が必要",
+      "contextOverride": "コンテキストウィンドウの上書き",
+      "contextOverrideNotes": "空欄にすると検出値を使用します。"
     },
     "markdown": {
       "title": "Markdown",

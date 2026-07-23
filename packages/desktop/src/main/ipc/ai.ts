@@ -140,12 +140,22 @@ export const registerAIHandlers = (): void => {
     langGraphManager.flushCheckpoints()
   })
 
-  ipcMain.handle('mt::ai:fetch-models', async(_e, provider: AIProvider, apiKey: string, baseUrl?: string) => {
+  ipcMain.handle('mt::ai:fetch-models', async(
+    _e,
+    provider: AIProvider,
+    apiKey: string,
+    baseUrl?: string,
+    enable1MContext?: boolean
+  ) => {
     try {
-      return await langGraphManager.fetchModels(provider, apiKey, baseUrl)
+      return await langGraphManager.fetchModels(provider, apiKey, baseUrl, enable1MContext)
     } catch (error: unknown) {
       throw new Error(error instanceof Error ? error.message : 'Failed to fetch models')
     }
+  })
+
+  ipcMain.handle('mt::ai:model-limits', async(_e, config: IAIConfig) => {
+    return langGraphManager.resolveModelLimits(config)
   })
 
   ipcMain.handle('mt::ai:pull-model', async(_e, model: string, baseUrl?: string) => {

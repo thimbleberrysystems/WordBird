@@ -87,8 +87,13 @@ class LangGraphService {
     this._currentApiKey = ''
   }
 
-  async fetchModels(provider: AIProvider, apiKey: string, baseUrl?: string): Promise<string[]> {
-    return await window.electron.ai.fetchModels(provider, apiKey, baseUrl)
+  async fetchModels(
+    provider: AIProvider,
+    apiKey: string,
+    baseUrl?: string,
+    enable1MContext?: boolean
+  ): Promise<string[]> {
+    return await window.electron.ai.fetchModels(provider, apiKey, baseUrl, enable1MContext)
   }
 
   async sendMessage(messages: ILangGraphMessage[]): Promise<ILangGraphResponse> {

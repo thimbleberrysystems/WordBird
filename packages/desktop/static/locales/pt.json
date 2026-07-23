@@ -720,7 +720,16 @@
       "modelConnected": "Conexão do modelo bem-sucedida",
       "modelConnectionFailed": "Falha na conexão do modelo: {error}",
       "noModels": "Nenhum modelo encontrado. Verifique suas credenciais.",
-      "fetchModelsFailed": "Falha ao buscar modelos: {error}"
+      "fetchModelsFailed": "Falha ao buscar modelos: {error}",
+      "contextWindow": "Janela de contexto",
+      "maxOutput": "Saída máx.",
+      "limitDetected": "detectado pela API",
+      "limitEstimated": "estimado",
+      "limitOverride": "substituição manual",
+      "enable1M": "Ativar contexto de 1M (beta)",
+      "enable1MNote": "tokens acima de 200k cobrados ~2× · requer um nível de conta elegível",
+      "contextOverride": "Substituir janela de contexto",
+      "contextOverrideNotes": "Deixe vazio para usar a janela detectada."
     },
     "markdown": {
       "title": "Markdown",

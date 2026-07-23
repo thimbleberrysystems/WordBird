@@ -720,7 +720,16 @@
       "modelConnected": "模型連接成功",
       "modelConnectionFailed": "模型連接失敗：{error}",
       "noModels": "未找到模型。請檢查你的憑證。",
-      "fetchModelsFailed": "取得模型失敗：{error}"
+      "fetchModelsFailed": "取得模型失敗：{error}",
+      "contextWindow": "上下文視窗",
+      "maxOutput": "最大輸出",
+      "limitDetected": "從 API 偵測",
+      "limitEstimated": "估計值",
+      "limitOverride": "手動覆寫",
+      "enable1M": "啟用 1M 上下文（測試版）",
+      "enable1MNote": "超過 20 萬的 token 約以 2 倍計費 · 需要符合資格的帳戶等級",
+      "contextOverride": "覆寫上下文視窗",
+      "contextOverrideNotes": "留空則使用偵測到的視窗。"
     },
     "markdown": {
       "title": "PicGo 設定",

@@ -720,7 +720,16 @@
       "modelConnected": "模型连接成功",
       "modelConnectionFailed": "模型连接失败：{error}",
       "noModels": "未找到模型。请检查你的凭据。",
-      "fetchModelsFailed": "获取模型失败：{error}"
+      "fetchModelsFailed": "获取模型失败：{error}",
+      "contextWindow": "上下文窗口",
+      "maxOutput": "最大输出",
+      "limitDetected": "从 API 检测",
+      "limitEstimated": "估计值",
+      "limitOverride": "手动覆盖",
+      "enable1M": "启用 1M 上下文（测试版）",
+      "enable1MNote": "超过 20 万的 token 按约 2 倍计费 · 需要符合条件的账户等级",
+      "contextOverride": "覆盖上下文窗口",
+      "contextOverrideNotes": "留空则使用检测到的窗口。"
     },
     "markdown": {
       "title": "Markdown",

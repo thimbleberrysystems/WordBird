@@ -720,7 +720,16 @@
       "modelConnected": "Modellverbindung erfolgreich",
       "modelConnectionFailed": "Modellverbindung fehlgeschlagen: {error}",
       "noModels": "Keine Modelle gefunden. Bitte Zugangsdaten prüfen.",
-      "fetchModelsFailed": "Modelle konnten nicht geladen werden: {error}"
+      "fetchModelsFailed": "Modelle konnten nicht geladen werden: {error}",
+      "contextWindow": "Kontextfenster",
+      "maxOutput": "Max. Ausgabe",
+      "limitDetected": "aus API erkannt",
+      "limitEstimated": "geschätzt",
+      "limitOverride": "manuell überschrieben",
+      "enable1M": "1M-Kontext aktivieren (Beta)",
+      "enable1MNote": "Tokens über 200k ~2× berechnet · erfordert eine berechtigte Kontostufe",
+      "contextOverride": "Kontextfenster überschreiben",
+      "contextOverrideNotes": "Leer lassen, um das erkannte Fenster zu verwenden."
     },
     "markdown": {
       "title": "Markdown",

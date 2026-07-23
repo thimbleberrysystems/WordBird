@@ -720,7 +720,16 @@
       "modelConnected": "Model Connection Successful",
       "modelConnectionFailed": "Model Connection Failed: {error}",
       "noModels": "No models found. Please check your credentials.",
-      "fetchModelsFailed": "Failed to fetch models: {error}"
+      "fetchModelsFailed": "Failed to fetch models: {error}",
+      "contextWindow": "Context window",
+      "maxOutput": "Max output",
+      "limitDetected": "detected from API",
+      "limitEstimated": "estimated",
+      "limitOverride": "manual override",
+      "enable1M": "Enable 1M context (beta)",
+      "enable1MNote": "tokens past 200k billed ~2× · requires an eligible account tier",
+      "contextOverride": "Context window override",
+      "contextOverrideNotes": "Leave empty to use the detected window."
     },
     "markdown": {
       "title": "Markdown",

@@ -71,6 +71,8 @@ export interface IUserPreferences {
       model?: string
       temperature?: number
       maxTokens?: number
+      contextWindow?: number
+      enable1MContext?: boolean
     }
   }
   [key: string]: unknown
