@@ -14,7 +14,7 @@ import {
   HARNESS_MARKER_RE,
   neutralizeHarnessMarkers
 } from '../../../src/main/services/ai/coherencePass'
-import { AGENT_ROLES } from '../../../src/main/services/ai/orchestrator/roles'
+import { AGENT_ROLES, PROJECT_CONVENTIONS } from '../../../src/main/services/ai/orchestrator/roles'
 import { buildSupervisorPrompt } from '../../../src/main/services/ai/orchestrator/Orchestrator'
 import {
   AgentToolService,
@@ -89,14 +89,40 @@ describe('the guard reaches every prompt layer from one source', () => {
     for (const role of ['drafter', 'plotter', 'steward'] as const) {
       const prompt = AGENT_ROLES[role].systemPrompt
       expect(prompt, role).toContain('STRUCTURE CRAFT')
-      // The three practices that stop the prj14 shape recurring.
+      // The practices that stop the prj14 shape recurring.
       expect(prompt, role).toContain('NAME A SCENE FOR WHAT HAPPENS IN IT')
       expect(prompt, role).toMatch(/never an automatic default/i)
-      expect(prompt, role).toMatch(/PARTS are for books that genuinely have them/i)
+      // The chapter-vs-part criteria reach these roles too, now via
+      // PROJECT_CONVENTIONS (withConventions) rather than a second copy here.
+      expect(prompt, role).toMatch(/large arcs, episodic structure, or a hard shift/i)
     }
     for (const role of ['researcher', 'explorer', 'auditor'] as const) {
       expect(AGENT_ROLES[role].systemPrompt, role).not.toContain('STRUCTURE CRAFT')
     }
+  })
+
+  it('the supervisor gets the full chapter-vs-part criteria, not just the guardrail', () => {
+    // The gap the writer found: the affirmative "when parts make sense"
+    // criteria lived only in STRUCTURE CRAFT (drafter/plotter/steward), so the
+    // supervisor — which picks the top-level structure at onboarding — knew
+    // "don't add parts unless asked" but not the case FOR them. Now single-
+    // sourced in PROJECT_CONVENTIONS, which the supervisor carries directly.
+    const prompt = buildSupervisorPrompt('auto', 6)
+    expect(prompt).toMatch(/CHAPTER vs PART/i)
+    expect(prompt).toMatch(/large arcs, episodic structure, or a hard shift/i)
+  })
+
+  it('the chapter-vs-part criteria are single-sourced in PROJECT_CONVENTIONS', () => {
+    // Mirrors the SCENE_CRAFT single-source pin: the affirmative criteria live
+    // in exactly one constant, so the supervisor copy and the worker copy
+    // cannot drift into two subtly different rules.
+    const signature = 'large arcs, episodic structure, or a hard shift'
+    expect(PROJECT_CONVENTIONS).toContain(signature)
+    // Not independently duplicated in the STRUCTURE CRAFT section.
+    const structureRolePrompt = AGENT_ROLES.drafter.systemPrompt
+    const conventionsAt = structureRolePrompt.indexOf('PROJECT LAYOUT & CONVENTIONS')
+    const beforeConventions = structureRolePrompt.slice(0, conventionsAt)
+    expect(beforeConventions).not.toContain(signature)
   })
 
   it('the supervisor is told one subject = one researcher (anti-overlap)', () => {

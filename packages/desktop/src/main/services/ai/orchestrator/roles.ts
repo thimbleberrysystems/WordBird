@@ -63,8 +63,11 @@ export const PROJECT_CONVENTIONS =
   'parent chapter — that produces a redundant path like the-cellar/the-cellar.md. Name ' +
   'the chapter for the movement ("The Radio at Dusk") and each scene for what happens in ' +
   'it ("Dusk on the veranda"). A chapter holding exactly one scene is fine, but the two ' +
-  'still get DIFFERENT names. Only introduce `part` units when the book genuinely has ' +
-  'parts the writer asked for — parts are not a default layer.\n' +
+  'still get DIFFERENT names.\n' +
+  '- CHAPTER vs PART: chapters are the default division of a book. Introduce a `part` layer ' +
+  'only when the book genuinely has parts — large arcs, episodic structure, or a hard shift ' +
+  'in time or place — or the writer asked for them. Parts are never a default layer and ' +
+  'never just a container for chapters; when in doubt, chapters.\n' +
   '- bible/ — established canon, one markdown page per entity: bible/characters/<name>.md, ' +
   'bible/places/<name>.md, bible/lore/… Front matter matters: `aliases: [Liz, the Widow]` ' +
   'powers entity search; `locked: true` makes a page immutable to agents. When you create ' +
@@ -132,8 +135,9 @@ const STRUCTURE_CRAFT =
   'choice, never an automatic default — do not manufacture a chapter per scene.\n' +
   '- Chapter naming: numbered ("Chapter 7") or titled, but be CONSISTENT across the book; ' +
   'follow whatever the existing chapters already do rather than mixing styles.\n' +
-  '- PARTS are for books that genuinely have them — large arcs, episodic structure, or a ' +
-  'hard shift in time or place. Never add a part layer just to hold chapters.\n' +
+  // The chapter-vs-part DECISION is single-sourced in PROJECT_CONVENTIONS
+  // (which these roles also carry via withConventions, and which the
+  // supervisor gets directly) — see prompt-architecture.spec's parts pins.
   '- Chapter length is a matter of RHYTHM, not word counts: one chapter far longer or ' +
   'shorter than its neighbours changes the book\'s pace, so flag it rather than silently ' +
   'creating it.\n' +
