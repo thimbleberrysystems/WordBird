@@ -398,7 +398,9 @@ const aiAPI = {
     return () => ipcRenderer.removeListener('mt::ai:pull-progress', subscription)
   },
   executeTool: (call: IAgentToolCall) => invoke('mt::ai:execute-tool', call),
-  applyEdit: (editId: string): Promise<{ ok: boolean; error?: string }> =>
+  applyEdit: (
+    editId: string
+  ): Promise<{ ok: boolean; error?: string; alreadySettled?: boolean }> =>
     invoke('mt::ai:apply-edit', editId),
   // Review feedback loop: report the writer's accept/reject decision and
   // rehydrate the review queue after a reload/restart.

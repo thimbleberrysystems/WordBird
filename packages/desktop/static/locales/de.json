@@ -1522,6 +1522,7 @@
     "configureTip": "Biscuit konfigurieren",
     "collapseTip": "Biscuit einklappen",
     "expandTip": "Biscuit ausklappen",
+    "reopenTip": "Biscuit wieder öffnen",
     "modeCycleHint": "(Strg+Umschalt zum Wechseln)",
     "modePlan": "Plan-Modus",
     "modePlanHint": "Biscuit beschreibt, was es tun würde — nichts läuft.",

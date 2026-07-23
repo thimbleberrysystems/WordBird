@@ -1522,6 +1522,7 @@
     "configureTip": "Configurar Biscuit",
     "collapseTip": "Contraer Biscuit",
     "expandTip": "Expandir Biscuit",
+    "reopenTip": "Reabrir Biscuit",
     "modeCycleHint": "(ctrl+shift para alternar)",
     "modePlan": "modo plan",
     "modePlanHint": "Biscuit describe lo que haría; no se ejecuta nada.",

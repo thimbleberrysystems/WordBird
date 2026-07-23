@@ -386,13 +386,47 @@ function scheduleAutoApply (): void {
   }, 400)
 }
 
+// Apply-all must NEVER overlap itself. It writes each edit to disk, then
+// marks it resolved (which removes it from the pending list in main). Two
+// overlapping runs — easy to trigger in auto mode, where a book run drafts
+// scenes in fast bursts — race: the second run re-applies an edit the first
+// already settled, main answers "already-settled", and the writer sees a
+// false "file could not be applied" error even though the file saved. Worse,
+// the trailing clearPendingEdits() from an early run can wipe a proposal that
+// arrived mid-run before it was applied. Serialize with a coalescing guard:
+// a request made while a run is active re-runs ONCE on completion, so edits
+// that arrive during a run are still picked up.
+let applyInFlight = false
+let applyAgainQueued = false
+
 async function handleAgentApplyAll (): Promise<void> {
+  if (applyInFlight) {
+    applyAgainQueued = true
+    return
+  }
+  applyInFlight = true
+  try {
+    do {
+      applyAgainQueued = false
+      await runApplyAllOnce()
+    } while (applyAgainQueued)
+  } finally {
+    applyInFlight = false
+  }
+}
+
+async function runApplyAllOnce (): Promise<void> {
+  // Snapshot the queue for THIS run; anything arriving mid-run is handled by
+  // the coalesced re-run, not by a concurrent pass over a shifting list.
+  const batch = agentStore.pendingEdits.filter((e) => e.status === 'pending')
+  if (batch.length === 0) return
+
   await snapshotBeforeApply('Before applying Biscuit\'s edits')
   // The open file's edit goes through the editor (in-memory + save); every
   // other pending edit is written straight to disk. Routing is verified in
   // agent-multifile-apply.spec.ts.
   const currentPath = currentFile.value?.pathname || currentFile.value?.filename || null
-  const result = await applyAllPendingEdits(agentStore.pendingEdits, currentPath, {
+  const result = await applyAllPendingEdits(batch, currentPath, {
     applyCurrent: (edit) => {
       applyContentToFile(edit.newContent)
       hideInlineDiff()
@@ -407,7 +441,9 @@ async function handleAgentApplyAll (): Promise<void> {
   }
 
   if (!inlineDiffHandle) hideInlineDiff()
-  agentStore.clearPendingEdits()
+  // Drop only resolved edits, not the whole queue — a proposal that landed
+  // while we were writing is still pending and must survive for the re-run.
+  agentStore.pruneResolved()
 }
 
 function handleAgentDiscardAll (): void {

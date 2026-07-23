@@ -79,12 +79,18 @@ test.describe('Review queue extended (mocked AI)', () => {
       }, { timeout: 10000 })
       .toEqual(['batch-1'])
 
-    // The queue clears, and the unappliable edits are surfaced in an
-    // error toast naming the files — failure is loud, never silent.
-    await expect(page.locator('.global-agent-review')).toHaveCount(0, { timeout: 10000 })
+    // The applied open-file edit leaves the queue; the two unappliable edits
+    // are surfaced in an error toast AND — never dropped — stay in the queue
+    // for the writer to retry or discard. (Auto-apply now prunes only
+    // RESOLVED edits, so a failed or still-pending one is never silently
+    // wiped; this is the same guarantee that stops a mid-run proposal being
+    // lost.)
     const toast = page.locator('.el-message')
     await expect(toast).toBeVisible()
     await expect(toast).toContainText(/2 file/i)
+    await expect(page.locator('.global-agent-review .review-item')).toHaveCount(2, {
+      timeout: 10000
+    })
 
     await expectNoRendererErrors(app)
   })

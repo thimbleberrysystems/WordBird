@@ -53,4 +53,25 @@ describe('agent store pendingCount', () => {
     store.clearPendingEdits()
     expect(store.pendingCount).toBe(0)
   })
+
+  it('pruneResolved drops applied/rejected edits but keeps a pending one', () => {
+    // Auto-apply prunes instead of clearing so a proposal that arrives WHILE a
+    // batch is being written is not wiped along with the batch (the lost-edit
+    // race behind the prj3 report).
+    const store = useAgentStore()
+    store.addPendingEdit(proposal('a'), 'old a', '/docs/a.md')
+    store.addPendingEdit(proposal('b'), 'old b', '/docs/b.md')
+    store.addPendingEdit(proposal('c'), 'old c', '/docs/c.md')
+
+    // The batch being applied resolves a and b; c arrived mid-run and is still
+    // pending.
+    store.updateEditStatus('a', 'applied')
+    store.updateEditStatus('b', 'rejected')
+
+    store.pruneResolved()
+
+    // Only the still-pending c survives — a and b are gone, c is not lost.
+    expect(store.pendingEdits.map((e) => e.id)).toEqual(['c'])
+    expect(store.pendingCount).toBe(1)
+  })
 })

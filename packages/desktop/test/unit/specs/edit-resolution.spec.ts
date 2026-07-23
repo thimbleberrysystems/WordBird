@@ -51,6 +51,18 @@ describe('EditResolutionTracker', () => {
     expect(tracker.pendingCount()).toBe(1)
   })
 
+  it('wasResolved distinguishes an already-resolved id from a never-seen one', () => {
+    // The apply route relies on this: a resolved id = benign duplicate apply
+    // (the file is on disk); a never-recorded id = a genuine unknown to report.
+    tracker.recordProposal(proposal('e1', 'a.md'), 't')
+    expect(tracker.wasResolved('e1')).toBe(false) // pending, not yet resolved
+    expect(tracker.wasResolved('never')).toBe(false) // never recorded
+
+    tracker.resolve({ id: 'e1', filePath: 'a.md', accepted: true })
+    expect(tracker.wasResolved('e1')).toBe(true) // now resolved → benign
+    expect(tracker.wasResolved('never')).toBe(false) // still unknown → error
+  })
+
   it('drains a review note naming accepted and rejected files, exactly once', () => {
     tracker.recordProposal(proposal('e1', 'manuscript/ch1/opening.md'), 't')
     tracker.recordProposal(proposal('e2', 'manuscript/ch1/opening.md'), 't')

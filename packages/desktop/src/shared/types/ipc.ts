@@ -151,7 +151,13 @@ export interface IpcInvokeChannels {
   'mt::ai:disconnect': { args: []; ret: void }
   'mt::ai:send-message': { args: [ILangGraphMessage[]]; ret: ILangGraphResponse }
   'mt::ai:execute-tool': { args: [IAgentToolCall]; ret: IAgentToolResult }
-  'mt::ai:apply-edit': { args: [editId: string]; ret: { ok: boolean; error?: string } }
+  'mt::ai:apply-edit': {
+    args: [editId: string]
+    // `alreadySettled` distinguishes "someone already applied this" from a
+    // real write failure, so a coalesced/duplicate apply is not shown to the
+    // writer as a file that could not be saved.
+    ret: { ok: boolean; error?: string; alreadySettled?: boolean }
+  }
   'mt::ai:get-pending-edits': { args: []; ret: IAgentEditProposalPayload[] }
   'mt::ai:abort': { args: []; ret: { success: boolean } }
   'mt::ai:reset-thread': { args: []; ret: { threadId: string } }

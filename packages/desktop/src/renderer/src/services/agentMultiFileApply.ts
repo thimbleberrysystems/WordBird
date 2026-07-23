@@ -64,7 +64,9 @@ export interface MultiFileApplyHandlers {
   /** Apply the open file's edit through the editor (in-memory + save). */
   applyCurrent: (edit: AgentEditReview) => void
   /** Apply a closed file's edit on disk (main validates + writes by id). */
-  applyToDisk: (edit: AgentEditReview) => Promise<{ ok: boolean; error?: string }>
+  applyToDisk: (
+    edit: AgentEditReview
+  ) => Promise<{ ok: boolean; error?: string; alreadySettled?: boolean }>
   /** Mark an edit resolved in the store. */
   markApplied: (id: string) => void
 }
@@ -102,6 +104,11 @@ export async function applyAllPendingEdits(
       if (res.ok) {
         handlers.markApplied(edit.id)
         applied += 1
+      } else if (res.alreadySettled) {
+        // Applied by another cycle already — resolve it locally, don't count
+        // it as a failure. This is what turned a harmless duplicate apply into
+        // a false "file could not be applied" error during book runs.
+        handlers.markApplied(edit.id)
       } else {
         failed.push({ id: edit.id, path, error: res.error || 'write failed' })
       }

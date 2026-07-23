@@ -189,11 +189,18 @@ export const registerAIHandlers = (): void => {
   // the proposal's own newContent. "Write anything" is not an IPC here.
   ipcMain.handle(
     'mt::ai:apply-edit',
-    async(_e, editId: string): Promise<{ ok: boolean; error?: string }> => {
+    async(_e, editId: string): Promise<{ ok: boolean; error?: string; alreadySettled?: boolean }> => {
       try {
         if (!editId || typeof editId !== 'string') throw new Error('No edit id provided')
         const pending = langGraphManager.getPendingEdit(editId)
         if (!pending) {
+          // Distinguish two not-found cases. A proposal that WAS recorded and
+          // is already resolved = a benign duplicate apply (coalesced auto-
+          // apply); the file is on disk, so don't report a save failure. An id
+          // never recorded at all is a genuine error the writer should hear.
+          if (langGraphManager.wasEditResolved(editId)) {
+            return { ok: false, alreadySettled: true, error: 'Already applied — nothing to do.' }
+          }
           throw new Error('Unknown or already-settled proposal — nothing to apply.')
         }
         const target = validateAgentApply({

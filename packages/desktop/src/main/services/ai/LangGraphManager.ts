@@ -289,6 +289,11 @@ export class LangGraphManager {
     return this._editTracker.getPending(id)
   }
 
+  /** True when this proposal id was recorded and has already been resolved. */
+  wasEditResolved(id: string): boolean {
+    return this._editTracker.wasResolved(id)
+  }
+
   /** Proposals still awaiting review (renderer rehydration after restart). */
   getPendingEdits(): IAgentEditProposalPayload[] {
     return this._editTracker.pendingForThread(this._threadId)

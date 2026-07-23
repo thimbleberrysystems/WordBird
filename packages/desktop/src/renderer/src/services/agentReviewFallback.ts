@@ -47,7 +47,30 @@ const takeProtectiveSnapshot = async(label: string): Promise<void> => {
 }
 
 /** Disk-only apply of every pending edit (no editor in this window). */
+// Serialized + coalesced for the same reason editor.vue's apply-all is: two
+// overlapping runs re-apply the same proposal, main answers "already-settled",
+// and the writer sees a false save failure. A request during a run re-runs
+// once on completion so mid-run proposals are still applied.
+let fallbackApplyInFlight = false
+let fallbackApplyAgainQueued = false
+
 const fallbackApplyAll = async(): Promise<void> => {
+  if (fallbackApplyInFlight) {
+    fallbackApplyAgainQueued = true
+    return
+  }
+  fallbackApplyInFlight = true
+  try {
+    do {
+      fallbackApplyAgainQueued = false
+      await runFallbackApplyOnce()
+    } while (fallbackApplyAgainQueued)
+  } finally {
+    fallbackApplyInFlight = false
+  }
+}
+
+const runFallbackApplyOnce = async(): Promise<void> => {
   const agentStore = useAgentStore()
   const pending = agentStore.pendingEdits.filter((edit) => edit.status === 'pending')
   if (pending.length === 0) return
@@ -56,7 +79,8 @@ const fallbackApplyAll = async(): Promise<void> => {
   for (const edit of pending) {
     try {
       const result = await window.electron.ai.applyEdit(edit.id)
-      if (result.ok) {
+      if (result.ok || result.alreadySettled) {
+        // alreadySettled = another cycle applied it; resolve, don't fail.
         agentStore.updateEditStatus(edit.id, 'applied')
       } else {
         failed.push(edit.filePath)
@@ -68,7 +92,8 @@ const fallbackApplyAll = async(): Promise<void> => {
   if (failed.length > 0) {
     ElMessage.error(`${failed.length} file(s) could not be applied: ${failed.join(', ')}`)
   }
-  agentStore.clearPendingEdits()
+  // Keep proposals that arrived mid-run; drop only what we resolved.
+  agentStore.pruneResolved()
 }
 
 const fallbackApplyOne = async(editId: string): Promise<void> => {
@@ -78,7 +103,7 @@ const fallbackApplyOne = async(editId: string): Promise<void> => {
   await takeProtectiveSnapshot("Before applying Biscuit's edit")
   try {
     const result = await window.electron.ai.applyEdit(edit.id)
-    if (result.ok) {
+    if (result.ok || result.alreadySettled) {
       agentStore.updateEditStatus(edit.id, 'applied')
     } else {
       ElMessage.error(`Could not apply ${edit.filePath}: ${result.error ?? 'write failed'}`)

@@ -43,6 +43,19 @@
           <selection-actions v-if="hasCurrentFile" />
         </div>
         <RightPrompt v-if="showRightPrompt" />
+        <!-- Always-available reopen handle when Biscuit is collapsed. The
+             collapse control lives inside RightPrompt (which unmounts when
+             hidden), and the sidebar's expand arrow is gated by showSideBar
+             (hidden by default) — so without this, collapsing Biscuit with the
+             sidebar closed left no visible way to bring it back. -->
+        <div
+          v-if="!showRightPrompt"
+          class="biscuit-reopen-handle"
+          :title="t('biscuit.reopenTip')"
+          @click="reopenBiscuit"
+        >
+          <el-icon><DArrowLeft /></el-icon>
+        </div>
       </div>
       <command-palette />
       <about-dialog />
@@ -75,6 +88,8 @@ import TimelineView from '@/components/novel/TimelineView.vue'
 import SelectionActions from '@/components/novel/SelectionActions.vue'
 import { initAgentReviewFallback } from '@/services/agentReviewFallback'
 import { useNovelStore } from '@/store/novel'
+import { DArrowLeft } from '@element-plus/icons-vue'
+import { t } from '../i18n'
 import bus from '@/bus'
 import { mirrorAiConnectionState } from '@/services/langgraph'
 import { DEFAULT_STYLE } from '@/config'
@@ -103,6 +118,11 @@ const listenForMainStore = useListenForMainStore()
 const autoUpdateStore = useAutoUpdatesStore()
 const commandCenterStore = useCommandCenterStore()
 const notificationStore = useNotificationStore()
+
+/** Bring Biscuit back after it was collapsed — the reopen handle's action. */
+const reopenBiscuit = (): void => {
+  layoutStore.SET_LAYOUT({ showRightPrompt: true })
+}
 
 const timer = ref<ReturnType<typeof setTimeout> | null>(null)
 
@@ -348,5 +368,33 @@ onMounted(async () => {
 .editor-area > recent,
 .editor-area > editor-with-tabs {
   min-width: 0;
+}
+
+/* Always-available reopen handle, mirroring RightPrompt's collapse tab but
+   pinned to the app's right edge so it is reachable no matter what else is
+   hidden (the sidebar's expand arrow is not). */
+.biscuit-reopen-handle {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 60px;
+  background: var(--editorBgColor);
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.2));
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  color: var(--color-secondary, var(--wbMutedColor));
+  transition: all 0.2s;
+}
+.biscuit-reopen-handle:hover {
+  width: 20px;
+  color: var(--color-primary, var(--wbInfoColor));
+  background: var(--dialogBgColor, var(--editorBgColor));
 }
 </style>

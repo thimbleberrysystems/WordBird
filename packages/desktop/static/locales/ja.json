@@ -1522,6 +1522,7 @@
     "configureTip": "Biscuit を設定",
     "collapseTip": "Biscuitを折りたたむ",
     "expandTip": "Biscuitを展開",
+    "reopenTip": "Biscuit を再表示",
     "modeCycleHint": "（ctrl+shift で切替）",
     "modePlan": "プランモード",
     "modePlanHint": "Biscuitは実行せず、何をするかを説明します。",

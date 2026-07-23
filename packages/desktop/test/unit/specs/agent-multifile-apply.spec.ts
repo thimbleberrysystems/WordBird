@@ -129,4 +129,27 @@ describe('applyAllPendingEdits', () => {
     expect(res.applied).toBe(0)
     expect(res.failed[0]).toMatchObject({ id: 'a', error: 'disk gone' })
   })
+
+  it('treats an already-settled edit as resolved, not a failure', async() => {
+    // The prj3 false alarm: a coalesced/duplicate apply hits an edit main has
+    // already settled. It must NOT surface as "file could not be applied" —
+    // the file is on disk — but it must still leave the local queue.
+    const markApplied = vi.fn()
+    const applyToDisk = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, alreadySettled: true })
+      .mockResolvedValueOnce({ ok: true })
+
+    const res = await applyAllPendingEdits(
+      [edit({ id: 'a', originalPath: '/p/a.md' }), edit({ id: 'b', originalPath: '/p/b.md' })],
+      null,
+      { applyCurrent: vi.fn(), applyToDisk, markApplied }
+    )
+
+    // Not counted as newly applied by THIS run, but not failed either.
+    expect(res.failed).toEqual([])
+    // Both are resolved locally so they leave the pending queue.
+    expect(markApplied).toHaveBeenCalledWith('a')
+    expect(markApplied).toHaveBeenCalledWith('b')
+  })
 })

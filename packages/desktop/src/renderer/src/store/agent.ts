@@ -46,6 +46,16 @@ export const useAgentStore = defineStore('agent', () => {
     diffState.value = []
   }
 
+  /**
+   * Drop edits that have been resolved (applied/rejected), keeping the ones
+   * still pending. Auto-apply uses this instead of clearPendingEdits so a
+   * proposal that arrived WHILE a batch was being written is not wiped along
+   * with the batch — it survives for the next apply cycle.
+   */
+  function pruneResolved(): void {
+    pendingEdits.value = pendingEdits.value.filter((edit) => edit.status === 'pending')
+  }
+
   function getPendingEdit(id: string): AgentEditReview | undefined {
     return pendingEdits.value.find((edit) => edit.id === id)
   }
@@ -87,6 +97,7 @@ export const useAgentStore = defineStore('agent', () => {
     diffState,
     addPendingEdit,
     clearPendingEdits,
+    pruneResolved,
     getPendingEdit,
     updateEditStatus,
     setDiffState,

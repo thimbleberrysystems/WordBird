@@ -1522,6 +1522,7 @@
     "configureTip": "配置 Biscuit",
     "collapseTip": "收起 Biscuit",
     "expandTip": "展开 Biscuit",
+    "reopenTip": "重新打开 Biscuit",
     "modeCycleHint": "（ctrl+shift 切换）",
     "modePlan": "计划模式",
     "modePlanHint": "Biscuit 只描述将做什么，不执行任何操作。",

@@ -126,6 +126,17 @@ export class EditResolutionTracker {
     return { payload: entry.payload, projectRoot: entry.projectRoot ?? null }
   }
 
+  /**
+   * True when this proposal was recorded and has since been resolved
+   * (applied/rejected). Lets an apply route distinguish a benign duplicate
+   * apply ("someone already did this") from a genuinely unknown id, which is
+   * a real error the writer should hear about.
+   */
+  wasResolved(id: string): boolean {
+    this._ensureLoaded()
+    return this._resolutions.some((r) => r.id === id)
+  }
+
   resolve(resolution: IAgentEditResolution): void {
     this._ensureLoaded()
     this._pending = this._pending.filter((p) => p.payload.edit.id !== resolution.id)
