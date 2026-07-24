@@ -1618,7 +1618,9 @@
     "historyHintTip": "↑ con la entrada vacía recupera mensajes anteriores",
     "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
     "selDraft": "Draft",
-    "quiet": "Biscuit sigue trabajando: sin salida desde hace un rato. Un paso largo de investigación o redacción puede ejecutarse en silencio; no se pierde nada. Sigue esperando o pulsa Detener para interrumpir."
+    "quiet": "Biscuit sigue trabajando: sin salida desde hace un rato. Un paso largo de investigación o redacción puede ejecutarse en silencio; no se pierde nada. Sigue esperando o pulsa Detener para interrumpir.",
+    "notResponding": "Biscuit dejó de enviar señales; la aplicación podría estar bloqueada. Tu trabajo está guardado. Pulsa Detener y, si continúa, reinicia WordBird.",
+    "notRespondingTitle": "Biscuit no responde"
   },
   "review": {
     "pendingOne": "1 edición pendiente",

@@ -427,6 +427,7 @@ export interface IpcMainEventChannels {
   'mt::ai:token-usage': [usage: ITokenUsageUpdate]
   'mt::ai:agent-status': [status: IAgentStatus]
   'mt::ai:run-state': [state: { state: 'idle' | 'running' | 'paused' }]
+  'mt::ai:run-heartbeat': [beat: { at: number }]
   'mt::ai:plan-saved': [event: { path: string }]
   'mt::ai:writer-question': [
     question: {

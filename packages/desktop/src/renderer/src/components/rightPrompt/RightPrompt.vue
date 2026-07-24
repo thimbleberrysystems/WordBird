@@ -590,8 +590,10 @@ const togglePanel = () => {
 
 onBeforeUnmount(() => {
   stopResizing()
+  stopStallWatchdog()
   document.removeEventListener('click', closePopovers)
   unsubApproval?.()
+  unsubHeartbeat?.()
   unsubApprovalResolved?.()
   unsubUsage?.()
   unsubPlan?.()
@@ -1124,6 +1126,10 @@ onMounted(() => {
   unsubApproval = window.electron.ai.onApprovalRequest((request) => {
     pendingApproval.value = request
   })
+  // Main's liveness heartbeat: its presence keeps the dead-main timer at bay.
+  unsubHeartbeat = window.electron.ai.onRunHeartbeat?.(() => {
+    lastHeartbeatAt = Date.now()
+  }) ?? null
   // Mode changes broadcast from main keep every window's mode line in sync.
   unsubModeChanged = window.electron.ai.onModeChanged?.(({ mode: m }) => {
     mode.value = normalizeMode(m)
@@ -1243,25 +1249,40 @@ const steerWith = async (text: string): Promise<void> => {
 // "still working, no output yet", with Stop offered as the exit.
 const STALL_AFTER_MS_DEFAULT = 90_000
 /**
- * Silence budget before the advisory card appears. Read per-run (not at
- * module load) so an e2e spec can shrink it via `addInitScript` — a test
- * that had to wait 90s would double the suite's runtime, which is why this
- * watchdog previously had no coverage at all.
+ * DEAD-MAIN budget. Main emits a heartbeat every ~15s while a turn runs, so
+ * its ABSENCE means main itself is wedged or gone (a blocked event loop can't
+ * fire the heartbeat, and no other event can reach us either). At that point
+ * the quiet notice would be a lie — there is nothing alive to wait for — so we
+ * raise a real error. Comfortably above the 15s cadence so a couple of missed
+ * beats are tolerated. All the "is a turn running" work stays in main; the
+ * renderer only watches presence vs absence of the beat.
  */
-const stallAfterMs = (): number => {
-  const override = Number(
-    (window as unknown as { __wordbirdStallMs?: unknown }).__wordbirdStallMs
-  )
-  return Number.isFinite(override) && override > 0 ? override : STALL_AFTER_MS_DEFAULT
+const LIVENESS_AFTER_MS_DEFAULT = 50_000
+/**
+ * Budgets read per-run (not at module load) so an e2e spec can shrink them via
+ * `addInitScript` — a test that had to wait 90s would double the suite's
+ * runtime, which is why this watchdog previously had no coverage at all.
+ */
+const overrideMs = (key: string, fallback: number): number => {
+  const v = Number((window as unknown as Record<string, unknown>)[key])
+  return Number.isFinite(v) && v > 0 ? v : fallback
 }
+const stallAfterMs = (): number => overrideMs('__wordbirdStallMs', STALL_AFTER_MS_DEFAULT)
+const livenessAfterMs = (): number => overrideMs('__wordbirdLivenessMs', LIVENESS_AFTER_MS_DEFAULT)
+
 let stallTimer: ReturnType<typeof setInterval> | null = null
 let lastRunEventAt = 0
+// Any model/agent output resets the QUIET timer; a main heartbeat resets the
+// LIVENESS timer. They are separate on purpose — a quiet-but-alive run keeps
+// heartbeating without producing output.
 watch(
   [() => activity.value.length, tokenUsage, contextUsage],
   () => {
     lastRunEventAt = Date.now()
   }
 )
+let lastHeartbeatAt = 0
+let unsubHeartbeat: (() => void) | null = null
 
 function stopStallWatchdog (): void {
   if (stallTimer) {
@@ -1272,20 +1293,40 @@ function stopStallWatchdog (): void {
 
 function startStallWatchdog (): void {
   stopStallWatchdog()
-  lastRunEventAt = Date.now()
-  let warned = false
-  const budget = stallAfterMs()
-  // Poll well inside the budget so a shrunken (test) budget still trips.
-  const tick = Math.max(200, Math.min(10_000, Math.floor(budget / 3)))
+  const now = Date.now()
+  lastRunEventAt = now
+  lastHeartbeatAt = now
+  let quietWarned = false
+  let deadWarned = false
+  const quietBudget = stallAfterMs()
+  const livenessBudget = livenessAfterMs()
+  const tick = Math.max(
+    200,
+    Math.min(10_000, Math.floor(Math.min(quietBudget, livenessBudget) / 3))
+  )
   stallTimer = setInterval(() => {
     if (!sending.value) {
       stopStallWatchdog()
       return
     }
-    if (!warned && Date.now() - lastRunEventAt > budget) {
-      warned = true
-      // Informational, not an error: the run is quiet, not (as far as we can
-      // tell) dead. Real failures come through as error-role messages.
+    const nowMs = Date.now()
+    // DEAD MAIN takes precedence: no heartbeat means nothing is alive to wait
+    // for. A real error, once.
+    if (!deadWarned && nowMs - lastHeartbeatAt > livenessBudget) {
+      deadWarned = true
+      aiMessages.value.push({
+        role: 'error',
+        content: t('biscuit.notResponding'),
+        errorInfo: {
+          title: t('biscuit.notRespondingTitle'),
+          explanation: t('biscuit.notResponding')
+        }
+      })
+      return
+    }
+    // Otherwise, alive but quiet: an informational notice, once.
+    if (!quietWarned && !deadWarned && nowMs - lastRunEventAt > quietBudget) {
+      quietWarned = true
       aiMessages.value.push({ role: 'notice', content: t('biscuit.quiet') })
     }
   }, tick)

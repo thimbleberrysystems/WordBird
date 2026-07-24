@@ -1619,7 +1619,9 @@
     "historyHintTip": "Press ↑ in the empty input to recall previous prompts",
     "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
     "selDraft": "Draft",
-    "quiet": "Biscuit is still working — no output for a while. A long research or drafting step can run quietly; nothing is lost. Keep waiting, or press Stop to interrupt."
+    "quiet": "Biscuit is still working — no output for a while. A long research or drafting step can run quietly; nothing is lost. Keep waiting, or press Stop to interrupt.",
+    "notResponding": "Biscuit stopped sending signals — the app may be stuck. Your work is saved. Press Stop, and if it persists, restart WordBird.",
+    "notRespondingTitle": "Biscuit isn’t responding"
   },
   "review": {
     "pendingOne": "1 pending edit",

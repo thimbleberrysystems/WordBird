@@ -1618,7 +1618,9 @@
     "historyHintTip": "↑ im leeren Eingabefeld ruft frühere Eingaben ab",
     "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
     "selDraft": "Draft",
-    "quiet": "Biscuit arbeitet noch — seit einer Weile keine Ausgabe. Ein langer Recherche- oder Schreibschritt kann still ablaufen; nichts geht verloren. Weiter warten oder mit Stopp abbrechen."
+    "quiet": "Biscuit arbeitet noch — seit einer Weile keine Ausgabe. Ein langer Recherche- oder Schreibschritt kann still ablaufen; nichts geht verloren. Weiter warten oder mit Stopp abbrechen.",
+    "notResponding": "Biscuit sendet keine Signale mehr — die App hängt möglicherweise. Deine Arbeit ist gespeichert. Drücke Stopp; wenn es anhält, starte WordBird neu.",
+    "notRespondingTitle": "Biscuit antwortet nicht"
   },
   "review": {
     "pendingOne": "1 ausstehende Änderung",

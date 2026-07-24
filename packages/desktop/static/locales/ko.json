@@ -1618,7 +1618,9 @@
     "historyHintTip": "빈 입력창에서 ↑ 를 누르면 이전 입력을 불러옵니다",
     "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
     "selDraft": "Draft",
-    "quiet": "Biscuit가 아직 작업 중입니다 — 한동안 출력이 없습니다. 긴 조사나 집필 단계는 조용히 진행될 수 있으며, 아무것도 손실되지 않습니다. 계속 기다리거나 중지를 눌러 중단하세요."
+    "quiet": "Biscuit가 아직 작업 중입니다 — 한동안 출력이 없습니다. 긴 조사나 집필 단계는 조용히 진행될 수 있으며, 아무것도 손실되지 않습니다. 계속 기다리거나 중지를 눌러 중단하세요.",
+    "notResponding": "Biscuit가 신호를 보내지 않습니다 — 앱이 멈췄을 수 있습니다. 작업은 저장되어 있습니다. 중지를 누르고, 계속되면 WordBird를 다시 시작하세요.",
+    "notRespondingTitle": "Biscuit가 응답하지 않습니다"
   },
   "review": {
     "pendingOne": "대기 중인 편집 1개",

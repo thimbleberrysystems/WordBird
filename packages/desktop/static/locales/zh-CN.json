@@ -1618,7 +1618,9 @@
     "historyHintTip": "在空输入框按 ↑ 可调出历史输入",
     "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
     "selDraft": "Draft",
-    "quiet": "Biscuit 仍在工作——已有一会儿没有输出。较长的研究或写作步骤可能会安静地运行；不会丢失任何内容。请继续等待，或按“停止”中断。"
+    "quiet": "Biscuit 仍在工作——已有一会儿没有输出。较长的研究或写作步骤可能会安静地运行；不会丢失任何内容。请继续等待，或按“停止”中断。",
+    "notResponding": "Biscuit 停止发送信号——应用可能已卡住。你的工作已保存。请按“停止”，如果仍然如此，请重启 WordBird。",
+    "notRespondingTitle": "Biscuit 无响应"
   },
   "review": {
     "pendingOne": "1 处待处理编辑",

@@ -72,6 +72,17 @@ import type Accessor from '../../app/accessor'
 
 const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000
 
+/**
+ * While a turn runs, main emits a liveness heartbeat on this cadence. It is
+ * the renderer's proof that MAIN itself is alive — a quiet-but-alive run keeps
+ * heartbeating even when the model is silent, while a wedged or dead main
+ * stops (a blocked event loop can't fire setInterval). The renderer only
+ * watches for its presence/absence; the "is a turn running" decision stays
+ * here. Kept well under the renderer's liveness budget so a couple of missed
+ * beats are tolerated before it concludes main is gone.
+ */
+const RUN_HEARTBEAT_INTERVAL_MS = 15_000
+
 // DEFAULT_MAX_OUTPUT_TOKENS (the prose-sized reply cap) + the Anthropic 1M
 // constants now live in ./modelLimits so the resolution is unit-testable
 // without Electron.
@@ -328,6 +339,24 @@ export class LangGraphManager {
         ? 'paused'
         : 'running'
     this._broadcast('mt::ai:run-state', { state })
+  }
+
+  private _heartbeatTimer: ReturnType<typeof setInterval> | null = null
+
+  /** Prove main is alive while a turn runs (see RUN_HEARTBEAT_INTERVAL_MS). */
+  private _startHeartbeat(): void {
+    this._stopHeartbeat()
+    this._broadcast('mt::ai:run-heartbeat', { at: Date.now() })
+    this._heartbeatTimer = setInterval(() => {
+      this._broadcast('mt::ai:run-heartbeat', { at: Date.now() })
+    }, RUN_HEARTBEAT_INTERVAL_MS)
+  }
+
+  private _stopHeartbeat(): void {
+    if (this._heartbeatTimer) {
+      clearInterval(this._heartbeatTimer)
+      this._heartbeatTimer = null
+    }
   }
 
   pause(): boolean {
@@ -1097,6 +1126,7 @@ export class LangGraphManager {
 
     this._turnRunning = true
     this._emitRunState()
+    this._startHeartbeat()
     let content: string
     try {
       const response = await invokeOnce(langchainMessages)
@@ -1185,6 +1215,7 @@ export class LangGraphManager {
       throw error
     } finally {
       this._turnRunning = false
+      this._stopHeartbeat()
       if (turnRoot) contextBuilder.endTurn(turnRoot)
       // A pause must never outlive its turn — the next turn starts unfrozen.
       this._orchestrator?.resumeFromPause()

@@ -384,6 +384,11 @@ const aiAPI = {
     ipcRenderer.on('mt::ai:run-state', subscription)
     return () => ipcRenderer.removeListener('mt::ai:run-state', subscription)
   },
+  onRunHeartbeat: (handler: (beat: { at: number }) => void) => {
+    const subscription = (_e: unknown, beat: { at: number }) => handler(beat)
+    ipcRenderer.on('mt::ai:run-heartbeat', subscription)
+    return () => ipcRenderer.removeListener('mt::ai:run-heartbeat', subscription)
+  },
   fetchModels: (provider: AIProvider, apiKey: string, baseUrl?: string, enable1MContext?: boolean) =>
     invoke('mt::ai:fetch-models', provider, apiKey, baseUrl, enable1MContext),
   modelLimits: (config: IAIConfig) => invoke('mt::ai:model-limits', config),

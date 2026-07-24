@@ -1618,7 +1618,9 @@
     "historyHintTip": "空の入力欄で ↑ を押すと過去の入力を呼び出せます",
     "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
     "selDraft": "Draft",
-    "quiet": "Biscuit はまだ作業中です。しばらく出力がありませんが、長い調査や執筆のステップは静かに進むことがあります。何も失われていません。そのままお待ちいただくか、停止で中断できます。"
+    "quiet": "Biscuit はまだ作業中です。しばらく出力がありませんが、長い調査や執筆のステップは静かに進むことがあります。何も失われていません。そのままお待ちいただくか、停止で中断できます。",
+    "notResponding": "Biscuit からの信号が途絶えました。アプリが停止している可能性があります。作業は保存されています。停止を押し、続く場合は WordBird を再起動してください。",
+    "notRespondingTitle": "Biscuit が応答していません"
   },
   "review": {
     "pendingOne": "保留中の編集 1件",

@@ -20,17 +20,33 @@ import { closeElectron, ensureSidebar, expectNoRendererErrors, launchWithMarkdow
  * also re-registered to record their calls.
  */
 
-const patchMainHandlers = async(app: ElectronApplication): Promise<void> => {
-  await app.evaluate(({ ipcMain }) => {
+const patchMainHandlers = async(
+  app: ElectronApplication,
+  opts: { heartbeat?: boolean } = {}
+): Promise<void> => {
+  await app.evaluate(({ ipcMain, BrowserWindow }, { heartbeat }) => {
     const g = global as Record<string, unknown>
     g.__stopCalls = 0
     g.__cancelledAgents = []
     ipcMain.removeHandler('mt::ai:send-message')
     ipcMain.handle('mt::ai:send-message', () => {
       // Held open until the spec releases it — while pending, the
-      // renderer is "sending" and shows Steer + Stop.
+      // renderer is "sending" and shows Steer + Stop. A live main keeps
+      // heartbeating while it works; a "dead" main (heartbeat:false) does
+      // not, which is exactly what the renderer's liveness timer detects.
+      let iv: ReturnType<typeof setInterval> | null = null
+      if (heartbeat) {
+        iv = setInterval(() => {
+          for (const w of BrowserWindow.getAllWindows()) {
+            if (!w.isDestroyed()) w.webContents.send('mt::ai:run-heartbeat', { at: Date.now() })
+          }
+        }, 200)
+      }
       return new Promise((resolve) => {
-        g.__releaseSend = () => resolve({ content: 'ok (released by spec)', model: 'mock' })
+        g.__releaseSend = () => {
+          if (iv) clearInterval(iv)
+          resolve({ content: 'ok (released by spec)', model: 'mock' })
+        }
       })
     })
     ipcMain.removeHandler('mt::ai:abort')
@@ -43,7 +59,7 @@ const patchMainHandlers = async(app: ElectronApplication): Promise<void> => {
       ;(g.__cancelledAgents as unknown[]).push(agentId)
       return { ok: true }
     })
-  })
+  }, { heartbeat: opts.heartbeat ?? true })
 }
 
 const readMain = async <T>(app: ElectronApplication, key: string): Promise<T> =>
@@ -211,5 +227,42 @@ test.describe('Stall watchdog (mocked AI)', () => {
       page.locator('.right-prompt .prompt-input-actions button', { hasText: 'Send' })
     ).toBeVisible({ timeout: 15000 })
     await expectNoRendererErrors(app)
+  })
+
+  test('a run whose MAIN stops heartbeating raises an ERROR (dead, not quiet)', async() => {
+    // The distinction the whole design turns on: main emits a liveness
+    // heartbeat while a turn runs. Its ABSENCE means main itself is wedged or
+    // gone — nothing is alive to wait for — so this is a real error, NOT the
+    // info notice. Simulate by patching the send handler to withhold
+    // heartbeats, and shrink the liveness budget (keeping the quiet budget
+    // large so it cannot fire first).
+    await patchMainHandlers(app, { heartbeat: false })
+    // Fresh chat so a notice from the previous (quiet) test can't pollute the
+    // "no info notice" assertion below.
+    await page.locator('.right-prompt .new-chat-btn').click()
+    await expect(page.locator('.right-prompt .message--notice')).toHaveCount(0)
+    await page.evaluate(() => {
+      ;(window as unknown as { __wordbirdLivenessMs?: number }).__wordbirdLivenessMs = 1200
+      ;(window as unknown as { __wordbirdStallMs?: number }).__wordbirdStallMs = 60_000
+    })
+
+    await page.locator('.right-prompt textarea').fill('Do something; main will wedge.')
+    await page.locator('.right-prompt .prompt-input-actions button', { hasText: 'Send' }).click()
+    await expect(
+      page.locator('.right-prompt .prompt-input-actions button', { hasText: 'Stop' })
+    ).toBeVisible({ timeout: 10000 })
+
+    // The dead-main error card appears; the quiet info notice does NOT.
+    const errorCard = page.locator('.right-prompt .error-card')
+    await expect(errorCard.first()).toBeVisible({ timeout: 15000 })
+    await expect(errorCard.first()).toContainText(/responding|stuck/i)
+    await expect(page.locator('.right-prompt .message--notice')).toHaveCount(0)
+
+    // Restore a live main + release so the suite leaves a clean state.
+    await patchMainHandlers(app, { heartbeat: true })
+    await app.evaluate(() => {
+      const release = (global as Record<string, unknown>).__releaseSend as (() => void) | undefined
+      release?.()
+    })
   })
 })

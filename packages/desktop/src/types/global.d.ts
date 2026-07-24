@@ -241,6 +241,7 @@ declare global {
       onRunState: (
         handler: (state: { state: 'idle' | 'running' | 'paused' }) => void
       ) => () => void
+      onRunHeartbeat: (handler: (beat: { at: number }) => void) => () => void
       fetchModels: (
         provider: AIProvider,
         apiKey: string,
