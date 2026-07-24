@@ -1292,7 +1292,11 @@ describe('negative cases: a wedged runtime cannot hang the turn', () => {
     }
   }
 
-  it('total silence ends the turn as a BUDGET event (session kept, "continue" resumes)', async() => {
+  it('total silence surfaces as an ERROR, not a budget "continue"', async() => {
+    // A wedged runtime is a genuine failure, distinct from running out of step
+    // budget (max-turns → GraphRecursionError → "say continue"). It must NOT
+    // wear the budget name, so the manager lets it through as a red error card
+    // rather than the reassuring "say continue" reply.
     const harness = await makeHarness([], '', { silenceMs: 120 })
     cleanupRoots.push(harness.root)
     wedgingSdk(harness, [initMessage('s-wedge')])
@@ -1304,9 +1308,10 @@ describe('negative cases: a wedged runtime cannot hang the turn', () => {
         { messages: [{ content: 'go' }] },
         { configurable: { thread_id: 't-wedge' } }
       )
-      // Budget semantics, NOT a crash — the manager turns this into the
-      // "say continue" reply rather than an error card.
-    ).rejects.toSatisfy((error: Error) => error.name === 'GraphRecursionError')
+    ).rejects.toSatisfy(
+      (error: Error) =>
+        error.name !== 'GraphRecursionError' && /stopped responding|no output/i.test(error.message)
+    )
     // It gave up promptly instead of hanging.
     expect(Date.now() - started).toBeLessThan(5000)
   })
@@ -1363,7 +1368,8 @@ describe('negative cases: a wedged runtime cannot hang the turn', () => {
         { messages: [{ content: 'first' }] },
         { configurable: { thread_id: 't-wedge-recover' } }
       )
-    ).rejects.toSatisfy((error: Error) => error.name === 'GraphRecursionError')
+      // Surfaces as an error (not the budget path), and the runner survives it.
+    ).rejects.toSatisfy((error: Error) => error.name !== 'GraphRecursionError')
 
     const second = await harness.runner.buildGraph().invoke(
       { messages: [{ content: 'second' }] },

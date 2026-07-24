@@ -145,8 +145,10 @@ export const SPAWN_SLOT_STALE_MS = 180_000
  * Stop is the only exit. Generous on purpose, because silence is normal
  * while a slow tool runs (MCP_TOOL_TIMEOUT is 120s — it must outlast a
  * rate-limited web fetch's full retry chain) and a legitimately long
- * book-run segment must never be cut short. Firing is treated as a BUDGET
- * event, not a crash: the session persists, so "continue" resumes.
+ * book-run segment must never be cut short. Firing surfaces as an ERROR (a
+ * wedged runtime IS a failure, distinct from running out of step budget) —
+ * the SDK session still persists on disk, so the error card notes that
+ * "continue" may resume.
  */
 export const SDK_SILENCE_TIMEOUT_MS = 300_000
 
@@ -813,12 +815,16 @@ export class AgentSDKRunner {
         } catch {
           // the iterator is already wedged — nothing to salvage
         }
+        // A total-silence timeout is a genuine failure — the runtime is
+        // wedged, not merely out of step budget — so it surfaces as an ERROR
+        // (red card), NOT the "say continue" budget path. The SDK session
+        // still persists on disk, so the card notes that continue may resume.
         const stalled = new Error(
-          `The Claude Code runtime stopped responding for ${Math.round(limit / 1000)}s.`
+          `Biscuit stopped responding — no output for ${Math.round(limit / 1000)}s. ` +
+          'The runtime looks wedged. Stop the run and try again; nothing you have done ' +
+          'is lost, and "continue" may pick up from where it stopped.'
         )
-        // Budget semantics: the SDK session persists, so the writer's
-        // "continue" genuinely resumes rather than starting over.
-        stalled.name = 'GraphRecursionError'
+        stalled.name = 'RuntimeSilenceError'
         throw stalled
       }
       if (outcome.done) return

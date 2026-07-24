@@ -138,7 +138,15 @@ export const useConversationHistory = (options: {
   const saveCurrent = (): void => {
     if (aiMessages.value.length === 0) return
     if (!currentId.value) currentId.value = `conv-${Date.now()}`
-    const snapshot = JSON.parse(JSON.stringify(aiMessages.value)) as ChatEntry[]
+    // Transient UI cards (a quiet-run notice, an error card, a stopped marker)
+    // are furniture, not conversation — they must not be persisted into the
+    // saved history or the agent-SEARCHABLE transcript at
+    // .wordbird/transcripts. Keep only the real dialogue.
+    const persistable = aiMessages.value.filter(
+      (m) => m.role !== 'notice' && m.role !== 'error' && m.role !== 'stopped'
+    )
+    if (persistable.length === 0) return
+    const snapshot = JSON.parse(JSON.stringify(persistable)) as ChatEntry[]
     const existing = conversations.value.find((c) => c.id === currentId.value)
     if (existing) {
       existing.messages = snapshot
