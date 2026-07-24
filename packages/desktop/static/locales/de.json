@@ -1608,8 +1608,6 @@
     "modeApprovalsHint": "Jede Änderung wartet auf dein OK — einzeln oder alle zusammen freigeben.",
     "questionFreeform": "Oder eigene Antwort schreiben…",
     "steerFailed": "Deine Notiz konnte Biscuit nicht erreichen — sie steht wieder im Eingabefeld.",
-    "stalledTitle": "Keine Antwort vom Modell",
-    "stalled": "Seit einiger Zeit kommt nichts zurück. Der Lauf hängt womöglich — drücke Stopp, um abzubrechen (nichts geht verloren), oder warte weiter, falls dein Modell nur langsam ist.",
     "mentionHint": "Szene oder Bibel-Seite referenzieren — ↑↓ wählen, Enter einfügen",
     "starterHealth": "Führe einen Projekt-Gesundheitscheck durch und behebe, was nicht synchron ist",
     "managedByRuntime": "Von der Claude-Laufzeit verwaltet — Stopp beendet alles.",
@@ -1619,7 +1617,8 @@
     "startersButtonTip": "Startvorschläge (/)",
     "historyHintTip": "↑ im leeren Eingabefeld ruft frühere Eingaben ab",
     "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
-    "selDraft": "Draft"
+    "selDraft": "Draft",
+    "quiet": "Biscuit arbeitet noch — seit einer Weile keine Ausgabe. Ein langer Recherche- oder Schreibschritt kann still ablaufen; nichts geht verloren. Weiter warten oder mit Stopp abbrechen."
   },
   "review": {
     "pendingOne": "1 ausstehende Änderung",

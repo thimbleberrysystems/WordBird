@@ -1608,8 +1608,6 @@
     "modeApprovalsHint": "Chaque modification attend votre accord — par changement ou toutes ensemble.",
     "questionFreeform": "Ou écrivez votre propre réponse…",
     "steerFailed": "Impossible de transmettre votre note à Biscuit — elle est de retour dans la zone de saisie.",
-    "stalledTitle": "Aucune réponse du modèle",
-    "stalled": "Rien ne revient depuis un moment. L'exécution est peut-être bloquée — appuyez sur Arrêter pour l'annuler (rien n'est perdu), ou continuez d'attendre si votre modèle est simplement lent.",
     "mentionHint": "Référencer une scène ou une page de la bible — ↑↓ pour choisir, Entrée pour insérer",
     "starterHealth": "Fais un bilan de santé du projet et corrige ce qui n’est plus synchronisé",
     "managedByRuntime": "Géré par le runtime Claude — Arrêter interrompt tout.",
@@ -1619,7 +1617,8 @@
     "startersButtonTip": "Suggestions de départ (/)",
     "historyHintTip": "↑ dans le champ vide rappelle vos messages précédents",
     "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
-    "selDraft": "Draft"
+    "selDraft": "Draft",
+    "quiet": "Biscuit travaille toujours — aucune sortie depuis un moment. Une longue étape de recherche ou de rédaction peut se dérouler en silence ; rien n'est perdu. Patientez, ou appuyez sur Stop pour interrompre."
   },
   "review": {
     "pendingOne": "1 modification en attente",

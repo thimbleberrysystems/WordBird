@@ -1609,8 +1609,6 @@
     "modeApprovalsHint": "Every edit waits for your OK — approve per change or all at once.",
     "questionFreeform": "Or write your own answer…",
     "steerFailed": "Couldn't deliver your note to Biscuit — it's back in the input box.",
-    "stalledTitle": "No response from the model",
-    "stalled": "Nothing has come back for a while. The run may be stalled — press Stop to cancel it (nothing is lost), or keep waiting if your model is just slow.",
     "mentionHint": "Reference a scene or bible page — ↑↓ to pick, Enter to insert",
     "starterHealth": "Run a project health check and fix what’s out of sync",
     "managedByRuntime": "Managed by the Claude runtime — Stop halts everything.",
@@ -1620,7 +1618,8 @@
     "startersButtonTip": "Starter prompts (/)",
     "historyHintTip": "Press ↑ in the empty input to recall previous prompts",
     "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
-    "selDraft": "Draft"
+    "selDraft": "Draft",
+    "quiet": "Biscuit is still working — no output for a while. A long research or drafting step can run quietly; nothing is lost. Keep waiting, or press Stop to interrupt."
   },
   "review": {
     "pendingOne": "1 pending edit",

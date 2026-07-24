@@ -1608,8 +1608,6 @@
     "modeApprovalsHint": "すべての編集はあなたの承認待ち — 個別または一括で承認。",
     "questionFreeform": "または自由に回答を入力…",
     "steerFailed": "メモをBiscuitに届けられませんでした。入力欄に戻しました。",
-    "stalledTitle": "モデルから応答がありません",
-    "stalled": "しばらく何も返ってきていません。処理が停止している可能性があります。停止を押してキャンセルするか（何も失われません）、モデルが遅いだけならこのままお待ちください。",
     "mentionHint": "シーンやバイブルページを参照 — ↑↓で選択、Enterで挿入",
     "starterHealth": "プロジェクトのヘルスチェックを実行して、ずれているところを直して",
     "managedByRuntime": "Claude ランタイムが管理しています — 停止で全体が止まります。",
@@ -1619,7 +1617,8 @@
     "startersButtonTip": "スタータープロンプト (/)",
     "historyHintTip": "空の入力欄で ↑ を押すと過去の入力を呼び出せます",
     "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
-    "selDraft": "Draft"
+    "selDraft": "Draft",
+    "quiet": "Biscuit はまだ作業中です。しばらく出力がありませんが、長い調査や執筆のステップは静かに進むことがあります。何も失われていません。そのままお待ちいただくか、停止で中断できます。"
   },
   "review": {
     "pendingOne": "保留中の編集 1件",

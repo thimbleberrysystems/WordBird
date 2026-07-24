@@ -175,6 +175,20 @@
           <!-- eslint-enable vue/no-v-html -->
         </div>
 
+        <!-- Informational notice (e.g. a quiet-but-alive run) — calm, not
+             alarming, distinct from the red error card. -->
+        <div
+          v-else-if="message.role === 'notice'"
+          class="message message--notice"
+        >
+          <el-icon class="message--notice__icon">
+            <InfoFilled />
+          </el-icon>
+          <div class="message__text">
+            {{ message.content }}
+          </div>
+        </div>
+
         <div
           v-else
           :class="['message', `message--${message.role}`]"
@@ -502,7 +516,7 @@ import {
   useConversationHistory,
   type ChatEntry
 } from '../../composables/useConversationHistory'
-import { DArrowRight, Plus, ChatLineSquare, Delete, CopyDocument, Back } from '@element-plus/icons-vue'
+import { DArrowRight, Plus, ChatLineSquare, Delete, CopyDocument, Back, InfoFilled } from '@element-plus/icons-vue'
 import GlobalAgentReview from '../agent/GlobalAgentReview.vue'
 import PlanCard from './PlanCard.vue'
 import ErrorCard from './ErrorCard.vue'
@@ -1219,9 +1233,14 @@ const steerWith = async (text: string): Promise<void> => {
   }
 }
 
-// ---- Stall watchdog: "sending" must never look alive forever. Any run
-// event (activity, tokens, context) counts as a heartbeat; a long silence
-// gets an advisory card so the writer knows Stop is the way out.
+// ---- Quiet-run notice: "sending" must never look alive forever without a
+// word. Any run event (activity, tokens, context) counts as a heartbeat; a
+// long silence gets an INFORMATIONAL notice — not an error — because at this
+// point the run is almost certainly still alive: main's own watchdog does not
+// give up until 5 min, and a genuinely dead runtime (crash, stream closed,
+// LLM loop gone) arrives as a real error event from main and gets the red
+// card. A long research or drafting step legitimately runs quiet, so this is
+// "still working, no output yet", with Stop offered as the exit.
 const STALL_AFTER_MS_DEFAULT = 90_000
 /**
  * Silence budget before the advisory card appears. Read per-run (not at
@@ -1265,11 +1284,9 @@ function startStallWatchdog (): void {
     }
     if (!warned && Date.now() - lastRunEventAt > budget) {
       warned = true
-      aiMessages.value.push({
-        role: 'error',
-        content: t('biscuit.stalled'),
-        errorInfo: { title: t('biscuit.stalledTitle'), explanation: t('biscuit.stalled') }
-      })
+      // Informational, not an error: the run is quiet, not (as far as we can
+      // tell) dead. Real failures come through as error-role messages.
+      aiMessages.value.push({ role: 'notice', content: t('biscuit.quiet') })
     }
   }, tick)
 }
@@ -1307,9 +1324,9 @@ async function sendMessage (): Promise<void> {
   }
 
   try {
-    // Error/stopped cards are UI furniture — never send them to the model.
+    // Error/stopped/notice cards are UI furniture — never send them to the model.
     const conversation = aiMessages.value
-      .filter((m) => m.role !== 'error' && m.role !== 'stopped')
+      .filter((m) => m.role !== 'error' && m.role !== 'stopped' && m.role !== 'notice')
       .map(({ role, content }) => ({ role, content }))
     const response = await langGraphService.sendMessage(conversation)
 
@@ -1958,6 +1975,26 @@ async function sendMessage (): Promise<void> {
 
 .message--stopped {
   align-items: flex-start;
+}
+
+/* Informational notice: calm, clearly not an error. Left accent + info icon,
+   muted tone — a quiet-but-alive run should reassure, not alarm. */
+.message--notice {
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--wbInfoColor, #409eff);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--wbInfoColor, #409eff) 8%, transparent);
+}
+.message--notice__icon {
+  color: var(--wbInfoColor, #409eff);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.message--notice .message__text {
+  color: var(--color-secondary, var(--wbMutedColor));
+  max-width: 100%;
 }
 
 .message__text {

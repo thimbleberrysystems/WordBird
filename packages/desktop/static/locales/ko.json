@@ -1608,8 +1608,6 @@
     "modeApprovalsHint": "모든 편집이 승인 대기 — 개별 또는 전체 승인.",
     "questionFreeform": "또는 직접 답을 입력…",
     "steerFailed": "메모를 Biscuit에 전달하지 못했습니다. 입력창에 다시 넣어 두었습니다.",
-    "stalledTitle": "모델에서 응답이 없습니다",
-    "stalled": "한동안 아무 응답이 없습니다. 실행이 멈췄을 수 있습니다. 중지를 눌러 취소하거나(손실 없음), 모델이 느린 것뿐이라면 계속 기다리세요.",
     "mentionHint": "장면 또는 바이블 페이지 참조 — ↑↓ 선택, Enter 삽입",
     "starterHealth": "프로젝트 상태 점검을 실행하고 어긋난 부분을 고쳐줘",
     "managedByRuntime": "Claude 런타임이 관리합니다 — 중지하면 전체가 멈춥니다.",
@@ -1619,7 +1617,8 @@
     "startersButtonTip": "시작 프롬프트 (/)",
     "historyHintTip": "빈 입력창에서 ↑ 를 누르면 이전 입력을 불러옵니다",
     "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
-    "selDraft": "Draft"
+    "selDraft": "Draft",
+    "quiet": "Biscuit가 아직 작업 중입니다 — 한동안 출력이 없습니다. 긴 조사나 집필 단계는 조용히 진행될 수 있으며, 아무것도 손실되지 않습니다. 계속 기다리거나 중지를 눌러 중단하세요."
   },
   "review": {
     "pendingOne": "대기 중인 편집 1개",

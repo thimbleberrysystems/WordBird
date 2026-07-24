@@ -174,10 +174,12 @@ test.describe('Stall watchdog (mocked AI)', () => {
     if (app) await closeElectron(app)
   })
 
-  test('a run that goes silent raises the advisory card telling the writer to Stop', async() => {
+  test('a run that goes silent raises an INFORMATIONAL notice, not an error', async() => {
     // The watchdog exists so "sending" never looks alive forever. Its real
     // budget is 90s; the renderer reads an override per-run so this can be
-    // proven in ~2s instead of doubling the suite runtime.
+    // proven in ~2s instead of doubling the suite runtime. At this point the
+    // run is quiet, NOT dead (main's own watchdog waits 5 min; a real crash
+    // arrives as a separate error), so the card must read as info, never red.
     await page.evaluate(() => {
       ;(window as unknown as { __wordbirdStallMs?: number }).__wordbirdStallMs = 1200
     })
@@ -189,14 +191,16 @@ test.describe('Stall watchdog (mocked AI)', () => {
       page.locator('.right-prompt .prompt-input-actions button', { hasText: 'Stop' })
     ).toBeVisible({ timeout: 10000 })
 
-    // The advisory arrives and names Stop as the way out.
-    const advisory = page.locator('.right-prompt .message-error, .right-prompt .error-card')
-    await expect(advisory.first()).toBeVisible({ timeout: 15000 })
-    await expect(advisory.first()).toContainText(/stalled|Stop/i)
+    // The notice arrives as an INFO message (not an error card).
+    const notice = page.locator('.right-prompt .message--notice')
+    await expect(notice.first()).toBeVisible({ timeout: 15000 })
+    await expect(notice.first()).toContainText(/still working|Stop/i)
+    // It is NOT the red error card — a quiet run is not a failure.
+    await expect(page.locator('.right-prompt .error-card')).toHaveCount(0)
 
-    // It warns ONCE, not on every tick.
+    // It shows ONCE, not on every tick.
     await page.waitForTimeout(3000)
-    expect(await advisory.count()).toBe(1)
+    expect(await notice.count()).toBe(1)
 
     // Releasing the run clears the "sending" state (watchdog stops).
     await app.evaluate(() => {

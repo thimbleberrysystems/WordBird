@@ -33,7 +33,9 @@ export interface IAIConnectionState {
 }
 
 export interface ILangGraphMessage {
-  role: 'user' | 'assistant' | 'system' | 'ai' | 'error' | 'stopped'
+  // 'notice' is a renderer-only informational card (e.g. a quiet-but-alive
+  // run) — never sent to the model, never a failure.
+  role: 'user' | 'assistant' | 'system' | 'ai' | 'error' | 'stopped' | 'notice'
   content: string
 }
 

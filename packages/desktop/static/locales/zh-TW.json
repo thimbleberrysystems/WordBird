@@ -1610,8 +1610,6 @@
     "modeApprovalsHint": "每處編輯都等待你的確認 — 可逐項或一鍵全部核准。",
     "questionFreeform": "或自行輸入回答…",
     "steerFailed": "無法把你的批註傳給 Biscuit——已放回輸入框。",
-    "stalledTitle": "模型沒有回應",
-    "stalled": "已經有一段時間沒有任何回傳。執行可能已卡住——按「停止」取消（不會遺失任何內容），如果只是模型較慢也可以繼續等待。",
     "mentionHint": "引用場景或聖典頁面——↑↓選擇，Enter 插入",
     "starterHealth": "執行專案健康檢查並修復不同步的地方",
     "managedByRuntime": "由 Claude 執行環境管理 — 停止將中止全部執行。",
@@ -1621,7 +1619,8 @@
     "startersButtonTip": "起步提示 (/)",
     "historyHintTip": "在空輸入框按 ↑ 可叫出歷史輸入",
     "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
-    "selDraft": "Draft"
+    "selDraft": "Draft",
+    "quiet": "Biscuit 仍在運作——已有一陣子沒有輸出。較長的研究或寫作步驟可能會安靜地執行；不會遺失任何內容。請繼續等待，或按「停止」中斷。"
   },
   "review": {
     "pendingOne": "1 處待處理編輯",

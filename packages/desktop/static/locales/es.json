@@ -1608,8 +1608,6 @@
     "modeApprovalsHint": "Cada edición espera tu visto bueno — por cambio o todas a la vez.",
     "questionFreeform": "O escribe tu propia respuesta…",
     "steerFailed": "No se pudo entregar tu nota a Biscuit; está de nuevo en el cuadro de entrada.",
-    "stalledTitle": "Sin respuesta del modelo",
-    "stalled": "Hace rato que no llega nada. La ejecución puede estar bloqueada: pulsa Detener para cancelarla (no se pierde nada) o sigue esperando si tu modelo solo es lento.",
     "mentionHint": "Referencia una escena o página de la biblia — ↑↓ elegir, Enter insertar",
     "starterHealth": "Haz una revisión de salud del proyecto y arregla lo que esté desincronizado",
     "managedByRuntime": "Gestionado por el entorno de Claude — Detener lo interrumpe todo.",
@@ -1619,7 +1617,8 @@
     "startersButtonTip": "Sugerencias iniciales (/)",
     "historyHintTip": "↑ con la entrada vacía recupera mensajes anteriores",
     "starterRetroOutline": "Outline what I've already written — fill in each scene's synopsis and craft",
-    "selDraft": "Draft"
+    "selDraft": "Draft",
+    "quiet": "Biscuit sigue trabajando: sin salida desde hace un rato. Un paso largo de investigación o redacción puede ejecutarse en silencio; no se pierde nada. Sigue esperando o pulsa Detener para interrumpir."
   },
   "review": {
     "pendingOne": "1 edición pendiente",
