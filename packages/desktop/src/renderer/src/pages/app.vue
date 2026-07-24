@@ -338,6 +338,10 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   flex: 1;
+  /* min-width:0 lets this shrink to the viewport in the .editor-container row
+     (beside the sidebar); without it a wide editor pushes the row — and the
+     Biscuit panel at its right edge — past the viewport. */
+  min-width: 0;
   min-height: 100vh;
   position: relative;
   & > .editor {
@@ -349,6 +353,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: row;
   flex: 1;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
 }
