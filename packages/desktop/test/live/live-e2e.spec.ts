@@ -744,6 +744,12 @@ live('11 · deletes always ask, even in auto mode', () => {
     // gate this run (it usually does; a stubbornly cautious model may not).
     if (destructiveCards.length === 0) {
       console.info('[flow-11] model declined to delete even after explicit confirmation (safe).')
+    } else {
+      console.info(
+        `[flow-11] destructive gate FIRED: ${destructiveCards.length} card(s) raised; ` +
+          `file ${fileGone ? 'deleted only after approval' : 'kept'}. ` +
+          `Cards: ${destructiveCards.map((a) => a.summary).join(' | ')}`
+      )
     }
   })
 })

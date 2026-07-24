@@ -50,6 +50,88 @@ interface SubHarness {
 
 const roots: string[] = []
 
+interface FastProbeServer {
+  url: string
+  close: () => Promise<void>
+}
+const reproServers: FastProbeServer[] = []
+
+/**
+ * A minimal loopback streamable-HTTP MCP server exposing `count` fast,
+ * no-arg probe tools (probe_i → `token_i: OK`). This is the SAME transport
+ * KIND production ships (httpMcpServer.ts, `type: 'http'`) — the escape hatch
+ * WordBird uses to route around the SDK's in-process #114 deferral race. The
+ * session routing mirrors buildWordbirdHttpMcpServer: an initialize (no
+ * session header) mints a fresh transport; later requests route by
+ * mcp-session-id (a shared transport answers exactly one initialize).
+ */
+const startFastProbeHttpMcp = async(count: number): Promise<FastProbeServer> => {
+  const http = (await import('http')).default
+  const { randomUUID } = await import('crypto')
+  const { McpServer } = await import('@modelcontextprotocol/sdk/server/mcp.js')
+  const { StreamableHTTPServerTransport } = await import(
+    '@modelcontextprotocol/sdk/server/streamableHttp.js'
+  )
+
+  const buildMcp = (): InstanceType<typeof McpServer> => {
+    const mcp = new McpServer({ name: 'repro', version: '1.0.0' })
+    for (let i = 0; i < count; i++) {
+      const idx = i
+      mcp.registerTool(
+        `probe_${idx}`,
+        { description: `Fast probe ${idx}: returns a token instantly.`, inputSchema: {} },
+        (async() => ({ content: [{ type: 'text', text: `token_${idx}: OK` }] })) as never
+      )
+    }
+    return mcp
+  }
+
+  const sessions = new Map<string, InstanceType<typeof StreamableHTTPServerTransport>>()
+  const server = http.createServer(async(req, res) => {
+    try {
+      const sessionId = req.headers['mcp-session-id'] as string | undefined
+      const existing = sessionId ? sessions.get(sessionId) : undefined
+      if (existing) {
+        await existing.handleRequest(req, res)
+        return
+      }
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+        onsessioninitialized: (sid: string): void => {
+          sessions.set(sid, transport)
+        }
+      })
+      transport.onclose = (): void => {
+        if (transport.sessionId) sessions.delete(transport.sessionId)
+      }
+      await buildMcp().connect(transport)
+      await transport.handleRequest(req, res)
+    } catch {
+      if (!res.headersSent) res.writeHead(500).end()
+    }
+  })
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', resolve)
+  })
+  const address = server.address()
+  const port = typeof address === 'object' && address ? address.port : 0
+  return {
+    url: `http://127.0.0.1:${port}/mcp`,
+    close: async() => {
+      for (const transport of sessions.values()) {
+        try {
+          await transport.close?.()
+        } catch {
+          /* already closed */
+        }
+      }
+      sessions.clear()
+      await new Promise<void>((resolve) => server.close(() => resolve()))
+    }
+  }
+}
+
 const makeHarness = async(): Promise<SubHarness> => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'wordbird-sub-live-'))
   roots.push(root)
@@ -116,7 +198,14 @@ const makeHarness = async(): Promise<SubHarness> => {
   }
 }
 
-afterAll(() => {
+afterAll(async() => {
+  for (const probe of reproServers.splice(0)) {
+    try {
+      await probe.close()
+    } catch {
+      /* already closed */
+    }
+  }
   for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true })
 })
 
@@ -262,30 +351,35 @@ live('claude-code provider (Claude subscription via Agent SDK)', () => {
     expect(closed).toEqual([])
   }, 600000)
 
-  it('many-tool server: a subagent making several fast calls never gets "no output" (deferral regression)', async() => {
-    // prj13 wedge (2026-07-19): with ~57 in-process tools the SDK defers
-    // them behind tool search; a deferred tool a SUBAGENT then invokes came
-    // back tool_deferred_unavailable → "completed with no output", after
-    // which every later call (local reads too) went instant-empty with NO
-    // stream-closed error. Fast calls, ~2 ok, then dead. alwaysLoad:true on
-    // createSdkMcpServer removes deferral. This drives the real SDK with a
-    // MANY-tool server (deferral threshold) + alwaysLoad and asserts a
-    // subagent's repeated fast calls all return real content.
+  it('many-tool HTTP transport: a subagent making several fast calls never gets "no output"', async() => {
+    // prj13 wedge (2026-07-19): with ~57 tools the SDK defers them behind tool
+    // search; a deferred tool a SUBAGENT then invokes came back
+    // tool_deferred_unavailable → "completed with no output", after which every
+    // later call went instant-empty with NO stream-closed error.
+    //
+    // UPSTREAM REALITY (#114, still not fully fixed through 0.3.215): the SDK's
+    // IN-PROCESS transport (createSdkMcpServer) drops a subagent's rapid calls
+    // even with alwaysLoad:true — a real limitation we do NOT try to assert
+    // away here (that earlier assertion flaked because the in-process race is
+    // genuinely present). WordBird PRODUCTION routes around it entirely by
+    // serving the tool pack over a loopback STREAMABLE-HTTP MCP server
+    // (httpMcpServer.ts) — HTTP delivers what the in-process transport drops.
+    //
+    // So this pin verifies the WORKAROUND at exactly the boundary production
+    // depends on: over the same transport KIND WordBird ships (`type: 'http'`
+    // + alwaysLoad), a subagent's five fast SEQUENTIAL calls to a MANY-tool
+    // server (past the deferral threshold) all return real content. If this
+    // ever fails, the HTTP escape hatch itself has regressed — not merely the
+    // upstream in-process race. Single live run (TOKEN THRIFT): the in-process
+    // failure mode is documented above, not re-exercised.
     const sdk = (await import('@anthropic-ai/claude-agent-sdk')) as unknown as {
       query: (args: { prompt: string; options: Record<string, unknown> }) => AsyncIterable<unknown>
-      tool: (name: string, description: string, schema: unknown, handler: unknown) => unknown
-      createSdkMcpServer: (options: {
-        name: string
-        tools: unknown[]
-        alwaysLoad?: boolean
-      }) => unknown
     }
-    // 40 fast tools → comfortably past the tool-search deferral threshold.
-    const tools = Array.from({ length: 40 }, (_unused, i) =>
-      sdk.tool(`probe_${i}`, `Fast probe ${i}: returns a token instantly.`, {}, async() => ({
-        content: [{ type: 'text', text: `token_${i}: OK` }]
-      }))
-    )
+    // 40 fast tools → comfortably past the tool-search deferral threshold,
+    // served over loopback HTTP exactly as production serves the real pack.
+    const probe = await startFastProbeHttpMcp(40)
+    reproServers.push(probe)
+
     const env: Record<string, string | undefined> = { ...process.env }
     delete env.ANTHROPIC_API_KEY
     delete env.ANTHROPIC_AUTH_TOKEN
@@ -304,7 +398,7 @@ live('claude-code provider (Claude subscription via Agent SDK)', () => {
         maxTurns: 30,
         permissionMode: 'default',
         mcpServers: {
-          repro: sdk.createSdkMcpServer({ name: 'repro', tools, alwaysLoad: true })
+          repro: { type: 'http', url: probe.url, alwaysLoad: true }
         },
         agents: {
           checker: {
@@ -333,11 +427,13 @@ live('claude-code provider (Claude subscription via Agent SDK)', () => {
     }
     // At least the five sequential subagent calls ran.
     expect(toolResults.length).toBeGreaterThanOrEqual(5)
-    // NONE came back as the SDK's empty-result placeholder.
+    // NONE came back as the SDK's empty-result placeholder — over HTTP, the
+    // production transport, this must hold (the in-process race is routed around).
     const empties = toolResults.filter((text) => /no output/i.test(text))
-    expect(empties, `deferred tools returned empty: ${empties.length}/${toolResults.length}`).toEqual(
-      []
-    )
+    expect(
+      empties,
+      `HTTP transport returned empty tool results: ${empties.length}/${toolResults.length}`
+    ).toEqual([])
     // And the real token payloads actually arrived.
     expect(toolResults.some((text) => /token_\d+: OK/.test(text))).toBe(true)
   }, 600000)

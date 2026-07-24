@@ -22,6 +22,7 @@ import {
 import {
   AgentSDKRunner,
   DISALLOWED_BUILTIN_TOOLS,
+  PRE_TOOL_USE_MATCHER,
   SDK_SILENCE_TIMEOUT_MS,
   SPAWN_SLOT_STALE_MS
 } from '../../../src/main/services/ai/agentSdk/AgentSDKRunner'
@@ -463,8 +464,29 @@ describe('a scripted SDK turn', () => {
     }
     // The gate is wired as a matcher-scoped PreToolUse hook.
     const hooks = options.hooks as { PreToolUse?: Array<{ matcher?: string; hooks: unknown[] }> }
-    expect(hooks.PreToolUse?.[0]?.matcher).toMatch(/Agent\|Task/)
+    const matcher = hooks.PreToolUse?.[0]?.matcher
+    expect(matcher).toBe(PRE_TOOL_USE_MATCHER)
+    expect(matcher).toMatch(/Agent\|Task/)
     expect(hooks.PreToolUse?.[0]?.hooks).toHaveLength(1)
+    // REGRESSION PIN (silent-delete safety hole, live flow 11, 2026-07-24):
+    // Claude Code matches the matcher against the tool's FULL name, and the
+    // destructive tools are MCP tools (mcp__wordbird__delete_unit, …). Listing
+    // them BARE meant the matcher never matched the real name, the hook never
+    // fired, and deletes ran with no writer approval. Simulate the runtime's
+    // matching (a full-name test) against the ACTUAL prefixed tool names — a
+    // regression to bare names fails HERE, not only in the live run.
+    const matchFullName = (name: string): boolean =>
+      new RegExp(`^(?:${matcher})$`).test(name)
+    for (const destructive of DESTRUCTIVE_TOOLS) {
+      expect(
+        matchFullName(`${MCP_TOOL_PREFIX}${destructive}`),
+        `PreToolUse matcher must match the real (prefixed) tool name for ${destructive}`
+      ).toBe(true)
+    }
+    // The builtin spawn tools are bare — they must still match by their own name.
+    for (const spawn of ['Agent', 'Task']) {
+      expect(matchFullName(spawn), `matcher must match builtin spawn tool ${spawn}`).toBe(true)
+    }
     const disallowed = options.disallowedTools as string[]
     for (const builtin of ['Bash', 'Read', 'Write', 'Edit', 'WebFetch']) {
       expect(disallowed).toContain(builtin)

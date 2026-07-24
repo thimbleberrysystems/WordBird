@@ -152,6 +152,25 @@ export const SPAWN_SLOT_STALE_MS = 180_000
  */
 export const SDK_SILENCE_TIMEOUT_MS = 300_000
 
+/**
+ * PreToolUse matcher for the one gate that survives the canUseTool removal
+ * (spawn dedup + ledger injection, and writer approval for destructive ops).
+ *
+ * Claude Code matches a PreToolUse matcher against the tool's FULL name, and
+ * MCP tools are named `mcp__<server>__<tool>`. The builtin spawn tools
+ * (Agent/Task) are bare, but the destructive tools are MCP tools — so their
+ * matcher entries MUST carry the `mcp__wordbird__` prefix. Listing them bare
+ * (as this did until 2026-07-24) meant the matcher never matched the real
+ * tool name, the hook never fired, and deletes executed with NO writer
+ * approval on the subscription/SDK path — a silent safety hole caught by live
+ * flow 11. Derived from the shared constants so the prefix can never drift
+ * away from DESTRUCTIVE_TOOLS again; pinned in agent-sdk-runner.spec.
+ */
+export const PRE_TOOL_USE_MATCHER = [
+  ...SPAWN_TOOL_NAMES,
+  ...DESTRUCTIVE_TOOLS.map((name) => `${MCP_TOOL_PREFIX}${name}`)
+].join('|')
+
 /** The only built-ins we keep: Agent/Task spawn our role subagents. */
 
 type SdkMessage = Record<string, unknown>
@@ -509,7 +528,7 @@ export class AgentSDKRunner {
         // other tool is allowlisted and never reaches this callback.
         PreToolUse: [
           {
-            matcher: 'Agent|Task|delete_unit|delete_file|delete_folder|restore_snapshot',
+            matcher: PRE_TOOL_USE_MATCHER,
             hooks: [this.preToolUseGate]
           }
         ]
