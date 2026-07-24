@@ -393,6 +393,8 @@ const aiAPI = {
     invoke('mt::ai:fetch-models', provider, apiKey, baseUrl, enable1MContext),
   modelLimits: (config: IAIConfig) => invoke('mt::ai:model-limits', config),
   pullModel: (model: string, baseUrl?: string) => invoke('mt::ai:pull-model', model, baseUrl),
+  ollamaModelExists: (model: string, baseUrl?: string) =>
+    invoke('mt::ai:ollama-model-exists', model, baseUrl),
   onPullProgress: (
     handler: (progress: { percent?: number; status?: string; digest?: string }) => void
   ) => {

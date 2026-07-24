@@ -70,12 +70,43 @@ const installHook = (): void => {
   })
 }
 
-export const renderChatMarkdown = (text: string): string => {
+// marked + DOMPurify are pure for a given input, but renderChatMarkdown is
+// called INLINE inside the chat v-for, so it re-runs for every message on
+// every panel re-render — and the panel re-renders on the hot event stream
+// (activity/tokens/context) while an agent works. Cache by exact input so a
+// message is parsed once; the cache is bounded because chat content is stable
+// (messages are pushed whole, never streamed token-by-token). LRU-trim keeps
+// a very long conversation from growing the map without bound.
+const RENDER_CACHE = new Map<string, string>()
+const RENDER_CACHE_MAX = 500
+
+const doRender = (text: string): string => {
   installHook()
-  const html = marked.parse(text ?? '', { async: false }) as string
+  const html = marked.parse(text, { async: false }) as string
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS,
     ALLOWED_ATTR,
     ALLOW_DATA_ATTR: false
   })
 }
+
+export const renderChatMarkdown = (text: string): string => {
+  const key = text ?? ''
+  const cached = RENDER_CACHE.get(key)
+  if (cached !== undefined) {
+    // Refresh recency (Map preserves insertion order → re-set moves to newest).
+    RENDER_CACHE.delete(key)
+    RENDER_CACHE.set(key, cached)
+    return cached
+  }
+  const rendered = doRender(key)
+  RENDER_CACHE.set(key, rendered)
+  if (RENDER_CACHE.size > RENDER_CACHE_MAX) {
+    // Evict the oldest (first) entry.
+    RENDER_CACHE.delete(RENDER_CACHE.keys().next().value as string)
+  }
+  return rendered
+}
+
+/** Test seam: clear the memo cache between cases. */
+export const _clearChatMarkdownCache = (): void => RENDER_CACHE.clear()

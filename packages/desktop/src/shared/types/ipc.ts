@@ -193,6 +193,7 @@ export interface IpcInvokeChannels {
     ret: { contextWindow: number; maxOutput: number; source: 'override' | 'api' | 'default' }
   }
   'mt::ai:pull-model': { args: [string, string?]; ret: { success: boolean } }
+  'mt::ai:ollama-model-exists': { args: [string, string?]; ret: boolean }
   'mt::project:create': { args: [ProjectCreateArgs?]; ret: ProjectCreateResult }
   'mt::project:import': { args: [ProjectImportArgs?]; ret: ProjectImportResult }
   'mt::project:load': { args: [ProjectLoadArgs?]; ret: ProjectLoadResult }

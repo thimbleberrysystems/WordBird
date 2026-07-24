@@ -386,26 +386,14 @@ const testModelConnection = async () => {
     if (aiProvider.value === 'ollama') {
       const url = (config.baseUrl || PROVIDER_BASE_URLS.ollama).replace(/\/$/, '')
       const modelName = config.model || ''
-      const response = await fetch(`${url}/api/show`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: modelName })
-      })
-
-      if (!response.ok) {
-        // Model not found - try to pull it
+      // Model existence + pull run in MAIN — the renderer makes no HTTP calls.
+      if (!(await langGraphService.ollamaModelExists(modelName, url))) {
         modelConnectionStatus.value = {
           type: 'success',
           message: t('preferences.ai.pullingModel')
         }
         await langGraphService.pullModel(modelName, url)
-        // After pull, verify again
-        const verifyResponse = await fetch(`${url}/api/show`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: modelName })
-        })
-        if (!verifyResponse.ok) {
+        if (!(await langGraphService.ollamaModelExists(modelName, url))) {
           throw new Error(t('preferences.ai.pullFailed', { model: modelName }))
         }
       }

@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { ref } from 'vue'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { ref, nextTick } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
 import {
   useConversationHistory,
@@ -61,5 +61,53 @@ describe('conversation persistence filters transient UI roles', () => {
     history.saveCurrent()
 
     expect(history.conversations.value).toHaveLength(0)
+  })
+})
+
+describe('conversation persistence is debounced on the hot path', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('a burst of message mutations coalesces into one delayed save', async() => {
+    const aiMessages = ref<ChatEntry[]>([])
+    const history = useConversationHistory({
+      aiMessages,
+      isBusy: () => false,
+      onSwitch: () => {}
+    })
+
+    aiMessages.value.push(entry('user', 'a'))
+    aiMessages.value.push(entry('assistant', 'b'))
+    await nextTick() // the deep watch fires once and SCHEDULES the save
+
+    // Not written yet — the expensive clone+localStorage write is deferred.
+    expect(history.conversations.value).toHaveLength(0)
+
+    vi.advanceTimersByTime(400)
+    // Now the single coalesced save has run.
+    expect(history.conversations.value).toHaveLength(1)
+    expect(history.conversations.value[0].messages.map((m) => m.role)).toEqual([
+      'user',
+      'assistant'
+    ])
+  })
+
+  it('an explicit saveCurrent still writes immediately (switch/new/load path)', () => {
+    const aiMessages = ref<ChatEntry[]>([entry('user', 'x'), entry('assistant', 'y')])
+    const history = useConversationHistory({
+      aiMessages,
+      isBusy: () => false,
+      onSwitch: () => {}
+    })
+
+    history.saveCurrent()
+    // No timer advance — the explicit path is synchronous.
+    expect(history.conversations.value).toHaveLength(1)
   })
 })

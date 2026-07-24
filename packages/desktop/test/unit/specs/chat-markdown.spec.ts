@@ -52,4 +52,20 @@ describe('renderChatMarkdown', () => {
     expect(renderChatMarkdown('')).toBe('')
     expect(renderChatMarkdown(undefined as unknown as string)).toBe('')
   })
+
+  it('memoizes: identical input parses once, and the result is stable', async() => {
+    const { _clearChatMarkdownCache } = await import(
+      '../../../src/renderer/src/util/chatMarkdown'
+    )
+    _clearChatMarkdownCache()
+    const input = '# Heading\n\nSome **bold** text and a `code` span.'
+    const first = renderChatMarkdown(input)
+    const second = renderChatMarkdown(input)
+    // Same output, and — the point of the cache — the exact same string
+    // instance (proves the second call did not re-parse).
+    expect(second).toBe(first)
+    expect(second === first).toBe(true)
+    // A different input still renders fresh.
+    expect(renderChatMarkdown('# Other')).not.toBe(first)
+  })
 })

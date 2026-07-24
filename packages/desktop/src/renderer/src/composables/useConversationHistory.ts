@@ -134,8 +134,21 @@ export const useConversationHistory = (options: {
   }
 
   // Save the live transcript into the current conversation entry (creating
-  // one on the first message). Called whenever aiMessages changes.
+  // one on the first message). Explicit callers (switch/new/load) run it
+  // immediately; the hot-path aiMessages watch runs it DEBOUNCED — a full
+  // deep-clone plus a synchronous localStorage stringify of every conversation
+  // should not fire on each message mutation, only once the burst settles.
+  let saveTimer: ReturnType<typeof setTimeout> | null = null
+  const SAVE_DEBOUNCE_MS = 400
+  const scheduleSave = (): void => {
+    if (saveTimer) clearTimeout(saveTimer)
+    saveTimer = setTimeout(saveCurrent, SAVE_DEBOUNCE_MS)
+  }
   const saveCurrent = (): void => {
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+      saveTimer = null
+    }
     if (aiMessages.value.length === 0) return
     if (!currentId.value) currentId.value = `conv-${Date.now()}`
     // Transient UI cards (a quiet-run notice, an error card, a stopped marker)
@@ -195,7 +208,11 @@ export const useConversationHistory = (options: {
   }
 
   // Persist the transcript as it grows (assistant replies, errors, etc.).
-  watch(aiMessages, saveCurrent, { deep: true })
+  watch(aiMessages, scheduleSave, { deep: true })
+  // App/window close must not drop a save still sitting in the debounce.
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', saveCurrent)
+  }
 
   const newConversation = async(): Promise<void> => {
     // Switching threads mid-run would interleave two conversations in the

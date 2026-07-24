@@ -167,6 +167,10 @@ export const registerAIHandlers = (): void => {
     }
   })
 
+  ipcMain.handle('mt::ai:ollama-model-exists', async(_e, model: string, baseUrl?: string) => {
+    return langGraphManager.hasOllamaModel(model, baseUrl)
+  })
+
   ipcMain.handle('mt::ai:execute-tool', async(_e, call: IAgentToolCall): Promise<IAgentToolResult> => {
     try {
       return await langGraphManager.executeTool(call)

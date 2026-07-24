@@ -962,6 +962,22 @@ export class LangGraphManager {
     }
   }
 
+  /**
+   * Whether Ollama already has a model locally (POST /api/show). Runs in main
+   * so the renderer never makes HTTP calls itself — the connect flow uses it
+   * to decide whether a pull is needed.
+   */
+  public async hasOllamaModel(model: string, baseUrl?: string): Promise<boolean> {
+    const base = (baseUrl || PROVIDER_BASE_URLS.ollama).replace(/\/$/, '')
+    try {
+      const response = await axios.post(`${base}/api/show`, { name: model }, { timeout: 10000 })
+      return response.status >= 200 && response.status < 300
+    } catch {
+      // 404 (not pulled yet) or a connection error both mean "not available".
+      return false
+    }
+  }
+
   public async pullModel(model: string, baseUrl?: string): Promise<void> {
     const actualBaseUrl = baseUrl || PROVIDER_BASE_URLS.ollama
     const url = `${actualBaseUrl}/api/pull`

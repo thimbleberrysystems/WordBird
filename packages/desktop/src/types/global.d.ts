@@ -252,6 +252,7 @@ declare global {
         config: IAIConfig
       ) => Promise<{ contextWindow: number; maxOutput: number; source: 'override' | 'api' | 'default' }>
       pullModel: (model: string, baseUrl?: string) => Promise<{ success: boolean }>
+      ollamaModelExists: (model: string, baseUrl?: string) => Promise<boolean>
       onPullProgress: (
         handler: (progress: { percent?: number; status?: string; digest?: string }) => void
       ) => () => void

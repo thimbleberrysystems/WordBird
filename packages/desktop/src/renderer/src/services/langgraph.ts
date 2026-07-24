@@ -108,6 +108,10 @@ class LangGraphService {
     await window.electron.ai.abort()
   }
 
+  async ollamaModelExists(model: string, baseUrl?: string): Promise<boolean> {
+    return window.electron.ai.ollamaModelExists(model, baseUrl)
+  }
+
   async pullModel(model: string, baseUrl?: string): Promise<void> {
     await window.electron.ai.pullModel(model, baseUrl)
   }
