@@ -161,7 +161,7 @@ describe('propose_new_file', () => {
     ).rejects.toThrow(/already exists/)
     await expect(
       run('propose_new_file', { path: '.wordbird/evil.md', content: 'x' })
-    ).rejects.toThrow(/internal/)
+    ).rejects.toThrow(/internal/i)
     await expect(
       run('propose_new_file', { path: 'notes/script.sh', content: 'x' })
     ).rejects.toThrow(/must be/)

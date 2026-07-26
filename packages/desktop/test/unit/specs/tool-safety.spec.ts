@@ -107,6 +107,19 @@ describe('pathGuards', () => {
     }
   })
 
+  it('a benignly-named symlink to an internal dir is still off limits', () => {
+    // `notes -> .git`: lexically the first segment is `notes` (not internal),
+    // but the REAL target is `.git`. The internal-dir guard must resolve the
+    // symlink so this cannot smuggle access to internals.
+    fs.symlinkSync(path.join(root, '.git'), path.join(root, 'notes'))
+    try {
+      expect(() => assertNotInternalPath(root, path.join(root, 'notes/config')))
+        .toThrow(/off limits/i)
+    } finally {
+      fs.rmSync(path.join(root, 'notes'), { force: true })
+    }
+  })
+
   it('detects locked canon and enforces it', () => {
     expect(isLockedCanon('---\nlocked: true\n---\nbody')).toBe(true)
     expect(isLockedCanon('---\naliases: [x]\n---\nbody')).toBe(false)

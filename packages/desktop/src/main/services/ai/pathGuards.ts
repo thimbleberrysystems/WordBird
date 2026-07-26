@@ -16,10 +16,25 @@ import path from 'path'
 
 export const INTERNAL_TOP_DIRS = new Set(['.wordbird', '.git'])
 
-/** Throw when absPath's top-level segment is an internal directory. */
+const isInternalTop = (rel: string): boolean => INTERNAL_TOP_DIRS.has(rel.split(path.sep)[0])
+
+/**
+ * Throw when absPath's top-level segment is an internal directory — judged
+ * LEXICALLY *and* on the symlink-resolved real path, so a benignly-named
+ * symlink whose target is `.git`/`.wordbird` (e.g. `notes -> .git`) cannot
+ * smuggle access to internals past the lexical check.
+ */
 export const assertNotInternalPath = (root: string, absPath: string): string => {
   const rel = path.relative(path.resolve(root), path.resolve(absPath))
-  if (INTERNAL_TOP_DIRS.has(rel.split(path.sep)[0])) {
+  let realRel: string | null = null
+  try {
+    const realRoot = fs.realpathSync(path.resolve(root))
+    const realAnchor = fs.realpathSync(deepestExisting(path.resolve(absPath)))
+    realRel = path.relative(realRoot, realAnchor)
+  } catch {
+    // Unresolvable path — the lexical check below still applies.
+  }
+  if (isInternalTop(rel) || (realRel !== null && isInternalTop(realRel))) {
     throw new Error(
       'Internal directories (.wordbird, .git) are off limits to agent tools.'
     )

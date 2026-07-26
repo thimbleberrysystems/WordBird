@@ -16,6 +16,14 @@ export const editorWinOptions: Readonly<BrowserWindowConstructorOptions> = Objec
     // enable it always and set the HTML spelling attribute to false.
     spellcheck: true,
     nodeIntegration: false,
+    // SECURITY: the editor renders markdown that references LOCAL images
+    // (`file:` URLs). In dev the renderer is served from an http dev server,
+    // so those images are cross-origin and require SOP to be relaxed. This is
+    // the one window that needs it. RESIDUAL HARDENING (tracked): migrate
+    // local-image loading to a custom `protocol.handle` scheme so this can be
+    // set to `true` here too, then verify image rendering with real documents.
+    // Other windows (preferences, Biscuit) do NOT load local images and keep
+    // webSecurity:true below.
     webSecurity: false,
     preload: path.join(__dirname, '../preload/index.js')
   },
@@ -37,7 +45,9 @@ export const preferencesWinOptions: Readonly<BrowserWindowConstructorOptions> = 
     // Always true to access native spellchecker.
     spellcheck: true,
     nodeIntegration: false,
-    webSecurity: false,
+    // The preferences UI loads no local `file:` resources, so keep the
+    // same-origin policy ON (unlike the editor window).
+    webSecurity: true,
     preload: path.join(__dirname, '../preload/index.js')
   },
   fullscreenable: false,

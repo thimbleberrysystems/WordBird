@@ -30,7 +30,7 @@ import { updateProjectMeta, isPlanningStyle, isStructureTemplate } from '../nove
 import { STRUCTURE_TEMPLATES } from '../novel/structureTemplates'
 import { continuityService } from '../novel/ContinuityService'
 import { revisionService, RevisionService } from '../novel/RevisionService'
-import { isLockedCanon } from './pathGuards'
+import { isLockedCanon, assertRealInside, assertNotInternalPath } from './pathGuards'
 import { listSkills, readSkill } from '../novel/Skills'
 import { appendDecision, listDecisions } from '../novel/Decisions'
 import { checkProjectHealth } from '../novel/ProjectHealth'
@@ -118,6 +118,11 @@ const resolveInside = (root: string, relative: string, mustBeUnder?: string): st
   if (mustBeUnder && !rel.split(path.sep)[0].startsWith(mustBeUnder)) {
     throw new Error(`Path must be inside the ${mustBeUnder}/ directory.`)
   }
+  // The SAME law the apply gate and generic file tools enforce: internals are
+  // off limits, and containment is judged on the REAL (symlink-resolved) path
+  // so a symlink inside the project cannot smuggle reads/writes/deletes out.
+  assertNotInternalPath(root, resolved)
+  assertRealInside(root, resolved)
   return resolved
 }
 

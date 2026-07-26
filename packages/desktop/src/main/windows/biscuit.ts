@@ -77,7 +77,11 @@ export const openBiscuitWindow = (
       sandbox: true,
       spellcheck: true,
       nodeIntegration: false,
-      webSecurity: false,
+      // The detached Biscuit chat renders sanitized markdown with NO images
+      // (the chat allow-list forbids <img>), so it needs no local `file:`
+      // access — keep the same-origin policy ON. This is the surface most
+      // exposed to injected model/web content, so SOP matters most here.
+      webSecurity: true,
       preload: path.join(__dirname, '../preload/index.js')
     }
   }
