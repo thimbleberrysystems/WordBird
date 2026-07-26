@@ -115,6 +115,13 @@
         v-if="aiMessages.length === 0 && !sending"
         class="biscuit-welcome"
       >
+        <biscuit-mascot
+          class="welcome-mascot"
+          :mood="mascotMood"
+          :act="mascotAct"
+          :reduced-motion="mascotReduced"
+          @react="pokeMascot"
+        />
         <div class="welcome-title">
           {{ t('biscuit.welcomeTitle') }}
         </div>
@@ -199,13 +206,24 @@
         </div>
       </template>
 
-      <!-- Thinking Indicator -->
+      <!-- Biscuit at work: an animated mascot keeps the writer company while
+           the run is quiet. The Agents tab carries the factual "what's it
+           doing" detail — this is companionship, not status. -->
       <div
-        v-if="sending"
-        class="message message--assistant message--thinking"
+        v-if="sending || mascotMood === 'celebrate'"
+        class="biscuit-working"
       >
-        <div class="message__text italic">
-          {{ runState === 'paused' ? t('biscuit.pausedNote') : t('biscuit.thinking') }}
+        <biscuit-mascot
+          :mood="mascotMood"
+          :act="mascotAct"
+          :reduced-motion="mascotReduced"
+          @react="pokeMascot"
+        />
+        <div
+          class="biscuit-working__caption"
+          :class="{ 'biscuit-working__caption--bubble': mascotMood === 'react' }"
+        >
+          {{ mascotCaption }}
         </div>
       </div>
     </section>
@@ -520,6 +538,8 @@ import { DArrowRight, Plus, ChatLineSquare, Delete, CopyDocument, Back, InfoFill
 import GlobalAgentReview from '../agent/GlobalAgentReview.vue'
 import PlanCard from './PlanCard.vue'
 import ErrorCard from './ErrorCard.vue'
+import BiscuitMascot from './BiscuitMascot.vue'
+import { useBiscuitMood } from '../../composables/useBiscuitMood'
 import type {
   ILangGraphMessage,
   IAgentApprovalRequest,
@@ -996,6 +1016,17 @@ const handleRetryTask = (payload: unknown): void => {
 // ---- Live agents + activity: shared store, shown in the Agents sidebar ----
 const agentsStore = useAgentsStore()
 const { activity, runState, agentMap } = storeToRefs(agentsStore)
+
+// ---- Biscuit mascot: a playful character that keeps the writer company
+// while a run is quiet (mood + rotating caption; NO status detail — that's
+// the Agents tab). Drives both the working-state and welcome-card mascots.
+const {
+  mood: mascotMood,
+  caption: mascotCaption,
+  actName: mascotAct,
+  reducedMotion: mascotReduced,
+  poke: pokeMascot
+} = useBiscuitMood({ sending, runState, connected: aiIsConnected })
 
 // Keep the chat pinned to the latest turn while agents stream activity.
 // (Must sit AFTER the destructure above — watch runs its getter
@@ -2145,16 +2176,35 @@ async function sendMessage (): Promise<void> {
 /* Structured error card: friendly headline + explanation, technical
    detail folded away, optional action button. */
 
-.message--thinking .message__text {
-  color: var(--color-secondary, var(--wbMutedColor));
-  font-style: italic;
-  animation: pulse 1.5s infinite ease-in-out;
+/* Biscuit mascot — working state (centre of the transcript while a run is on)
+   and the welcome-card idle presence. */
+.biscuit-working {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 0 6px;
 }
-
-@keyframes pulse {
-  0% { opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { opacity: 0.6; }
+.biscuit-working__caption {
+  font-size: 0.78rem;
+  font-style: italic;
+  text-align: center;
+  min-height: 1.1em;
+  color: var(--iconColor, var(--wbMutedColor));
+  opacity: 0.9;
+  transition: opacity 0.3s ease;
+}
+.biscuit-working__caption--bubble {
+  font-style: normal;
+  opacity: 1;
+  color: #fff;
+  background: var(--themeColor, var(--wbInfoColor));
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+.welcome-mascot {
+  justify-content: center;
+  margin: 0 auto 4px;
 }
 
 .prompt-footer {

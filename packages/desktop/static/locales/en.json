@@ -1516,6 +1516,29 @@
   "biscuit": {
     "placeholder": "Your writing companion. Brainstorm, draft, revise — I keep the whole novel coherent while you create.",
     "thinking": "Analyzing the crumbs you just dropped...",
+    "mascot": {
+      "ariaBusy": "Biscuit, thinking",
+      "ariaLongwait": "Biscuit, deep in thought",
+      "ariaPaused": "Biscuit, resting",
+      "ariaIdle": "Biscuit",
+      "busy": {
+        "0": "Chewing it over…",
+        "1": "Crumbs everywhere…",
+        "2": "Dunking in a big think…",
+        "3": "Letting it bake…"
+      },
+      "longwait": {
+        "0": "Still nibbling — big thoughts take time…",
+        "1": "Slow-baked ideas are the best kind…",
+        "2": "Hang tight, I'm on a roll…"
+      },
+      "quips": {
+        "0": "Hey, I'm working here! 🍪",
+        "1": "Careful — I'm crumbly.",
+        "2": "Mmm, tasty prompt.",
+        "3": "*happy crunch*"
+      }
+    },
     "newChat": "New",
     "newChatTip": "New conversation",
     "historyTip": "Past conversations",

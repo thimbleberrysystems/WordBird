@@ -1515,6 +1515,29 @@
   "biscuit": {
     "placeholder": "Dein Schreibbegleiter. Brainstormen, entwerfen, überarbeiten — ich halte den ganzen Roman kohärent, während du erschaffst.",
     "thinking": "Analysiere die Krümel, die du gerade fallen gelassen hast...",
+    "mascot": {
+      "ariaBusy": "Biscuit denkt nach",
+      "ariaLongwait": "Biscuit ist tief in Gedanken",
+      "ariaPaused": "Biscuit ruht sich aus",
+      "ariaIdle": "Biscuit",
+      "busy": {
+        "0": "Ich kaue es durch …",
+        "1": "Überall Krümel …",
+        "2": "Tauche in großes Grübeln ein …",
+        "3": "Lasse es backen …"
+      },
+      "longwait": {
+        "0": "Knabbere noch — große Gedanken brauchen Zeit …",
+        "1": "Langsam gebackene Ideen sind die besten …",
+        "2": "Bleib dran, ich komme in Fahrt …"
+      },
+      "quips": {
+        "0": "Hey, ich arbeite hier! 🍪",
+        "1": "Vorsicht — ich bin krümelig.",
+        "2": "Mmm, leckerer Prompt.",
+        "3": "*zufriedenes Knuspern*"
+      }
+    },
     "newChat": "Neu",
     "newChatTip": "Neue Unterhaltung",
     "historyTip": "Frühere Unterhaltungen",

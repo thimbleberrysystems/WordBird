@@ -1515,6 +1515,29 @@
   "biscuit": {
     "placeholder": "Votre compagnon d’écriture. Idéation, rédaction, révision — je garde tout le roman cohérent pendant que vous créez.",
     "thinking": "J’analyse les miettes que vous venez de laisser...",
+    "mascot": {
+      "ariaBusy": "Biscuit réfléchit",
+      "ariaLongwait": "Biscuit est en pleine réflexion",
+      "ariaPaused": "Biscuit se repose",
+      "ariaIdle": "Biscuit",
+      "busy": {
+        "0": "Je rumine ça…",
+        "1": "Des miettes partout…",
+        "2": "Je plonge dans une grande réflexion…",
+        "3": "Je laisse mijoter…"
+      },
+      "longwait": {
+        "0": "Je grignote encore — les grandes idées prennent du temps…",
+        "1": "Les idées mijotées sont les meilleures…",
+        "2": "Tiens bon, je suis lancé…"
+      },
+      "quips": {
+        "0": "Hé, je travaille là ! 🍪",
+        "1": "Attention, je suis friable.",
+        "2": "Mmm, savoureux ce prompt.",
+        "3": "*croquement joyeux*"
+      }
+    },
     "newChat": "Nouveau",
     "newChatTip": "Nouvelle conversation",
     "historyTip": "Conversations passées",

@@ -1515,6 +1515,29 @@
   "biscuit": {
     "placeholder": "Seu companheiro de escrita. Idealize, rascunhe, revise — eu mantenho o romance inteiro coerente enquanto você cria.",
     "thinking": "Analisando as migalhas que você acabou de deixar...",
+    "mascot": {
+      "ariaBusy": "Biscuit, pensando",
+      "ariaLongwait": "Biscuit, mergulhado em pensamentos",
+      "ariaPaused": "Biscuit, descansando",
+      "ariaIdle": "Biscuit",
+      "busy": {
+        "0": "Ruminando a ideia…",
+        "1": "Migalhas por toda parte…",
+        "2": "Mergulhando num grande pensamento…",
+        "3": "Deixando assar…"
+      },
+      "longwait": {
+        "0": "Ainda mordiscando — grandes ideias levam tempo…",
+        "1": "Ideias assadas devagar são as melhores…",
+        "2": "Segura aí, estou embalado…"
+      },
+      "quips": {
+        "0": "Ei, estou trabalhando aqui! 🍪",
+        "1": "Cuidado — eu esfarelo.",
+        "2": "Mmm, prompt saboroso.",
+        "3": "*crocância feliz*"
+      }
+    },
     "newChat": "Nova",
     "newChatTip": "Nova conversa",
     "historyTip": "Conversas anteriores",
